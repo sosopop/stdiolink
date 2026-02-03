@@ -1,7 +1,7 @@
 #pragma once
 
 #include "icommand_handler.h"
-#include "protocol/jsonl_parser.h"
+#include "stdiolink/protocol/jsonl_parser.h"
 
 namespace stdiolink {
 

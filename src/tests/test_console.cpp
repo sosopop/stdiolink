@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "console/console_args.h"
+#include "stdiolink/console/console_args.h"
 #include <QJsonArray>
 
 using namespace stdiolink;

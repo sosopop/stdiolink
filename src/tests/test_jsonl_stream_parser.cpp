@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "protocol/jsonl_parser.h"
+#include "stdiolink/protocol/jsonl_parser.h"
 
 using namespace stdiolink;
 

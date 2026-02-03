@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "host/driver.h"
-#include "host/task.h"
+#include "stdiolink/host/driver.h"
+#include "stdiolink/host/task.h"
 #include <QCoreApplication>
 #include <QJsonObject>
 

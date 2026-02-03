@@ -1,6 +1,6 @@
 #include "driver_core.h"
 #include "stdio_responder.h"
-#include "protocol/jsonl_serializer.h"
+#include "stdiolink/protocol/jsonl_serializer.h"
 #include <QJsonObject>
 #include <QTextStream>
 #include <QFile>

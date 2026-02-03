@@ -10,7 +10,11 @@
       "Bash(\"D:/code/stdiolink/build_ninja/test_driver.exe\")",
       "Bash(\"D:/code/stdiolink/build_ninja/stdiolink_tests.exe\":*)",
       "Bash(\"D:/code/stdiolink/build_ninja/stdiolink_tests.exe\" --gtest_filter=DriverIntegrationTest.EchoCommand)",
-      "Bash(./stdiolink_tests.exe:*)"
+      "Bash(./stdiolink_tests.exe:*)",
+      "Bash(git commit:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
     ]
   }
 }

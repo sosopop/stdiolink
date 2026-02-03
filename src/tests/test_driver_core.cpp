@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "driver/icommand_handler.h"
-#include "driver/mock_responder.h"
+#include "stdiolink/driver/icommand_handler.h"
+#include "stdiolink/driver/mock_responder.h"
 #include <QJsonObject>
 
 using namespace stdiolink;

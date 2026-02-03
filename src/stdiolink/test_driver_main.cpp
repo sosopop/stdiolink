@@ -1,5 +1,5 @@
-#include "driver/driver_core.h"
-#include "driver/icommand_handler.h"
+#include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/icommand_handler.h"
 #include <QCoreApplication>
 #include <QJsonObject>
 

@@ -52,23 +52,16 @@ output.flush();
 
 ```
 src/
-├── protocol/          # JSONL 协议层
-│   ├── jsonl_types.h
-│   ├── jsonl_serializer.h/cpp
-│   ├── jsonl_parser.h/cpp
-│   └── jsonl_stream_parser.cpp
-├── driver/            # Driver 端（被调用方）
-│   ├── iresponder.h
-│   ├── icommand_handler.h
-│   ├── stdio_responder.h/cpp
-│   └── driver_core.h/cpp
-├── host/              # Host 端（调用方）
-│   ├── task_state.h
-│   ├── task.h/cpp
-│   └── driver.h/cpp
-└── test_driver_main.cpp
-
-tests/                 # 单元测试
+├── stdiolink/         # 基础库
+│   ├── protocol/      # JSONL 协议层
+│   ├── driver/        # Driver 端（被调用方）
+│   ├── host/          # Host 端（调用方）
+│   └── console/       # Console 模式
+├── tests/             # 单元测试 (78个测试用例)
+└── demo/              # 示例程序
+    ├── host_demo/     # Host 端示例
+    ├── echo_driver/   # Echo Driver
+    └── progress_driver/  # Progress Driver
 ```
 
 ## 里程碑进度
@@ -76,6 +69,48 @@ tests/                 # 单元测试
 - [x] 里程碑 1：JSONL 协议基础
 - [x] 里程碑 2：Driver 端核心实现
 - [x] 里程碑 3：Host 端 Driver 类
-- [ ] 里程碑 4：Task 类（Future/Promise）
-- [ ] 里程碑 5：多 Driver 并行
-- [ ] 里程碑 6：Console 模式
+- [x] 里程碑 4：Task 类（Future/Promise）
+- [x] 里程碑 5：多 Driver 并行
+- [x] 里程碑 6：Console 模式
+
+## 核心 API
+
+### Host 端使用示例
+
+```cpp
+#include "stdiolink/host/driver.h"
+#include "stdiolink/host/wait_any.h"
+
+// 启动 Driver 进程
+Driver d;
+d.start("path/to/driver.exe");
+
+// 发送请求
+Task t = d.request("echo", QJsonObject{{"msg", "hello"}});
+
+// 等待响应
+Message msg;
+while (t.waitNext(msg, 5000)) {
+    if (msg.status == "done") break;
+}
+
+d.terminate();
+```
+
+### 多 Driver 并发
+
+```cpp
+Driver d1, d2;
+d1.start("driver.exe");
+d2.start("driver.exe");
+
+QVector<Task> tasks;
+tasks << d1.request("cmd1", data1);
+tasks << d2.request("cmd2", data2);
+
+AnyItem item;
+while (waitAnyNext(tasks, item, 5000)) {
+    // item.taskIndex 表示来源
+    // item.msg 是消息内容
+}
+```

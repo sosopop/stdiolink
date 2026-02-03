@@ -1,5 +1,5 @@
 #include "console_responder.h"
-#include "protocol/jsonl_serializer.h"
+#include "stdiolink/protocol/jsonl_serializer.h"
 #include <QFile>
 
 namespace stdiolink {

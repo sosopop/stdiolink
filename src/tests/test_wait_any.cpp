@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "host/wait_any.h"
-#include "host/driver.h"
+#include "stdiolink/host/wait_any.h"
+#include "stdiolink/host/driver.h"
 #include <QCoreApplication>
 #include <QJsonObject>
 #include <set>

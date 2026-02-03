@@ -1,5 +1,5 @@
 #include "driver.h"
-#include "protocol/jsonl_serializer.h"
+#include "stdiolink/protocol/jsonl_serializer.h"
 #include <QJsonDocument>
 
 namespace stdiolink {

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "task.h"
-#include "protocol/jsonl_types.h"
-#include "protocol/jsonl_parser.h"
+#include "stdiolink/protocol/jsonl_types.h"
+#include "stdiolink/protocol/jsonl_parser.h"
 #include <QProcess>
 #include <QJsonObject>
 #include <memory>

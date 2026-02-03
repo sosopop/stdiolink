@@ -1,6 +1,6 @@
 #pragma once
 
-#include "protocol/jsonl_types.h"
+#include "stdiolink/protocol/jsonl_types.h"
 #include <deque>
 #include <memory>
 #include <QString>

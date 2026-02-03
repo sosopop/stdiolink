@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "protocol/jsonl_serializer.h"
+#include "stdiolink/protocol/jsonl_serializer.h"
 #include <QJsonObject>
 #include <QJsonArray>
 
