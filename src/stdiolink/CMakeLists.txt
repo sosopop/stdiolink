@@ -30,16 +30,3 @@ set(STDIOLINK_SOURCES
     ${CONSOLE_SOURCES}
     PARENT_SCOPE
 )
-
-# test_driver (用于单元测试)
-add_executable(test_driver
-    test_driver_main.cpp
-    ${PROTOCOL_SOURCES}
-    ${DRIVER_SOURCES}
-)
-
-target_include_directories(test_driver PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-)
-
-target_link_libraries(test_driver PRIVATE Qt5::Core)

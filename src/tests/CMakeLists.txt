@@ -38,3 +38,18 @@ target_link_libraries(stdiolink_tests PRIVATE
 )
 
 add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
+
+# test_driver (用于单元测试的辅助 Driver 程序)
+add_executable(test_driver
+    test_driver_main.cpp
+    ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
+    ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
+    ${STDIOLINK_DIR}/driver/stdio_responder.cpp
+    ${STDIOLINK_DIR}/driver/driver_core.cpp
+)
+
+target_include_directories(test_driver PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_driver PRIVATE Qt5::Core)
