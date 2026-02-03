@@ -1,0 +1,40 @@
+# 单元测试 CMakeLists.txt
+
+set(TEST_SOURCES
+    test_main.cpp
+    test_jsonl_serializer.cpp
+    test_jsonl_parser.cpp
+    test_jsonl_stream_parser.cpp
+    test_driver_core.cpp
+    test_host_driver.cpp
+    test_wait_any.cpp
+    test_console.cpp
+)
+
+# 获取 stdiolink 源文件的绝对路径
+set(STDIOLINK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../stdiolink)
+
+add_executable(stdiolink_tests
+    ${TEST_SOURCES}
+    ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
+    ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
+    ${STDIOLINK_DIR}/protocol/jsonl_stream_parser.cpp
+    ${STDIOLINK_DIR}/driver/stdio_responder.cpp
+    ${STDIOLINK_DIR}/driver/driver_core.cpp
+    ${STDIOLINK_DIR}/host/task.cpp
+    ${STDIOLINK_DIR}/host/driver.cpp
+    ${STDIOLINK_DIR}/host/wait_any.cpp
+    ${STDIOLINK_DIR}/console/console_args.cpp
+    ${STDIOLINK_DIR}/console/console_responder.cpp
+)
+
+target_include_directories(stdiolink_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(stdiolink_tests PRIVATE
+    GTest::gtest
+    Qt5::Core
+)
+
+add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
