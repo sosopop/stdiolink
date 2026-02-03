@@ -1,0 +1,9 @@
+{
+  "name": "stdiolink",
+  "version": "1.0.0",
+  "dependencies": [
+    "spdlog",
+    "qt5-base",
+    "gtest"
+  ]
+}

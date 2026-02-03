@@ -1,0 +1,4 @@
+# 将所有文本文件在存入git时强制转换为LF
+* text=auto
+# 强制转换bat文件为CRLF
+*.bat   text eol=crlf

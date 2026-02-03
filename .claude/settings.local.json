@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(build_ninja.bat)",
+      "Bash(ninja -C build_ninja:*)",
+      "Bash(ctest:*)",
+      "Bash(D:codestdiolinkbuild_ninjastdiolink_tests.exe)",
+      "Bash(\"D:/code/stdiolink/build_ninja/stdiolink_tests.exe\")",
+      "Bash(ls:*)",
+      "Bash(\"D:/code/stdiolink/build_ninja/test_driver.exe\")",
+      "Bash(\"D:/code/stdiolink/build_ninja/stdiolink_tests.exe\":*)",
+      "Bash(\"D:/code/stdiolink/build_ninja/stdiolink_tests.exe\" --gtest_filter=DriverIntegrationTest.EchoCommand)",
+      "Bash(./stdiolink_tests.exe:*)"
+    ]
+  }
+}

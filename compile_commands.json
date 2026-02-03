@@ -1,0 +1,80 @@
+[
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DFMT_SHARED -DNOMINMAX -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_autogen/include -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtWidgets -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtGui -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\stdiolink.dir\\stdiolink_autogen\\mocs_compilation.cpp.obj -c D:\\code\\stdiolink\\build_ninja\\stdiolink_autogen\\mocs_compilation.cpp",
+  "file": "D:/code/stdiolink/build_ninja/stdiolink_autogen/mocs_compilation.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink.dir/stdiolink_autogen/mocs_compilation.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DFMT_SHARED -DNOMINMAX -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_autogen/include -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtWidgets -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtGui -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=main.cpp -o CMakeFiles\\stdiolink.dir\\src\\main.cpp.obj -c D:\\code\\stdiolink\\src\\main.cpp",
+  "file": "D:/code/stdiolink/src/main.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink.dir/src/main.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DFMT_SHARED -DNOMINMAX -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_autogen/include -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtWidgets -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtGui -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=jsonl_parser.cpp -o CMakeFiles\\stdiolink.dir\\src\\protocol\\jsonl_parser.cpp.obj -c D:\\code\\stdiolink\\src\\protocol\\jsonl_parser.cpp",
+  "file": "D:/code/stdiolink/src/protocol/jsonl_parser.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink.dir/src/protocol/jsonl_parser.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DFMT_SHARED -DNOMINMAX -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_autogen/include -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtWidgets -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtGui -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=jsonl_serializer.cpp -o CMakeFiles\\stdiolink.dir\\src\\protocol\\jsonl_serializer.cpp.obj -c D:\\code\\stdiolink\\src\\protocol\\jsonl_serializer.cpp",
+  "file": "D:/code/stdiolink/src/protocol/jsonl_serializer.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink.dir/src/protocol/jsonl_serializer.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DFMT_SHARED -DNOMINMAX -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_autogen/include -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtWidgets -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtGui -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=jsonl_stream_parser.cpp -o CMakeFiles\\stdiolink.dir\\src\\protocol\\jsonl_stream_parser.cpp.obj -c D:\\code\\stdiolink\\src\\protocol\\jsonl_stream_parser.cpp",
+  "file": "D:/code/stdiolink/src/protocol/jsonl_stream_parser.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink.dir/src/protocol/jsonl_stream_parser.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\stdiolink_tests.dir\\stdiolink_tests_autogen\\mocs_compilation.cpp.obj -c D:\\code\\stdiolink\\build_ninja\\stdiolink_tests_autogen\\mocs_compilation.cpp",
+  "file": "D:/code/stdiolink/build_ninja/stdiolink_tests_autogen/mocs_compilation.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/stdiolink_tests_autogen/mocs_compilation.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\stdiolink_tests.dir\\tests\\test_main.cpp.obj -c D:\\code\\stdiolink\\tests\\test_main.cpp",
+  "file": "D:/code/stdiolink/tests/test_main.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/tests/test_main.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\stdiolink_tests.dir\\tests\\test_jsonl_serializer.cpp.obj -c D:\\code\\stdiolink\\tests\\test_jsonl_serializer.cpp",
+  "file": "D:/code/stdiolink/tests/test_jsonl_serializer.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/tests/test_jsonl_serializer.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\stdiolink_tests.dir\\tests\\test_jsonl_parser.cpp.obj -c D:\\code\\stdiolink\\tests\\test_jsonl_parser.cpp",
+  "file": "D:/code/stdiolink/tests/test_jsonl_parser.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/tests/test_jsonl_parser.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\stdiolink_tests.dir\\tests\\test_jsonl_stream_parser.cpp.obj -c D:\\code\\stdiolink\\tests\\test_jsonl_stream_parser.cpp",
+  "file": "D:/code/stdiolink/tests/test_jsonl_stream_parser.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/tests/test_jsonl_stream_parser.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=jsonl_serializer.cpp -o CMakeFiles\\stdiolink_tests.dir\\src\\protocol\\jsonl_serializer.cpp.obj -c D:\\code\\stdiolink\\src\\protocol\\jsonl_serializer.cpp",
+  "file": "D:/code/stdiolink/src/protocol/jsonl_serializer.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/src/protocol/jsonl_serializer.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=jsonl_parser.cpp -o CMakeFiles\\stdiolink_tests.dir\\src\\protocol\\jsonl_parser.cpp.obj -c D:\\code\\stdiolink\\src\\protocol\\jsonl_parser.cpp",
+  "file": "D:/code/stdiolink/src/protocol/jsonl_parser.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/src/protocol/jsonl_parser.cpp.obj"
+},
+{
+  "directory": "D:/code/stdiolink/build_ninja",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DNOMINMAX -DQT_CORE_LIB -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -ID:/code/stdiolink/build_ninja/stdiolink_tests_autogen/include -ID:/code/stdiolink/src -isystem D:/code/vcpkg_installed/x64-windows/include -isystem D:/code/vcpkg_installed/x64-windows/include/qt5 -isystem D:/code/vcpkg_installed/x64-windows/include/qt5/QtCore -isystem D:/code/vcpkg_installed/x64-windows/tools/qt5/mkspecs/win32-msvc -O0 -g -Xclang -gcodeview -std=gnu++17 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -D__FILENAME__=jsonl_stream_parser.cpp -o CMakeFiles\\stdiolink_tests.dir\\src\\protocol\\jsonl_stream_parser.cpp.obj -c D:\\code\\stdiolink\\src\\protocol\\jsonl_stream_parser.cpp",
+  "file": "D:/code/stdiolink/src/protocol/jsonl_stream_parser.cpp",
+  "output": "D:/code/stdiolink/build_ninja/CMakeFiles/stdiolink_tests.dir/src/protocol/jsonl_stream_parser.cpp.obj"
+}
+]
