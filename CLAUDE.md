@@ -11,10 +11,13 @@ stdiolink 是一个基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过
 ninja -C build_ninja
 
 # 运行测试
-./build_ninja/stdiolink_tests.exe
+./build_ninja/src/tests/stdiolink_tests.exe
 
 # 运行单个测试
-./build_ninja/stdiolink_tests.exe --gtest_filter=TestName.*
+./build_ninja/src/tests/stdiolink_tests.exe --gtest_filter=TestName.*
+
+# clang-tidy 检查
+python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet
 ```
 
 ## 代码规范
@@ -25,6 +28,15 @@ ninja -C build_ninja
 - 文本流：使用 `QTextStream`，不用 `fgets/fprintf`
 - 字符串：使用 `QString`/`QByteArray`
 - JSON：使用 `QJsonDocument`/`QJsonObject`/`QJsonArray`
+
+### 命名规范
+
+- 类名：`CamelCase`（如 `DriverCore`）
+- 函数/方法：`camelBack`（如 `parseRequest`）
+- 成员变量：`m_` 前缀 + `camelBack`（如 `m_driverPath`）
+- 局部变量：`camelBack`（如 `driverPath`）
+- 全局常量：`CamelCase`（如 `TestDriver`）
+- 枚举常量：`CamelCase`（如 `StatusDone`）
 
 ### stdin/stdout 读写示例
 
@@ -62,6 +74,8 @@ src/
     ├── host_demo/     # Host 端示例
     ├── echo_driver/   # Echo Driver
     └── progress_driver/  # Progress Driver
+tools/
+└── run-clang-tidy.py  # clang-tidy 批量检查工具
 ```
 
 ## 里程碑进度
