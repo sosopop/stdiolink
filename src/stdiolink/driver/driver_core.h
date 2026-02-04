@@ -58,6 +58,9 @@ private:
     RunMode detectMode(const ConsoleArgs& args);
     void printHelp();
     void printVersion();
+    int printCommandHelp(const QString& cmdName);
+    int handleExportMeta(const ConsoleArgs& args);
+    int handleExportDoc(const ConsoleArgs& args);
 
     bool processOneLine(const QByteArray& line);
     bool handleMetaCommand(const QString& cmd, const QJsonValue& data,

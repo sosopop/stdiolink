@@ -38,6 +38,14 @@ M15 强类型事件流 ──► M16 高级UI生成 ──► M17 配置注入�
 | M18 | 元数据版本协商 | 需求7 | 待开发 |
 | M19 | Host 注册中心 | 需求3 | 待开发 |
 
+## 关键口径同步
+
+- M12：默认无参数输出 `--help`，根据 `stdin` 是否交互式与显式导出参数在 console/stdio 之间自动切换。
+- M13：只负责参数解析与导出入口（`--export-meta/--export-doc`，含短参数）；不承载具体文档生成逻辑。
+- M14：提供 `DocGenerator` 具体实现，完成 markdown/openapi/html 实际生成。
+- M15：通过 `IResponderEx` 扩展，保留旧事件接口以规避 ABI 破坏。
+- M13：`--export-meta` 输出格式等同 `driver.meta.json` 标准格式。
+
 ## 需求对应表
 
 | 需求 | 描述 | 里程碑 |

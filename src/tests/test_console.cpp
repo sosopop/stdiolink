@@ -244,3 +244,85 @@ TEST(DualMode, IsInteractiveStdinExists) {
     // 在管道/重定向环境下通常返回 false
     Q_UNUSED(result);
 }
+
+// ============================================
+// M13: 导出参数测试
+// ============================================
+
+TEST(ExportArgs, ParseExportMeta) {
+    const char* argv[] = {"prog", "--export-meta"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.exportMeta);
+    EXPECT_TRUE(args.exportMetaPath.isEmpty());
+}
+
+TEST(ExportArgs, ParseExportMetaWithPath) {
+    const char* argv[] = {"prog", "--export-meta=out.json"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.exportMeta);
+    EXPECT_EQ(args.exportMetaPath, "out.json");
+}
+
+TEST(ExportArgs, ParseExportDoc) {
+    const char* argv[] = {"prog", "--export-doc=markdown"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_EQ(args.exportDocFormat, "markdown");
+    EXPECT_TRUE(args.exportDocPath.isEmpty());
+}
+
+TEST(ExportArgs, ParseExportDocWithPath) {
+    const char* argv[] = {"prog", "--export-doc=openapi=api.json"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_EQ(args.exportDocFormat, "openapi");
+    EXPECT_EQ(args.exportDocPath, "api.json");
+}
+
+// ============================================
+// M13: 短参数测试
+// ============================================
+
+TEST(ShortArgs, ShortHelp) {
+    const char* argv[] = {"prog", "-h"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.showHelp);
+}
+
+TEST(ShortArgs, ShortVersion) {
+    const char* argv[] = {"prog", "-v"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.showVersion);
+}
+
+TEST(ShortArgs, ShortExportMeta) {
+    const char* argv[] = {"prog", "-E"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.exportMeta);
+}
+
+TEST(ShortArgs, ShortMode) {
+    const char* argv[] = {"prog", "-m", "stdio"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
+    EXPECT_EQ(args.mode, "stdio");
+}
+
+TEST(ShortArgs, ShortCmd) {
+    const char* argv[] = {"prog", "-c", "scan"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
+    EXPECT_EQ(args.cmd, "scan");
+}
+
+TEST(ShortArgs, ShortExportDoc) {
+    const char* argv[] = {"prog", "-D", "markdown"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
+    EXPECT_EQ(args.exportDocFormat, "markdown");
+}

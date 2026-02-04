@@ -23,11 +23,16 @@ set(CONSOLE_SOURCES
     console/console_responder.cpp
 )
 
+set(DOC_SOURCES
+    doc/doc_generator.cpp
+)
+
 # 定义库源文件（供其他模块使用）
 set(STDIOLINK_SOURCES
     ${PROTOCOL_SOURCES}
     ${DRIVER_SOURCES}
     ${HOST_SOURCES}
     ${CONSOLE_SOURCES}
+    ${DOC_SOURCES}
     PARENT_SCOPE
 )

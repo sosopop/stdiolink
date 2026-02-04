@@ -1,8 +1,12 @@
 #include "driver_core.h"
 #include <QFile>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QTextStream>
+#include "help_generator.h"
 #include "meta_command_handler.h"
+#include "meta_exporter.h"
+#include "stdiolink/doc/doc_generator.h"
 #include "stdio_responder.h"
 #include "stdiolink/console/console_args.h"
 #include "stdiolink/console/console_responder.h"
@@ -58,8 +62,12 @@ int DriverCore::run(int argc, char* argv[]) {
         return 0;
     }
 
-    // 处理 --help
+    // 处理 --help（优先级最高）
     if (args.showHelp) {
+        // 如果同时指定了 --cmd，显示命令详情帮助
+        if (!args.cmd.isEmpty()) {
+            return printCommandHelp(args.cmd);
+        }
         printHelp();
         return 0;
     }
@@ -68,6 +76,16 @@ int DriverCore::run(int argc, char* argv[]) {
     if (args.showVersion) {
         printVersion();
         return 0;
+    }
+
+    // 处理 --export-meta
+    if (args.exportMeta) {
+        return handleExportMeta(args);
+    }
+
+    // 处理 --export-doc
+    if (!args.exportDocFormat.isEmpty()) {
+        return handleExportDoc(args);
     }
 
     // 检测运行模式
@@ -270,6 +288,116 @@ void DriverCore::printVersion() {
     }
 
     ts.flush();
+}
+
+int DriverCore::printCommandHelp(const QString& cmdName) {
+    QFile out;
+    out.open(stdout, QIODevice::WriteOnly);
+    QTextStream ts(&out);
+
+    if (!m_metaHandler) {
+        ts << "No metadata available\n";
+        ts.flush();
+        return 1;
+    }
+
+    const auto* cmdMeta = m_metaHandler->driverMeta().findCommand(cmdName);
+    if (!cmdMeta) {
+        ts << "Unknown command: " << cmdName << "\n";
+        ts.flush();
+        return 1;
+    }
+
+    ts << HelpGenerator::generateCommandHelp(*cmdMeta);
+    ts.flush();
+    return 0;
+}
+
+int DriverCore::handleExportMeta(const ConsoleArgs& args) {
+    if (!m_metaHandler) {
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("No metadata available\n");
+        err.flush();
+        return 1;
+    }
+
+    const auto& meta = m_metaHandler->driverMeta();
+
+    if (args.exportMetaPath.isEmpty()) {
+        // 输出到 stdout
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write(MetaExporter::exportJson(meta, true));
+        out.flush();
+        return 0;
+    }
+
+    // 输出到文件
+    if (!MetaExporter::exportToFile(meta, args.exportMetaPath)) {
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("Failed to write file: ");
+        err.write(args.exportMetaPath.toUtf8());
+        err.write("\n");
+        err.flush();
+        return 1;
+    }
+    return 0;
+}
+
+int DriverCore::handleExportDoc(const ConsoleArgs& args) {
+    if (m_metaHandler == nullptr) {
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("Error: No meta handler registered\n");
+        err.flush();
+        return 1;
+    }
+
+    const meta::DriverMeta& meta = m_metaHandler->driverMeta();
+    QString format = args.exportDocFormat.toLower();
+    QByteArray output;
+
+    if (format == "markdown" || format == "md") {
+        output = DocGenerator::toMarkdown(meta).toUtf8();
+    } else if (format == "openapi" || format == "swagger") {
+        QJsonDocument doc(DocGenerator::toOpenAPI(meta));
+        output = doc.toJson(QJsonDocument::Indented);
+    } else if (format == "html") {
+        output = DocGenerator::toHtml(meta).toUtf8();
+    } else {
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("Error: Unknown format '");
+        err.write(format.toUtf8());
+        err.write("'. Supported: markdown, openapi, html\n");
+        err.flush();
+        return 1;
+    }
+
+    // 输出到文件或 stdout
+    if (!args.exportDocPath.isEmpty()) {
+        QFile file(args.exportDocPath);
+        if (!file.open(QIODevice::WriteOnly)) {
+            QFile err;
+            err.open(stderr, QIODevice::WriteOnly);
+            err.write("Error: Cannot write to ");
+            err.write(args.exportDocPath.toUtf8());
+            err.write("\n");
+            err.flush();
+            return 1;
+        }
+        file.write(output);
+        file.close();
+    } else {
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write(output);
+        out.flush();
+    }
+
+    return 0;
 }
 
 } // namespace stdiolink

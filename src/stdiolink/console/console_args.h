@@ -35,6 +35,12 @@ public:
     QString profile; // "oneshot" | "keepalive"
     QString cmd;     // 命令名
 
+    // 导出参数 (M13)
+    bool exportMeta = false;
+    QString exportMetaPath;    // 可选，导出文件路径
+    QString exportDocFormat;   // markdown|openapi|html
+    QString exportDocPath;     // 可选，导出文件路径
+
     // data 参数
     QJsonObject data;
 
@@ -45,6 +51,8 @@ private:
     static bool isFrameworkArg(const QString& key);
     void parseFrameworkArg(const QString& key, const QString& value);
     void parseDataArg(const QString& key, const QString& value);
+    bool parseShortArg(const QString& arg, int& index, int argc, char* argv[]);
+    void parseExportDoc(const QString& value);
 };
 
 } // namespace stdiolink

@@ -74,6 +74,14 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         QString arg = QString::fromUtf8(argv[i]);
 
+        // 处理短参数
+        if (arg.startsWith("-") && !arg.startsWith("--")) {
+            if (!parseShortArg(arg.mid(1), i, argc, argv)) {
+                return false;
+            }
+            continue;
+        }
+
         // 必须以 -- 开头
         if (!arg.startsWith("--")) {
             errorMessage = QString("Invalid argument: %1").arg(arg);
@@ -91,6 +99,10 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
             showVersion = true;
             continue;
         }
+        if (arg == "export-meta") {
+            exportMeta = true;
+            continue;
+        }
 
         // 解析 key=value
         int eqPos = arg.indexOf('=');
@@ -101,6 +113,17 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
 
         QString key = arg.left(eqPos);
         QString value = arg.mid(eqPos + 1);
+
+        // 处理导出参数
+        if (key == "export-meta") {
+            exportMeta = true;
+            exportMetaPath = value;
+            continue;
+        }
+        if (key == "export-doc") {
+            parseExportDoc(value);
+            continue;
+        }
 
         // 处理 --arg- 前缀（用于避免与框架参数冲突）
         if (key.startsWith("arg-")) {
@@ -121,6 +144,11 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
 
     // 如果只有 --help 或 --version，不需要 --cmd
     if (showHelp || showVersion) {
+        return true;
+    }
+
+    // 如果是导出命令，不需要 --cmd
+    if (exportMeta || !exportDocFormat.isEmpty()) {
         return true;
     }
 
@@ -160,6 +188,55 @@ void ConsoleArgs::parseDataArg(const QString& key, const QString& value) {
 
 bool ConsoleArgs::isInteractiveStdin() {
     return isatty(fileno(stdin)) != 0;
+}
+
+bool ConsoleArgs::parseShortArg(const QString& arg, int& index, int argc, char* argv[]) {
+    // 短参数映射: -h, -v, -m, -c, -E, -D
+    if (arg == "h") {
+        showHelp = true;
+        return true;
+    }
+    if (arg == "v") {
+        showVersion = true;
+        return true;
+    }
+    if (arg == "E") {
+        exportMeta = true;
+        return true;
+    }
+
+    // 需要值的短参数
+    QString value;
+    if (index + 1 < argc) {
+        value = QString::fromUtf8(argv[index + 1]);
+        ++index;
+    } else {
+        errorMessage = QString("Missing value for argument: -%1").arg(arg);
+        return false;
+    }
+
+    if (arg == "m") {
+        mode = value;
+    } else if (arg == "c") {
+        cmd = value;
+    } else if (arg == "D") {
+        parseExportDoc(value);
+    } else {
+        errorMessage = QString("Unknown short argument: -%1").arg(arg);
+        return false;
+    }
+    return true;
+}
+
+void ConsoleArgs::parseExportDoc(const QString& value) {
+    // 格式: format 或 format=path
+    int eqPos = value.indexOf('=');
+    if (eqPos < 0) {
+        exportDocFormat = value;
+    } else {
+        exportDocFormat = value.left(eqPos);
+        exportDocPath = value.mid(eqPos + 1);
+    }
 }
 
 } // namespace stdiolink

@@ -11,6 +11,8 @@ add_executable(host_demo
     ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
+    ${STDIOLINK_DIR}/driver/help_generator.cpp
+    ${STDIOLINK_DIR}/driver/meta_exporter.cpp
     ${STDIOLINK_DIR}/host/task.cpp
     ${STDIOLINK_DIR}/host/driver.cpp
     ${STDIOLINK_DIR}/host/wait_any.cpp
@@ -18,6 +20,7 @@ add_executable(host_demo
     ${STDIOLINK_DIR}/host/form_generator.cpp
     ${STDIOLINK_DIR}/console/console_args.cpp
     ${STDIOLINK_DIR}/console/console_responder.cpp
+    ${STDIOLINK_DIR}/doc/doc_generator.cpp
 )
 
 target_include_directories(host_demo PRIVATE

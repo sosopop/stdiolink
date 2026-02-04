@@ -14,6 +14,7 @@ set(TEST_SOURCES
     test_meta_builder.cpp
     test_meta_validator.cpp
     test_meta_host.cpp
+    test_doc_generator.cpp
 )
 
 # 获取 stdiolink 源文件的绝对路径
@@ -29,6 +30,8 @@ add_executable(stdiolink_tests
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
     ${STDIOLINK_DIR}/driver/meta_builder.cpp
+    ${STDIOLINK_DIR}/driver/help_generator.cpp
+    ${STDIOLINK_DIR}/driver/meta_exporter.cpp
     ${STDIOLINK_DIR}/host/task.cpp
     ${STDIOLINK_DIR}/host/driver.cpp
     ${STDIOLINK_DIR}/host/wait_any.cpp
@@ -36,6 +39,7 @@ add_executable(stdiolink_tests
     ${STDIOLINK_DIR}/host/form_generator.cpp
     ${STDIOLINK_DIR}/console/console_args.cpp
     ${STDIOLINK_DIR}/console/console_responder.cpp
+    ${STDIOLINK_DIR}/doc/doc_generator.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
@@ -58,8 +62,11 @@ add_executable(test_driver
     ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
+    ${STDIOLINK_DIR}/driver/help_generator.cpp
+    ${STDIOLINK_DIR}/driver/meta_exporter.cpp
     ${STDIOLINK_DIR}/console/console_args.cpp
     ${STDIOLINK_DIR}/console/console_responder.cpp
+    ${STDIOLINK_DIR}/doc/doc_generator.cpp
 )
 
 target_include_directories(test_driver PRIVATE
