@@ -1,8 +1,8 @@
+#include <QCoreApplication>
+#include <QJsonObject>
 #include <gtest/gtest.h>
 #include "stdiolink/host/driver.h"
 #include "stdiolink/host/task.h"
-#include <QCoreApplication>
-#include <QJsonObject>
 
 using namespace stdiolink;
 
@@ -17,16 +17,14 @@ static const QString TestDriver = "./test_driver";
 // Task 基础测试
 // ============================================
 
-TEST(Task, InvalidTask)
-{
+TEST(Task, InvalidTask) {
     Task t;
     EXPECT_FALSE(t.isValid());
     EXPECT_TRUE(t.isDone());
     EXPECT_EQ(t.exitCode(), -1);
 }
 
-TEST(Task, TryNextEmpty)
-{
+TEST(Task, TryNextEmpty) {
     auto state = std::make_shared<TaskState>();
     Task t(nullptr, state);
 
@@ -34,8 +32,7 @@ TEST(Task, TryNextEmpty)
     EXPECT_FALSE(t.tryNext(msg));
 }
 
-TEST(Task, TryNextWithMessage)
-{
+TEST(Task, TryNextWithMessage) {
     auto state = std::make_shared<TaskState>();
     state->queue.push_back(Message{"done", 0, QJsonObject{{"result", 42}}});
     Task t(nullptr, state);
@@ -45,8 +42,7 @@ TEST(Task, TryNextWithMessage)
     EXPECT_EQ(msg.status, "done");
 }
 
-TEST(Task, TryNextMultipleMessages)
-{
+TEST(Task, TryNextMultipleMessages) {
     auto state = std::make_shared<TaskState>();
     state->queue.push_back(Message{"event", 0, QJsonObject{{"n", 1}}});
     state->queue.push_back(Message{"event", 0, QJsonObject{{"n", 2}}});
@@ -66,8 +62,7 @@ TEST(Task, TryNextMultipleMessages)
     EXPECT_FALSE(t.tryNext(msg));
 }
 
-TEST(Task, IsDoneStates)
-{
+TEST(Task, IsDoneStates) {
     auto state = std::make_shared<TaskState>();
     Task t(nullptr, state);
 
@@ -85,8 +80,7 @@ TEST(Task, IsDoneStates)
     EXPECT_TRUE(t.isDone());
 }
 
-TEST(Task, ExitCodeSuccess)
-{
+TEST(Task, ExitCodeSuccess) {
     auto state = std::make_shared<TaskState>();
     state->terminal = true;
     state->exitCode = 0;
@@ -95,8 +89,7 @@ TEST(Task, ExitCodeSuccess)
     EXPECT_EQ(t.exitCode(), 0);
 }
 
-TEST(Task, ExitCodeError)
-{
+TEST(Task, ExitCodeError) {
     auto state = std::make_shared<TaskState>();
     state->terminal = true;
     state->exitCode = 1007;
@@ -107,8 +100,7 @@ TEST(Task, ExitCodeError)
     EXPECT_EQ(t.errorText(), "invalid input");
 }
 
-TEST(Task, WaitNextAlreadyDone)
-{
+TEST(Task, WaitNextAlreadyDone) {
     auto state = std::make_shared<TaskState>();
     state->terminal = true;
     Task t(nullptr, state);
@@ -131,8 +123,7 @@ protected:
     QString m_driverPath;
 };
 
-TEST_F(DriverIntegrationTest, EchoCommand)
-{
+TEST_F(DriverIntegrationTest, EchoCommand) {
     Driver d;
     ASSERT_TRUE(d.start(m_driverPath));
 
@@ -146,8 +137,7 @@ TEST_F(DriverIntegrationTest, EchoCommand)
     d.terminate();
 }
 
-TEST_F(DriverIntegrationTest, ProgressCommand)
-{
+TEST_F(DriverIntegrationTest, ProgressCommand) {
     Driver d;
     ASSERT_TRUE(d.start(m_driverPath));
 
@@ -156,8 +146,10 @@ TEST_F(DriverIntegrationTest, ProgressCommand)
     int eventCount = 0;
     Message msg;
     while (t.waitNext(msg, 5000)) {
-        if (msg.status == "event") eventCount++;
-        if (msg.status == "done") break;
+        if (msg.status == "event")
+            eventCount++;
+        if (msg.status == "done")
+            break;
     }
 
     EXPECT_EQ(eventCount, 3);
@@ -166,8 +158,7 @@ TEST_F(DriverIntegrationTest, ProgressCommand)
     d.terminate();
 }
 
-TEST_F(DriverIntegrationTest, UnknownCommand)
-{
+TEST_F(DriverIntegrationTest, UnknownCommand) {
     Driver d;
     ASSERT_TRUE(d.start(m_driverPath));
 
@@ -181,8 +172,7 @@ TEST_F(DriverIntegrationTest, UnknownCommand)
     d.terminate();
 }
 
-TEST_F(DriverIntegrationTest, MultipleEvents)
-{
+TEST_F(DriverIntegrationTest, MultipleEvents) {
     Driver d;
     ASSERT_TRUE(d.start(m_driverPath));
 
@@ -192,7 +182,8 @@ TEST_F(DriverIntegrationTest, MultipleEvents)
     Message msg;
     while (t.waitNext(msg, 5000)) {
         messages.push_back(msg);
-        if (msg.status == "done" || msg.status == "error") break;
+        if (msg.status == "done" || msg.status == "error")
+            break;
     }
 
     // 3 个 event + 1 个 done

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "task.h"
 #include <QVector>
 #include <functional>
+#include "task.h"
 
 namespace stdiolink {
 
@@ -10,8 +10,8 @@ namespace stdiolink {
  * waitAnyNext 返回的结果
  */
 struct AnyItem {
-    int taskIndex = -1;  // 来源 Task 在数组中的索引
-    Message msg;         // 消息内容
+    int taskIndex = -1; // 来源 Task 在数组中的索引
+    Message msg;        // 消息内容
 };
 
 /**
@@ -22,9 +22,7 @@ struct AnyItem {
  * @param breakFlag 中断标志函数，返回 true 时中断等待
  * @return 是否成功获取到消息
  */
-bool waitAnyNext(QVector<Task>& tasks,
-                 AnyItem& out,
-                 int timeoutMs = -1,
+bool waitAnyNext(QVector<Task>& tasks, AnyItem& out, int timeoutMs = -1,
                  std::function<bool()> breakFlag = {});
 
 } // namespace stdiolink

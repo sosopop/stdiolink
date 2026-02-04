@@ -1,8 +1,8 @@
 #pragma once
 
-#include "jsonl_types.h"
 #include <QByteArray>
 #include <QJsonDocument>
+#include "jsonl_types.h"
 
 namespace stdiolink {
 

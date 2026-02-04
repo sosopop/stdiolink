@@ -7,8 +7,7 @@ using namespace stdiolink;
 // 流式解析器测试
 // ============================================
 
-TEST(JsonlStreamParser, SingleLine)
-{
+TEST(JsonlStreamParser, SingleLine) {
     JsonlParser parser;
     parser.append("{\"cmd\":\"test\"}\n");
 
@@ -17,8 +16,7 @@ TEST(JsonlStreamParser, SingleLine)
     EXPECT_EQ(line, "{\"cmd\":\"test\"}");
 }
 
-TEST(JsonlStreamParser, MultipleLines)
-{
+TEST(JsonlStreamParser, MultipleLines) {
     JsonlParser parser;
     parser.append("{\"line\":1}\n{\"line\":2}\n");
 
@@ -32,8 +30,7 @@ TEST(JsonlStreamParser, MultipleLines)
     EXPECT_FALSE(parser.tryReadLine(line));
 }
 
-TEST(JsonlStreamParser, PartialLine)
-{
+TEST(JsonlStreamParser, PartialLine) {
     JsonlParser parser;
     parser.append("{\"cmd\":");
 
@@ -45,8 +42,7 @@ TEST(JsonlStreamParser, PartialLine)
     EXPECT_EQ(line, "{\"cmd\":\"test\"}");
 }
 
-TEST(JsonlStreamParser, EmptyLine)
-{
+TEST(JsonlStreamParser, EmptyLine) {
     JsonlParser parser;
     parser.append("\n");
 
@@ -55,8 +51,7 @@ TEST(JsonlStreamParser, EmptyLine)
     EXPECT_TRUE(line.isEmpty());
 }
 
-TEST(JsonlStreamParser, MultiplePartialAppends)
-{
+TEST(JsonlStreamParser, MultiplePartialAppends) {
     JsonlParser parser;
     parser.append("{");
     parser.append("\"a\"");
@@ -68,8 +63,7 @@ TEST(JsonlStreamParser, MultiplePartialAppends)
     EXPECT_EQ(line, "{\"a\":1}");
 }
 
-TEST(JsonlStreamParser, Clear)
-{
+TEST(JsonlStreamParser, Clear) {
     JsonlParser parser;
     parser.append("{\"cmd\":\"test\"}\n");
     parser.clear();
@@ -79,8 +73,7 @@ TEST(JsonlStreamParser, Clear)
     EXPECT_EQ(parser.bufferSize(), 0);
 }
 
-TEST(JsonlStreamParser, BufferSize)
-{
+TEST(JsonlStreamParser, BufferSize) {
     JsonlParser parser;
     EXPECT_EQ(parser.bufferSize(), 0);
 

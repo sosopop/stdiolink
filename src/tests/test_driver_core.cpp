@@ -1,16 +1,14 @@
+#include <QJsonObject>
 #include <gtest/gtest.h>
 #include "stdiolink/driver/icommand_handler.h"
 #include "stdiolink/driver/mock_responder.h"
-#include <QJsonObject>
 
 using namespace stdiolink;
 
 // 测试用命令处理器
 class EchoHandler : public ICommandHandler {
 public:
-    void handle(const QString& cmd,
-               const QJsonValue& data,
-               IResponder& r) override {
+    void handle(const QString& cmd, const QJsonValue& data, IResponder& r) override {
         if (cmd == "echo") {
             r.done(0, data);
         } else if (cmd == "progress") {
@@ -29,8 +27,7 @@ public:
 // MockResponder 测试
 // ============================================
 
-TEST(MockResponder, RecordEvent)
-{
+TEST(MockResponder, RecordEvent) {
     MockResponder r;
     r.event(0, QJsonObject{{"progress", 0.5}});
 
@@ -39,8 +36,7 @@ TEST(MockResponder, RecordEvent)
     EXPECT_EQ(r.responses[0].code, 0);
 }
 
-TEST(MockResponder, RecordDone)
-{
+TEST(MockResponder, RecordDone) {
     MockResponder r;
     r.done(0, QJsonObject{{"result", 42}});
 
@@ -48,8 +44,7 @@ TEST(MockResponder, RecordDone)
     EXPECT_EQ(r.responses[0].status, "done");
 }
 
-TEST(MockResponder, RecordError)
-{
+TEST(MockResponder, RecordError) {
     MockResponder r;
     r.error(1007, QJsonObject{{"message", "failed"}});
 
@@ -62,8 +57,7 @@ TEST(MockResponder, RecordError)
 // EchoHandler 测试
 // ============================================
 
-TEST(EchoHandler, EchoCommand)
-{
+TEST(EchoHandler, EchoCommand) {
     EchoHandler handler;
     MockResponder r;
 
@@ -74,8 +68,7 @@ TEST(EchoHandler, EchoCommand)
     EXPECT_EQ(r.responses[0].code, 0);
 }
 
-TEST(EchoHandler, UnknownCommand)
-{
+TEST(EchoHandler, UnknownCommand) {
     EchoHandler handler;
     MockResponder r;
 
@@ -86,8 +79,7 @@ TEST(EchoHandler, UnknownCommand)
     EXPECT_EQ(r.responses[0].code, 404);
 }
 
-TEST(EchoHandler, ProgressCommand)
-{
+TEST(EchoHandler, ProgressCommand) {
     EchoHandler handler;
     MockResponder r;
 

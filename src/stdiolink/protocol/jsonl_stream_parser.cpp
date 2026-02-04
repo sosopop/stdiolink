@@ -2,13 +2,11 @@
 
 namespace stdiolink {
 
-void JsonlParser::append(const QByteArray& data)
-{
+void JsonlParser::append(const QByteArray& data) {
     buffer.append(data);
 }
 
-bool JsonlParser::tryReadLine(QByteArray& outLine)
-{
+bool JsonlParser::tryReadLine(QByteArray& outLine) {
     int idx = buffer.indexOf('\n');
     if (idx < 0) {
         return false;
@@ -19,13 +17,11 @@ bool JsonlParser::tryReadLine(QByteArray& outLine)
     return true;
 }
 
-void JsonlParser::clear()
-{
+void JsonlParser::clear() {
     buffer.clear();
 }
 
-int JsonlParser::bufferSize() const
-{
+int JsonlParser::bufferSize() const {
     return buffer.size();
 }
 

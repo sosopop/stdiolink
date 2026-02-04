@@ -1,7 +1,7 @@
 #pragma once
 
-#include "iresponder.h"
 #include <QJsonValue>
+#include "iresponder.h"
 
 namespace stdiolink {
 

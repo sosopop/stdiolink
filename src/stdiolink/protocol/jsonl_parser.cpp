@@ -1,12 +1,11 @@
-#include "jsonl_serializer.h"
-#include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QJsonParseError>
+#include "jsonl_serializer.h"
 
 namespace stdiolink {
 
-bool parseRequest(const QByteArray& line, Request& out)
-{
+bool parseRequest(const QByteArray& line, Request& out) {
     QJsonParseError err{};
     QJsonDocument doc = QJsonDocument::fromJson(line, &err);
 
@@ -27,8 +26,7 @@ bool parseRequest(const QByteArray& line, Request& out)
     return true;
 }
 
-bool parseHeader(const QByteArray& line, FrameHeader& out)
-{
+bool parseHeader(const QByteArray& line, FrameHeader& out) {
     QJsonParseError err{};
     QJsonDocument doc = QJsonDocument::fromJson(line, &err);
 
@@ -50,14 +48,15 @@ bool parseHeader(const QByteArray& line, FrameHeader& out)
     return out.status == "event" || out.status == "done" || out.status == "error";
 }
 
-QJsonValue parsePayload(const QByteArray& line)
-{
+QJsonValue parsePayload(const QByteArray& line) {
     QJsonParseError err{};
     QJsonDocument doc = QJsonDocument::fromJson(line, &err);
 
     if (err.error == QJsonParseError::NoError) {
-        if (doc.isObject()) return doc.object();
-        if (doc.isArray()) return doc.array();
+        if (doc.isObject())
+            return doc.object();
+        if (doc.isArray())
+            return doc.array();
     }
 
     // 尝试解析基本类型
@@ -69,13 +68,16 @@ QJsonValue parsePayload(const QByteArray& line)
     }
 
     // bool
-    if (str == "true") return true;
-    if (str == "false") return false;
+    if (str == "true")
+        return true;
+    if (str == "false")
+        return false;
 
     // number
     bool ok;
     double d = str.toDouble(&ok);
-    if (ok) return d;
+    if (ok)
+        return d;
 
     // 作为字符串返回
     return str;

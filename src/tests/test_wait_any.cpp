@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
-#include "stdiolink/host/wait_any.h"
-#include "stdiolink/host/driver.h"
 #include <QCoreApplication>
 #include <QJsonObject>
-#include <set>
+#include <gtest/gtest.h>
 #include <map>
+#include <set>
+#include "stdiolink/host/driver.h"
+#include "stdiolink/host/wait_any.h"
 
 using namespace stdiolink;
 
@@ -28,8 +28,7 @@ protected:
 // 基础功能测试
 // ============================================
 
-TEST_F(WaitAnyTest, SingleTask)
-{
+TEST_F(WaitAnyTest, SingleTask) {
     Driver d;
     ASSERT_TRUE(d.start(m_driverPath));
 
@@ -46,17 +45,15 @@ TEST_F(WaitAnyTest, SingleTask)
     d.terminate();
 }
 
-TEST_F(WaitAnyTest, EmptyTasks)
-{
+TEST_F(WaitAnyTest, EmptyTasks) {
     QVector<Task> tasks;
     AnyItem item;
     EXPECT_FALSE(waitAnyNext(tasks, item, 100));
 }
 
-TEST_F(WaitAnyTest, InvalidTasks)
-{
+TEST_F(WaitAnyTest, InvalidTasks) {
     QVector<Task> tasks;
-    tasks << Task();  // 无效 Task
+    tasks << Task(); // 无效 Task
     tasks << Task();
 
     AnyItem item;
@@ -67,8 +64,7 @@ TEST_F(WaitAnyTest, InvalidTasks)
 // 多任务测试
 // ============================================
 
-TEST_F(WaitAnyTest, MultipleTasks)
-{
+TEST_F(WaitAnyTest, MultipleTasks) {
     Driver d1, d2;
     ASSERT_TRUE(d1.start(m_driverPath));
     ASSERT_TRUE(d2.start(m_driverPath));
@@ -91,8 +87,7 @@ TEST_F(WaitAnyTest, MultipleTasks)
     d2.terminate();
 }
 
-TEST_F(WaitAnyTest, AllDone)
-{
+TEST_F(WaitAnyTest, AllDone) {
     Driver d1, d2;
     ASSERT_TRUE(d1.start(m_driverPath));
     ASSERT_TRUE(d2.start(m_driverPath));
@@ -118,8 +113,7 @@ TEST_F(WaitAnyTest, AllDone)
 // 事件流测试
 // ============================================
 
-TEST_F(WaitAnyTest, EventStream)
-{
+TEST_F(WaitAnyTest, EventStream) {
     Driver d1, d2;
     ASSERT_TRUE(d1.start(m_driverPath));
     ASSERT_TRUE(d2.start(m_driverPath));

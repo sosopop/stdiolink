@@ -12,8 +12,8 @@ namespace stdiolink {
 class DriverCore {
 public:
     enum class Profile {
-        OneShot,    // 处理一次请求后退出
-        KeepAlive   // 持续处理请求
+        OneShot,  // 处理一次请求后退出
+        KeepAlive // 持续处理请求
     };
 
     DriverCore() = default;

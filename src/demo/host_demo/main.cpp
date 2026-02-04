@@ -1,12 +1,11 @@
-#include "stdiolink/host/driver.h"
-#include "stdiolink/host/wait_any.h"
 #include <QCoreApplication>
 #include <QDebug>
+#include "stdiolink/host/driver.h"
+#include "stdiolink/host/wait_any.h"
 
 using namespace stdiolink;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
 
     QString driverPath = app.applicationDirPath();
@@ -43,9 +42,7 @@ int main(int argc, char* argv[])
 
         AnyItem item;
         while (waitAnyNext(tasks, item, 5000)) {
-            qDebug() << "Task" << item.taskIndex
-                     << ":" << item.msg.status
-                     << item.msg.payload;
+            qDebug() << "Task" << item.taskIndex << ":" << item.msg.status << item.msg.payload;
         }
 
         d1.terminate();

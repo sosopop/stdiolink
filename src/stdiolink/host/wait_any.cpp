@@ -1,15 +1,12 @@
 #include "wait_any.h"
-#include "driver.h"
 #include <QEventLoop>
 #include <QTimer>
+#include "driver.h"
 
 namespace stdiolink {
 
-bool waitAnyNext(QVector<Task>& tasks,
-                 AnyItem& out,
-                 int timeoutMs,
-                 std::function<bool()> breakFlag)
-{
+bool waitAnyNext(QVector<Task>& tasks, AnyItem& out, int timeoutMs,
+                 std::function<bool()> breakFlag) {
     // 1. 快速路径：先检查已有队列
     for (int i = 0; i < tasks.size(); ++i) {
         Message m;
@@ -23,11 +20,13 @@ bool waitAnyNext(QVector<Task>& tasks,
     // 2. 检查是否全部完成
     auto allDone = [&] {
         for (const auto& t : tasks) {
-            if (t.isValid() && !t.isDone()) return false;
+            if (t.isValid() && !t.isDone())
+                return false;
         }
         return true;
     };
-    if (allDone()) return false;
+    if (allDone())
+        return false;
 
     // 3. 先尝试 pump 所有 Driver
     for (auto& t : tasks) {
@@ -45,7 +44,8 @@ bool waitAnyNext(QVector<Task>& tasks,
             return true;
         }
     }
-    if (allDone()) return false;
+    if (allDone())
+        return false;
 
     // 4. 使用 QEventLoop 等待
     QEventLoop loop;
@@ -75,12 +75,10 @@ bool waitAnyNext(QVector<Task>& tasks,
     QVector<QMetaObject::Connection> connections;
     for (auto& t : tasks) {
         if (t.isValid() && !t.isDone() && t.owner()) {
-            auto conn1 = QObject::connect(
-                t.owner()->process(), &QProcess::readyReadStandardOutput,
-                &loop, quitIfReady);
+            auto conn1 = QObject::connect(t.owner()->process(), &QProcess::readyReadStandardOutput,
+                                          &loop, quitIfReady);
             auto conn2 = QObject::connect(
-                t.owner()->process(),
-                QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                t.owner()->process(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                 &loop, quitIfReady);
             connections.append(conn1);
             connections.append(conn2);
@@ -96,7 +94,7 @@ bool waitAnyNext(QVector<Task>& tasks,
 
     // 设置 breakFlag 检查定时器
     if (breakFlag) {
-        breakTimer.setInterval(50);  // 每 50ms 检查一次
+        breakTimer.setInterval(50); // 每 50ms 检查一次
         QObject::connect(&breakTimer, &QTimer::timeout, &loop, [&] {
             if (breakFlag()) {
                 loop.quit();

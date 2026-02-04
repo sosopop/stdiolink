@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QString>
 #include <QJsonObject>
+#include <QString>
 
 namespace stdiolink {
 
@@ -26,9 +26,9 @@ public:
     // 框架参数
     bool showHelp = false;
     bool showVersion = false;
-    QString mode;      // "console" | "stdio"
-    QString profile;   // "oneshot" | "keepalive"
-    QString cmd;       // 命令名
+    QString mode;    // "console" | "stdio"
+    QString profile; // "oneshot" | "keepalive"
+    QString cmd;     // 命令名
 
     // data 参数
     QJsonObject data;

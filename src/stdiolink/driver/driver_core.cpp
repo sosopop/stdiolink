@@ -1,14 +1,13 @@
 #include "driver_core.h"
-#include "stdio_responder.h"
-#include "stdiolink/protocol/jsonl_serializer.h"
+#include <QFile>
 #include <QJsonObject>
 #include <QTextStream>
-#include <QFile>
+#include "stdio_responder.h"
+#include "stdiolink/protocol/jsonl_serializer.h"
 
 namespace stdiolink {
 
-int DriverCore::run()
-{
+int DriverCore::run() {
     if (!handler) {
         return 1;
     }
@@ -19,7 +18,8 @@ int DriverCore::run()
 
     while (!in.atEnd()) {
         QString line = in.readLine();
-        if (line.isEmpty()) continue;
+        if (line.isEmpty())
+            continue;
 
         if (!processOneLine(line.toUtf8())) {
             // 处理失败，继续下一行
@@ -33,8 +33,7 @@ int DriverCore::run()
     return 0;
 }
 
-bool DriverCore::processOneLine(const QByteArray& line)
-{
+bool DriverCore::processOneLine(const QByteArray& line) {
     // 跳过空行
     if (line.trimmed().isEmpty()) {
         return true;
@@ -44,10 +43,8 @@ bool DriverCore::processOneLine(const QByteArray& line)
     Request req;
     if (!parseRequest(line, req)) {
         StdioResponder responder;
-        responder.error(1000, QJsonObject{
-            {"message", "invalid request format"},
-            {"raw", QString::fromUtf8(line)}
-        });
+        responder.error(1000, QJsonObject{{"message", "invalid request format"},
+                                          {"raw", QString::fromUtf8(line)}});
         return false;
     }
 

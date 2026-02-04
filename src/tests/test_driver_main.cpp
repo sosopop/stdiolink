@@ -1,15 +1,13 @@
-#include "stdiolink/driver/driver_core.h"
-#include "stdiolink/driver/icommand_handler.h"
 #include <QCoreApplication>
 #include <QJsonObject>
+#include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/icommand_handler.h"
 
 using namespace stdiolink;
 
 class TestHandler : public ICommandHandler {
 public:
-    void handle(const QString& cmd,
-               const QJsonValue& data,
-               IResponder& r) override {
+    void handle(const QString& cmd, const QJsonValue& data, IResponder& r) override {
         if (cmd == "echo") {
             r.done(0, data);
         } else if (cmd == "progress") {
@@ -24,8 +22,7 @@ public:
     }
 };
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
 
     DriverCore::Profile profile = DriverCore::Profile::OneShot;

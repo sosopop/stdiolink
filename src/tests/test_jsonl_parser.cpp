@@ -1,7 +1,7 @@
+#include <QJsonArray>
+#include <QJsonObject>
 #include <gtest/gtest.h>
 #include "stdiolink/protocol/jsonl_serializer.h"
-#include <QJsonObject>
-#include <QJsonArray>
 
 using namespace stdiolink;
 
@@ -9,8 +9,7 @@ using namespace stdiolink;
 // 请求解析测试
 // ============================================
 
-TEST(JsonlParser, ParseRequest_Valid)
-{
+TEST(JsonlParser, ParseRequest_Valid) {
     Request req;
     bool ok = parseRequest(R"({"cmd":"scan","data":{"fps":10}})", req);
 
@@ -20,8 +19,7 @@ TEST(JsonlParser, ParseRequest_Valid)
     EXPECT_EQ(req.data.toObject()["fps"].toInt(), 10);
 }
 
-TEST(JsonlParser, ParseRequest_NoData)
-{
+TEST(JsonlParser, ParseRequest_NoData) {
     Request req;
     bool ok = parseRequest(R"({"cmd":"info"})", req);
 
@@ -30,22 +28,19 @@ TEST(JsonlParser, ParseRequest_NoData)
     EXPECT_TRUE(req.data.isUndefined());
 }
 
-TEST(JsonlParser, ParseRequest_InvalidJson)
-{
+TEST(JsonlParser, ParseRequest_InvalidJson) {
     Request req;
     bool ok = parseRequest("not json", req);
     EXPECT_FALSE(ok);
 }
 
-TEST(JsonlParser, ParseRequest_MissingCmd)
-{
+TEST(JsonlParser, ParseRequest_MissingCmd) {
     Request req;
     bool ok = parseRequest(R"({"data":{"fps":10}})", req);
     EXPECT_FALSE(ok);
 }
 
-TEST(JsonlParser, ParseRequest_EmptyObject)
-{
+TEST(JsonlParser, ParseRequest_EmptyObject) {
     Request req;
     bool ok = parseRequest(R"({})", req);
     EXPECT_FALSE(ok);
@@ -55,8 +50,7 @@ TEST(JsonlParser, ParseRequest_EmptyObject)
 // 响应头解析测试
 // ============================================
 
-TEST(JsonlParser, ParseHeader_Event)
-{
+TEST(JsonlParser, ParseHeader_Event) {
     FrameHeader hdr;
     bool ok = parseHeader(R"({"status":"event","code":0})", hdr);
 
@@ -65,8 +59,7 @@ TEST(JsonlParser, ParseHeader_Event)
     EXPECT_EQ(hdr.code, 0);
 }
 
-TEST(JsonlParser, ParseHeader_Done)
-{
+TEST(JsonlParser, ParseHeader_Done) {
     FrameHeader hdr;
     bool ok = parseHeader(R"({"status":"done","code":0})", hdr);
 
@@ -74,8 +67,7 @@ TEST(JsonlParser, ParseHeader_Done)
     EXPECT_EQ(hdr.status, "done");
 }
 
-TEST(JsonlParser, ParseHeader_Error)
-{
+TEST(JsonlParser, ParseHeader_Error) {
     FrameHeader hdr;
     bool ok = parseHeader(R"({"status":"error","code":1007})", hdr);
 
@@ -84,22 +76,19 @@ TEST(JsonlParser, ParseHeader_Error)
     EXPECT_EQ(hdr.code, 1007);
 }
 
-TEST(JsonlParser, ParseHeader_InvalidStatus)
-{
+TEST(JsonlParser, ParseHeader_InvalidStatus) {
     FrameHeader hdr;
     bool ok = parseHeader(R"({"status":"unknown","code":0})", hdr);
     EXPECT_FALSE(ok);
 }
 
-TEST(JsonlParser, ParseHeader_MissingStatus)
-{
+TEST(JsonlParser, ParseHeader_MissingStatus) {
     FrameHeader hdr;
     bool ok = parseHeader(R"({"code":0})", hdr);
     EXPECT_FALSE(ok);
 }
 
-TEST(JsonlParser, ParseHeader_MissingCode)
-{
+TEST(JsonlParser, ParseHeader_MissingCode) {
     FrameHeader hdr;
     bool ok = parseHeader(R"({"status":"done"})", hdr);
     EXPECT_FALSE(ok);
@@ -109,41 +98,35 @@ TEST(JsonlParser, ParseHeader_MissingCode)
 // Payload 解析测试
 // ============================================
 
-TEST(JsonlParser, ParsePayload_Object)
-{
+TEST(JsonlParser, ParsePayload_Object) {
     auto val = parsePayload(R"({"result":42})");
     EXPECT_TRUE(val.isObject());
     EXPECT_EQ(val.toObject()["result"].toInt(), 42);
 }
 
-TEST(JsonlParser, ParsePayload_Array)
-{
+TEST(JsonlParser, ParsePayload_Array) {
     auto val = parsePayload(R"([1,2,3])");
     EXPECT_TRUE(val.isArray());
     EXPECT_EQ(val.toArray().size(), 3);
 }
 
-TEST(JsonlParser, ParsePayload_Number)
-{
+TEST(JsonlParser, ParsePayload_Number) {
     auto val = parsePayload("42");
     EXPECT_TRUE(val.isDouble());
     EXPECT_EQ(val.toInt(), 42);
 }
 
-TEST(JsonlParser, ParsePayload_Bool)
-{
+TEST(JsonlParser, ParsePayload_Bool) {
     EXPECT_EQ(parsePayload("true").toBool(), true);
     EXPECT_EQ(parsePayload("false").toBool(), false);
 }
 
-TEST(JsonlParser, ParsePayload_Null)
-{
+TEST(JsonlParser, ParsePayload_Null) {
     auto val = parsePayload("null");
     EXPECT_TRUE(val.isNull());
 }
 
-TEST(JsonlParser, ParsePayload_String)
-{
+TEST(JsonlParser, ParsePayload_String) {
     auto val = parsePayload("hello world");
     EXPECT_TRUE(val.isString());
     EXPECT_EQ(val.toString(), "hello world");

@@ -3,3 +3,4 @@ vcpkg_installed/
 .vscode/
 build_ninja
 .cache
+compile_commands.json

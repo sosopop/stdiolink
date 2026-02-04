@@ -1,6 +1,6 @@
+#include <QJsonArray>
 #include <gtest/gtest.h>
 #include "stdiolink/console/console_args.h"
-#include <QJsonArray>
 
 using namespace stdiolink;
 
@@ -8,54 +8,46 @@ using namespace stdiolink;
 // 类型推断测试
 // ============================================
 
-TEST(InferType, Bool)
-{
+TEST(InferType, Bool) {
     EXPECT_EQ(inferType("true"), QJsonValue(true));
     EXPECT_EQ(inferType("false"), QJsonValue(false));
 }
 
-TEST(InferType, Null)
-{
+TEST(InferType, Null) {
     EXPECT_TRUE(inferType("null").isNull());
 }
 
-TEST(InferType, Integer)
-{
+TEST(InferType, Integer) {
     EXPECT_EQ(inferType("42"), QJsonValue(42));
     EXPECT_EQ(inferType("-10"), QJsonValue(-10));
     EXPECT_EQ(inferType("0"), QJsonValue(0));
 }
 
-TEST(InferType, Double)
-{
+TEST(InferType, Double) {
     EXPECT_EQ(inferType("3.14"), QJsonValue(3.14));
     EXPECT_EQ(inferType("-2.5"), QJsonValue(-2.5));
 }
 
-TEST(InferType, JsonObject)
-{
+TEST(InferType, JsonObject) {
     auto val = inferType("{\"x\":1,\"y\":2}");
     EXPECT_TRUE(val.isObject());
     EXPECT_EQ(val.toObject()["x"].toInt(), 1);
     EXPECT_EQ(val.toObject()["y"].toInt(), 2);
 }
 
-TEST(InferType, JsonArray)
-{
+TEST(InferType, JsonArray) {
     auto val = inferType("[1,2,3]");
     EXPECT_TRUE(val.isArray());
     EXPECT_EQ(val.toArray().size(), 3);
 }
 
-TEST(InferType, String)
-{
+TEST(InferType, String) {
     EXPECT_EQ(inferType("hello"), QJsonValue("hello"));
     EXPECT_EQ(inferType("123abc"), QJsonValue("123abc"));
     EXPECT_EQ(inferType(""), QJsonValue(""));
 }
 
-TEST(InferType, InvalidJson)
-{
+TEST(InferType, InvalidJson) {
     // 无效 JSON 应被当作字符串
     EXPECT_EQ(inferType("{invalid}"), QJsonValue("{invalid}"));
     EXPECT_EQ(inferType("[1,2,"), QJsonValue("[1,2,"));
@@ -65,22 +57,19 @@ TEST(InferType, InvalidJson)
 // 嵌套路径测试
 // ============================================
 
-TEST(SetNestedValue, Simple)
-{
+TEST(SetNestedValue, Simple) {
     QJsonObject obj;
     setNestedValue(obj, "key", 42);
     EXPECT_EQ(obj["key"].toInt(), 42);
 }
 
-TEST(SetNestedValue, Nested)
-{
+TEST(SetNestedValue, Nested) {
     QJsonObject obj;
     setNestedValue(obj, "a.b.c", 100);
     EXPECT_EQ(obj["a"].toObject()["b"].toObject()["c"].toInt(), 100);
 }
 
-TEST(SetNestedValue, MultipleNested)
-{
+TEST(SetNestedValue, MultipleNested) {
     QJsonObject obj;
     setNestedValue(obj, "roi.x", 10);
     setNestedValue(obj, "roi.y", 20);
@@ -94,16 +83,14 @@ TEST(SetNestedValue, MultipleNested)
 // ConsoleArgs 参数解析测试
 // ============================================
 
-TEST(ConsoleArgs, ParseCmd)
-{
+TEST(ConsoleArgs, ParseCmd) {
     const char* argv[] = {"prog", "--cmd=scan"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
     EXPECT_EQ(args.cmd, "scan");
 }
 
-TEST(ConsoleArgs, ParseMode)
-{
+TEST(ConsoleArgs, ParseMode) {
     const char* argv[] = {"prog", "--mode=console", "--profile=oneshot", "--cmd=test"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(4, const_cast<char**>(argv)));
@@ -111,16 +98,14 @@ TEST(ConsoleArgs, ParseMode)
     EXPECT_EQ(args.profile, "oneshot");
 }
 
-TEST(ConsoleArgs, ParseHelp)
-{
+TEST(ConsoleArgs, ParseHelp) {
     const char* argv[] = {"prog", "--help"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
     EXPECT_TRUE(args.showHelp);
 }
 
-TEST(ConsoleArgs, ParseVersion)
-{
+TEST(ConsoleArgs, ParseVersion) {
     const char* argv[] = {"prog", "--version"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
@@ -131,18 +116,15 @@ TEST(ConsoleArgs, ParseVersion)
 // Data 参数测试
 // ============================================
 
-TEST(ConsoleArgs, DataSimple)
-{
+TEST(ConsoleArgs, DataSimple) {
     const char* argv[] = {"prog", "--cmd=scan", "--fps=10"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
     EXPECT_EQ(args.data["fps"].toInt(), 10);
 }
 
-TEST(ConsoleArgs, DataMultiple)
-{
-    const char* argv[] = {"prog", "--cmd=scan",
-                          "--fps=10", "--enable=true", "--name=test"};
+TEST(ConsoleArgs, DataMultiple) {
+    const char* argv[] = {"prog", "--cmd=scan", "--fps=10", "--enable=true", "--name=test"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(5, const_cast<char**>(argv)));
     EXPECT_EQ(args.data["fps"].toInt(), 10);
@@ -150,8 +132,7 @@ TEST(ConsoleArgs, DataMultiple)
     EXPECT_EQ(args.data["name"].toString(), "test");
 }
 
-TEST(ConsoleArgs, DataNested)
-{
+TEST(ConsoleArgs, DataNested) {
     const char* argv[] = {"prog", "--cmd=scan", "--roi.x=10", "--roi.y=20"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(4, const_cast<char**>(argv)));
@@ -161,11 +142,9 @@ TEST(ConsoleArgs, DataNested)
     EXPECT_EQ(roi["y"].toInt(), 20);
 }
 
-TEST(ConsoleArgs, DataArgPrefix)
-{
+TEST(ConsoleArgs, DataArgPrefix) {
     // --arg-mode 用于避免与 --mode 冲突
-    const char* argv[] = {"prog", "--cmd=scan",
-                          "--mode=console", "--arg-mode=frame"};
+    const char* argv[] = {"prog", "--cmd=scan", "--mode=console", "--arg-mode=frame"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(4, const_cast<char**>(argv)));
     EXPECT_EQ(args.mode, "console");
@@ -176,16 +155,14 @@ TEST(ConsoleArgs, DataArgPrefix)
 // 边界情况测试
 // ============================================
 
-TEST(ConsoleArgs, EmptyData)
-{
+TEST(ConsoleArgs, EmptyData) {
     const char* argv[] = {"prog", "--cmd=info"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
     EXPECT_TRUE(args.data.isEmpty());
 }
 
-TEST(ConsoleArgs, InvalidJson)
-{
+TEST(ConsoleArgs, InvalidJson) {
     const char* argv[] = {"prog", "--cmd=test", "--obj={invalid}"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
@@ -193,16 +170,14 @@ TEST(ConsoleArgs, InvalidJson)
     EXPECT_EQ(args.data["obj"].toString(), "{invalid}");
 }
 
-TEST(ConsoleArgs, MissingCmd)
-{
+TEST(ConsoleArgs, MissingCmd) {
     const char* argv[] = {"prog", "--mode=console"};
     ConsoleArgs args;
     EXPECT_FALSE(args.parse(2, const_cast<char**>(argv)));
     EXPECT_FALSE(args.errorMessage.isEmpty());
 }
 
-TEST(ConsoleArgs, InvalidArgument)
-{
+TEST(ConsoleArgs, InvalidArgument) {
     const char* argv[] = {"prog", "invalid"};
     ConsoleArgs args;
     EXPECT_FALSE(args.parse(2, const_cast<char**>(argv)));

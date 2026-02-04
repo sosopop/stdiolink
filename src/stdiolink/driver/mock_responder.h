@@ -1,8 +1,8 @@
 #pragma once
 
-#include "stdiolink/driver/iresponder.h"
-#include <vector>
 #include <QJsonValue>
+#include <vector>
+#include "stdiolink/driver/iresponder.h"
 
 namespace stdiolink {
 

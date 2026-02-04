@@ -1,12 +1,11 @@
 #include "jsonl_serializer.h"
-#include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QJsonParseError>
 
 namespace stdiolink {
 
-QByteArray serializeRequest(const QString& cmd, const QJsonValue& data)
-{
+QByteArray serializeRequest(const QString& cmd, const QJsonValue& data) {
     QJsonObject req;
     req["cmd"] = cmd;
 
@@ -19,8 +18,7 @@ QByteArray serializeRequest(const QString& cmd, const QJsonValue& data)
     return line;
 }
 
-QByteArray serializeResponse(const QString& status, int code, const QJsonValue& payload)
-{
+QByteArray serializeResponse(const QString& status, int code, const QJsonValue& payload) {
     // Header 行
     QJsonObject header;
     header["status"] = status;

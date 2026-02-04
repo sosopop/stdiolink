@@ -1,33 +1,39 @@
 #include "console_args.h"
-#include <QJsonDocument>
 #include <QJsonArray>
+#include <QJsonDocument>
 
 namespace stdiolink {
 
-QJsonValue inferType(const QString& value)
-{
+QJsonValue inferType(const QString& value) {
     // bool
-    if (value == "true") return true;
-    if (value == "false") return false;
+    if (value == "true")
+        return true;
+    if (value == "false")
+        return false;
 
     // null
-    if (value == "null") return QJsonValue::Null;
+    if (value == "null")
+        return QJsonValue::Null;
 
     // number
     bool ok;
     if (!value.contains('.')) {
         int i = value.toInt(&ok);
-        if (ok) return i;
+        if (ok)
+            return i;
     }
     double d = value.toDouble(&ok);
-    if (ok) return d;
+    if (ok)
+        return d;
 
     // JSON object/array
     if (value.startsWith('{') || value.startsWith('[')) {
         QJsonDocument doc = QJsonDocument::fromJson(value.toUtf8());
         if (!doc.isNull()) {
-            if (doc.isObject()) return doc.object();
-            if (doc.isArray()) return doc.array();
+            if (doc.isObject())
+                return doc.object();
+            if (doc.isArray())
+                return doc.array();
         }
     }
 
@@ -35,10 +41,10 @@ QJsonValue inferType(const QString& value)
     return value;
 }
 
-void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& value)
-{
+void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& value) {
     QStringList parts = path.split('.');
-    if (parts.isEmpty()) return;
+    if (parts.isEmpty())
+        return;
 
     if (parts.size() == 1) {
         root[parts[0]] = value;
@@ -55,8 +61,7 @@ void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& va
     root[firstKey] = nested;
 }
 
-bool ConsoleArgs::parse(int argc, char* argv[])
-{
+bool ConsoleArgs::parse(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         QString arg = QString::fromUtf8(argv[i]);
 
@@ -66,7 +71,7 @@ bool ConsoleArgs::parse(int argc, char* argv[])
             return false;
         }
 
-        arg = arg.mid(2);  // 去掉 --
+        arg = arg.mid(2); // 去掉 --
 
         // 处理无值参数
         if (arg == "help") {
@@ -108,14 +113,12 @@ bool ConsoleArgs::parse(int argc, char* argv[])
     return true;
 }
 
-bool ConsoleArgs::isFrameworkArg(const QString& key)
-{
+bool ConsoleArgs::isFrameworkArg(const QString& key) {
     static const QStringList FrameworkArgs = {"mode", "profile", "cmd"};
     return FrameworkArgs.contains(key);
 }
 
-void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value)
-{
+void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value) {
     if (key == "mode") {
         mode = value;
     } else if (key == "profile") {
@@ -125,8 +128,7 @@ void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value)
     }
 }
 
-void ConsoleArgs::parseDataArg(const QString& key, const QString& value)
-{
+void ConsoleArgs::parseDataArg(const QString& key, const QString& value) {
     QJsonValue jsonValue = inferType(value);
     setNestedValue(data, key, jsonValue);
 }

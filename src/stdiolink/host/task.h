@@ -1,7 +1,7 @@
 #pragma once
 
-#include "task_state.h"
 #include <memory>
+#include "task_state.h"
 
 namespace stdiolink {
 

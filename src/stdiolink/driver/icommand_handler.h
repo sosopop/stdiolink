@@ -1,8 +1,8 @@
 #pragma once
 
-#include "iresponder.h"
-#include <QString>
 #include <QJsonValue>
+#include <QString>
+#include "iresponder.h"
 
 namespace stdiolink {
 
@@ -20,9 +20,7 @@ public:
      * @param data 命令数据
      * @param responder 响应输出接口
      */
-    virtual void handle(const QString& cmd,
-                       const QJsonValue& data,
-                       IResponder& responder) = 0;
+    virtual void handle(const QString& cmd, const QJsonValue& data, IResponder& responder) = 0;
 };
 
 } // namespace stdiolink

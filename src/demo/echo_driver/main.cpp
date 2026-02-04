@@ -1,14 +1,13 @@
-#include "stdiolink/driver/driver_core.h"
-#include "stdiolink/driver/stdio_responder.h"
 #include <QCoreApplication>
 #include <QJsonObject>
+#include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/stdio_responder.h"
 
 using namespace stdiolink;
 
 class EchoHandler : public ICommandHandler {
 public:
-    void handle(const QString& cmd, const QJsonValue& data, IResponder& resp) override
-    {
+    void handle(const QString& cmd, const QJsonValue& data, IResponder& resp) override {
         if (cmd == "echo") {
             QString msg = data.toObject()["msg"].toString();
             resp.done(0, QJsonObject{{"echo", msg}});
@@ -18,8 +17,7 @@ public:
     }
 };
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
 
     EchoHandler handler;

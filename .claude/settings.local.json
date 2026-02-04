@@ -14,7 +14,12 @@
       "Bash(git commit:*)",
       "Bash(git mv:*)",
       "Bash(git rm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(clang-tidy:*)",
+      "Bash(grep:*)",
+      "Bash(findstr:*)",
+      "Bash(build_ninja/src/tests/stdiolink_tests.exe:*)",
+      "Bash(python ./tools/run-clang-tidy.py:*)"
     ]
   }
 }
