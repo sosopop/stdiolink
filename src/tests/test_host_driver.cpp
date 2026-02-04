@@ -8,9 +8,9 @@ using namespace stdiolink;
 
 // 测试 Driver 程序路径
 #ifdef _WIN32
-static const QString TEST_DRIVER = "test_driver.exe";
+static const QString TestDriver = "test_driver.exe";
 #else
-static const QString TEST_DRIVER = "./test_driver";
+static const QString TestDriver = "./test_driver";
 #endif
 
 // ============================================
@@ -125,16 +125,16 @@ class DriverIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // 获取测试程序路径
-        driverPath = QCoreApplication::applicationDirPath() + "/" + TEST_DRIVER;
+        m_driverPath = QCoreApplication::applicationDirPath() + "/" + TestDriver;
     }
 
-    QString driverPath;
+    QString m_driverPath;
 };
 
 TEST_F(DriverIntegrationTest, EchoCommand)
 {
     Driver d;
-    ASSERT_TRUE(d.start(driverPath));
+    ASSERT_TRUE(d.start(m_driverPath));
 
     Task t = d.request("echo", QJsonObject{{"msg", "hello"}});
     EXPECT_TRUE(t.isValid());
@@ -149,7 +149,7 @@ TEST_F(DriverIntegrationTest, EchoCommand)
 TEST_F(DriverIntegrationTest, ProgressCommand)
 {
     Driver d;
-    ASSERT_TRUE(d.start(driverPath));
+    ASSERT_TRUE(d.start(m_driverPath));
 
     Task t = d.request("progress", QJsonObject{{"steps", 3}});
 
@@ -169,7 +169,7 @@ TEST_F(DriverIntegrationTest, ProgressCommand)
 TEST_F(DriverIntegrationTest, UnknownCommand)
 {
     Driver d;
-    ASSERT_TRUE(d.start(driverPath));
+    ASSERT_TRUE(d.start(m_driverPath));
 
     Task t = d.request("unknown");
 
@@ -184,7 +184,7 @@ TEST_F(DriverIntegrationTest, UnknownCommand)
 TEST_F(DriverIntegrationTest, MultipleEvents)
 {
     Driver d;
-    ASSERT_TRUE(d.start(driverPath));
+    ASSERT_TRUE(d.start(m_driverPath));
 
     Task t = d.request("progress", QJsonObject{{"steps", 3}});
 

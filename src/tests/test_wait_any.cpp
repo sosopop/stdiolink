@@ -10,18 +10,18 @@ using namespace stdiolink;
 
 // 测试 Driver 程序路径
 #ifdef _WIN32
-static const QString TEST_DRIVER = "test_driver.exe";
+static const QString TestDriver = "test_driver.exe";
 #else
-static const QString TEST_DRIVER = "./test_driver";
+static const QString TestDriver = "./test_driver";
 #endif
 
 class WaitAnyTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        driverPath = QCoreApplication::applicationDirPath() + "/" + TEST_DRIVER;
+        m_driverPath = QCoreApplication::applicationDirPath() + "/" + TestDriver;
     }
 
-    QString driverPath;
+    QString m_driverPath;
 };
 
 // ============================================
@@ -31,7 +31,7 @@ protected:
 TEST_F(WaitAnyTest, SingleTask)
 {
     Driver d;
-    ASSERT_TRUE(d.start(driverPath));
+    ASSERT_TRUE(d.start(m_driverPath));
 
     QVector<Task> tasks;
     tasks << d.request("echo", QJsonObject{{"msg", "hello"}});
@@ -70,8 +70,8 @@ TEST_F(WaitAnyTest, InvalidTasks)
 TEST_F(WaitAnyTest, MultipleTasks)
 {
     Driver d1, d2;
-    ASSERT_TRUE(d1.start(driverPath));
-    ASSERT_TRUE(d2.start(driverPath));
+    ASSERT_TRUE(d1.start(m_driverPath));
+    ASSERT_TRUE(d2.start(m_driverPath));
 
     QVector<Task> tasks;
     tasks << d1.request("echo", QJsonObject{{"id", 1}});
@@ -94,8 +94,8 @@ TEST_F(WaitAnyTest, MultipleTasks)
 TEST_F(WaitAnyTest, AllDone)
 {
     Driver d1, d2;
-    ASSERT_TRUE(d1.start(driverPath));
-    ASSERT_TRUE(d2.start(driverPath));
+    ASSERT_TRUE(d1.start(m_driverPath));
+    ASSERT_TRUE(d2.start(m_driverPath));
 
     QVector<Task> tasks;
     tasks << d1.request("echo", QJsonObject{});
@@ -121,8 +121,8 @@ TEST_F(WaitAnyTest, AllDone)
 TEST_F(WaitAnyTest, EventStream)
 {
     Driver d1, d2;
-    ASSERT_TRUE(d1.start(driverPath));
-    ASSERT_TRUE(d2.start(driverPath));
+    ASSERT_TRUE(d1.start(m_driverPath));
+    ASSERT_TRUE(d2.start(m_driverPath));
 
     QVector<Task> tasks;
     tasks << d1.request("progress", QJsonObject{{"steps", 3}});

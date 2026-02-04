@@ -16,7 +16,9 @@ Checks: >
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
+  -modernize-raw-string-literal,
   performance-*,
+  -performance-enum-size,
   readability-*,
   -readability-braces-around-statements,
   -readability-magic-numbers,
@@ -28,6 +30,8 @@ Checks: >
   -readability-function-size,
   -readability-use-anyofallof,
   -readability-function-cognitive-complexity,
+  -readability-isolate-declaration,
+  -readability-static-accessed-through-instance,
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-pro-type-reinterpret-cast,
@@ -35,7 +39,9 @@ Checks: >
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -cppcoreguidelines-avoid-c-arrays,
-  -cppcoreguidelines-init-variables
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-pro-type-const-cast,
+  -cppcoreguidelines-use-enum-class
 
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/.*'
