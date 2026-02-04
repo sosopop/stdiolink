@@ -88,7 +88,7 @@ src/
 │   ├── driver/        # Driver 端（被调用方）
 │   ├── host/          # Host 端（调用方）
 │   └── console/       # Console 模式
-├── tests/             # 单元测试 (78个测试用例)
+├── tests/             # 单元测试 (141个测试用例)
 └── demo/              # 示例程序
     ├── host_demo/     # Host 端示例
     ├── echo_driver/   # Echo Driver
@@ -105,6 +105,11 @@ tools/
 - [x] 里程碑 4：Task 类（Future/Promise）
 - [x] 里程碑 5：多 Driver 并行
 - [x] 里程碑 6：Console 模式
+- [x] 里程碑 7：元数据类型与序列化
+- [x] 里程碑 8：Driver 侧 meta.describe
+- [x] 里程碑 9：Builder API
+- [x] 里程碑 10：参数验证与默认值填充
+- [x] 里程碑 11：Host 侧元数据查询
 
 ## 核心 API
 
@@ -145,5 +150,66 @@ AnyItem item;
 while (waitAnyNext(tasks, item, 5000)) {
     // item.taskIndex 表示来源
     // item.msg 是消息内容
+}
+```
+
+### 元数据自描述系统
+
+#### Driver 端定义元数据
+
+```cpp
+#include "stdiolink/driver/meta_builder.h"
+#include "stdiolink/driver/meta_command_handler.h"
+
+using namespace stdiolink::meta;
+
+class MyHandler : public IMetaCommandHandler {
+public:
+    const DriverMeta& driverMeta() const override {
+        static DriverMeta meta = DriverMetaBuilder()
+            .schemaVersion("1.0")
+            .info("com.example.mydriver", "My Driver", "1.0.0")
+            .command(CommandBuilder("echo")
+                .description("Echo message")
+                .param(FieldBuilder("msg", FieldType::String).required()))
+            .build();
+        return meta;
+    }
+
+    void handle(const QString& cmd, const QJsonValue& data,
+                IResponder& resp) override {
+        // 处理命令
+    }
+};
+```
+
+#### Host 端查询元数据
+
+```cpp
+#include "stdiolink/host/driver.h"
+
+Driver d;
+d.start("mydriver.exe");
+
+// 查询元数据
+const auto* meta = d.queryMeta(5000);
+if (meta) {
+    qDebug() << "Driver:" << meta->info.name;
+    for (const auto& cmd : meta->commands) {
+        qDebug() << "Command:" << cmd.name;
+    }
+}
+```
+
+#### 生成 UI 表单
+
+```cpp
+#include "stdiolink/host/form_generator.h"
+
+const auto* cmdMeta = meta->findCommand("scan");
+if (cmdMeta) {
+    FormDesc form = UiGenerator::generateCommandForm(*cmdMeta);
+    QJsonObject json = UiGenerator::toJson(form);
+    // json 包含 title, description, widgets 数组
 }
 ```
