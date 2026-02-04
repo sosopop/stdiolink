@@ -26,11 +26,11 @@ public:
     bool waitNext(Message& out, int timeoutMs = -1);
     bool hasQueued() const;
 
-    Driver* owner() const { return drv; }
+    Driver* owner() const { return m_drv; }
 
 private:
-    Driver* drv = nullptr;
-    std::shared_ptr<TaskState> st;
+    Driver* m_drv = nullptr;
+    std::shared_ptr<TaskState> m_st;
 };
 
 } // namespace stdiolink

@@ -17,6 +17,7 @@ Checks: >
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
   -modernize-raw-string-literal,
+  -modernize-use-nodiscard,
   performance-*,
   -performance-enum-size,
   readability-*,
@@ -41,10 +42,11 @@ Checks: >
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-init-variables,
   -cppcoreguidelines-pro-type-const-cast,
-  -cppcoreguidelines-use-enum-class
+  -cppcoreguidelines-use-enum-class,
+  -cppcoreguidelines-special-member-functions
 
 WarningsAsErrors: ''
-HeaderFilterRegex: 'src/.*'
+HeaderFilterRegex: '.*[/\\](src|include)[/\\].*'
 FormatStyle: file
 SystemHeaders: false
 
@@ -53,9 +55,9 @@ CheckOptions:
   # Qt 命名规范配置
   # ============================================================
   
-  # 命名空间命名规范 (Qt 使用 CamelCase)
+  # 命名空间命名规范 (使用小写)
   - key: readability-identifier-naming.NamespaceCase
-    value: CamelCase
+    value: lower_case
 
   # ============================================================
   # 类型命名规范 (Qt 使用 CamelCase，类名以 Q 开头)

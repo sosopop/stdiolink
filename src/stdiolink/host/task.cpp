@@ -5,50 +5,50 @@
 
 namespace stdiolink {
 
-Task::Task(Driver* owner, std::shared_ptr<TaskState> state) : drv(owner), st(std::move(state)) {}
+Task::Task(Driver* owner, std::shared_ptr<TaskState> state) : m_drv(owner), m_st(std::move(state)) {}
 
 bool Task::isValid() const {
-    return drv != nullptr && st != nullptr;
+    return m_drv != nullptr && m_st != nullptr;
 }
 
 bool Task::isDone() const {
-    if (!st)
+    if (!m_st)
         return true; // 无效Task视为已完成
-    return st->terminal && st->queue.empty();
+    return m_st->terminal && m_st->queue.empty();
 }
 
 int Task::exitCode() const {
-    return (st && st->terminal) ? st->exitCode : -1;
+    return (m_st && m_st->terminal) ? m_st->exitCode : -1;
 }
 
 QString Task::errorText() const {
-    return st ? st->errorText : QString();
+    return m_st ? m_st->errorText : QString();
 }
 
 QJsonValue Task::finalPayload() const {
-    return st ? st->finalPayload : QJsonValue();
+    return m_st ? m_st->finalPayload : QJsonValue();
 }
 
 bool Task::hasQueued() const {
-    return st && !st->queue.empty();
+    return m_st && !m_st->queue.empty();
 }
 
 bool Task::tryNext(Message& out) {
-    if (!st || st->queue.empty())
+    if (!m_st || m_st->queue.empty())
         return false;
-    out = std::move(st->queue.front());
-    st->queue.pop_front();
+    out = std::move(m_st->queue.front());
+    m_st->queue.pop_front();
     return true;
 }
 
 bool Task::waitNext(Message& out, int timeoutMs) {
     if (tryNext(out))
         return true;
-    if (!st || !drv || isDone())
+    if (!m_st || !m_drv || isDone())
         return false;
 
     // 先尝试读取已有数据
-    drv->pumpStdout();
+    m_drv->pumpStdout();
     if (tryNext(out))
         return true;
     if (isDone())
@@ -58,14 +58,14 @@ bool Task::waitNext(Message& out, int timeoutMs) {
     QTimer timer;
 
     auto quitIfReady = [&] {
-        if (drv)
-            drv->pumpStdout();
+        if (m_drv)
+            m_drv->pumpStdout();
         if (hasQueued() || isDone())
             loop.quit();
     };
 
-    QObject::connect(drv->process(), &QProcess::readyReadStandardOutput, &loop, quitIfReady);
-    QObject::connect(drv->process(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+    QObject::connect(m_drv->process(), &QProcess::readyReadStandardOutput, &loop, quitIfReady);
+    QObject::connect(m_drv->process(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                      &loop, quitIfReady);
 
     if (timeoutMs >= 0) {

@@ -18,8 +18,8 @@ public:
 
     DriverCore() = default;
 
-    void setProfile(Profile p) { profile = p; }
-    void setHandler(ICommandHandler* h) { handler = h; }
+    void setProfile(Profile p) { m_profile = p; }
+    void setHandler(ICommandHandler* h) { m_handler = h; }
 
     /**
      * 主循环：读取 stdin，处理请求，输出响应
@@ -28,9 +28,9 @@ public:
     int run();
 
 private:
-    Profile profile = Profile::OneShot;
-    ICommandHandler* handler = nullptr;
-    JsonlParser parser;
+    Profile m_profile = Profile::OneShot;
+    ICommandHandler* m_handler = nullptr;
+    JsonlParser m_parser;
 
     bool processOneLine(const QByteArray& line);
 };

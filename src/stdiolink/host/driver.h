@@ -29,18 +29,18 @@ public:
     Task request(const QString& cmd, const QJsonObject& data = {});
     void pumpStdout();
 
-    QProcess* process() { return &proc; }
+    QProcess* process() { return &m_proc; }
     bool isRunning() const;
     bool hasQueued() const;
     bool isCurrentTerminal() const;
 
 private:
-    QProcess proc;
+    QProcess m_proc;
     QByteArray m_buf;
 
-    bool waitingHeader = true;
-    FrameHeader hdr;
-    std::shared_ptr<TaskState> cur;
+    bool m_waitingHeader = true;
+    FrameHeader m_hdr;
+    std::shared_ptr<TaskState> m_cur;
 
     bool tryReadLine(QByteArray& outLine);
     void pushError(int code, const QJsonObject& payload);

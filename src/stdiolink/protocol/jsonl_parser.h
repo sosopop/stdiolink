@@ -35,7 +35,7 @@ public:
     int bufferSize() const;
 
 private:
-    QByteArray buffer;
+    QByteArray m_buffer;
 };
 
 } // namespace stdiolink

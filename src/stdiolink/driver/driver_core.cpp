@@ -8,7 +8,7 @@
 namespace stdiolink {
 
 int DriverCore::run() {
-    if (!handler) {
+    if (!m_handler) {
         return 1;
     }
 
@@ -25,7 +25,7 @@ int DriverCore::run() {
             // 处理失败，继续下一行
         }
 
-        if (profile == Profile::OneShot) {
+        if (m_profile == Profile::OneShot) {
             break;
         }
     }
@@ -50,7 +50,7 @@ bool DriverCore::processOneLine(const QByteArray& line) {
 
     // 处理命令
     StdioResponder responder;
-    handler->handle(req.cmd, req.data, responder);
+    m_handler->handle(req.cmd, req.data, responder);
     return true;
 }
 

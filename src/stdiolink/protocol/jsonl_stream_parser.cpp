@@ -3,26 +3,26 @@
 namespace stdiolink {
 
 void JsonlParser::append(const QByteArray& data) {
-    buffer.append(data);
+    m_buffer.append(data);
 }
 
 bool JsonlParser::tryReadLine(QByteArray& outLine) {
-    int idx = buffer.indexOf('\n');
+    int idx = m_buffer.indexOf('\n');
     if (idx < 0) {
         return false;
     }
 
-    outLine = buffer.left(idx);
-    buffer.remove(0, idx + 1);
+    outLine = m_buffer.left(idx);
+    m_buffer.remove(0, idx + 1);
     return true;
 }
 
 void JsonlParser::clear() {
-    buffer.clear();
+    m_buffer.clear();
 }
 
 int JsonlParser::bufferSize() const {
-    return buffer.size();
+    return m_buffer.size();
 }
 
 } // namespace stdiolink

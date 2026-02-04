@@ -15,15 +15,15 @@ public:
     void done(int code, const QJsonValue& payload) override;
     void error(int code, const QJsonValue& payload) override;
 
-    int exitCode() const { return exitCode_; }
-    bool hasResult() const { return hasResult_; }
+    int exitCode() const { return m_exitCode; }
+    bool hasResult() const { return m_hasResult; }
 
 private:
     static void writeToStdout(const QString& status, int code, const QJsonValue& payload);
     static void writeToStderr(const QString& status, int code, const QJsonValue& payload);
 
-    int exitCode_ = 0;
-    bool hasResult_ = false;
+    int m_exitCode = 0;
+    bool m_hasResult = false;
 };
 
 } // namespace stdiolink

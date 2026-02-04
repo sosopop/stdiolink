@@ -10,14 +10,14 @@ void ConsoleResponder::event(int code, const QJsonValue& payload) {
 }
 
 void ConsoleResponder::done(int code, const QJsonValue& payload) {
-    exitCode_ = code;
-    hasResult_ = true;
+    m_exitCode = code;
+    m_hasResult = true;
     writeToStdout("done", code, payload);
 }
 
 void ConsoleResponder::error(int code, const QJsonValue& payload) {
-    exitCode_ = code != 0 ? code : 1;
-    hasResult_ = true;
+    m_exitCode = code != 0 ? code : 1;
+    m_hasResult = true;
     writeToStdout("error", code, payload);
 }
 

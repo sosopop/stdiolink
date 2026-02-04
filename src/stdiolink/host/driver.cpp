@@ -9,28 +9,28 @@ Driver::~Driver() {
 }
 
 bool Driver::start(const QString& program, const QStringList& args) {
-    proc.setProgram(program);
-    proc.setArguments(args);
-    proc.setProcessChannelMode(QProcess::SeparateChannels);
-    proc.start();
-    return proc.waitForStarted(3000);
+    m_proc.setProgram(program);
+    m_proc.setArguments(args);
+    m_proc.setProcessChannelMode(QProcess::SeparateChannels);
+    m_proc.start();
+    return m_proc.waitForStarted(3000);
 }
 
 void Driver::terminate() {
-    if (proc.state() != QProcess::NotRunning) {
-        proc.terminate();
-        if (!proc.waitForFinished(1000)) {
-            proc.kill();
+    if (m_proc.state() != QProcess::NotRunning) {
+        m_proc.terminate();
+        if (!m_proc.waitForFinished(1000)) {
+            m_proc.kill();
         }
     }
 }
 
 bool Driver::isRunning() const {
-    return proc.state() == QProcess::Running;
+    return m_proc.state() == QProcess::Running;
 }
 
 Task Driver::request(const QString& cmd, const QJsonObject& data) {
-    cur = std::make_shared<TaskState>();
+    m_cur = std::make_shared<TaskState>();
 
     QJsonObject req;
     req["cmd"] = cmd;
@@ -39,21 +39,21 @@ Task Driver::request(const QString& cmd, const QJsonObject& data) {
 
     QByteArray line = QJsonDocument(req).toJson(QJsonDocument::Compact);
     line.append('\n');
-    proc.write(line);
-    proc.waitForBytesWritten(1000);
+    m_proc.write(line);
+    m_proc.waitForBytesWritten(1000);
 
-    waitingHeader = true;
+    m_waitingHeader = true;
     m_buf.clear();
 
-    return {this, cur};
+    return {this, m_cur};
 }
 
 bool Driver::hasQueued() const {
-    return cur && !cur->queue.empty();
+    return m_cur && !m_cur->queue.empty();
 }
 
 bool Driver::isCurrentTerminal() const {
-    return cur && cur->terminal;
+    return m_cur && m_cur->terminal;
 }
 
 bool Driver::tryReadLine(QByteArray& outLine) {
@@ -67,49 +67,49 @@ bool Driver::tryReadLine(QByteArray& outLine) {
 
 void Driver::pushError(int code, const QJsonObject& payload) {
     Message msg{"error", code, payload};
-    cur->queue.push_back(msg);
-    cur->terminal = true;
-    cur->exitCode = code;
-    cur->finalPayload = payload;
+    m_cur->queue.push_back(msg);
+    m_cur->terminal = true;
+    m_cur->exitCode = code;
+    m_cur->finalPayload = payload;
 
     if (payload.contains("message")) {
-        cur->errorText = payload["message"].toString();
+        m_cur->errorText = payload["message"].toString();
     }
 }
 
 void Driver::pumpStdout() {
-    if (!cur)
+    if (!m_cur)
         return;
 
-    m_buf.append(proc.readAllStandardOutput());
+    m_buf.append(m_proc.readAllStandardOutput());
 
     QByteArray line;
     while (tryReadLine(line)) {
-        if (waitingHeader) {
-            if (!parseHeader(line, hdr)) {
+        if (m_waitingHeader) {
+            if (!parseHeader(line, m_hdr)) {
                 pushError(1000, QJsonObject{{"message", "invalid header"},
                                             {"raw", QString::fromUtf8(line)}});
                 return;
             }
-            waitingHeader = false;
+            m_waitingHeader = false;
         } else {
             QJsonValue payload = parsePayload(line);
-            Message msg{hdr.status, hdr.code, payload};
-            cur->queue.push_back(msg);
+            Message msg{m_hdr.status, m_hdr.code, payload};
+            m_cur->queue.push_back(msg);
 
-            if (hdr.status == "done" || hdr.status == "error") {
-                cur->terminal = true;
-                cur->exitCode = hdr.code;
-                cur->finalPayload = payload;
+            if (m_hdr.status == "done" || m_hdr.status == "error") {
+                m_cur->terminal = true;
+                m_cur->exitCode = m_hdr.code;
+                m_cur->finalPayload = payload;
 
-                if (hdr.status == "error" && payload.isObject()) {
+                if (m_hdr.status == "error" && payload.isObject()) {
                     auto obj = payload.toObject();
                     if (obj.contains("message")) {
-                        cur->errorText = obj["message"].toString();
+                        m_cur->errorText = obj["message"].toString();
                     }
                 }
             }
-            waitingHeader = true;
+            m_waitingHeader = true;
         }
     }
 }
