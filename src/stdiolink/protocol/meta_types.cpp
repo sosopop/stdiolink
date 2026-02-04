@@ -453,6 +453,22 @@ QJsonObject DriverMeta::toJson() const {
         obj["types"] = t;
     }
 
+    if (!errors.isEmpty()) {
+        QJsonArray arr;
+        for (const auto& e : errors) {
+            arr.append(e);
+        }
+        obj["errors"] = arr;
+    }
+
+    if (!examples.isEmpty()) {
+        QJsonArray arr;
+        for (const auto& ex : examples) {
+            arr.append(ex);
+        }
+        obj["examples"] = arr;
+    }
+
     return obj;
 }
 
@@ -478,6 +494,14 @@ DriverMeta DriverMeta::fromJson(const QJsonObject& obj) {
         for (auto it = t.begin(); it != t.end(); ++it) {
             m.types[it.key()] = FieldMeta::fromJson(it.value().toObject());
         }
+    }
+
+    for (const auto& v : obj["errors"].toArray()) {
+        m.errors.append(v.toObject());
+    }
+
+    for (const auto& v : obj["examples"].toArray()) {
+        m.examples.append(v.toObject());
     }
 
     return m;

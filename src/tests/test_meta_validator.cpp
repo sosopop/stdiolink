@@ -239,6 +239,44 @@ TEST_F(MetaValidatorTest, RequiredField) {
     EXPECT_EQ(r2.errorField, "required_field");
 }
 
+// 测试允许未知字段
+TEST_F(MetaValidatorTest, AllowUnknownFields) {
+    CommandMeta cmd;
+    cmd.name = "test";
+    FieldMeta f1;
+    f1.name = "known";
+    f1.type = FieldType::String;
+    cmd.params = {f1};
+
+    QJsonObject data{{"known", "ok"}, {"extra", 1}};
+    auto r1 = MetaValidator::validateParams(data, cmd, true);
+    EXPECT_TRUE(r1.valid);
+}
+
+// 测试禁止未知字段
+TEST_F(MetaValidatorTest, DisallowUnknownFields) {
+    CommandMeta cmd;
+    cmd.name = "test";
+    FieldMeta f1;
+    f1.name = "known";
+    f1.type = FieldType::String;
+    cmd.params = {f1};
+
+    QJsonObject data{{"known", "ok"}, {"extra", 1}};
+    auto r1 = MetaValidator::validateParams(data, cmd, false);
+    EXPECT_FALSE(r1.valid);
+    EXPECT_EQ(r1.errorField, "extra");
+}
+
+// 测试参数不是 object
+TEST_F(MetaValidatorTest, ParamsMustBeObject) {
+    CommandMeta cmd;
+    cmd.name = "test";
+
+    auto r1 = MetaValidator::validateParams(QJsonValue("bad"), cmd);
+    EXPECT_FALSE(r1.valid);
+}
+
 // 测试嵌套 Object 验证
 TEST_F(MetaValidatorTest, NestedObjectValidation) {
     FieldMeta addressField;
@@ -266,6 +304,23 @@ TEST_F(MetaValidatorTest, NestedObjectValidation) {
     EXPECT_FALSE(r2.valid);
 }
 
+// 测试 requiredKeys
+TEST_F(MetaValidatorTest, RequiredKeysValidation) {
+    FieldMeta obj;
+    obj.name = "settings";
+    obj.type = FieldType::Object;
+    obj.requiredKeys = QStringList({"mode", "level"});
+    FieldMeta modeField;
+    modeField.name = "mode";
+    modeField.type = FieldType::String;
+    obj.fields = {modeField};
+
+    QJsonObject data{{"mode", "fast"}};
+    auto r1 = MetaValidator::validateField(QJsonValue(data), obj);
+    EXPECT_FALSE(r1.valid);
+    EXPECT_EQ(r1.errorField, "settings.level");
+}
+
 // 测试数组元素验证
 TEST_F(MetaValidatorTest, ArrayItemsValidation) {
     FieldMeta field;
@@ -280,6 +335,25 @@ TEST_F(MetaValidatorTest, ArrayItemsValidation) {
 
     auto r2 = MetaValidator::validateField(QJsonValue(QJsonArray{1, "two", 3}), field);
     EXPECT_FALSE(r2.valid);
+}
+
+// 测试 validateConfig
+TEST_F(MetaValidatorTest, ValidateConfig) {
+    ConfigSchema schema;
+    FieldMeta f;
+    f.name = "timeout";
+    f.type = FieldType::Int;
+    f.required = true;
+    schema.fields.append(f);
+
+    QJsonObject ok{{"timeout", 10}};
+    auto r1 = MetaValidator::validateConfig(ok, schema);
+    EXPECT_TRUE(r1.valid);
+
+    QJsonObject bad;
+    auto r2 = MetaValidator::validateConfig(bad, schema);
+    EXPECT_FALSE(r2.valid);
+    EXPECT_EQ(r2.errorField, "timeout");
 }
 
 // DefaultFiller 测试

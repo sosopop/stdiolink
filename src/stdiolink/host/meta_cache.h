@@ -17,6 +17,9 @@ public:
     static MetaCache& instance();
 
     void store(const QString& driverId, std::shared_ptr<meta::DriverMeta> meta);
+    void store(const QString& driverId,
+               std::shared_ptr<meta::DriverMeta> meta,
+               const QString& metaHash);
 
     std::shared_ptr<meta::DriverMeta> get(const QString& driverId) const;
 

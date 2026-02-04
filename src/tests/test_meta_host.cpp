@@ -61,6 +61,19 @@ TEST_F(MetaCacheTest, Clear) {
     EXPECT_EQ(MetaCache::instance().get("driver2"), nullptr);
 }
 
+// 测试元数据变更检测
+TEST_F(MetaCacheTest, HasChanged) {
+    auto meta = std::make_shared<DriverMeta>();
+    meta->info.id = "driver.hash";
+
+    MetaCache::instance().store("driver.hash", meta, "hash1");
+    EXPECT_FALSE(MetaCache::instance().hasChanged("driver.hash", "hash1"));
+    EXPECT_TRUE(MetaCache::instance().hasChanged("driver.hash", "hash2"));
+
+    // 未知 driverId 返回 true
+    EXPECT_TRUE(MetaCache::instance().hasChanged("missing", "hash"));
+}
+
 // UiGenerator 测试
 class UiGeneratorTest : public ::testing::Test {};
 
@@ -196,4 +209,53 @@ TEST_F(UiGeneratorTest, DefaultWidgetTypes) {
     EXPECT_EQ(form.widgets[0].toObject()["widget"].toString(), "text");
     EXPECT_EQ(form.widgets[1].toObject()["widget"].toString(), "number");
     EXPECT_EQ(form.widgets[2].toObject()["widget"].toString(), "checkbox");
+}
+
+// 测试更多默认控件类型
+TEST_F(UiGeneratorTest, DefaultWidgetTypesExtended) {
+    CommandMeta cmd;
+    cmd.name = "test";
+
+    FieldMeta objField;
+    objField.name = "obj";
+    objField.type = FieldType::Object;
+    cmd.params.append(objField);
+
+    FieldMeta arrField;
+    arrField.name = "arr";
+    arrField.type = FieldType::Array;
+    cmd.params.append(arrField);
+
+    FieldMeta anyField;
+    anyField.name = "any";
+    anyField.type = FieldType::Any;
+    cmd.params.append(anyField);
+
+    FormDesc form = UiGenerator::generateCommandForm(cmd);
+    EXPECT_EQ(form.widgets[0].toObject()["widget"].toString(), "object");
+    EXPECT_EQ(form.widgets[1].toObject()["widget"].toString(), "array");
+    EXPECT_EQ(form.widgets[2].toObject()["widget"].toString(), "json");
+}
+
+// 测试 UI 提示字段映射
+TEST_F(UiGeneratorTest, UIHintsMapping) {
+    CommandMeta cmd;
+    cmd.name = "secure";
+
+    FieldMeta field;
+    field.name = "token";
+    field.type = FieldType::String;
+    field.ui.placeholder = "Enter token";
+    field.ui.group = "Auth";
+    field.ui.advanced = true;
+    field.ui.readonly = true;
+    cmd.params.append(field);
+
+    FormDesc form = UiGenerator::generateCommandForm(cmd);
+    QJsonObject widget = form.widgets[0].toObject();
+
+    EXPECT_EQ(widget["placeholder"].toString(), "Enter token");
+    EXPECT_EQ(widget["group"].toString(), "Auth");
+    EXPECT_TRUE(widget["advanced"].toBool());
+    EXPECT_TRUE(widget["readonly"].toBool());
 }

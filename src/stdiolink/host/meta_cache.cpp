@@ -12,6 +12,14 @@ void MetaCache::store(const QString& driverId, std::shared_ptr<meta::DriverMeta>
     m_cache[driverId] = meta;
 }
 
+void MetaCache::store(const QString& driverId,
+                      std::shared_ptr<meta::DriverMeta> meta,
+                      const QString& metaHash) {
+    QMutexLocker locker(&m_mutex);
+    m_cache[driverId] = meta;
+    m_hashCache[driverId] = metaHash;
+}
+
 std::shared_ptr<meta::DriverMeta> MetaCache::get(const QString& driverId) const {
     QMutexLocker locker(&m_mutex);
     return m_cache.value(driverId);

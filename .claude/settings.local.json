@@ -22,7 +22,12 @@
       "Bash(python ./tools/run-clang-tidy.py:*)",
       "Bash(python:*)",
       "Bash(pip show:*)",
-      "Bash(./build_ninja/src/tests/stdiolink_tests.exe:*)"
+      "Bash(./build_ninja/src/tests/stdiolink_tests.exe:*)",
+      "Bash(./build_ninja/bin/meta_host_demo.exe:*)",
+      "Bash(dir:*)",
+      "Bash(./meta_host_demo.exe:*)",
+      "Bash(./meta_driver.exe:*)",
+      "Bash(./host_demo.exe:*)"
     ]
   }
 }
