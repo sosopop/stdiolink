@@ -16,8 +16,8 @@ ninja -C build_ninja
 # 运行单个测试
 ./build_ninja/src/tests/stdiolink_tests.exe --gtest_filter=TestName.*
 
-# clang-tidy 检查
-python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet
+# clang-tidy 检查（排除自动生成文件）
+python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy
 ```
 
 ## 代码规范
@@ -31,12 +31,25 @@ python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet
 
 ### 命名规范
 
+- 命名空间：`lower_case`（如 `stdiolink`）
 - 类名：`CamelCase`（如 `DriverCore`）
 - 函数/方法：`camelBack`（如 `parseRequest`）
 - 成员变量：`m_` 前缀 + `camelBack`（如 `m_driverPath`）
 - 局部变量：`camelBack`（如 `driverPath`）
 - 全局常量：`CamelCase`（如 `TestDriver`）
 - 枚举常量：`CamelCase`（如 `StatusDone`）
+
+### clang-tidy 配置
+
+项目使用 `.clang-tidy` 配置文件，已禁用以下不适合本项目的检查：
+
+| 检查项 | 禁用原因 |
+|--------|----------|
+| `misc-include-cleaner` | Qt 头文件依赖复杂，误报多 |
+| `modernize-use-nodiscard` | 可选属性，不强制要求 |
+| `cppcoreguidelines-special-member-functions` | 接口类不需要定义所有特殊成员函数 |
+| `readability-function-size` | 部分函数确实需要较长实现 |
+| `cppcoreguidelines-pro-type-const-cast` | 测试代码需要 const_cast |
 
 ### stdin/stdout 读写示例
 

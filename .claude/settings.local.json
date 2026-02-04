@@ -19,7 +19,8 @@
       "Bash(grep:*)",
       "Bash(findstr:*)",
       "Bash(build_ninja/src/tests/stdiolink_tests.exe:*)",
-      "Bash(python ./tools/run-clang-tidy.py:*)"
+      "Bash(python ./tools/run-clang-tidy.py:*)",
+      "Bash(python:*)"
     ]
   }
 }
