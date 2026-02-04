@@ -119,18 +119,6 @@ if %errorlevel% neq 0 (
 )
 
 echo ========================================
-echo Copying compile_commands.json...
-echo ========================================
-
-:: [CRITICAL STEP] Copy the JSON immediately after configuration, BEFORE building
-if exist "%BUILD_DIR%\compile_commands.json" (
-    copy /Y "%BUILD_DIR%\compile_commands.json" ".\compile_commands.json"
-    echo compile_commands.json updated in project root.
-) else (
-    echo Warning: compile_commands.json was not generated in %BUILD_DIR%.
-)
-
-echo ========================================
 echo Building project...
 echo ========================================
 

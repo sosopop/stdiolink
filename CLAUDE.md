@@ -7,8 +7,14 @@ stdiolink 是一个基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过
 ## 构建命令
 
 ```bash
-# 构建
+# 首次配置和构建（Windows）
+build_ninja.bat          # Debug 模式
+build_ninja.bat Release  # Release 模式
+
+# 增量构建
 ninja -C build_ninja
+# 或
+cmake --build build_ninja --parallel 8
 
 # 运行测试
 ./build_ninja/src/tests/stdiolink_tests.exe
@@ -16,7 +22,7 @@ ninja -C build_ninja
 # 运行单个测试
 ./build_ninja/src/tests/stdiolink_tests.exe --gtest_filter=TestName.*
 
-# clang-tidy 检查（排除自动生成文件）
+# clang-tidy 检查
 python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy
 ```
 
