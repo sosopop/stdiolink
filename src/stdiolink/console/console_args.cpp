@@ -108,10 +108,10 @@ bool ConsoleArgs::parse(int argc, char* argv[])
     return true;
 }
 
-bool ConsoleArgs::isFrameworkArg(const QString& key) const
+bool ConsoleArgs::isFrameworkArg(const QString& key)
 {
-    static const QStringList frameworkArgs = {"mode", "profile", "cmd"};
-    return frameworkArgs.contains(key);
+    static const QStringList FrameworkArgs = {"mode", "profile", "cmd"};
+    return FrameworkArgs.contains(key);
 }
 
 void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value)

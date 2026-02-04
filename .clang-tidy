@@ -11,6 +11,8 @@ Checks: >
   misc-*,
   -misc-non-private-member-variables-in-classes,
   -misc-no-recursion,
+  -misc-include-cleaner,
+  -misc-const-correctness,
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
@@ -22,13 +24,18 @@ Checks: >
   -readability-uppercase-literal-suffix,
   -readability-else-after-return,
   -readability-avoid-const-params-in-decls,
+  -readability-identifier-length,
+  -readability-function-size,
+  -readability-use-anyofallof,
+  -readability-function-cognitive-complexity,
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-non-private-member-variables-in-classes,
-  -cppcoreguidelines-avoid-c-arrays
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-init-variables
 
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/.*'

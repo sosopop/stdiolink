@@ -18,7 +18,7 @@ public:
     void error(int code, const QJsonValue& payload) override;
 
 private:
-    void writeResponse(const QString& status, int code, const QJsonValue& payload);
+    static void writeResponse(const QString& status, int code, const QJsonValue& payload);
 };
 
 } // namespace stdiolink

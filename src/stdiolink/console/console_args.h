@@ -37,7 +37,7 @@ public:
     QString errorMessage;
 
 private:
-    bool isFrameworkArg(const QString& key) const;
+    static bool isFrameworkArg(const QString& key);
     void parseFrameworkArg(const QString& key, const QString& value);
     void parseDataArg(const QString& key, const QString& value);
 };

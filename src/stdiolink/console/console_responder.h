@@ -19,8 +19,8 @@ public:
     bool hasResult() const { return hasResult_; }
 
 private:
-    void writeToStdout(const QString& status, int code, const QJsonValue& payload);
-    void writeToStderr(const QString& status, int code, const QJsonValue& payload);
+    static void writeToStdout(const QString& status, int code, const QJsonValue& payload);
+    static void writeToStderr(const QString& status, int code, const QJsonValue& payload);
 
     int exitCode_ = 0;
     bool hasResult_ = false;

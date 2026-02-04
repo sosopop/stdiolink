@@ -47,11 +47,7 @@ bool parseHeader(const QByteArray& line, FrameHeader& out)
     out.code = obj["code"].toInt();
 
     // 验证 status 值
-    if (out.status != "event" && out.status != "done" && out.status != "error") {
-        return false;
-    }
-
-    return true;
+    return out.status == "event" || out.status == "done" || out.status == "error";
 }
 
 QJsonValue parsePayload(const QByteArray& line)
