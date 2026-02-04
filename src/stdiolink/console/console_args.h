@@ -23,6 +23,11 @@ class ConsoleArgs {
 public:
     bool parse(int argc, char* argv[]);
 
+    /**
+     * 检测 stdin 是否为交互终端（非管道/重定向）
+     */
+    static bool isInteractiveStdin();
+
     // 框架参数
     bool showHelp = false;
     bool showVersion = false;

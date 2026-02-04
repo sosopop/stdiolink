@@ -41,11 +41,12 @@ enum class RunMode {
 
 ### 3.2 自动检测规则
 
-1. 如果有 `--mode=stdio` → Stdio 模式
-2. 如果有 `--mode=console` → Console 模式
-3. 如果有 `--cmd=xxx` → Console 模式
-4. 如果有 `--help` 或 `--version` → Console 模式（显示信息后退出）
-5. 否则 → Stdio 模式
+1. 如果有 `--export-meta` 或 `--export-doc` → Console 模式（导出后退出）
+2. 如果有 `--help` 或 `--version` → Console 模式（显示信息后退出）
+3. 如果有 `--mode=stdio` → Stdio 模式
+4. 如果有 `--mode=console` → Console 模式
+5. 如果有 `--cmd=xxx` → Console 模式
+6. 默认 → Stdio 模式（**仍解析命令行参数用于合并**）
 
 ### 3.3 DriverCore 扩展
 
@@ -81,6 +82,12 @@ int DriverCore::run(int argc, char* argv[]) {
         return 1;
     }
 
+    // 若无参数且 stdin 为交互终端，可选择输出帮助（可配置开关）
+    if (argc == 1 && ConsoleArgs::isInteractiveStdin()) {
+        printHelp();
+        return 0;
+    }
+
     // 处理 --help
     if (args.showHelp) {
         printHelp();
@@ -103,6 +110,32 @@ int DriverCore::run(int argc, char* argv[]) {
     }
 }
 ```
+
+### 4.4 参数合并策略（新增）
+
+**目标**：允许命令行参数与 stdio 请求同时传递，并合并成最终 data。
+
+合并规则：
+1. CLI 解析出的 `args.data` 作为 **默认值**（base data）
+2. 每条 stdio 请求的 `req.data` **覆盖** CLI 同名字段
+3. 对象字段执行 **深度合并**（递归合并子字段）
+4. 数组字段若同时存在，**请求端覆盖 CLI**（不合并数组元素）
+
+示例：
+
+```bash
+# CLI 提供默认参数
+./driver.exe --fps=30 --mode=fast
+
+# stdio 请求覆盖 fps
+{"cmd":"scan","data":{"fps":10}}
+```
+
+最终 data：`{"fps":10,"mode":"fast"}`
+
+实现建议：
+- 在 `runStdioMode()` 中为每条请求调用 `mergeData(cliData, req.data)`
+- 若 `--cmd` 仅用于 console 模式，stdio 模式忽略 `--cmd`
 
 ### 4.2 Console 模式执行
 
@@ -146,6 +179,8 @@ int DriverCore::runConsoleMode(const ConsoleArgs& args) {
 }
 ```
 
+补充：若检测到 `--export-meta` 或 `--export-doc`，Console 模式应直接走导出逻辑并返回，不进入 `handle()`（由里程碑 13/14 实现）。
+
 ### 4.3 模式检测
 
 ```cpp
@@ -174,27 +209,111 @@ RunMode DriverCore::detectMode(const ConsoleArgs& args) {
 
 ## 6. 单元测试用例
 
+### 6.1 测试文件：tests/test_dual_mode.cpp
+
 ```cpp
-TEST(DriverCoreDualMode, DetectStdioByDefault) {
+#include <gtest/gtest.h>
+#include "stdiolink/driver/driver_core.h"
+#include "stdiolink/console/console_args.h"
+
+using namespace stdiolink;
+
+class DualModeTest : public ::testing::Test {};
+
+// 测试默认 Stdio 模式检测
+TEST_F(DualModeTest, DetectStdioByDefault) {
     ConsoleArgs args;
-    args.parse(1, {"prog"});
-    EXPECT_EQ(detectMode(args), RunMode::Stdio);
+    char* argv[] = {const_cast<char*>("prog")};
+    EXPECT_TRUE(args.parse(1, argv));
+    EXPECT_TRUE(args.cmd.isEmpty());
+    EXPECT_TRUE(args.mode.isEmpty());
 }
 
-TEST(DriverCoreDualMode, DetectConsoleWithCmd) {
+// 测试 --cmd 触发 Console 模式
+TEST_F(DualModeTest, DetectConsoleWithCmd) {
     ConsoleArgs args;
-    args.parse(3, {"prog", "--cmd=scan"});
-    EXPECT_EQ(detectMode(args), RunMode::Console);
+    char* argv[] = {const_cast<char*>("prog"), const_cast<char*>("--cmd=scan")};
+    EXPECT_TRUE(args.parse(2, argv));
+    EXPECT_EQ(args.cmd, "scan");
 }
 
-TEST(DriverCoreDualMode, ExplicitStdioMode) {
+// 测试显式 --mode=stdio
+TEST_F(DualModeTest, ExplicitStdioMode) {
     ConsoleArgs args;
-    args.parse(2, {"prog", "--mode=stdio"});
-    EXPECT_EQ(detectMode(args), RunMode::Stdio);
+    char* argv[] = {const_cast<char*>("prog"), const_cast<char*>("--mode=stdio")};
+    EXPECT_TRUE(args.parse(2, argv));
+    EXPECT_EQ(args.mode, "stdio");
 }
 
-TEST(DriverCoreDualMode, ConsoleWithValidation) {
-    // 测试 Console 模式下参数验证
+// 测试显式 --mode=console
+TEST_F(DualModeTest, ExplicitConsoleMode) {
+    ConsoleArgs args;
+    char* argv[] = {
+        const_cast<char*>("prog"),
+        const_cast<char*>("--mode=console"),
+        const_cast<char*>("--cmd=scan")
+    };
+    EXPECT_TRUE(args.parse(3, argv));
+    EXPECT_EQ(args.mode, "console");
+    EXPECT_EQ(args.cmd, "scan");
+}
+
+// 测试 --help 标志
+TEST_F(DualModeTest, HelpFlag) {
+    ConsoleArgs args;
+    char* argv[] = {const_cast<char*>("prog"), const_cast<char*>("--help")};
+    EXPECT_TRUE(args.parse(2, argv));
+    EXPECT_TRUE(args.showHelp);
+}
+
+// 测试 --version 标志
+TEST_F(DualModeTest, VersionFlag) {
+    ConsoleArgs args;
+    char* argv[] = {const_cast<char*>("prog"), const_cast<char*>("--version")};
+    EXPECT_TRUE(args.parse(2, argv));
+    EXPECT_TRUE(args.showVersion);
+}
+
+// 测试 Console 模式缺少 --cmd 时的错误
+TEST_F(DualModeTest, ConsoleModeRequiresCmd) {
+    ConsoleArgs args;
+    char* argv[] = {
+        const_cast<char*>("prog"),
+        const_cast<char*>("--fps=30")
+    };
+    EXPECT_FALSE(args.parse(2, argv));
+    EXPECT_FALSE(args.errorMessage.isEmpty());
+}
+
+// 测试 Stdio 模式允许无参数
+TEST_F(DualModeTest, StdioModeAllowsNoArgs) {
+    ConsoleArgs args;
+    char* argv[] = {const_cast<char*>("prog")};
+    EXPECT_TRUE(args.parse(1, argv));
+}
+
+// 测试 --mode=stdio 时不需要 --cmd
+TEST_F(DualModeTest, StdioModeNoCmdRequired) {
+    ConsoleArgs args;
+    char* argv[] = {const_cast<char*>("prog"), const_cast<char*>("--mode=stdio")};
+    EXPECT_TRUE(args.parse(2, argv));
+}
+```
+
+### 6.2 集成测试
+
+```cpp
+// 测试 DriverCore::run(argc, argv) 入口
+TEST_F(DualModeTest, DriverCoreRunWithHelp) {
+    // 验证 --help 返回 0
+}
+
+TEST_F(DualModeTest, DriverCoreRunWithVersion) {
+    // 验证 --version 返回 0
+}
+
+TEST_F(DualModeTest, DriverCoreConsoleCommand) {
+    // 验证 Console 模式命令执行
 }
 ```
 

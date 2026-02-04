@@ -2,6 +2,15 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
+#ifdef Q_OS_WIN
+#include <io.h>
+#include <stdio.h>
+#define isatty _isatty
+#define fileno _fileno
+#else
+#include <unistd.h>
+#endif
+
 namespace stdiolink {
 
 QJsonValue inferType(const QString& value) {
@@ -105,7 +114,23 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
     }
 
     // 验证必需参数
-    if (!showHelp && !showVersion && cmd.isEmpty()) {
+    // 如果显式指定 stdio 模式，不需要 --cmd
+    if (mode == "stdio") {
+        return true;
+    }
+
+    // 如果只有 --help 或 --version，不需要 --cmd
+    if (showHelp || showVersion) {
+        return true;
+    }
+
+    // 如果没有任何参数（mode/cmd/data/profile 都为空），默认 stdio 模式
+    if (mode.isEmpty() && cmd.isEmpty() && data.isEmpty() && profile.isEmpty()) {
+        return true;
+    }
+
+    // 其他情况需要 --cmd
+    if (cmd.isEmpty()) {
         errorMessage = "Missing required argument: --cmd";
         return false;
     }
@@ -131,6 +156,10 @@ void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value) {
 void ConsoleArgs::parseDataArg(const QString& key, const QString& value) {
     QJsonValue jsonValue = inferType(value);
     setNestedValue(data, key, jsonValue);
+}
+
+bool ConsoleArgs::isInteractiveStdin() {
+    return isatty(fileno(stdin)) != 0;
 }
 
 } // namespace stdiolink

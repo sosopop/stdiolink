@@ -239,5 +239,5 @@ int main(int argc, char* argv[]) {
     core.setMetaHandler(&handler);
     core.setProfile(DriverCore::Profile::KeepAlive);
 
-    return core.run();
+    return core.run(argc, argv);
 }

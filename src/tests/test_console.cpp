@@ -182,3 +182,65 @@ TEST(ConsoleArgs, InvalidArgument) {
     ConsoleArgs args;
     EXPECT_FALSE(args.parse(2, const_cast<char**>(argv)));
 }
+
+// ============================================
+// M12: 双模式检测测试
+// ============================================
+
+TEST(DualMode, StdioModeByDefault) {
+    // 无参数时应允许（默认 stdio 模式）
+    const char* argv[] = {"prog"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(1, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.cmd.isEmpty());
+    EXPECT_TRUE(args.mode.isEmpty());
+}
+
+TEST(DualMode, ExplicitStdioMode) {
+    // 显式 --mode=stdio 不需要 --cmd
+    const char* argv[] = {"prog", "--mode=stdio"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_EQ(args.mode, "stdio");
+}
+
+TEST(DualMode, ExplicitConsoleMode) {
+    // 显式 --mode=console 需要 --cmd
+    const char* argv[] = {"prog", "--mode=console", "--cmd=scan"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
+    EXPECT_EQ(args.mode, "console");
+    EXPECT_EQ(args.cmd, "scan");
+}
+
+TEST(DualMode, ConsoleModeWithDataRequiresCmd) {
+    // 有数据参数但没有 --cmd 应失败
+    const char* argv[] = {"prog", "--fps=30"};
+    ConsoleArgs args;
+    EXPECT_FALSE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_FALSE(args.errorMessage.isEmpty());
+}
+
+TEST(DualMode, HelpFlagNoCmd) {
+    // --help 不需要 --cmd
+    const char* argv[] = {"prog", "--help"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.showHelp);
+}
+
+TEST(DualMode, VersionFlagNoCmd) {
+    // --version 不需要 --cmd
+    const char* argv[] = {"prog", "--version"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.showVersion);
+}
+
+TEST(DualMode, IsInteractiveStdinExists) {
+    // 验证 isInteractiveStdin 方法存在且可调用
+    // 注意：实际返回值取决于测试运行环境
+    bool result = ConsoleArgs::isInteractiveStdin();
+    // 在管道/重定向环境下通常返回 false
+    Q_UNUSED(result);
+}

@@ -6,16 +6,23 @@
 namespace stdiolink {
 
 class IMetaCommandHandler;
+class ConsoleArgs;
 
 /**
  * Driver 核心类
- * 处理 stdin/stdout 通信
+ * 处理 stdin/stdout 通信，支持 Stdio 和 Console 双模式
  */
 class DriverCore {
 public:
     enum class Profile {
         OneShot,  // 处理一次请求后退出
         KeepAlive // 持续处理请求
+    };
+
+    enum class RunMode {
+        Auto,     // 自动检测
+        Stdio,    // Stdio 模式
+        Console   // Console 模式
     };
 
     DriverCore() = default;
@@ -30,8 +37,13 @@ public:
     void setMetaHandler(IMetaCommandHandler* h);
 
     /**
-     * 主循环：读取 stdin，处理请求，输出响应
-     * @return 退出码
+     * 带命令行参数的运行入口（推荐）
+     * 自动检测运行模式
+     */
+    int run(int argc, char* argv[]);
+
+    /**
+     * 纯 Stdio 模式入口（保持兼容）
      */
     int run();
 
@@ -40,6 +52,12 @@ private:
     ICommandHandler* m_handler = nullptr;
     IMetaCommandHandler* m_metaHandler = nullptr;
     JsonlParser m_parser;
+
+    int runStdioMode();
+    int runConsoleMode(const ConsoleArgs& args);
+    RunMode detectMode(const ConsoleArgs& args);
+    void printHelp();
+    void printVersion();
 
     bool processOneLine(const QByteArray& line);
     bool handleMetaCommand(const QString& cmd, const QJsonValue& data,

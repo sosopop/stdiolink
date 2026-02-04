@@ -10,6 +10,8 @@ add_executable(meta_driver
     ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
+    ${STDIOLINK_DIR}/console/console_args.cpp
+    ${STDIOLINK_DIR}/console/console_responder.cpp
 )
 
 target_include_directories(meta_driver PRIVATE
