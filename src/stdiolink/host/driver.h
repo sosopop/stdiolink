@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <memory>
 #include "stdiolink/protocol/jsonl_types.h"
+#include "stdiolink/protocol/meta_types.h"
 #include "task.h"
 
 namespace stdiolink {
@@ -34,6 +35,11 @@ public:
     bool hasQueued() const;
     bool isCurrentTerminal() const;
 
+    // 元数据查询
+    const meta::DriverMeta* queryMeta(int timeoutMs = 5000);
+    bool hasMeta() const;
+    void refreshMeta();
+
 private:
     QProcess m_proc;
     QByteArray m_buf;
@@ -41,6 +47,7 @@ private:
     bool m_waitingHeader = true;
     FrameHeader m_hdr;
     std::shared_ptr<TaskState> m_cur;
+    std::shared_ptr<meta::DriverMeta> m_meta;
 
     bool tryReadLine(QByteArray& outLine);
     void pushError(int code, const QJsonObject& payload);

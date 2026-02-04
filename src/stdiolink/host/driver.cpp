@@ -1,5 +1,6 @@
 #include "driver.h"
 #include <QJsonDocument>
+#include "meta_cache.h"
 #include "stdiolink/protocol/jsonl_serializer.h"
 
 namespace stdiolink {
@@ -112,6 +113,45 @@ void Driver::pumpStdout() {
             m_waitingHeader = true;
         }
     }
+}
+
+const meta::DriverMeta* Driver::queryMeta(int timeoutMs) {
+    if (m_meta) {
+        return m_meta.get();
+    }
+
+    // 发送 meta.describe 请求
+    Task task = request("meta.describe", QJsonObject{});
+    Message msg;
+    if (!task.waitNext(msg, timeoutMs)) {
+        return nullptr;
+    }
+
+    if (msg.status != "done") {
+        return nullptr;
+    }
+
+    // 解析元数据
+    m_meta = std::make_shared<meta::DriverMeta>(
+        meta::DriverMeta::fromJson(msg.payload.toObject()));
+
+    // 存入缓存
+    if (!m_meta->info.id.isEmpty()) {
+        MetaCache::instance().store(m_meta->info.id, m_meta);
+    }
+
+    return m_meta.get();
+}
+
+bool Driver::hasMeta() const {
+    return m_meta != nullptr;
+}
+
+void Driver::refreshMeta() {
+    if (m_meta && !m_meta->info.id.isEmpty()) {
+        MetaCache::instance().invalidate(m_meta->info.id);
+    }
+    m_meta.reset();
 }
 
 } // namespace stdiolink

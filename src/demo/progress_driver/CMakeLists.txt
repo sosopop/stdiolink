@@ -6,6 +6,8 @@ add_executable(progress_driver
     main.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
+    ${STDIOLINK_DIR}/protocol/meta_types.cpp
+    ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
 )

@@ -4,6 +4,7 @@ set(PROTOCOL_SOURCES
     protocol/jsonl_serializer.cpp
     protocol/jsonl_parser.cpp
     protocol/jsonl_stream_parser.cpp
+    protocol/meta_types.cpp
 )
 
 set(DRIVER_SOURCES

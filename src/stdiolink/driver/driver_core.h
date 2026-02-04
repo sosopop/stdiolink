@@ -5,6 +5,8 @@
 
 namespace stdiolink {
 
+class IMetaCommandHandler;
+
 /**
  * Driver 核心类
  * 处理 stdin/stdout 通信
@@ -22,6 +24,12 @@ public:
     void setHandler(ICommandHandler* h) { m_handler = h; }
 
     /**
+     * 设置支持元数据的处理器
+     * 设置后将自动响应 meta.* 命令
+     */
+    void setMetaHandler(IMetaCommandHandler* h);
+
+    /**
      * 主循环：读取 stdin，处理请求，输出响应
      * @return 退出码
      */
@@ -30,9 +38,12 @@ public:
 private:
     Profile m_profile = Profile::OneShot;
     ICommandHandler* m_handler = nullptr;
+    IMetaCommandHandler* m_metaHandler = nullptr;
     JsonlParser m_parser;
 
     bool processOneLine(const QByteArray& line);
+    bool handleMetaCommand(const QString& cmd, const QJsonValue& data,
+                           IResponder& responder);
 };
 
 } // namespace stdiolink

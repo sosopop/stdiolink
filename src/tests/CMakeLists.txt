@@ -9,6 +9,11 @@ set(TEST_SOURCES
     test_host_driver.cpp
     test_wait_any.cpp
     test_console.cpp
+    test_meta_types.cpp
+    test_meta_describe.cpp
+    test_meta_builder.cpp
+    test_meta_validator.cpp
+    test_meta_host.cpp
 )
 
 # 获取 stdiolink 源文件的绝对路径
@@ -19,11 +24,16 @@ add_executable(stdiolink_tests
     ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_stream_parser.cpp
+    ${STDIOLINK_DIR}/protocol/meta_types.cpp
+    ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
+    ${STDIOLINK_DIR}/driver/meta_builder.cpp
     ${STDIOLINK_DIR}/host/task.cpp
     ${STDIOLINK_DIR}/host/driver.cpp
     ${STDIOLINK_DIR}/host/wait_any.cpp
+    ${STDIOLINK_DIR}/host/meta_cache.cpp
+    ${STDIOLINK_DIR}/host/form_generator.cpp
     ${STDIOLINK_DIR}/console/console_args.cpp
     ${STDIOLINK_DIR}/console/console_responder.cpp
 )
@@ -44,6 +54,8 @@ add_executable(test_driver
     test_driver_main.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
+    ${STDIOLINK_DIR}/protocol/meta_types.cpp
+    ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
 )

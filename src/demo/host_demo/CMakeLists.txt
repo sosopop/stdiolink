@@ -7,11 +7,15 @@ add_executable(host_demo
     ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
     ${STDIOLINK_DIR}/protocol/jsonl_stream_parser.cpp
+    ${STDIOLINK_DIR}/protocol/meta_types.cpp
+    ${STDIOLINK_DIR}/protocol/meta_validator.cpp
     ${STDIOLINK_DIR}/driver/stdio_responder.cpp
     ${STDIOLINK_DIR}/driver/driver_core.cpp
     ${STDIOLINK_DIR}/host/task.cpp
     ${STDIOLINK_DIR}/host/driver.cpp
     ${STDIOLINK_DIR}/host/wait_any.cpp
+    ${STDIOLINK_DIR}/host/meta_cache.cpp
+    ${STDIOLINK_DIR}/host/form_generator.cpp
     ${STDIOLINK_DIR}/console/console_args.cpp
     ${STDIOLINK_DIR}/console/console_responder.cpp
 )

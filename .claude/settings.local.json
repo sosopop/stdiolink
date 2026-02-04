@@ -21,7 +21,8 @@
       "Bash(build_ninja/src/tests/stdiolink_tests.exe:*)",
       "Bash(python ./tools/run-clang-tidy.py:*)",
       "Bash(python:*)",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(./build_ninja/src/tests/stdiolink_tests.exe:*)"
     ]
   }
 }
