@@ -39,6 +39,7 @@ private:
 
     // HTML helpers
     static QString generateHtmlStyle();
+    static QString generateHtmlScript();
 };
 
 } // namespace stdiolink

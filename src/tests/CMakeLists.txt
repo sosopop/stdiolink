@@ -15,6 +15,7 @@ set(TEST_SOURCES
     test_meta_validator.cpp
     test_meta_host.cpp
     test_doc_generator.cpp
+    test_typed_event.cpp
 )
 
 # 获取 stdiolink 源文件的绝对路径

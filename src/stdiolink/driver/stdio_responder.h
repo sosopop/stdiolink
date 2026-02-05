@@ -14,6 +14,7 @@ public:
     StdioResponder() = default;
 
     void event(int code, const QJsonValue& payload) override;
+    void event(const QString& eventName, int code, const QJsonValue& data) override;
     void done(int code, const QJsonValue& payload) override;
     void error(int code, const QJsonValue& payload) override;
 

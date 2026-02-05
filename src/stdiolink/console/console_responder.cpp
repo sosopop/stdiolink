@@ -9,6 +9,13 @@ void ConsoleResponder::event(int code, const QJsonValue& payload) {
     writeToStderr("event", code, payload);
 }
 
+void ConsoleResponder::event(const QString& eventName, int code, const QJsonValue& data) {
+    QJsonObject payload;
+    payload["event"] = eventName;
+    payload["data"] = data;
+    writeToStderr("event", code, payload);
+}
+
 void ConsoleResponder::done(int code, const QJsonValue& payload) {
     m_exitCode = code;
     m_hasResult = true;

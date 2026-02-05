@@ -8,6 +8,13 @@ void StdioResponder::event(int code, const QJsonValue& payload) {
     writeResponse("event", code, payload);
 }
 
+void StdioResponder::event(const QString& eventName, int code, const QJsonValue& data) {
+    QJsonObject payload;
+    payload["event"] = eventName;
+    payload["data"] = data;
+    writeResponse("event", code, payload);
+}
+
 void StdioResponder::done(int code, const QJsonValue& payload) {
     writeResponse("done", code, payload);
 }

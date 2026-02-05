@@ -153,7 +153,7 @@ TEST(DocGenerator, HtmlDoctype) {
 TEST(DocGenerator, HtmlTitle) {
     auto meta = createTestMeta();
     QString html = DocGenerator::toHtml(meta);
-    EXPECT_TRUE(html.contains("<title>TestDriver</title>"));
+    EXPECT_TRUE(html.contains("<title>TestDriver Documentation</title>"));
 }
 
 TEST(DocGenerator, HtmlStyle) {
@@ -193,7 +193,7 @@ TEST(DocGenerator, EmptyMeta) {
     EXPECT_TRUE(api["paths"].toObject().isEmpty());
 
     QString html = DocGenerator::toHtml(meta);
-    EXPECT_TRUE(html.contains("<h1>Empty</h1>"));
+    EXPECT_TRUE(html.contains("<h1 class=\"page-title\">Empty</h1>"));
 }
 
 TEST(DocGenerator, CommandPathConversion) {
