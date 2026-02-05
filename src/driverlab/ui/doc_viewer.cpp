@@ -32,28 +32,41 @@ QString DocViewer::generateMarkdown(const stdiolink::meta::CommandMeta *cmd)
     QString md;
     md += "## " + cmd->name + "\n\n";
 
+    if (!cmd->title.isEmpty()) {
+        md += "**" + cmd->title + "**\n\n";
+    }
+
     if (!cmd->description.isEmpty()) {
         md += cmd->description + "\n\n";
     }
 
+    // 参数部分
     if (!cmd->params.isEmpty()) {
-        md += "### Parameters\n\n";
-        md += "| Name | Type | Required | Description |\n";
-        md += "|------|------|----------|-------------|\n";
+        md += "### 参数\n\n";
+        md += "| 名称 | 类型 | 必填 | 说明 |\n";
+        md += "|------|------|------|------|\n";
 
         for (const auto &p : cmd->params) {
-            QString type;
-            switch (p.type) {
-            case stdiolink::meta::FieldType::String: type = "string"; break;
-            case stdiolink::meta::FieldType::Int: type = "int"; break;
-            case stdiolink::meta::FieldType::Double: type = "double"; break;
-            case stdiolink::meta::FieldType::Bool: type = "bool"; break;
-            case stdiolink::meta::FieldType::Array: type = "array"; break;
-            case stdiolink::meta::FieldType::Object: type = "object"; break;
-            default: type = "any"; break;
-            }
+            QString type = stdiolink::meta::fieldTypeToString(p.type);
             md += QString("| %1 | %2 | %3 | %4 |\n")
-                .arg(p.name, type, p.required ? "Yes" : "No", p.description);
+                .arg(p.name, type, p.required ? "是" : "否", p.description);
+        }
+        md += "\n";
+    }
+
+    // 返回值部分
+    if (!cmd->returns.fields.isEmpty()) {
+        md += "### 返回值\n\n";
+        if (!cmd->returns.description.isEmpty()) {
+            md += cmd->returns.description + "\n\n";
+        }
+        md += "| 名称 | 类型 | 说明 |\n";
+        md += "|------|------|------|\n";
+
+        for (const auto &f : cmd->returns.fields) {
+            QString type = stdiolink::meta::fieldTypeToString(f.type);
+            md += QString("| %1 | %2 | %3 |\n")
+                .arg(f.name, type, f.description);
         }
         md += "\n";
     }

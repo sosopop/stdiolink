@@ -65,9 +65,14 @@ bool DriverSession::hasMeta() const
 
 void DriverSession::executeCommand(const QString &cmd, const QJsonObject &data)
 {
+    // 如果 Driver 没有运行，重新启动（OneShot 模式）
     if (!m_driver || !m_driver->isRunning()) {
-        emit errorOccurred(tr("Driver 未运行"));
-        return;
+        m_driver = std::make_unique<stdiolink::Driver>();
+        if (!m_driver->start(m_program, {})) {
+            emit errorOccurred(tr("启动 Driver 失败: %1").arg(m_program));
+            m_driver.reset();
+            return;
+        }
     }
 
     m_currentTask = m_driver->request(cmd, data);
