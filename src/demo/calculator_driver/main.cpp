@@ -217,6 +217,5 @@ int main(int argc, char* argv[])
     CalculatorHandler handler;
     DriverCore core;
     core.setMetaHandler(&handler);
-    core.setProfile(DriverCore::Profile::KeepAlive);
     return core.run(argc, argv);
 }

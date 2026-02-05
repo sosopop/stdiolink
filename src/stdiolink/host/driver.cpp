@@ -19,9 +19,18 @@ bool Driver::start(const QString& program, const QStringList& args) {
 
 void Driver::terminate() {
     if (m_proc.state() != QProcess::NotRunning) {
-        m_proc.terminate();
-        if (!m_proc.waitForFinished(1000)) {
-            m_proc.kill();
+        // 先关闭 stdin 管道，让 Driver 的 readLine() 返回
+        m_proc.closeWriteChannel();
+
+        // 等待进程正常退出
+        if (!m_proc.waitForFinished(100)) {
+            // 如果还没退出，发送终止信号
+            m_proc.terminate();
+            if (!m_proc.waitForFinished(100)) {
+                // 强制杀死
+                m_proc.kill();
+                m_proc.waitForFinished(100);
+            }
         }
     }
 }
@@ -126,8 +135,7 @@ const meta::DriverMeta* Driver::queryMeta(int timeoutMs) {
     }
 
     // 解析元数据
-    m_meta = std::make_shared<meta::DriverMeta>(
-        meta::DriverMeta::fromJson(msg.payload.toObject()));
+    m_meta = std::make_shared<meta::DriverMeta>(meta::DriverMeta::fromJson(msg.payload.toObject()));
 
     // 存入缓存
     if (!m_meta->info.id.isEmpty()) {

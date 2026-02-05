@@ -59,7 +59,7 @@ target_include_directories(stdiolink PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )
 
-target_link_libraries(stdiolink PUBLIC Qt5::Core)
+target_link_libraries(stdiolink PUBLIC Qt6::Core)
 
 set_target_properties(stdiolink PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

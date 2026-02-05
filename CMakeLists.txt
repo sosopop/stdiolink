@@ -26,7 +26,7 @@ set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../vcpkg/scripts/buildsyst
 
 # 查找依赖包
 find_package(spdlog CONFIG REQUIRED)
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 find_package(GTest CONFIG REQUIRED)
 
 # 启用测试

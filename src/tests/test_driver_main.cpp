@@ -25,18 +25,9 @@ public:
 int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
 
-    DriverCore::Profile profile = DriverCore::Profile::OneShot;
-    for (int i = 1; i < argc; ++i) {
-        QString arg = argv[i];
-        if (arg == "--profile=keepalive") {
-            profile = DriverCore::Profile::KeepAlive;
-        }
-    }
-
     TestHandler handler;
     DriverCore driver;
-    driver.setProfile(profile);
     driver.setHandler(&handler);
 
-    return driver.run();
+    return driver.run(argc, argv);
 }

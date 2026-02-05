@@ -153,15 +153,10 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
         return true;
     }
 
-    // 如果没有任何参数（mode/cmd/data/profile 都为空），默认 stdio 模式
-    if (mode.isEmpty() && cmd.isEmpty() && data.isEmpty() && profile.isEmpty()) {
-        return true;
-    }
-
-    // 其他情况需要 --cmd
+    // 如果没有 --cmd，默认进入 stdio 模式
+    // （可能只指定了 --profile=keepalive）
     if (cmd.isEmpty()) {
-        errorMessage = "Missing required argument: --cmd";
-        return false;
+        return true;
     }
 
     return true;

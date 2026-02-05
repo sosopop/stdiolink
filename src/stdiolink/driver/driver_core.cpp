@@ -14,9 +14,23 @@
 #include "stdiolink/protocol/jsonl_serializer.h"
 #include "stdiolink/protocol/meta_validator.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 namespace stdiolink {
 
+namespace {
+void initConsoleEncoding() {
+#ifdef Q_OS_WIN
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
+}
+}
+
 int DriverCore::run() {
+    initConsoleEncoding();
     return runStdioMode();
 }
 
@@ -47,6 +61,8 @@ int DriverCore::runStdioMode() {
 }
 
 int DriverCore::run(int argc, char* argv[]) {
+    initConsoleEncoding();
+
     ConsoleArgs args;
     if (!args.parse(argc, argv)) {
         QFile err;
@@ -102,6 +118,15 @@ int DriverCore::run(int argc, char* argv[]) {
     // 处理 --export-doc
     if (!args.exportDocFormat.isEmpty()) {
         return handleExportDoc(args);
+    }
+
+    // 命令行 profile 参数覆盖默认值
+    if (!args.profile.isEmpty()) {
+        if (args.profile == "keepalive") {
+            m_profile = Profile::KeepAlive;
+        } else if (args.profile == "oneshot") {
+            m_profile = Profile::OneShot;
+        }
     }
 
     // 检测运行模式

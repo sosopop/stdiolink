@@ -70,10 +70,10 @@ QString DocGenerator::toMarkdown(const meta::DriverMeta& meta) {
         for (const auto& field : meta.config.fields) {
             QString type = meta::fieldTypeToString(field.type);
             QString def = field.defaultValue.isNull()
-                              ? "-"
-                              : QJsonDocument(QJsonArray{field.defaultValue})
+                              ? QString("-")
+                              : QString(QJsonDocument(QJsonArray{field.defaultValue})
                                     .toJson(QJsonDocument::Compact)
-                                    .mid(1);
+                                    .mid(1));
             if (def.endsWith("]"))
                 def.chop(1);
             md +=
@@ -423,10 +423,10 @@ QString DocGenerator::toHtml(const meta::DriverMeta& meta) {
         for (const auto& field : meta.config.fields) {
             QString type = meta::fieldTypeToString(field.type);
             QString def = field.defaultValue.isNull()
-                              ? "-"
-                              : QJsonDocument(QJsonArray{field.defaultValue})
+                              ? QString("-")
+                              : QString(QJsonDocument(QJsonArray{field.defaultValue})
                                     .toJson(QJsonDocument::Compact)
-                                    .mid(1);
+                                    .mid(1));
             if (def.endsWith("]"))
                 def.chop(1);
 

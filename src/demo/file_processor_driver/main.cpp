@@ -195,6 +195,5 @@ int main(int argc, char* argv[])
     FileProcessorHandler handler;
     DriverCore core;
     core.setMetaHandler(&handler);
-    core.setProfile(DriverCore::Profile::KeepAlive);
     return core.run(argc, argv);
 }
