@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QByteArray>
 #include <QString>
 #include "stdiolink/protocol/meta_types.h"
@@ -9,7 +11,7 @@ namespace stdiolink {
 /**
  * 元数据导出器
  */
-class MetaExporter {
+class STDIOLINK_API MetaExporter {
 public:
     /**
      * 导出为 JSON 字节数组

@@ -5,6 +5,7 @@
 #include <memory>
 #include "stdiolink/protocol/jsonl_types.h"
 #include "stdiolink/protocol/meta_types.h"
+#include "stdiolink/stdiolink_export.h"
 #include "task.h"
 
 namespace stdiolink {
@@ -13,7 +14,7 @@ namespace stdiolink {
  * Host 端 Driver 类
  * 管理一个 Driver 进程实例
  */
-class Driver {
+class STDIOLINK_API Driver {
 public:
     Driver() = default;
     ~Driver();

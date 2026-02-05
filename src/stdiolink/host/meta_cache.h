@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdiolink/protocol/meta_types.h"
+#include "stdiolink/stdiolink_export.h"
 
 #include <QHash>
 #include <QMutex>
@@ -12,7 +13,7 @@ namespace stdiolink {
  * 元数据缓存
  * 按 Driver ID 缓存元数据，支持变更检测
  */
-class MetaCache {
+class STDIOLINK_API MetaCache {
 public:
     static MetaCache& instance();
 

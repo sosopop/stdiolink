@@ -1,14 +1,15 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QByteArray>
 
 namespace stdiolink {
 
 /**
  * JSONL 流式解析器
- * 处理字节流中的行分割，支持半行缓冲
  */
-class JsonlParser {
+class STDIOLINK_API JsonlParser {
 public:
     JsonlParser() = default;
 

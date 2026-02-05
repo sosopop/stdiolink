@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QJsonObject>
 #include <QString>
 
@@ -8,18 +10,17 @@ namespace stdiolink {
 /**
  * 类型推断：将字符串值转换为合适的 JSON 类型
  */
-QJsonValue inferType(const QString& value);
+STDIOLINK_API QJsonValue inferType(const QString& value);
 
 /**
  * 设置嵌套路径的值
- * 例如：setNestedValue(obj, "a.b.c", 42) 会设置 obj["a"]["b"]["c"] = 42
  */
-void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& value);
+STDIOLINK_API void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& value);
 
 /**
  * Console 模式参数解析器
  */
-class ConsoleArgs {
+class STDIOLINK_API ConsoleArgs {
 public:
     bool parse(int argc, char* argv[]);
 

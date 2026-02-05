@@ -1,4 +1,5 @@
 #include "console_args.h"
+#include "system_options.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 
@@ -167,8 +168,8 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
 }
 
 bool ConsoleArgs::isFrameworkArg(const QString& key) {
-    static const QStringList FrameworkArgs = {"mode", "profile", "cmd"};
-    return FrameworkArgs.contains(key);
+    // 使用 SystemOptionRegistry 作为单一来源 (M20)
+    return SystemOptionRegistry::isFrameworkArg(key);
 }
 
 void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value) {

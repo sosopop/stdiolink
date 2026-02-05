@@ -1,13 +1,14 @@
 #pragma once
 
 #include "stdiolink/protocol/meta_types.h"
+#include "stdiolink/stdiolink_export.h"
 
 namespace stdiolink::meta {
 
 /**
  * 字段构建器
  */
-class FieldBuilder {
+class STDIOLINK_API FieldBuilder {
 public:
     explicit FieldBuilder(const QString& name, FieldType type);
 
@@ -60,7 +61,7 @@ private:
 /**
  * 命令构建器
  */
-class CommandBuilder {
+class STDIOLINK_API CommandBuilder {
 public:
     explicit CommandBuilder(const QString& name);
 
@@ -91,7 +92,7 @@ private:
 /**
  * 驱动元数据构建器
  */
-class DriverMetaBuilder {
+class STDIOLINK_API DriverMetaBuilder {
 public:
     DriverMetaBuilder& schemaVersion(const QString& ver);
 

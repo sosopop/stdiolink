@@ -16,62 +16,36 @@ set(TEST_SOURCES
     test_meta_host.cpp
     test_doc_generator.cpp
     test_typed_event.cpp
+    test_advanced_ui.cpp
+    test_config_inject.cpp
+    test_version_negotiate.cpp
+    test_driver_registry.cpp
+    test_system_help.cpp
 )
 
-# 获取 stdiolink 源文件的绝对路径
-set(STDIOLINK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../stdiolink)
-
-add_executable(stdiolink_tests
-    ${TEST_SOURCES}
-    ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
-    ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
-    ${STDIOLINK_DIR}/protocol/jsonl_stream_parser.cpp
-    ${STDIOLINK_DIR}/protocol/meta_types.cpp
-    ${STDIOLINK_DIR}/protocol/meta_validator.cpp
-    ${STDIOLINK_DIR}/driver/stdio_responder.cpp
-    ${STDIOLINK_DIR}/driver/driver_core.cpp
-    ${STDIOLINK_DIR}/driver/meta_builder.cpp
-    ${STDIOLINK_DIR}/driver/help_generator.cpp
-    ${STDIOLINK_DIR}/driver/meta_exporter.cpp
-    ${STDIOLINK_DIR}/host/task.cpp
-    ${STDIOLINK_DIR}/host/driver.cpp
-    ${STDIOLINK_DIR}/host/wait_any.cpp
-    ${STDIOLINK_DIR}/host/meta_cache.cpp
-    ${STDIOLINK_DIR}/host/form_generator.cpp
-    ${STDIOLINK_DIR}/console/console_args.cpp
-    ${STDIOLINK_DIR}/console/console_responder.cpp
-    ${STDIOLINK_DIR}/doc/doc_generator.cpp
-)
-
-target_include_directories(stdiolink_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-)
+add_executable(stdiolink_tests ${TEST_SOURCES})
 
 target_link_libraries(stdiolink_tests PRIVATE
+    stdiolink
     GTest::gtest
-    Qt5::Core
 )
 
 add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
 
+# Windows: 复制 DLL 到测试目录
+if(WIN32)
+    add_custom_command(TARGET stdiolink_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:stdiolink>
+            $<TARGET_FILE_DIR:stdiolink_tests>
+    )
+endif()
+
 # test_driver (用于单元测试的辅助 Driver 程序)
-add_executable(test_driver
-    test_driver_main.cpp
-    ${STDIOLINK_DIR}/protocol/jsonl_serializer.cpp
-    ${STDIOLINK_DIR}/protocol/jsonl_parser.cpp
-    ${STDIOLINK_DIR}/protocol/meta_types.cpp
-    ${STDIOLINK_DIR}/protocol/meta_validator.cpp
-    ${STDIOLINK_DIR}/driver/stdio_responder.cpp
-    ${STDIOLINK_DIR}/driver/driver_core.cpp
-    ${STDIOLINK_DIR}/driver/help_generator.cpp
-    ${STDIOLINK_DIR}/driver/meta_exporter.cpp
-    ${STDIOLINK_DIR}/console/console_args.cpp
-    ${STDIOLINK_DIR}/console/console_responder.cpp
-    ${STDIOLINK_DIR}/doc/doc_generator.cpp
-)
+add_executable(test_driver test_driver_main.cpp)
 
-target_include_directories(test_driver PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-)
+target_link_libraries(test_driver PRIVATE stdiolink)
 
-target_link_libraries(test_driver PRIVATE Qt5::Core)
+set_target_properties(test_driver PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src/tests"
+)

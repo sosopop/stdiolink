@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QJsonObject>
 #include <QString>
 #include "stdiolink/protocol/meta_types.h"
@@ -8,9 +10,8 @@ namespace stdiolink {
 
 /**
  * 文档生成器
- * 将元数据转换为多种文档格式
  */
-class DocGenerator {
+class STDIOLINK_API DocGenerator {
 public:
     /**
      * 生成 Markdown 文档

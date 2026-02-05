@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QJsonValue>
 #include "iresponder.h"
 
@@ -7,9 +9,8 @@ namespace stdiolink {
 
 /**
  * StdIO 响应器
- * 将响应输出到 stdout
  */
-class StdioResponder : public IResponder {
+class STDIOLINK_API StdioResponder : public IResponder {
 public:
     StdioResponder() = default;
 

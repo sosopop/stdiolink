@@ -2,6 +2,7 @@
 
 #include "icommand_handler.h"
 #include "stdiolink/protocol/jsonl_parser.h"
+#include "stdiolink/stdiolink_export.h"
 
 namespace stdiolink {
 
@@ -12,7 +13,7 @@ class ConsoleArgs;
  * Driver 核心类
  * 处理 stdin/stdout 通信，支持 Stdio 和 Console 双模式
  */
-class DriverCore {
+class STDIOLINK_API DriverCore {
 public:
     enum class Profile {
         OneShot,  // 处理一次请求后退出

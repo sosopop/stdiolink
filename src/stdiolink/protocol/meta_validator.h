@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
 #include "meta_types.h"
 
 #include <QRegularExpression>
@@ -9,7 +10,7 @@ namespace stdiolink::meta {
 /**
  * 验证结果
  */
-struct ValidationResult {
+struct STDIOLINK_API ValidationResult {
     bool valid = true;
     QString errorField;
     QString errorMessage;
@@ -33,7 +34,7 @@ struct ValidationResult {
 /**
  * 元数据验证器
  */
-class MetaValidator {
+class STDIOLINK_API MetaValidator {
 public:
     /**
      * 验证命令参数
@@ -68,7 +69,7 @@ private:
 /**
  * 默认值填充器
  */
-class DefaultFiller {
+class STDIOLINK_API DefaultFiller {
 public:
     static QJsonObject fillDefaults(const QJsonObject& data, const QVector<FieldMeta>& fields);
 

@@ -1,15 +1,14 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
 #include "stdiolink/driver/iresponder.h"
 
 namespace stdiolink {
 
 /**
  * Console 模式响应器
- * - done/error 输出到 stdout
- * - event 输出到 stderr（可选）
  */
-class ConsoleResponder : public IResponder {
+class STDIOLINK_API ConsoleResponder : public IResponder {
 public:
     void event(int code, const QJsonValue& payload) override;
     void event(const QString& eventName, int code, const QJsonValue& data) override;

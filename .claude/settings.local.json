@@ -29,7 +29,8 @@
       "Bash(./meta_driver.exe:*)",
       "Bash(./host_demo.exe:*)",
       "Bash(echo:*)",
-      "Bash(./build_ninja/bin/meta_driver.exe:*)"
+      "Bash(./build_ninja/bin/meta_driver.exe:*)",
+      "Bash(cmake --build:*)"
     ]
   }
 }

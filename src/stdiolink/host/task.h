@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "stdiolink/stdiolink_export.h"
 #include "task_state.h"
 
 namespace stdiolink {
@@ -11,7 +12,7 @@ class Driver;
  * Task 句柄（Future/Promise 风格）
  * 代表一次请求的结果
  */
-class Task {
+class STDIOLINK_API Task {
 public:
     Task() = default;
     Task(Driver* owner, std::shared_ptr<TaskState> state);

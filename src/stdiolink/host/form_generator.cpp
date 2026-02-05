@@ -1,4 +1,6 @@
 #include "form_generator.h"
+#include <QRegularExpression>
+#include <algorithm>
 
 namespace stdiolink {
 
@@ -67,10 +69,28 @@ QJsonObject UiGenerator::fieldToWidget(const meta::FieldMeta& field) {
         widget["placeholder"] = field.ui.placeholder;
     if (!field.ui.group.isEmpty())
         widget["group"] = field.ui.group;
+    if (field.ui.order != 0)
+        widget["order"] = field.ui.order;
     if (field.ui.advanced)
         widget["advanced"] = true;
     if (field.ui.readonly)
         widget["readonly"] = true;
+    if (!field.ui.visibleIf.isEmpty())
+        widget["visibleIf"] = field.ui.visibleIf;
+
+    // M16: 嵌套对象递归渲染
+    if (field.type == meta::FieldType::Object && !field.fields.isEmpty()) {
+        QJsonArray nestedWidgets;
+        for (const auto& nested : field.fields) {
+            nestedWidgets.append(fieldToWidget(nested));
+        }
+        widget["fields"] = nestedWidgets;
+    }
+
+    // M16: 数组元素类型
+    if (field.type == meta::FieldType::Array && field.items) {
+        widget["items"] = fieldToWidget(*field.items);
+    }
 
     return widget;
 }
@@ -95,6 +115,106 @@ QString UiGenerator::defaultWidget(meta::FieldType type) {
         return "json";
     }
     return "text";
+}
+
+// ============================================
+// M16: 高级 UI 生成
+// ============================================
+
+QHash<QString, QVector<meta::FieldMeta>> UiGenerator::groupFields(
+    const QVector<meta::FieldMeta>& fields) {
+    QHash<QString, QVector<meta::FieldMeta>> groups;
+
+    for (const auto& field : fields) {
+        QString group = field.ui.group.isEmpty() ? "default" : field.ui.group;
+        groups[group].append(field);
+    }
+
+    return groups;
+}
+
+QVector<meta::FieldMeta> UiGenerator::sortFields(const QVector<meta::FieldMeta>& fields) {
+    QVector<meta::FieldMeta> sorted = fields;
+
+    std::sort(sorted.begin(), sorted.end(),
+              [](const meta::FieldMeta& a, const meta::FieldMeta& b) {
+                  return a.ui.order < b.ui.order;
+              });
+
+    return sorted;
+}
+
+// ============================================
+// M16: 条件求值器
+// ============================================
+
+bool ConditionEvaluator::evaluate(const QString& condition, const QJsonObject& context) {
+    if (condition.isEmpty()) {
+        return true;
+    }
+
+    // 支持简单的比较表达式: "field == 'value'" 或 "field != 'value'"
+    static QRegularExpression re(R"((\w+)\s*(==|!=|>|<|>=|<=)\s*('[^']*'|"[^"]*"|\w+))");
+    auto match = re.match(condition.trimmed());
+
+    if (match.hasMatch()) {
+        QString left = match.captured(1);
+        QString op = match.captured(2);
+        QString right = match.captured(3);
+        return evaluateComparison(left, op, right, context);
+    }
+
+    // 简单布尔字段: "advanced" 或 "!advanced"
+    QString trimmed = condition.trimmed();
+    if (trimmed.startsWith('!')) {
+        QString field = trimmed.mid(1);
+        return !context.value(field).toBool();
+    }
+    return context.value(trimmed).toBool();
+}
+
+bool ConditionEvaluator::evaluateComparison(const QString& left, const QString& op,
+                                            const QString& right, const QJsonObject& context) {
+    QJsonValue leftVal = resolveValue(left, context);
+    QJsonValue rightVal = resolveValue(right, context);
+
+    if (op == "==") {
+        return leftVal == rightVal;
+    }
+    if (op == "!=") {
+        return leftVal != rightVal;
+    }
+
+    // 数值比较
+    double leftNum = leftVal.toDouble();
+    double rightNum = rightVal.toDouble();
+
+    if (op == ">") return leftNum > rightNum;
+    if (op == "<") return leftNum < rightNum;
+    if (op == ">=") return leftNum >= rightNum;
+    if (op == "<=") return leftNum <= rightNum;
+
+    return false;
+}
+
+QJsonValue ConditionEvaluator::resolveValue(const QString& expr, const QJsonObject& context) {
+    // 字符串字面量 'value' 或 "value"
+    if ((expr.startsWith('\'') && expr.endsWith('\'')) ||
+        (expr.startsWith('"') && expr.endsWith('"'))) {
+        return expr.mid(1, expr.length() - 2);
+    }
+
+    // 布尔字面量
+    if (expr == "true") return true;
+    if (expr == "false") return false;
+
+    // 数字字面量
+    bool ok = false;
+    double num = expr.toDouble(&ok);
+    if (ok) return num;
+
+    // 字段引用
+    return context.value(expr);
 }
 
 } // namespace stdiolink

@@ -1,4 +1,5 @@
 #include "help_generator.h"
+#include "stdiolink/console/system_options.h"
 #include <QStringList>
 
 namespace stdiolink {
@@ -27,15 +28,8 @@ QString HelpGenerator::generateHelp(const meta::DriverMeta& meta) {
     result += "  <program> [options]\n";
     result += "  <program> --cmd=<command> [params...]\n\n";
 
-    // 选项
-    result += "Options:\n";
-    result += "  -h, --help              Show help\n";
-    result += "  -v, --version           Show version\n";
-    result += "  -m, --mode=<mode>       Run mode (stdio|console)\n";
-    result += "  -c, --cmd=<command>     Execute command\n";
-    result += "  -E, --export-meta[=path] Export metadata as JSON\n";
-    result += "  -D, --export-doc=<fmt>  Export documentation (markdown|openapi|html)\n";
-    result += "\n";
+    // 选项 - 使用 SystemOptionRegistry 生成 (M20)
+    result += generateSystemOptions();
 
     // 命令列表
     if (!meta.commands.isEmpty()) {
@@ -167,6 +161,43 @@ QString HelpGenerator::formatConstraints(const meta::Constraints& c) {
 
 QString HelpGenerator::fieldTypeToString(meta::FieldType type) {
     return meta::fieldTypeToString(type);
+}
+
+QString HelpGenerator::generateSystemOptions() {
+    QString result = "Options:\n";
+
+    for (const auto& opt : SystemOptionRegistry::list()) {
+        QString line = "  ";
+
+        // 短参数
+        if (!opt.shortName.isEmpty()) {
+            line += "-" + opt.shortName + ", ";
+        } else {
+            line += "    ";
+        }
+
+        // 长参数
+        line += "--" + opt.longName;
+        if (!opt.valueHint.isEmpty()) {
+            line += "=" + opt.valueHint;
+        }
+
+        // 对齐到固定宽度
+        line = line.leftJustified(28);
+
+        // 描述
+        line += opt.description;
+
+        // 可选值
+        if (!opt.choices.isEmpty()) {
+            line += " (" + opt.choices.join("|") + ")";
+        }
+
+        result += line + "\n";
+    }
+
+    result += "\n";
+    return result;
 }
 
 } // namespace stdiolink

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -27,13 +29,13 @@ enum class FieldType {
     Any      // 任意类型
 };
 
-QString fieldTypeToString(FieldType type);
-FieldType fieldTypeFromString(const QString& str);
+STDIOLINK_API QString fieldTypeToString(FieldType type);
+STDIOLINK_API FieldType fieldTypeFromString(const QString& str);
 
 /**
  * UI 渲染提示
  */
-struct UIHint {
+struct STDIOLINK_API UIHint {
     QString widget;
     QString group;
     int order = 0;
@@ -52,7 +54,7 @@ struct UIHint {
 /**
  * 字段约束条件
  */
-struct Constraints {
+struct STDIOLINK_API Constraints {
     std::optional<double> min;
     std::optional<double> max;
     std::optional<int> minLength;
@@ -71,7 +73,7 @@ struct Constraints {
 /**
  * 字段元数据
  */
-struct FieldMeta {
+struct STDIOLINK_API FieldMeta {
     QString name;
     FieldType type = FieldType::Any;
     bool required = false;
@@ -91,7 +93,7 @@ struct FieldMeta {
 /**
  * 事件元数据
  */
-struct EventMeta {
+struct STDIOLINK_API EventMeta {
     QString name;
     QString description;
     QVector<FieldMeta> fields;
@@ -103,7 +105,7 @@ struct EventMeta {
 /**
  * 返回值元数据
  */
-struct ReturnMeta {
+struct STDIOLINK_API ReturnMeta {
     FieldType type = FieldType::Object;
     QString description;
     QVector<FieldMeta> fields;
@@ -115,7 +117,7 @@ struct ReturnMeta {
 /**
  * 命令元数据
  */
-struct CommandMeta {
+struct STDIOLINK_API CommandMeta {
     QString name;
     QString description;
     QString title;
@@ -134,7 +136,7 @@ struct CommandMeta {
 /**
  * 配置注入方式
  */
-struct ConfigApply {
+struct STDIOLINK_API ConfigApply {
     QString method;  // startupArgs|env|command|file
     QString envPrefix;
     QString command;
@@ -147,7 +149,7 @@ struct ConfigApply {
 /**
  * 配置模式
  */
-struct ConfigSchema {
+struct STDIOLINK_API ConfigSchema {
     QVector<FieldMeta> fields;
     ConfigApply apply;
 
@@ -158,7 +160,7 @@ struct ConfigSchema {
 /**
  * 驱动基本信息
  */
-struct DriverInfo {
+struct STDIOLINK_API DriverInfo {
     QString id;
     QString name;
     QString version;
@@ -175,7 +177,7 @@ struct DriverInfo {
 /**
  * 驱动元数据（顶层结构）
  */
-struct DriverMeta {
+struct STDIOLINK_API DriverMeta {
     QString schemaVersion = "1.0";
     DriverInfo info;
     ConfigSchema config;

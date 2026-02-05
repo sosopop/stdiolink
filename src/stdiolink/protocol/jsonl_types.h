@@ -1,34 +1,27 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QString>
 
 namespace stdiolink {
 
-/**
- * 请求结构（Host → Driver）
- */
-struct Request {
-    QString cmd;     // 命令名（必填）
-    QJsonValue data; // 数据（可选）
+struct STDIOLINK_API Request {
+    QString cmd;
+    QJsonValue data;
 };
 
-/**
- * 响应头结构
- */
-struct FrameHeader {
-    QString status; // "event" | "done" | "error"
-    int code = 0;   // 错误码，0 表示成功
+struct STDIOLINK_API FrameHeader {
+    QString status;
+    int code = 0;
 };
 
-/**
- * 完整消息结构（Host 侧使用）
- */
-struct Message {
-    QString status;     // "event" | "done" | "error"
-    int code = 0;       // 错误码
-    QJsonValue payload; // 数据载荷
+struct STDIOLINK_API Message {
+    QString status;
+    int code = 0;
+    QJsonValue payload;
 };
 
 } // namespace stdiolink

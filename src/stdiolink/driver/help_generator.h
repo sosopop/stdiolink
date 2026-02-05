@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdiolink/stdiolink_export.h"
+
 #include <QString>
 #include "stdiolink/protocol/meta_types.h"
 
@@ -8,7 +10,7 @@ namespace stdiolink {
 /**
  * CLI 帮助生成器
  */
-class HelpGenerator {
+class STDIOLINK_API HelpGenerator {
 public:
     /**
      * 生成版本信息
@@ -29,6 +31,11 @@ public:
      * 格式化参数
      */
     static QString formatParam(const meta::FieldMeta& field);
+
+    /**
+     * 生成系统选项帮助 (M20)
+     */
+    static QString generateSystemOptions();
 
 private:
     static QString formatConstraints(const meta::Constraints& c);

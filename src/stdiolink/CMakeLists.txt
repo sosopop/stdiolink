@@ -5,34 +5,63 @@ set(PROTOCOL_SOURCES
     protocol/jsonl_parser.cpp
     protocol/jsonl_stream_parser.cpp
     protocol/meta_types.cpp
+    protocol/meta_schema_validator.cpp
+    protocol/meta_validator.cpp
 )
 
 set(DRIVER_SOURCES
     driver/stdio_responder.cpp
     driver/driver_core.cpp
+    driver/meta_builder.cpp
+    driver/help_generator.cpp
+    driver/meta_exporter.cpp
 )
 
 set(HOST_SOURCES
     host/task.cpp
     host/driver.cpp
     host/wait_any.cpp
+    host/meta_cache.cpp
+    host/form_generator.cpp
+    host/config_injector.cpp
+    host/meta_version_checker.cpp
+    host/driver_registry.cpp
 )
 
 set(CONSOLE_SOURCES
     console/console_args.cpp
     console/console_responder.cpp
+    console/system_options.cpp
 )
 
 set(DOC_SOURCES
     doc/doc_generator.cpp
 )
 
-# 定义库源文件（供其他模块使用）
-set(STDIOLINK_SOURCES
+set(ALL_SOURCES
     ${PROTOCOL_SOURCES}
     ${DRIVER_SOURCES}
     ${HOST_SOURCES}
     ${CONSOLE_SOURCES}
     ${DOC_SOURCES}
-    PARENT_SCOPE
+)
+
+# Windows: 动态库, 其他平台: 静态库
+if(WIN32)
+    add_library(stdiolink SHARED ${ALL_SOURCES})
+    target_compile_definitions(stdiolink PRIVATE STDIOLINK_BUILDING_DLL)
+else()
+    add_library(stdiolink STATIC ${ALL_SOURCES})
+endif()
+
+target_include_directories(stdiolink PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(stdiolink PUBLIC Qt5::Core)
+
+set_target_properties(stdiolink PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
