@@ -1,0 +1,6 @@
+build/
+build_ninja/
+.vscode/
+.idea/
+*.user
+*.user.*
