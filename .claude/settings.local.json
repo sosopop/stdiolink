@@ -30,7 +30,15 @@
       "Bash(./host_demo.exe:*)",
       "Bash(echo:*)",
       "Bash(./build_ninja/bin/meta_driver.exe:*)",
-      "Bash(cmake --build:*)"
+      "Bash(cmake --build:*)",
+      "Bash(./demo_host.exe:*)",
+      "Bash(\"D:/code/stdiolink/build_ninja/src/demo/demo_host/demo_host.exe\")",
+      "Bash(cmd /c \"D:\\\\code\\\\stdiolink\\\\build_ninja\\\\src\\\\demo\\\\demo_host\\\\demo_host.exe\")",
+      "Bash(D:/code/stdiolink/build_ninja/src/demo/demo_host/demo_host.exe:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(./calculator_driver.exe:*)",
+      "Bash(./file_processor_driver.exe:*)",
+      "Bash(./device_simulator_driver.exe:*)"
     ]
   }
 }

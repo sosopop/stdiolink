@@ -30,16 +30,11 @@ target_link_libraries(stdiolink_tests PRIVATE
     GTest::gtest
 )
 
-add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
+set_target_properties(stdiolink_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
 
-# Windows: 复制 DLL 到测试目录
-if(WIN32)
-    add_custom_command(TARGET stdiolink_tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:stdiolink>
-            $<TARGET_FILE_DIR:stdiolink_tests>
-    )
-endif()
+add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
 
 # test_driver (用于单元测试的辅助 Driver 程序)
 add_executable(test_driver test_driver_main.cpp)
@@ -47,5 +42,5 @@ add_executable(test_driver test_driver_main.cpp)
 target_link_libraries(test_driver PRIVATE stdiolink)
 
 set_target_properties(test_driver PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
