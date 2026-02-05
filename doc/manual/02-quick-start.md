@@ -71,3 +71,66 @@ int main(int argc, char* argv[]) {
 add_executable(echo_driver main.cpp)
 target_link_libraries(echo_driver PRIVATE stdiolink)
 ```
+
+## 创建 Host 程序
+
+Host 是主控进程，负责启动 Driver 并与之通信。
+
+```cpp
+#include <QCoreApplication>
+#include <QDebug>
+#include "stdiolink/host/driver.h"
+
+using namespace stdiolink;
+
+int main(int argc, char* argv[]) {
+    QCoreApplication app(argc, argv);
+
+    // 启动 Driver 进程
+    Driver d;
+    if (!d.start("./echo_driver.exe")) {
+        qDebug() << "Failed to start driver";
+        return 1;
+    }
+
+    // 发送请求
+    Task t = d.request("echo", QJsonObject{{"msg", "Hello!"}});
+
+    // 等待响应
+    Message msg;
+    if (t.waitNext(msg, 5000)) {
+        qDebug() << "Response:" << msg.payload;
+    }
+
+    // 关闭 Driver
+    d.terminate();
+    return 0;
+}
+```
+
+## 测试运行
+
+### 命令行测试 Driver
+
+Driver 支持 Console 模式，可以直接在命令行测试：
+
+```bash
+# 查看帮助
+./echo_driver.exe --help
+
+# 执行命令
+./echo_driver.exe echo --msg="Hello"
+```
+
+### 运行 Host 程序
+
+```bash
+./host_demo.exe
+# 输出: Response: {"echo":"Hello!"}
+```
+
+## 下一步
+
+- [架构概述](03-architecture.md) - 了解系统架构
+- [Driver 端开发](05-driver/README.md) - 深入学习 Driver 开发
+- [Host 端开发](06-host/README.md) - 深入学习 Host 开发
