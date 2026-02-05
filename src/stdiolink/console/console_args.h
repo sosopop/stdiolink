@@ -42,6 +42,9 @@ public:
     QString exportDocFormat;   // markdown|openapi|html
     QString exportDocPath;     // 可选，导出文件路径
 
+    // 日志参数
+    QString logPath;           // 日志文件路径
+
     // data 参数
     QJsonObject data;
 

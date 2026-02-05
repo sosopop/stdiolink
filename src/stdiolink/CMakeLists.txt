@@ -15,6 +15,7 @@ set(DRIVER_SOURCES
     driver/meta_builder.cpp
     driver/help_generator.cpp
     driver/meta_exporter.cpp
+    driver/log_redirector.cpp
 )
 
 set(HOST_SOURCES

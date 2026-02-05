@@ -179,6 +179,8 @@ void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value) {
         profile = value;
     } else if (key == "cmd") {
         cmd = value;
+    } else if (key == "log") {
+        logPath = value;
     }
 }
 
@@ -222,6 +224,8 @@ bool ConsoleArgs::parseShortArg(const QString& arg, int& index, int argc, char* 
         cmd = value;
     } else if (arg == "D") {
         parseExportDoc(value);
+    } else if (arg == "L") {
+        logPath = value;
     } else {
         errorMessage = QString("Unknown short argument: -%1").arg(arg);
         return false;

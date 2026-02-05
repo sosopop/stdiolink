@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include <QTextStream>
 #include "help_generator.h"
+#include "log_redirector.h"
 #include "meta_command_handler.h"
 #include "meta_exporter.h"
 #include "stdiolink/doc/doc_generator.h"
@@ -48,12 +49,27 @@ int DriverCore::runStdioMode() {
 int DriverCore::run(int argc, char* argv[]) {
     ConsoleArgs args;
     if (!args.parse(argc, argv)) {
-        QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
-        out.write(args.errorMessage.toUtf8());
-        out.write("\n");
-        out.flush();
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write(args.errorMessage.toUtf8());
+        err.write("\n");
+        err.flush();
         return 1;
+    }
+
+    // 初始化日志
+    if (!args.logPath.isEmpty()) {
+        if (!installFileLogger(args.logPath)) {
+            QFile err;
+            err.open(stderr, QIODevice::WriteOnly);
+            err.write("Failed to open log file: ");
+            err.write(args.logPath.toUtf8());
+            err.write("\n");
+            err.flush();
+            return 1;
+        }
+    } else {
+        installStderrLogger();
     }
 
     // 无参数且 stdin 为交互终端时，输出帮助
@@ -236,9 +252,9 @@ int DriverCore::runConsoleMode(const ConsoleArgs& args) {
 }
 
 void DriverCore::printHelp() {
-    QFile out;
-    out.open(stdout, QIODevice::WriteOnly);
-    QTextStream ts(&out);
+    QFile err;
+    err.open(stderr, QIODevice::WriteOnly);
+    QTextStream ts(&err);
 
     if (m_metaHandler) {
         const auto& meta = m_metaHandler->driverMeta();
@@ -269,9 +285,9 @@ void DriverCore::printHelp() {
 }
 
 void DriverCore::printVersion() {
-    QFile out;
-    out.open(stdout, QIODevice::WriteOnly);
-    QTextStream ts(&out);
+    QFile err;
+    err.open(stderr, QIODevice::WriteOnly);
+    QTextStream ts(&err);
 
     if (m_metaHandler) {
         const auto& meta = m_metaHandler->driverMeta();
@@ -287,9 +303,9 @@ void DriverCore::printVersion() {
 }
 
 int DriverCore::printCommandHelp(const QString& cmdName) {
-    QFile out;
-    out.open(stdout, QIODevice::WriteOnly);
-    QTextStream ts(&out);
+    QFile err;
+    err.open(stderr, QIODevice::WriteOnly);
+    QTextStream ts(&err);
 
     if (!m_metaHandler) {
         ts << "No metadata available\n";
@@ -311,10 +327,10 @@ int DriverCore::printCommandHelp(const QString& cmdName) {
 
 int DriverCore::handleExportMeta(const ConsoleArgs& args) {
     if (!m_metaHandler) {
-        QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
-        out.write("No metadata available\n");
-        out.flush();
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("No metadata available\n");
+        err.flush();
         return 1;
     }
 
@@ -331,12 +347,12 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
 
     // 输出到文件
     if (!MetaExporter::exportToFile(meta, args.exportMetaPath)) {
-        QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
-        out.write("Failed to write file: ");
-        out.write(args.exportMetaPath.toUtf8());
-        out.write("\n");
-        out.flush();
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("Failed to write file: ");
+        err.write(args.exportMetaPath.toUtf8());
+        err.write("\n");
+        err.flush();
         return 1;
     }
     return 0;
@@ -344,10 +360,10 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
 
 int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     if (m_metaHandler == nullptr) {
-        QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
-        out.write("Error: No meta handler registered\n");
-        out.flush();
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("Error: No meta handler registered\n");
+        err.flush();
         return 1;
     }
 
@@ -363,12 +379,12 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     } else if (format == "html") {
         output = DocGenerator::toHtml(meta).toUtf8();
     } else {
-        QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
-        out.write("Error: Unknown format '");
-        out.write(format.toUtf8());
-        out.write("'. Supported: markdown, openapi, html\n");
-        out.flush();
+        QFile err;
+        err.open(stderr, QIODevice::WriteOnly);
+        err.write("Error: Unknown format '");
+        err.write(format.toUtf8());
+        err.write("'. Supported: markdown, openapi, html\n");
+        err.flush();
         return 1;
     }
 
@@ -376,12 +392,12 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     if (!args.exportDocPath.isEmpty()) {
         QFile file(args.exportDocPath);
         if (!file.open(QIODevice::WriteOnly)) {
-            QFile out;
-            out.open(stdout, QIODevice::WriteOnly);
-            out.write("Error: Cannot write to ");
-            out.write(args.exportDocPath.toUtf8());
-            out.write("\n");
-            out.flush();
+            QFile err;
+            err.open(stderr, QIODevice::WriteOnly);
+            err.write("Error: Cannot write to ");
+            err.write(args.exportDocPath.toUtf8());
+            err.write("\n");
+            err.flush();
             return 1;
         }
         file.write(output);
