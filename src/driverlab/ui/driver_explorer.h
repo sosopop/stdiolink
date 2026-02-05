@@ -19,9 +19,9 @@ public:
     explicit DriverExplorer(QWidget *parent = nullptr);
 
     // Loaded drivers
-    void addDriver(const QString &id, const QString &name, bool running);
+    void addDriver(const QString &id, const QString &name, bool keepAlive);
     void removeDriver(const QString &id);
-    void setDriverStatus(const QString &id, bool running);
+    void setDriverRunMode(const QString &id, bool keepAlive);
     void clear();
 
     // Registry
@@ -34,6 +34,9 @@ public:
 signals:
     void driverSelected(const QString &id);
     void driverDoubleClicked(const QString &id);
+    void exportRequested(const QString &id, const QString &format);
+    void runModeChangeRequested(const QString &id, bool keepAlive);
+    void closeRequested(const QString &id);
 
 private:
     void setupContextMenu();

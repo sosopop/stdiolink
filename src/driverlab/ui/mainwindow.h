@@ -21,10 +21,14 @@ private slots:
     void onTabCloseRequested(int index);
     void onDriverSelected(const QString &id);
     void onDriverDoubleClicked(const QString &id);
+    void onExportRequested(const QString &id, const QString &format);
+    void onRunModeChangeRequested(const QString &id, bool keepAlive);
+    void onCloseRequested(const QString &id);
     void exportMarkdown();
     void exportHtml();
     void exportOpenAPI();
     void about();
+    void showTabContextMenu(const QPoint &pos);
 
 private:
     void setupUi();
@@ -32,6 +36,10 @@ private:
     void setupToolBar();
     void updateStatusBar();
     void openDriverByPath(const QString &program);
+
+    void exportMarkdownForPage(DriverTestPage *page);
+    void exportHtmlForPage(DriverTestPage *page);
+    void exportOpenAPIForPage(DriverTestPage *page);
 
     DriverTestPage *createTestPage(const QString &program);
 

@@ -49,15 +49,20 @@ QString DocGenerator::toMarkdown(const meta::DriverMeta& meta) {
             }
 
             // 返回值
+            md += "#### Returns\n\n";
+            if (!cmd.returns.description.isEmpty()) {
+                md += cmd.returns.description + "\n\n";
+            }
             if (!cmd.returns.fields.isEmpty()) {
-                md += "#### Returns\n\n";
-                md += "| Name | Type | Description |\n";
-                md += "|------|------|-------------|\n";
+                md += "| Name | Type | Required | Description |\n";
+                md += "|------|------|----------|-------------|\n";
                 for (const auto& field : cmd.returns.fields) {
-                    QString type = meta::fieldTypeToString(field.type);
-                    md += "| " + field.name + " | " + type + " | " + field.description + " |\n";
+                    md += formatFieldMarkdown(field);
                 }
                 md += "\n";
+            } else {
+                QString type = meta::fieldTypeToString(cmd.returns.type);
+                md += "**Type:** `" + type + "`\n\n";
             }
         }
     }
@@ -86,7 +91,7 @@ QString DocGenerator::toMarkdown(const meta::DriverMeta& meta) {
 }
 
 QString DocGenerator::formatFieldMarkdown(const meta::FieldMeta& field, int indent) {
-    Q_UNUSED(indent)
+    QString md;
     QString type = meta::fieldTypeToString(field.type);
     QString req = field.required ? "Yes" : "No";
     QString desc = field.description;
@@ -97,7 +102,19 @@ QString DocGenerator::formatFieldMarkdown(const meta::FieldMeta& field, int inde
         desc += " " + constraints;
     }
 
-    return "| " + field.name + " | " + type + " | " + req + " | " + desc + " |\n";
+    QString name = field.name;
+    if (indent > 0) {
+        name = QString(indent * 2, ' ') + "- " + name;
+    }
+
+    md = "| " + name + " | " + type + " | " + req + " | " + desc + " |\n";
+
+    // 处理嵌套字段
+    for (const auto& subField : field.fields) {
+        md += formatFieldMarkdown(subField, indent + 1);
+    }
+
+    return md;
 }
 
 QString DocGenerator::formatConstraintsMarkdown(const meta::Constraints& c) {
@@ -180,7 +197,36 @@ QJsonObject DocGenerator::toOpenAPI(const meta::DriverMeta& meta) {
         // Responses
         QJsonObject responses;
         QJsonObject response200;
-        response200["description"] = "Success";
+        response200["description"] = cmd.returns.description.isEmpty() ? "Success" : cmd.returns.description;
+
+        QJsonObject content;
+        QJsonObject jsonContent;
+        QJsonObject respSchema;
+        respSchema["type"] = "object";
+
+        QJsonObject respProps;
+        respProps["status"] = QJsonObject{{"type", "string"}, {"enum", QJsonArray{"done", "error", "event"}}};
+        respProps["code"] = QJsonObject{{"type", "integer"}};
+
+        // Data field schema based on returns
+        QJsonObject dataSchema;
+        if (!cmd.returns.fields.isEmpty()) {
+            dataSchema["type"] = "object";
+            QJsonObject props;
+            for (const auto& f : cmd.returns.fields) {
+                props[f.name] = fieldToSchema(f);
+            }
+            dataSchema["properties"] = props;
+        } else {
+            dataSchema["type"] = fieldTypeToOpenAPIType(cmd.returns.type);
+        }
+        respProps["data"] = dataSchema;
+
+        respSchema["properties"] = respProps;
+        jsonContent["schema"] = respSchema;
+        content["application/json"] = jsonContent;
+        response200["content"] = content;
+
         responses["200"] = response200;
         post["responses"] = responses;
 
@@ -381,8 +427,11 @@ QString DocGenerator::toHtml(const meta::DriverMeta& meta) {
             }
 
             // Returns
+            html += "          <h4>Returns</h4>\n";
+            if (!cmd.returns.description.isEmpty()) {
+                html += "          <p class=\"returns-desc\">" + cmd.returns.description + "</p>\n";
+            }
             if (!cmd.returns.fields.isEmpty()) {
-                html += "          <h4>Returns</h4>\n";
                 html += "          <div class=\"table-wrapper\">\n";
                 html += "            <table>\n";
                 html += "              "
@@ -400,6 +449,10 @@ QString DocGenerator::toHtml(const meta::DriverMeta& meta) {
                 html += "              </tbody>\n";
                 html += "            </table>\n";
                 html += "          </div>\n";
+            } else {
+                QString type = meta::fieldTypeToString(cmd.returns.type);
+                html += "          <p>Type: <span class=\"type-badge " + type.toLower() + "\">" +
+                        type + "</span></p>\n";
             }
 
             html += "        </div>\n"; // End card-body
@@ -552,6 +605,7 @@ QString DocGenerator::generateHtmlStyle() {
     
     .command-title { color: #6c757d; font-size: 0.9rem; }
     .command-desc { margin-bottom: 20px; }
+    .returns-desc { margin-bottom: 15px; color: #495057; }
     
     /* Tables */
     .table-wrapper { overflow-x: auto; margin-top: 15px; }

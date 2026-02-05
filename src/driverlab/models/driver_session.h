@@ -13,6 +13,9 @@ class DriverSession : public QObject
     Q_OBJECT
 
 public:
+    enum RunMode { OneShot, KeepAlive };
+    Q_ENUM(RunMode)
+
     explicit DriverSession(QObject *parent = nullptr);
     ~DriverSession();
 
@@ -23,6 +26,9 @@ public:
     QString program() const { return m_program; }
     const stdiolink::meta::DriverMeta *meta() const;
     bool hasMeta() const;
+
+    RunMode runMode() const { return m_runMode; }
+    void setRunMode(RunMode mode);
 
     void executeCommand(const QString &cmd, const QJsonObject &data = {});
     void cancelCurrentTask();
@@ -46,6 +52,8 @@ private:
     stdiolink::Task m_currentTask;
     QTimer *m_pollTimer;
     bool m_queryingMeta = false;
+    RunMode m_runMode = OneShot;
+    std::unique_ptr<stdiolink::meta::DriverMeta> m_cachedMeta;
 };
 
 #endif // DRIVER_SESSION_H

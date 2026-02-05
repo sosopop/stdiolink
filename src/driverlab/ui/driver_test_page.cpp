@@ -117,6 +117,7 @@ bool DriverTestPage::openDriver(const QString &program, const QStringList &args)
         m_headerLabel->setText(program);
         m_statusLabel->setText(tr("运行中"));
         m_statusLabel->setStyleSheet("color: green; font-weight: bold;");
+        m_paramForm->setDriverProgram(program);
         return true;
     }
     return false;

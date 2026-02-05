@@ -54,21 +54,43 @@ bool DriverSession::isRunning() const
 
 const stdiolink::meta::DriverMeta *DriverSession::meta() const
 {
+    // 优先返回缓存的元数据
+    if (m_cachedMeta) {
+        return m_cachedMeta.get();
+    }
     if (!m_driver) return nullptr;
     return m_driver->hasMeta() ? m_driver->queryMeta(0) : nullptr;
 }
 
 bool DriverSession::hasMeta() const
 {
-    return m_driver && m_driver->hasMeta();
+    return m_cachedMeta || (m_driver && m_driver->hasMeta());
+}
+
+void DriverSession::setRunMode(RunMode mode)
+{
+    if (m_runMode == mode) return;
+
+    // 从 KeepAlive 切换到 OneShot 时，关闭正在运行的进程
+    if (m_runMode == KeepAlive && mode == OneShot) {
+        if (m_driver && m_driver->isRunning()) {
+            m_driver->terminate();
+        }
+    }
+
+    m_runMode = mode;
 }
 
 void DriverSession::executeCommand(const QString &cmd, const QJsonObject &data)
 {
-    // 如果 Driver 没有运行，重新启动（OneShot 模式）
+    // 如果 Driver 没有运行，重新启动
     if (!m_driver || !m_driver->isRunning()) {
         m_driver = std::make_unique<stdiolink::Driver>();
-        if (!m_driver->start(m_program, {})) {
+        QStringList args;
+        if (m_runMode == KeepAlive) {
+            args << "--profile=keepalive";
+        }
+        if (!m_driver->start(m_program, args)) {
             emit errorOccurred(tr("启动 Driver 失败: %1").arg(m_program));
             m_driver.reset();
             return;
@@ -135,7 +157,9 @@ void DriverSession::queryMetaAsync()
         self->m_queryingMeta = false;
 
         if (meta) {
-            emit self->metaReady(meta);
+            // 缓存元数据的副本
+            self->m_cachedMeta = std::make_unique<stdiolink::meta::DriverMeta>(*meta);
+            emit self->metaReady(self->m_cachedMeta.get());
         } else {
             emit self->errorOccurred(tr("获取 Driver 元数据失败"));
         }

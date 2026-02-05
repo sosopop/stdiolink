@@ -47,12 +47,12 @@ DriverExplorer::DriverExplorer(QWidget *parent)
     loadRegistry();
 }
 
-void DriverExplorer::addDriver(const QString &id, const QString &name, bool running)
+void DriverExplorer::addDriver(const QString &id, const QString &name, bool keepAlive)
 {
     auto *item = new QTreeWidgetItem(m_loadedItem);
     item->setText(0, name);
     item->setData(0, Qt::UserRole, id);
-    setDriverStatus(id, running);
+    setDriverRunMode(id, keepAlive);
 }
 
 void DriverExplorer::removeDriver(const QString &id)
@@ -66,12 +66,14 @@ void DriverExplorer::removeDriver(const QString &id)
     }
 }
 
-void DriverExplorer::setDriverStatus(const QString &id, bool running)
+void DriverExplorer::setDriverRunMode(const QString &id, bool keepAlive)
 {
     for (int i = 0; i < m_loadedItem->childCount(); ++i) {
         auto *item = m_loadedItem->child(i);
         if (item->data(0, Qt::UserRole).toString() == id) {
-            item->setIcon(0, EmojiIcon::get(running ? "🟢" : "⚪", 16));
+            // ⚡ OneShot, 🔁 KeepAlive
+            item->setIcon(0, EmojiIcon::get(keepAlive ? "🔁" : "⚡", 16));
+            item->setToolTip(0, keepAlive ? tr("KeepAlive 模式") : tr("OneShot 模式"));
             break;
         }
     }
@@ -109,6 +111,39 @@ void DriverExplorer::setupContextMenu()
             });
             menu.addAction(EmojiIcon::get("🗑️"), tr("移除"), this, [this, id]() {
                 removeFromRegistry(id);
+            });
+        } else if (item && item->parent() == m_loadedItem) {
+            // Loaded driver context menu
+            QString id = item->data(0, Qt::UserRole).toString();
+
+            // Run mode submenu
+            auto *modeMenu = menu.addMenu(EmojiIcon::get("⚡"), tr("运行模式"));
+            modeMenu->addAction(tr("OneShot (单次)"), this, [this, id]() {
+                emit runModeChangeRequested(id, false);
+            });
+            modeMenu->addAction(tr("KeepAlive (保持)"), this, [this, id]() {
+                emit runModeChangeRequested(id, true);
+            });
+
+            menu.addSeparator();
+
+            // Export submenu
+            auto *exportMenu = menu.addMenu(EmojiIcon::get("📄"), tr("导出文档"));
+            exportMenu->addAction(EmojiIcon::get("📝"), tr("Markdown"), this, [this, id]() {
+                emit exportRequested(id, "markdown");
+            });
+            exportMenu->addAction(EmojiIcon::get("🌐"), tr("HTML"), this, [this, id]() {
+                emit exportRequested(id, "html");
+            });
+            exportMenu->addAction(EmojiIcon::get("🔌"), tr("OpenAPI"), this, [this, id]() {
+                emit exportRequested(id, "openapi");
+            });
+
+            menu.addSeparator();
+
+            // Close action
+            menu.addAction(EmojiIcon::get("❌"), tr("关闭"), this, [this, id]() {
+                emit closeRequested(id);
             });
         }
 

@@ -9,8 +9,11 @@
 #include <QSplitter>
 #include <QJsonDocument>
 #include <QStyle>
+#include <QMenu>
+#include <QTabBar>
 #include "stdiolink/doc/doc_generator.h"
 #include "widgets/emoji_icon.h"
+#include "models/driver_session.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -44,6 +47,11 @@ void MainWindow::setupUi()
     m_tabWidget->setDocumentMode(true); // 让标签页风格更现代
     setCentralWidget(m_tabWidget);
 
+    // Tab bar context menu
+    m_tabWidget->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_tabWidget->tabBar(), &QTabBar::customContextMenuRequested,
+            this, &MainWindow::showTabContextMenu);
+
     connect(m_tabWidget, &QTabWidget::tabCloseRequested,
             this, &MainWindow::onTabCloseRequested);
 
@@ -52,6 +60,12 @@ void MainWindow::setupUi()
             this, &MainWindow::onDriverSelected);
     connect(m_explorer, &DriverExplorer::driverDoubleClicked,
             this, &MainWindow::onDriverDoubleClicked);
+    connect(m_explorer, &DriverExplorer::exportRequested,
+            this, &MainWindow::onExportRequested);
+    connect(m_explorer, &DriverExplorer::runModeChangeRequested,
+            this, &MainWindow::onRunModeChangeRequested);
+    connect(m_explorer, &DriverExplorer::closeRequested,
+            this, &MainWindow::onCloseRequested);
 }
 
 void MainWindow::setupMenus()
@@ -107,7 +121,8 @@ void MainWindow::openDriverByPath(const QString &program)
         int index = m_tabWidget->addTab(page, fi.baseName());
         m_tabWidget->setCurrentIndex(index);
 
-        m_explorer->addDriver(id, fi.baseName(), true);
+        // 默认是 OneShot 模式，传 false
+        m_explorer->addDriver(id, fi.baseName(), false);
         updateStatusBar();
     }
 }
@@ -164,10 +179,47 @@ void MainWindow::onDriverDoubleClicked(const QString &id)
     }
 }
 
+void MainWindow::onExportRequested(const QString &id, const QString &format)
+{
+    if (!m_pages.contains(id)) return;
+    auto *page = m_pages[id];
+
+    if (format == "markdown") {
+        exportMarkdownForPage(page);
+    } else if (format == "html") {
+        exportHtmlForPage(page);
+    } else if (format == "openapi") {
+        exportOpenAPIForPage(page);
+    }
+}
+
+void MainWindow::onRunModeChangeRequested(const QString &id, bool keepAlive)
+{
+    if (!m_pages.contains(id)) return;
+    auto *page = m_pages[id];
+    auto *session = page->session();
+    if (session) {
+        session->setRunMode(keepAlive ? DriverSession::KeepAlive : DriverSession::OneShot);
+        m_explorer->setDriverRunMode(id, keepAlive);
+        statusBar()->showMessage(
+            tr("运行模式已切换为 %1").arg(keepAlive ? "KeepAlive" : "OneShot"), 3000);
+    }
+}
+
+void MainWindow::onCloseRequested(const QString &id)
+{
+    if (!m_pages.contains(id)) return;
+    auto *page = m_pages[id];
+    int index = m_tabWidget->indexOf(page);
+    if (index >= 0) {
+        onTabCloseRequested(index);
+    }
+}
+
 void MainWindow::exportMarkdown()
 {
     auto *page = qobject_cast<DriverTestPage*>(m_tabWidget->currentWidget());
-    if (!page || !page->isRunning()) {
+    if (!page) {
         QMessageBox::warning(this, tr("导出"), tr("没有活动的 Driver"));
         return;
     }
@@ -201,7 +253,7 @@ void MainWindow::exportMarkdown()
 void MainWindow::exportHtml()
 {
     auto *page = qobject_cast<DriverTestPage*>(m_tabWidget->currentWidget());
-    if (!page || !page->isRunning()) {
+    if (!page) {
         QMessageBox::warning(this, tr("导出"), tr("没有活动的 Driver"));
         return;
     }
@@ -235,7 +287,7 @@ void MainWindow::exportHtml()
 void MainWindow::exportOpenAPI()
 {
     auto *page = qobject_cast<DriverTestPage*>(m_tabWidget->currentWidget());
-    if (!page || !page->isRunning()) {
+    if (!page) {
         QMessageBox::warning(this, tr("导出"), tr("没有活动的 Driver"));
         return;
     }
@@ -292,4 +344,149 @@ DriverTestPage *MainWindow::createTestPage(const QString &program)
         return nullptr;
     }
     return page;
+}
+
+void MainWindow::showTabContextMenu(const QPoint &pos)
+{
+    int tabIndex = m_tabWidget->tabBar()->tabAt(pos);
+    if (tabIndex < 0) return;
+
+    auto *page = qobject_cast<DriverTestPage*>(m_tabWidget->widget(tabIndex));
+    if (!page) return;
+
+    auto *session = page->session();
+    QMenu menu(this);
+
+    // Run mode submenu
+    auto *modeMenu = menu.addMenu(EmojiIcon::get("⚡"), tr("运行模式"));
+    auto *oneShotAction = modeMenu->addAction(tr("OneShot (单次)"));
+    auto *keepAliveAction = modeMenu->addAction(tr("KeepAlive (保持)"));
+    oneShotAction->setCheckable(true);
+    keepAliveAction->setCheckable(true);
+
+    if (session) {
+        oneShotAction->setChecked(session->runMode() == DriverSession::OneShot);
+        keepAliveAction->setChecked(session->runMode() == DriverSession::KeepAlive);
+    }
+
+    menu.addSeparator();
+
+    // Export submenu
+    auto *exportMenu = menu.addMenu(EmojiIcon::get("📄"), tr("导出文档"));
+    auto *mdAction = exportMenu->addAction(EmojiIcon::get("📝"), tr("Markdown"));
+    auto *htmlAction = exportMenu->addAction(EmojiIcon::get("🌐"), tr("HTML"));
+    auto *apiAction = exportMenu->addAction(EmojiIcon::get("🔌"), tr("OpenAPI"));
+
+    bool hasMeta = session && session->hasMeta();
+    mdAction->setEnabled(hasMeta);
+    htmlAction->setEnabled(hasMeta);
+    apiAction->setEnabled(hasMeta);
+
+    menu.addSeparator();
+
+    // Close action
+    auto *closeAction = menu.addAction(EmojiIcon::get("❌"), tr("关闭"));
+
+    // Execute menu
+    QAction *selected = menu.exec(m_tabWidget->tabBar()->mapToGlobal(pos));
+    if (!selected) return;
+
+    if (selected == oneShotAction && session) {
+        session->setRunMode(DriverSession::OneShot);
+    } else if (selected == keepAliveAction && session) {
+        session->setRunMode(DriverSession::KeepAlive);
+    } else if (selected == mdAction) {
+        exportMarkdownForPage(page);
+    } else if (selected == htmlAction) {
+        exportHtmlForPage(page);
+    } else if (selected == apiAction) {
+        exportOpenAPIForPage(page);
+    } else if (selected == closeAction) {
+        onTabCloseRequested(tabIndex);
+    }
+}
+
+void MainWindow::exportMarkdownForPage(DriverTestPage *page)
+{
+    auto *session = page->session();
+    if (!session || !session->hasMeta()) {
+        QMessageBox::warning(this, tr("导出"), tr("Driver 元数据不可用"));
+        return;
+    }
+
+    QString path = QFileDialog::getSaveFileName(
+        this, tr("导出 Markdown"),
+        page->driverName() + ".md",
+        tr("Markdown 文件 (*.md)")
+    );
+    if (path.isEmpty()) return;
+
+    const auto *meta = session->meta();
+    QString content = stdiolink::DocGenerator::toMarkdown(*meta);
+
+    QFile file(path);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(content.toUtf8());
+        file.close();
+        statusBar()->showMessage(tr("已导出到 %1").arg(path), 3000);
+    } else {
+        QMessageBox::critical(this, tr("导出"), tr("写入文件失败"));
+    }
+}
+
+void MainWindow::exportHtmlForPage(DriverTestPage *page)
+{
+    auto *session = page->session();
+    if (!session || !session->hasMeta()) {
+        QMessageBox::warning(this, tr("导出"), tr("Driver 元数据不可用"));
+        return;
+    }
+
+    QString path = QFileDialog::getSaveFileName(
+        this, tr("导出 HTML"),
+        page->driverName() + ".html",
+        tr("HTML 文件 (*.html)")
+    );
+    if (path.isEmpty()) return;
+
+    const auto *meta = session->meta();
+    QString content = stdiolink::DocGenerator::toHtml(*meta);
+
+    QFile file(path);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(content.toUtf8());
+        file.close();
+        statusBar()->showMessage(tr("已导出到 %1").arg(path), 3000);
+    } else {
+        QMessageBox::critical(this, tr("导出"), tr("写入文件失败"));
+    }
+}
+
+void MainWindow::exportOpenAPIForPage(DriverTestPage *page)
+{
+    auto *session = page->session();
+    if (!session || !session->hasMeta()) {
+        QMessageBox::warning(this, tr("导出"), tr("Driver 元数据不可用"));
+        return;
+    }
+
+    QString path = QFileDialog::getSaveFileName(
+        this, tr("导出 OpenAPI"),
+        page->driverName() + ".json",
+        tr("JSON 文件 (*.json)")
+    );
+    if (path.isEmpty()) return;
+
+    const auto *meta = session->meta();
+    QJsonObject apiObj = stdiolink::DocGenerator::toOpenAPI(*meta);
+    QJsonDocument doc(apiObj);
+
+    QFile file(path);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(doc.toJson(QJsonDocument::Indented));
+        file.close();
+        statusBar()->showMessage(tr("已导出到 %1").arg(path), 3000);
+    } else {
+        QMessageBox::critical(this, tr("导出"), tr("写入文件失败"));
+    }
 }

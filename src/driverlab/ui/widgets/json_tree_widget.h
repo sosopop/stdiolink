@@ -16,10 +16,17 @@ public:
     void setJson(const QJsonValue &json);
     void clear();
 
+private slots:
+    void onItemExpanded(QTreeWidgetItem *item);
+
 private:
-    void addNode(QTreeWidgetItem *parent, const QString &key, const QJsonValue &value);
+    void addNodeLazy(QTreeWidgetItem *parent, const QString &key, const QJsonValue &value);
+    void populateChildren(QTreeWidgetItem *item);
     QString valueToString(const QJsonValue &value);
-    QIcon getIconForValue(const QJsonValue &value);
+    QString getTypeString(const QJsonValue &value);
+
+    static constexpr int kJsonDataRole = Qt::UserRole + 1;
+    static constexpr int kLoadedRole = Qt::UserRole + 2;
 };
 
 #endif // JSON_TREE_WIDGET_H

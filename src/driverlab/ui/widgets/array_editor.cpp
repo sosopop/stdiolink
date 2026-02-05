@@ -19,8 +19,8 @@ ArrayEditor::ArrayEditor(const stdiolink::meta::FieldMeta &field, QWidget *paren
     auto *btnLayout = new QHBoxLayout;
     auto *addBtn = new QPushButton(tr("+"), this);
     auto *removeBtn = new QPushButton(tr("-"), this);
-    addBtn->setMaximumWidth(30);
-    removeBtn->setMaximumWidth(30);
+    //addBtn->setMaximumWidth(30);
+    //removeBtn->setMaximumWidth(30);
 
     btnLayout->addWidget(addBtn);
     btnLayout->addWidget(removeBtn);
