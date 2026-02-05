@@ -29,10 +29,9 @@ stdiolink 采用 Host-Driver 架构：
 {"cmd":"echo","data":{"msg":"hello"}}
 ```
 
-响应采用两行格式：
+响应采用单行格式：
 ```json
-{"status":"done","code":0}
-{"echo":"hello"}
+{"status":"done","code":0,"data":{"echo":"hello"}}
 ```
 
 ### 元数据系统

@@ -48,11 +48,11 @@ int DriverCore::runStdioMode() {
 int DriverCore::run(int argc, char* argv[]) {
     ConsoleArgs args;
     if (!args.parse(argc, argv)) {
-        QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
-        err.write(args.errorMessage.toUtf8());
-        err.write("\n");
-        err.flush();
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write(args.errorMessage.toUtf8());
+        out.write("\n");
+        out.flush();
         return 1;
     }
 
@@ -253,11 +253,7 @@ void DriverCore::printHelp() {
     ts << "  <program> [options]\n";
     ts << "  <program> --cmd=<command> [params...]\n\n";
 
-    ts << "Options:\n";
-    ts << "  --help              Show help\n";
-    ts << "  --version           Show version\n";
-    ts << "  --mode=<mode>       Run mode (stdio|console)\n";
-    ts << "  --cmd=<command>     Execute command\n\n";
+    ts << HelpGenerator::generateSystemOptions();
 
     if (m_metaHandler) {
         const auto& meta = m_metaHandler->driverMeta();
@@ -315,10 +311,10 @@ int DriverCore::printCommandHelp(const QString& cmdName) {
 
 int DriverCore::handleExportMeta(const ConsoleArgs& args) {
     if (!m_metaHandler) {
-        QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
-        err.write("No metadata available\n");
-        err.flush();
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write("No metadata available\n");
+        out.flush();
         return 1;
     }
 
@@ -335,12 +331,12 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
 
     // 输出到文件
     if (!MetaExporter::exportToFile(meta, args.exportMetaPath)) {
-        QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
-        err.write("Failed to write file: ");
-        err.write(args.exportMetaPath.toUtf8());
-        err.write("\n");
-        err.flush();
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write("Failed to write file: ");
+        out.write(args.exportMetaPath.toUtf8());
+        out.write("\n");
+        out.flush();
         return 1;
     }
     return 0;
@@ -348,10 +344,10 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
 
 int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     if (m_metaHandler == nullptr) {
-        QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
-        err.write("Error: No meta handler registered\n");
-        err.flush();
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write("Error: No meta handler registered\n");
+        out.flush();
         return 1;
     }
 
@@ -367,12 +363,12 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     } else if (format == "html") {
         output = DocGenerator::toHtml(meta).toUtf8();
     } else {
-        QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
-        err.write("Error: Unknown format '");
-        err.write(format.toUtf8());
-        err.write("'. Supported: markdown, openapi, html\n");
-        err.flush();
+        QFile out;
+        out.open(stdout, QIODevice::WriteOnly);
+        out.write("Error: Unknown format '");
+        out.write(format.toUtf8());
+        out.write("'. Supported: markdown, openapi, html\n");
+        out.flush();
         return 1;
     }
 
@@ -380,12 +376,12 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     if (!args.exportDocPath.isEmpty()) {
         QFile file(args.exportDocPath);
         if (!file.open(QIODevice::WriteOnly)) {
-            QFile err;
-            err.open(stderr, QIODevice::WriteOnly);
-            err.write("Error: Cannot write to ");
-            err.write(args.exportDocPath.toUtf8());
-            err.write("\n");
-            err.flush();
+            QFile out;
+            out.open(stdout, QIODevice::WriteOnly);
+            out.write("Error: Cannot write to ");
+            out.write(args.exportDocPath.toUtf8());
+            out.write("\n");
+            out.flush();
             return 1;
         }
         file.write(output);

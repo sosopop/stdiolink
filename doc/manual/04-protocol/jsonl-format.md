@@ -29,22 +29,13 @@ struct Request {
 
 ## 响应格式
 
-响应由两行组成：帧头和载荷。
-
-### 帧头结构
-
-```cpp
-struct FrameHeader {
-    QString status;  // "event" | "done" | "error"
-    int code = 0;    // 状态码
-};
-```
+响应为单行 JSON，包含状态、状态码和数据。
 
 ### 消息结构
 
 ```cpp
 struct Message {
-    QString status;      // 状态
+    QString status;      // "event" | "done" | "error"
     int code = 0;        // 状态码
     QJsonValue payload;  // 载荷数据
 };
@@ -52,9 +43,8 @@ struct Message {
 
 ### JSON 格式
 
-```
-第一行: {"status":"状态","code":状态码}
-第二行: {载荷数据}
+```json
+{"status":"状态","code":状态码,"data":{载荷数据}}
 ```
 
 ### 状态类型
@@ -69,26 +59,20 @@ struct Message {
 
 **成功响应：**
 ```json
-{"status":"done","code":0}
-{"echo":"hello"}
+{"status":"done","code":0,"data":{"echo":"hello"}}
 ```
 
 **带进度的响应：**
 ```json
-{"status":"event","code":0}
-{"step":1,"total":3}
-{"status":"event","code":0}
-{"step":2,"total":3}
-{"status":"event","code":0}
-{"step":3,"total":3}
-{"status":"done","code":0}
-{}
+{"status":"event","code":0,"data":{"step":1,"total":3}}
+{"status":"event","code":0,"data":{"step":2,"total":3}}
+{"status":"event","code":0,"data":{"step":3,"total":3}}
+{"status":"done","code":0,"data":{}}
 ```
 
 **错误响应：**
 ```json
-{"status":"error","code":404}
-{"message":"unknown command"}
+{"status":"error","code":404,"data":{"message":"unknown command"}}
 ```
 
 ## 特殊命令

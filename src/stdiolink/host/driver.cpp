@@ -43,7 +43,6 @@ Task Driver::request(const QString& cmd, const QJsonObject& data) {
     m_proc.write(line);
     m_proc.waitForBytesWritten(1000);
 
-    m_waitingHeader = true;
     m_buf.clear();
 
     return {this, m_cur};
@@ -86,31 +85,26 @@ void Driver::pumpStdout() {
 
     QByteArray line;
     while (tryReadLine(line)) {
-        if (m_waitingHeader) {
-            if (!parseHeader(line, m_hdr)) {
-                pushError(1000, QJsonObject{{"message", "invalid header"},
-                                            {"raw", QString::fromUtf8(line)}});
-                return;
-            }
-            m_waitingHeader = false;
-        } else {
-            QJsonValue payload = parsePayload(line);
-            Message msg{m_hdr.status, m_hdr.code, payload};
-            m_cur->queue.push_back(msg);
+        Message msg;
+        if (!parseResponse(line, msg)) {
+            pushError(1000, QJsonObject{{"message", "invalid response"},
+                                        {"raw", QString::fromUtf8(line)}});
+            return;
+        }
 
-            if (m_hdr.status == "done" || m_hdr.status == "error") {
-                m_cur->terminal = true;
-                m_cur->exitCode = m_hdr.code;
-                m_cur->finalPayload = payload;
+        m_cur->queue.push_back(msg);
 
-                if (m_hdr.status == "error" && payload.isObject()) {
-                    auto obj = payload.toObject();
-                    if (obj.contains("message")) {
-                        m_cur->errorText = obj["message"].toString();
-                    }
+        if (msg.status == "done" || msg.status == "error") {
+            m_cur->terminal = true;
+            m_cur->exitCode = msg.code;
+            m_cur->finalPayload = msg.payload;
+
+            if (msg.status == "error" && msg.payload.isObject()) {
+                auto obj = msg.payload.toObject();
+                if (obj.contains("message")) {
+                    m_cur->errorText = obj["message"].toString();
                 }
             }
-            m_waitingHeader = true;
         }
     }
 }

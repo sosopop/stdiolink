@@ -131,3 +131,46 @@ TEST(JsonlParser, ParsePayload_String) {
     EXPECT_TRUE(val.isString());
     EXPECT_EQ(val.toString(), "hello world");
 }
+
+// ============================================
+// 响应解析测试 (单行格式)
+// ============================================
+
+TEST(JsonlParser, ParseResponse_Done) {
+    Message msg;
+    bool ok = parseResponse(R"({"status":"done","code":0,"data":{"result":42}})", msg);
+
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(msg.status, "done");
+    EXPECT_EQ(msg.code, 0);
+    EXPECT_EQ(msg.payload.toObject()["result"].toInt(), 42);
+}
+
+TEST(JsonlParser, ParseResponse_Error) {
+    Message msg;
+    bool ok = parseResponse(R"({"status":"error","code":1007,"data":{"message":"fail"}})", msg);
+
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(msg.status, "error");
+    EXPECT_EQ(msg.code, 1007);
+}
+
+TEST(JsonlParser, ParseResponse_Event) {
+    Message msg;
+    bool ok = parseResponse(R"({"status":"event","code":0,"data":{"progress":0.5}})", msg);
+
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(msg.status, "event");
+}
+
+TEST(JsonlParser, ParseResponse_InvalidStatus) {
+    Message msg;
+    bool ok = parseResponse(R"({"status":"unknown","code":0,"data":{}})", msg);
+    EXPECT_FALSE(ok);
+}
+
+TEST(JsonlParser, ParseResponse_MissingStatus) {
+    Message msg;
+    bool ok = parseResponse(R"({"code":0,"data":{}})", msg);
+    EXPECT_FALSE(ok);
+}

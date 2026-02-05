@@ -46,33 +46,26 @@ TEST(JsonlSerializer, SerializeResponse_Done) {
     QJsonObject payload{{"result", 42}};
     auto result = serializeResponse("done", 0, payload);
 
-    // 应该有两行
-    auto lines = result.split('\n');
-    EXPECT_EQ(lines.size(), 3); // 两行内容 + 末尾空串
-
-    // 第一行是 header
-    EXPECT_TRUE(lines[0].contains("\"status\":\"done\""));
-    EXPECT_TRUE(lines[0].contains("\"code\":0"));
-
-    // 第二行是 payload
-    EXPECT_TRUE(lines[1].contains("\"result\":42"));
+    // 单行格式
+    EXPECT_TRUE(result.contains("\"status\":\"done\""));
+    EXPECT_TRUE(result.contains("\"code\":0"));
+    EXPECT_TRUE(result.contains("\"data\":{\"result\":42}"));
+    EXPECT_TRUE(result.endsWith('\n'));
 }
 
 TEST(JsonlSerializer, SerializeResponse_Error) {
     QJsonObject payload{{"message", "invalid input"}};
     auto result = serializeResponse("error", 1007, payload);
 
-    auto lines = result.split('\n');
-    EXPECT_TRUE(lines[0].contains("\"status\":\"error\""));
-    EXPECT_TRUE(lines[0].contains("\"code\":1007"));
-    EXPECT_TRUE(lines[1].contains("\"message\":\"invalid input\""));
+    EXPECT_TRUE(result.contains("\"status\":\"error\""));
+    EXPECT_TRUE(result.contains("\"code\":1007"));
+    EXPECT_TRUE(result.contains("\"data\":{\"message\":\"invalid input\"}"));
 }
 
 TEST(JsonlSerializer, SerializeResponse_Event) {
     QJsonObject payload{{"progress", 0.5}};
     auto result = serializeResponse("event", 0, payload);
 
-    auto lines = result.split('\n');
-    EXPECT_TRUE(lines[0].contains("\"status\":\"event\""));
-    EXPECT_TRUE(lines[1].contains("\"progress\""));
+    EXPECT_TRUE(result.contains("\"status\":\"event\""));
+    EXPECT_TRUE(result.contains("\"data\":{\"progress\":0.5}"));
 }

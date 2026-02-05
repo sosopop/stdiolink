@@ -38,7 +38,12 @@
       "Bash(powershell -Command:*)",
       "Bash(./calculator_driver.exe:*)",
       "Bash(./file_processor_driver.exe:*)",
-      "Bash(./device_simulator_driver.exe:*)"
+      "Bash(./device_simulator_driver.exe:*)",
+      "Bash(.build_ninjabindevice_simulator_driver.exe --help)",
+      "Bash(./build_ninja/bin/device_simulator_driver.exe:*)",
+      "Bash(./build_ninja/bin/calculator_driver.exe:*)",
+      "Bash(./build_ninja/bin/file_processor_driver.exe:*)",
+      "Bash(./build_ninja/bin/stdiolink_tests.exe:*)"
     ]
   }
 }

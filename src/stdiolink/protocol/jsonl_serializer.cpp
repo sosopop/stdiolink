@@ -19,29 +19,13 @@ QByteArray serializeRequest(const QString& cmd, const QJsonValue& data) {
 }
 
 QByteArray serializeResponse(const QString& status, int code, const QJsonValue& payload) {
-    // Header 行
-    QJsonObject header;
-    header["status"] = status;
-    header["code"] = code;
+    QJsonObject resp;
+    resp["status"] = status;
+    resp["code"] = code;
+    resp["data"] = payload;
 
-    QByteArray result = QJsonDocument(header).toJson(QJsonDocument::Compact);
+    QByteArray result = QJsonDocument(resp).toJson(QJsonDocument::Compact);
     result.append('\n');
-
-    // Payload 行
-    if (payload.isObject()) {
-        result.append(QJsonDocument(payload.toObject()).toJson(QJsonDocument::Compact));
-    } else if (payload.isArray()) {
-        result.append(QJsonDocument(payload.toArray()).toJson(QJsonDocument::Compact));
-    } else {
-        // 对于基本类型，包装成单值数组再提取
-        QJsonArray arr;
-        arr.append(payload);
-        QByteArray tmp = QJsonDocument(arr).toJson(QJsonDocument::Compact);
-        // 去掉 [ 和 ]
-        result.append(tmp.mid(1, tmp.size() - 2));
-    }
-    result.append('\n');
-
     return result;
 }
 

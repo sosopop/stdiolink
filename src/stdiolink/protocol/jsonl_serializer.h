@@ -18,4 +18,6 @@ STDIOLINK_API bool parseHeader(const QByteArray& line, FrameHeader& out);
 
 STDIOLINK_API QJsonValue parsePayload(const QByteArray& line);
 
+STDIOLINK_API bool parseResponse(const QByteArray& line, Message& out);
+
 } // namespace stdiolink

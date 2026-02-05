@@ -20,7 +20,6 @@ public:
 
 private:
     static void writeToStdout(const QString& status, int code, const QJsonValue& payload);
-    static void writeToStderr(const QString& status, int code, const QJsonValue& payload);
 
     int m_exitCode = 0;
     bool m_hasResult = false;

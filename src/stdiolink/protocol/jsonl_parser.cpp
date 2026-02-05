@@ -83,4 +83,25 @@ QJsonValue parsePayload(const QByteArray& line) {
     return str;
 }
 
+bool parseResponse(const QByteArray& line, Message& out) {
+    QJsonParseError err{};
+    QJsonDocument doc = QJsonDocument::fromJson(line, &err);
+
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        return false;
+    }
+
+    QJsonObject obj = doc.object();
+
+    if (!obj.contains("status") || !obj.contains("code")) {
+        return false;
+    }
+
+    out.status = obj["status"].toString();
+    out.code = obj["code"].toInt();
+    out.payload = obj.value("data");
+
+    return out.status == "event" || out.status == "done" || out.status == "error";
+}
+
 } // namespace stdiolink

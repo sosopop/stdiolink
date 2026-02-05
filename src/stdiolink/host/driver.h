@@ -45,8 +45,6 @@ private:
     QProcess m_proc;
     QByteArray m_buf;
 
-    bool m_waitingHeader = true;
-    FrameHeader m_hdr;
     std::shared_ptr<TaskState> m_cur;
     std::shared_ptr<meta::DriverMeta> m_meta;
 
