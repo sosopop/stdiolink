@@ -44,7 +44,9 @@
       "Bash(./build_ninja/bin/calculator_driver.exe:*)",
       "Bash(./build_ninja/bin/file_processor_driver.exe:*)",
       "Bash(./build_ninja/bin/stdiolink_tests.exe:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(cd:*)",
+      "Bash(D:/code/stdiolink/build_ninja/bin/driver_3dvision.exe:*)"
     ]
   }
 }

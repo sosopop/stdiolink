@@ -82,3 +82,9 @@ doc/
 ├── meta_system_design_v2.md    # 元数据系统设计
 └── stdiolink_ipc_design.md     # IPC 设计文档
 ```
+
+## 工具脚本
+
+- `tools/pack_single_header.py`: 将 stdiolink 打包为单头文件。
+- `tools/create_driver.py`: 创建新的 Driver 项目脚手架。
+- `tools/run-clang-tidy.py`: 运行静态分析。

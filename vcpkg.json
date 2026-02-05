@@ -4,6 +4,7 @@
   "dependencies": [
     "spdlog",
     "qtbase",
+    "qtwebsockets",
     "gtest"
   ]
 }
