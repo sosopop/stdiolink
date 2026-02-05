@@ -13,6 +13,7 @@ set(DRIVERLAB_SOURCES
     ui/widgets/form_widget_factory.cpp
     ui/widgets/json_editor.cpp
     ui/widgets/array_editor.cpp
+    ui/widgets/json_tree_widget.cpp
     models/driver_session.cpp
     models/command_history.cpp
 )
@@ -28,6 +29,7 @@ set(DRIVERLAB_HEADERS
     ui/widgets/form_widget_factory.h
     ui/widgets/json_editor.h
     ui/widgets/array_editor.h
+    ui/widgets/json_tree_widget.h
     models/driver_session.h
     models/command_history.h
 )

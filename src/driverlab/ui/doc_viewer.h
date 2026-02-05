@@ -17,6 +17,7 @@ public:
 
 private:
     QString generateMarkdown(const stdiolink::meta::CommandMeta *cmd);
+    QString formatFieldMarkdown(const stdiolink::meta::FieldMeta &field, int indent = 0);
 
     QTextBrowser *m_browser;
 };

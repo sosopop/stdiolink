@@ -1,6 +1,7 @@
 #include "doc_viewer.h"
 
 #include <QVBoxLayout>
+#include <QJsonDocument>
 
 DocViewer::DocViewer(QWidget *parent)
     : QWidget(parent)
@@ -47,19 +48,18 @@ QString DocViewer::generateMarkdown(const stdiolink::meta::CommandMeta *cmd)
         md += "|------|------|------|------|\n";
 
         for (const auto &p : cmd->params) {
-            QString type = stdiolink::meta::fieldTypeToString(p.type);
-            md += QString("| %1 | %2 | %3 | %4 |\n")
-                .arg(p.name, type, p.required ? "是" : "否", p.description);
+            md += formatFieldMarkdown(p);
         }
         md += "\n";
     }
 
     // 返回值部分
+    md += "### 返回值\n\n";
+    if (!cmd->returns.description.isEmpty()) {
+        md += cmd->returns.description + "\n\n";
+    }
+
     if (!cmd->returns.fields.isEmpty()) {
-        md += "### 返回值\n\n";
-        if (!cmd->returns.description.isEmpty()) {
-            md += cmd->returns.description + "\n\n";
-        }
         md += "| 名称 | 类型 | 说明 |\n";
         md += "|------|------|------|\n";
 
@@ -69,6 +69,39 @@ QString DocViewer::generateMarkdown(const stdiolink::meta::CommandMeta *cmd)
                 .arg(f.name, type, f.description);
         }
         md += "\n";
+    } else {
+        QString type = stdiolink::meta::fieldTypeToString(cmd->returns.type);
+        md += "类型: `" + type + "`\n\n";
+    }
+
+    // 示例部分 (如果有)
+    if (!cmd->examples.isEmpty()) {
+        md += "### 示例\n\n";
+        for (const auto &ex : cmd->examples) {
+            md += "```json\n";
+            md += QJsonDocument(ex).toJson(QJsonDocument::Indented);
+            md += "```\n\n";
+        }
+    }
+
+    return md;
+}
+
+QString DocViewer::formatFieldMarkdown(const stdiolink::meta::FieldMeta &field, int indent)
+{
+    QString md;
+    QString type = stdiolink::meta::fieldTypeToString(field.type);
+    QString name = field.name;
+    if (indent > 0) {
+        name = QString(indent * 2, ' ') + "- " + name;
+    }
+
+    md += QString("| %1 | %2 | %3 | %4 |\n")
+        .arg(name, type, field.required ? "是" : "否", field.description);
+
+    // 处理嵌套字段
+    for (const auto &subField : field.fields) {
+        md += formatFieldMarkdown(subField, indent + 1);
     }
 
     return md;

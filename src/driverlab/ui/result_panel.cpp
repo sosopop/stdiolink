@@ -10,6 +10,7 @@ ResultPanel::ResultPanel(QWidget *parent)
     : QWidget(parent)
     , m_tabs(new QTabWidget(this))
     , m_eventTable(new QTableWidget(this))
+    , m_resultTree(new JsonTreeWidget(this))
     , m_rawJson(new QPlainTextEdit(this))
     , m_historyList(new QListWidget(this))
 {
@@ -31,6 +32,7 @@ ResultPanel::ResultPanel(QWidget *parent)
     connect(m_eventTable, &QTableWidget::itemSelectionChanged, this, &ResultPanel::onEventSelected);
 
     m_tabs->addTab(m_eventTable, tr("事件流"));
+    m_tabs->addTab(m_resultTree, tr("结果树"));
     m_tabs->addTab(m_rawJson, tr("原始 JSON"));
     m_tabs->addTab(m_historyList, tr("执行历史"));
 
@@ -91,6 +93,11 @@ void ResultPanel::addMessage(const stdiolink::Message &msg)
     
     m_eventTable->scrollToBottom();
 
+    // 更新结果树
+    if (status == "done" || status == "event") {
+        m_resultTree->setJson(msg.payload);
+    }
+
     // 更新 Raw JSON
     QString raw = m_rawJson->toPlainText();
     if (!raw.isEmpty()) raw += "\n";
@@ -125,6 +132,7 @@ void ResultPanel::addHistoryEntry(const HistoryEntry &entry)
 void ResultPanel::clear()
 {
     m_eventTable->setRowCount(0);
+    m_resultTree->clear();
     m_rawJson->clear();
 }
 

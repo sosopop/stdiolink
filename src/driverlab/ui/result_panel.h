@@ -8,6 +8,7 @@
 #include <QListWidget>
 #include <stdiolink/protocol/jsonl_types.h>
 #include "models/command_history.h"
+#include "widgets/json_tree_widget.h"
 
 class ResultPanel : public QWidget
 {
@@ -26,6 +27,7 @@ private slots:
 private:
     QTabWidget *m_tabs;
     QTableWidget *m_eventTable;
+    JsonTreeWidget *m_resultTree;
     QPlainTextEdit *m_rawJson;
     QListWidget *m_historyList;
 };
