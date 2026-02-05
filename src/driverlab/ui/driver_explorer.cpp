@@ -6,8 +6,8 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
-#include <QStyle>
 #include <QApplication>
+#include "widgets/emoji_icon.h"
 
 DriverExplorer::DriverExplorer(QWidget *parent)
     : QWidget(parent)
@@ -23,10 +23,10 @@ DriverExplorer::DriverExplorer(QWidget *parent)
     m_tree->setIndentation(20); // 增加缩进，更清晰
 
     m_loadedItem = new QTreeWidgetItem(m_tree, {tr("运行中")});
-    m_loadedItem->setIcon(0, QApplication::style()->standardIcon(QStyle::SP_DirIcon));
+    m_loadedItem->setIcon(0, EmojiIcon::get("🚀"));
     
     m_registryItem = new QTreeWidgetItem(m_tree, {tr("收藏夹")});
-    m_registryItem->setIcon(0, QApplication::style()->standardIcon(QStyle::SP_DirIcon));
+    m_registryItem->setIcon(0, EmojiIcon::get("⭐"));
     
     m_loadedItem->setExpanded(true);
     m_registryItem->setExpanded(true);
@@ -71,10 +71,7 @@ void DriverExplorer::setDriverStatus(const QString &id, bool running)
     for (int i = 0; i < m_loadedItem->childCount(); ++i) {
         auto *item = m_loadedItem->child(i);
         if (item->data(0, Qt::UserRole).toString() == id) {
-            // 使用标准图标模拟状态
-            item->setIcon(0, QApplication::style()->standardIcon(
-                running ? QStyle::SP_MediaPlay : QStyle::SP_MediaStop
-            ));
+            item->setIcon(0, EmojiIcon::get(running ? "🟢" : "⚪", 16));
             break;
         }
     }
@@ -94,7 +91,7 @@ void DriverExplorer::setupContextMenu()
         QMenu menu;
 
         if (item == m_registryItem) {
-            menu.addAction(tr("添加 Driver..."), this, [this]() {
+            menu.addAction(EmojiIcon::get("➕"), tr("添加 Driver..."), this, [this]() {
                 QStringList paths = QFileDialog::getOpenFileNames(
                     this, tr("选择 Driver"),
                     QString(),
@@ -107,10 +104,10 @@ void DriverExplorer::setupContextMenu()
             });
         } else if (item && item->parent() == m_registryItem) {
             QString id = item->data(0, Qt::UserRole).toString();
-            menu.addAction(QApplication::style()->standardIcon(QStyle::SP_DialogOpenButton), tr("打开"), this, [this, id]() {
+            menu.addAction(EmojiIcon::get("⚡"), tr("打开"), this, [this, id]() {
                 emit driverDoubleClicked(id);
             });
-            menu.addAction(QApplication::style()->standardIcon(QStyle::SP_TrashIcon), tr("移除"), this, [this, id]() {
+            menu.addAction(EmojiIcon::get("🗑️"), tr("移除"), this, [this, id]() {
                 removeFromRegistry(id);
             });
         }
@@ -137,7 +134,7 @@ void DriverExplorer::loadRegistry()
         item->setText(0, entry.name);
         item->setData(0, Qt::UserRole, entry.id);
         item->setToolTip(0, entry.path);
-        item->setIcon(0, QApplication::style()->standardIcon(QStyle::SP_FileIcon));
+        item->setIcon(0, EmojiIcon::get("📦", 16));
     }
     settings.endArray();
 }
@@ -166,7 +163,7 @@ void DriverExplorer::addToRegistry(const QString &name, const QString &path)
     item->setText(0, name);
     item->setData(0, Qt::UserRole, entry.id);
     item->setToolTip(0, path);
-    item->setIcon(0, QApplication::style()->standardIcon(QStyle::SP_FileIcon));
+    item->setIcon(0, EmojiIcon::get("📦", 16));
 
     saveRegistry();
 }

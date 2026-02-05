@@ -6,6 +6,7 @@
 #include <QGroupBox>
 #include <QApplication>
 #include <QStyle>
+#include "widgets/emoji_icon.h"
 
 ParameterForm::ParameterForm(QWidget *parent)
     : QWidget(parent)
@@ -27,12 +28,12 @@ ParameterForm::ParameterForm(QWidget *parent)
 
     auto *btnLayout = new QHBoxLayout;
     auto *execBtn = new QPushButton(tr("执行"), this);
-    execBtn->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
+    execBtn->setIcon(EmojiIcon::get("⚡"));
     execBtn->setMinimumHeight(35); // 增加按钮高度
     
     auto *clearBtn = new QPushButton(tr("清空"), this);
     clearBtn->setObjectName("secondary"); // 用于样式表
-    clearBtn->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogResetButton));
+    clearBtn->setIcon(EmojiIcon::get("🧹"));
     clearBtn->setMinimumHeight(35);
 
     btnLayout->addWidget(execBtn);

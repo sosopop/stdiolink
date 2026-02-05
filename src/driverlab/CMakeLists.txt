@@ -30,6 +30,7 @@ set(DRIVERLAB_HEADERS
     ui/widgets/json_editor.h
     ui/widgets/array_editor.h
     ui/widgets/json_tree_widget.h
+    ui/widgets/emoji_icon.h
     models/driver_session.h
     models/command_history.h
 )

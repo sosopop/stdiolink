@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QStyle>
 #include "stdiolink/doc/doc_generator.h"
+#include "widgets/emoji_icon.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -57,20 +58,20 @@ void MainWindow::setupMenus()
 {
     // File menu
     auto *fileMenu = menuBar()->addMenu(tr("文件(&F)"));
-    fileMenu->addAction(style()->standardIcon(QStyle::SP_DialogOpenButton), tr("打开 Driver(&O)..."), QKeySequence::Open, this, &MainWindow::openDriver);
-    fileMenu->addAction(style()->standardIcon(QStyle::SP_DialogCloseButton), tr("关闭 Driver(&C)"), QKeySequence::Close, this, &MainWindow::closeCurrentDriver);
+    fileMenu->addAction(EmojiIcon::get("📂"), tr("打开 Driver(&O)..."), QKeySequence::Open, this, &MainWindow::openDriver);
+    fileMenu->addAction(EmojiIcon::get("❌"), tr("关闭 Driver(&C)"), QKeySequence::Close, this, &MainWindow::closeCurrentDriver);
     fileMenu->addSeparator();
-    fileMenu->addAction(tr("退出(&X)"), QKeySequence::Quit, this, &QWidget::close);
+    fileMenu->addAction(EmojiIcon::get("🚪"), tr("退出(&X)"), QKeySequence::Quit, this, &QWidget::close);
 
     // Export menu
     auto *exportMenu = menuBar()->addMenu(tr("导出(&E)"));
-    exportMenu->addAction(tr("导出 Markdown(&M)..."), this, &MainWindow::exportMarkdown);
-    exportMenu->addAction(tr("导出 HTML(&H)..."), this, &MainWindow::exportHtml);
-    exportMenu->addAction(tr("导出 OpenAPI(&O)..."), this, &MainWindow::exportOpenAPI);
+    exportMenu->addAction(EmojiIcon::get("📝"), tr("导出 Markdown(&M)..."), this, &MainWindow::exportMarkdown);
+    exportMenu->addAction(EmojiIcon::get("🌐"), tr("导出 HTML(&H)..."), this, &MainWindow::exportHtml);
+    exportMenu->addAction(EmojiIcon::get("🔌"), tr("导出 OpenAPI(&O)..."), this, &MainWindow::exportOpenAPI);
 
     // Help menu
     auto *helpMenu = menuBar()->addMenu(tr("帮助(&H)"));
-    helpMenu->addAction(style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("关于(&A)"), this, &MainWindow::about);
+    helpMenu->addAction(EmojiIcon::get("💡"), tr("关于(&A)"), this, &MainWindow::about);
 }
 
 void MainWindow::setupToolBar()
@@ -79,9 +80,8 @@ void MainWindow::setupToolBar()
     toolBar->setMovable(false);
     toolBar->setFloatable(false);
     
-    // 使用标准图标
-    toolBar->addAction(style()->standardIcon(QStyle::SP_DialogOpenButton), tr("打开"), this, &MainWindow::openDriver);
-    toolBar->addAction(style()->standardIcon(QStyle::SP_DialogCloseButton), tr("关闭"), this, &MainWindow::closeCurrentDriver);
+    toolBar->addAction(EmojiIcon::get("📂"), tr("打开"), this, &MainWindow::openDriver);
+    toolBar->addAction(EmojiIcon::get("❌"), tr("关闭"), this, &MainWindow::closeCurrentDriver);
 }
 
 void MainWindow::openDriver()
