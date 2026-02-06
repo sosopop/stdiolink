@@ -6,3 +6,4 @@ build_ninja
 compile_commands.json
 single_include/
 .claude/settings.local.json
+nul

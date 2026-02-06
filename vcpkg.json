@@ -2,9 +2,9 @@
   "name": "stdiolink",
   "version": "1.0.0",
   "dependencies": [
-    "spdlog",
     "qtbase",
     "qtwebsockets",
-    "gtest"
+    "gtest",
+    "quickjs-ng"
   ]
 }
