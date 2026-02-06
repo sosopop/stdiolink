@@ -15,7 +15,7 @@ using namespace stdiolink::meta;
 using namespace modbus;
 
 /**
- * 连接管理器 - 支持 keepalive 模式复用连接
+ * 连接管理器 - 自动缓存连接
  */
 class ConnectionManager {
 public:
@@ -24,34 +24,25 @@ public:
         return mgr;
     }
 
-    ModbusRtuClient* getClient(const QString& host, quint16 port, bool keepalive, int timeout) {
+    ModbusRtuClient* getClient(const QString& host, quint16 port, int timeout) {
         ConnectionKey key{host, port};
 
-        if (keepalive) {
-            auto it = m_connections.find(key);
-            if (it != m_connections.end() && it.value()->isConnected()) {
-                return it.value().get();
-            }
-            auto client = std::make_shared<ModbusRtuClient>(timeout);
-            if (client->connectToServer(host, port)) {
-                ModbusRtuClient* ptr = client.get();
-                m_connections[key] = std::move(client);
-                return ptr;
-            }
-            return nullptr;
+        auto it = m_connections.find(key);
+        if (it != m_connections.end() && it.value()->isConnected()) {
+            return it.value().get();
         }
 
-        // 非 keepalive 模式，创建临时连接
-        m_tempClient = std::make_shared<ModbusRtuClient>(timeout);
-        if (m_tempClient->connectToServer(host, port)) {
-            return m_tempClient.get();
+        auto client = std::make_shared<ModbusRtuClient>(timeout);
+        if (client->connectToServer(host, port)) {
+            ModbusRtuClient* ptr = client.get();
+            m_connections[key] = std::move(client);
+            return ptr;
         }
         return nullptr;
     }
 
     void disconnectAll() {
         m_connections.clear();
-        m_tempClient.reset();
     }
 
 private:
@@ -59,7 +50,6 @@ private:
     ~ConnectionManager() { disconnectAll(); }
 
     QHash<ConnectionKey, std::shared_ptr<ModbusRtuClient>> m_connections;
-    std::shared_ptr<ModbusRtuClient> m_tempClient;
 };
 
 /**
@@ -90,10 +80,9 @@ ModbusRtuClient* ModbusRtuHandler::getClient(const QJsonObject& p, IResponder& r
 {
     QString host = p["host"].toString();
     int port = p["port"].toInt(502);
-    bool keepalive = p["keepalive"].toBool(false);
     int timeout = p["timeout"].toInt(3000);
 
-    auto* client = ConnectionManager::instance().getClient(host, port, keepalive, timeout);
+    auto* client = ConnectionManager::instance().getClient(host, port, timeout);
     if (!client) {
         resp.error(1, QJsonObject{{"message", "Failed to connect to " + host}});
     }
@@ -343,11 +332,6 @@ static FieldBuilder connectionParam(const QString& name) {
             .range(1, 247)
             .description("从站地址");
     }
-    if (name == "keepalive") {
-        return FieldBuilder("keepalive", FieldType::Bool)
-            .defaultValue(false)
-            .description("保持连接（复用连接）");
-    }
     return FieldBuilder("timeout", FieldType::Int)
         .defaultValue(3000)
         .range(100, 30000)
@@ -379,7 +363,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -394,7 +377,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -417,7 +399,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -431,7 +412,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -445,7 +425,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -460,7 +439,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -475,7 +453,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -497,7 +474,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
@@ -511,7 +487,6 @@ void ModbusRtuHandler::buildMeta()
             .param(connectionParam("host"))
             .param(connectionParam("port"))
             .param(connectionParam("unit_id"))
-            .param(connectionParam("keepalive"))
             .param(connectionParam("timeout"))
             .param(FieldBuilder("address", FieldType::Int)
                 .required()
