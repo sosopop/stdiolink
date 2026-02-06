@@ -27,6 +27,7 @@ set(TEST_SOURCES
     test_process_binding.cpp
     test_proxy_and_scheduler.cpp
     test_js_integration.cpp
+    test_js_stress.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
