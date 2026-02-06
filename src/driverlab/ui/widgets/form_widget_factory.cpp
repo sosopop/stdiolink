@@ -68,8 +68,7 @@ FormWidgetFactory::WidgetInfo FormWidgetFactory::createStringWidget(
 
     info.validate = [&field, info]() {
         QString val = info.getValue().toString();
-        if (field.required && val.isEmpty()) return false;
-        return true;
+        return !(field.required && val.isEmpty());
     };
 
     return info;

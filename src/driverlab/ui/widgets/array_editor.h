@@ -11,7 +11,7 @@ class ArrayEditor : public QWidget
     Q_OBJECT
 
 public:
-    explicit ArrayEditor(const stdiolink::meta::FieldMeta &field, QWidget *parent = nullptr);
+    explicit ArrayEditor(stdiolink::meta::FieldMeta field, QWidget *parent = nullptr);
 
     QJsonValue value() const;
     void setValue(const QJsonArray &arr);

@@ -18,7 +18,7 @@ class DriverTestPage : public QWidget
 
 public:
     explicit DriverTestPage(QWidget *parent = nullptr);
-    ~DriverTestPage();
+    ~DriverTestPage() override;
 
     bool openDriver(const QString &program, const QStringList &args = {});
     void closeDriver();

@@ -10,7 +10,7 @@ class WebSocketClient : public QObject {
     Q_OBJECT
 public:
     explicit WebSocketClient(QObject* parent = nullptr);
-    ~WebSocketClient();
+    ~WebSocketClient() override;
 
     bool connectToServer(const QString& url);
     void disconnect();
@@ -41,5 +41,5 @@ private:
     QWebSocket* m_socket;
     QTimer* m_heartbeatTimer;
     QSet<QString> m_subscriptions;
-    bool m_connected;
+    bool m_connected = false;
 };

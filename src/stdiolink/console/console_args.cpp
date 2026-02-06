@@ -5,7 +5,7 @@
 
 #ifdef Q_OS_WIN
 #include <io.h>
-#include <stdio.h>
+#include <cstdio>
 #define isatty _isatty
 #define fileno _fileno
 #else

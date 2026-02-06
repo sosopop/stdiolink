@@ -28,9 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     statusBar()->showMessage(tr("就绪"));
 }
 
-MainWindow::~MainWindow()
-{
-}
+MainWindow::~MainWindow() = default;
 
 void MainWindow::setupUi()
 {

@@ -6,7 +6,6 @@ WebSocketClient::WebSocketClient(QObject* parent)
     : QObject(parent)
     , m_socket(new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this))
     , m_heartbeatTimer(new QTimer(this))
-    , m_connected(false)
 {
     connect(m_socket, &QWebSocket::connected,
             this, &WebSocketClient::onConnected);

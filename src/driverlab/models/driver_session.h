@@ -17,7 +17,7 @@ public:
     Q_ENUM(RunMode)
 
     explicit DriverSession(QObject *parent = nullptr);
-    ~DriverSession();
+    ~DriverSession() override;
 
     bool start(const QString &program, const QStringList &args = {});
     void stop();

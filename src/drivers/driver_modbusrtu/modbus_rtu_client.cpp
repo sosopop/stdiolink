@@ -43,8 +43,8 @@ static const uint16_t crc16Table[256] = {
 uint16_t ModbusRtuClient::calculateCRC16(const QByteArray& data)
 {
     uint16_t crc = 0xFFFF;
-    for (int i = 0; i < data.size(); ++i) {
-        uint8_t byte = static_cast<uint8_t>(data[i]);
+    for (char c : data) {
+        uint8_t byte = static_cast<uint8_t>(c);
         crc = (crc >> 8) ^ crc16Table[(crc ^ byte) & 0xFF];
     }
     return crc;

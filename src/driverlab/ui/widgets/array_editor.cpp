@@ -5,9 +5,9 @@
 #include <QPushButton>
 #include <QInputDialog>
 
-ArrayEditor::ArrayEditor(const stdiolink::meta::FieldMeta &field, QWidget *parent)
+ArrayEditor::ArrayEditor(stdiolink::meta::FieldMeta field, QWidget *parent)
     : QWidget(parent)
-    , m_field(field)
+    , m_field(std::move(field))
     , m_list(new QListWidget(this))
 {
     auto *layout = new QVBoxLayout(this);
