@@ -2,6 +2,7 @@
 
 #include <QProcess>
 #include <QProcessEnvironment>
+#include "js_config.h"
 
 namespace {
 
@@ -132,6 +133,10 @@ bool parseOptions(JSContext* ctx,
 }
 
 JSValue jsExec(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    if (stdiolink_service::JsConfigBinding::isDumpSchemaMode(ctx)) {
+        stdiolink_service::JsConfigBinding::markBlockedSideEffect(ctx);
+        return JS_ThrowInternalError(ctx, "exec() is blocked in --dump-config-schema mode");
+    }
     if (argc < 1 || !JS_IsString(argv[0])) {
         return JS_ThrowTypeError(ctx, "exec(program, args?, options?): program must be a string");
     }

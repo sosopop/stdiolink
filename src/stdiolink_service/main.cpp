@@ -1,10 +1,13 @@
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QJsonDocument>
 #include <QTextStream>
 #include <cstdio>
 
+#include "bindings/js_config.h"
 #include "bindings/js_stdiolink_module.h"
 #include "bindings/js_task_scheduler.h"
+#include "config/service_args.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
 
@@ -41,10 +44,13 @@ void utf8MessageHandler(QtMsgType type, const QMessageLogContext&, const QString
 
 void printHelp() {
     QTextStream err(stderr);
-    err << "Usage: stdiolink_service <script.js>\n";
+    err << "Usage: stdiolink_service <script.js> [options]\n";
     err << "Options:\n";
-    err << "  --help     Show this help\n";
-    err << "  --version  Show version\n";
+    err << "  --help                  Show this help\n";
+    err << "  --version               Show version\n";
+    err << "  --config.key=value      Set config value\n";
+    err << "  --config-file=<path>    Load config from JSON file\n";
+    err << "  --dump-config-schema    Dump config schema and exit\n";
     err.flush();
 }
 
@@ -61,27 +67,43 @@ int main(int argc, char* argv[]) {
     qInstallMessageHandler(utf8MessageHandler);
     QCoreApplication app(argc, argv);
 
-    if (argc < 2) {
-        printHelp();
-        return 2;
-    }
+    using namespace stdiolink_service;
 
-    const QString arg1 = QString::fromLocal8Bit(argv[1]);
-    if (arg1 == "--help" || arg1 == "-h") {
+    auto parsed = ServiceArgs::parse(app.arguments());
+
+    if (parsed.help) {
         printHelp();
         return 0;
     }
-
-    if (arg1 == "--version" || arg1 == "-v") {
+    if (parsed.version) {
         printVersion();
         return 0;
     }
-
-    if (!QFileInfo::exists(arg1)) {
+    if (!parsed.error.isEmpty()) {
         QTextStream err(stderr);
-        err << "File not found: " << arg1 << "\n";
+        err << "Error: " << parsed.error << "\n";
         err.flush();
         return 2;
+    }
+
+    if (!QFileInfo::exists(parsed.scriptPath)) {
+        QTextStream err(stderr);
+        err << "File not found: " << parsed.scriptPath << "\n";
+        err.flush();
+        return 2;
+    }
+
+    // Load config file if specified
+    QJsonObject fileConfig;
+    if (!parsed.configFilePath.isEmpty()) {
+        QString loadErr;
+        fileConfig = ServiceArgs::loadConfigFile(parsed.configFilePath, loadErr);
+        if (!loadErr.isEmpty()) {
+            QTextStream err(stderr);
+            err << "Error: " << loadErr << "\n";
+            err.flush();
+            return 2;
+        }
     }
 
     JsEngine engine;
@@ -90,11 +112,20 @@ int main(int argc, char* argv[]) {
     }
 
     ConsoleBridge::install(engine.context());
+
+    JsConfigBinding::attachRuntime(engine.runtime());
+    JsConfigBinding::setRawConfig(engine.context(),
+                                  parsed.rawConfigValues,
+                                  fileConfig,
+                                  parsed.dumpSchema);
+
     engine.registerModule("stdiolink", jsInitStdiolinkModule);
     JsTaskScheduler scheduler(engine.context());
     JsTaskScheduler::installGlobal(engine.context(), &scheduler);
 
-    int ret = engine.evalFile(arg1);
+    int ret = engine.evalFile(parsed.scriptPath);
+
+    // Drain pending jobs
     while (scheduler.hasPending() || engine.hasPendingJobs()) {
         if (scheduler.hasPending()) {
             scheduler.poll(50);
@@ -105,6 +136,27 @@ int main(int argc, char* argv[]) {
     }
     if (ret == 0 && engine.hadJobError()) {
         ret = 1;
+    }
+
+    // --dump-config-schema mode
+    if (parsed.dumpSchema) {
+        if (ret != 0) {
+            if (JsConfigBinding::takeBlockedSideEffectFlag(engine.context())) {
+                return 2;
+            }
+            return ret;
+        }
+        if (!JsConfigBinding::hasSchema(engine.context())) {
+            QTextStream err(stderr);
+            err << "Error: --dump-config-schema requires the script to call defineConfig()\n";
+            err.flush();
+            return 2;
+        }
+        auto schema = JsConfigBinding::getSchema(engine.context());
+        QTextStream out(stdout);
+        out << QJsonDocument(schema.toJson()).toJson(QJsonDocument::Indented);
+        out.flush();
+        return 0;
     }
 
     return ret;

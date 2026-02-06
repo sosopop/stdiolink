@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QLoggingCategory>
 #include <quickjs.h>
+#include "bindings/js_config.h"
 #include "bindings/js_driver.h"
 #include "bindings/js_task.h"
 #include "module_loader.h"
@@ -40,6 +41,7 @@ JsEngine::~JsEngine() {
     }
     JsDriverBinding::detachRuntime(oldRt);
     JsTaskBinding::detachRuntime(oldRt);
+    stdiolink_service::JsConfigBinding::detachRuntime(oldRt);
 }
 
 void JsEngine::registerModule(const QString& name, JSModuleDef* (*init)(JSContext*, const char*)) {

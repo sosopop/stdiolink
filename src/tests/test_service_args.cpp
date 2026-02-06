@@ -1,0 +1,148 @@
+#include <gtest/gtest.h>
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
+#include "config/service_args.h"
+
+using namespace stdiolink_service;
+
+class ServiceArgsTest : public ::testing::Test {};
+
+TEST_F(ServiceArgsTest, ParseSimpleConfigArg) {
+    QStringList args = {"stdiolink_service", "script.js", "--config.port=8080"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    EXPECT_EQ(result.scriptPath, "script.js");
+    EXPECT_EQ(result.rawConfigValues["port"].toString(), "8080");
+}
+
+TEST_F(ServiceArgsTest, ParseNestedConfigArg) {
+    QStringList args = {"stdiolink_service", "script.js",
+                        "--config.server.host=localhost",
+                        "--config.server.port=3000"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    auto server = result.rawConfigValues["server"].toObject();
+    EXPECT_EQ(server["host"].toString(), "localhost");
+    EXPECT_EQ(server["port"].toString(), "3000");
+}
+
+TEST_F(ServiceArgsTest, RejectInvalidPathSegment) {
+    QStringList args = {"stdiolink_service", "script.js", "--config..port=1"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_FALSE(result.error.isEmpty());
+}
+
+TEST_F(ServiceArgsTest, KeepBoolLiteralAsRawString) {
+    QStringList args = {"stdiolink_service", "script.js", "--config.debug=true"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.rawConfigValues["debug"].isString());
+    EXPECT_EQ(result.rawConfigValues["debug"].toString(), "true");
+}
+
+TEST_F(ServiceArgsTest, KeepDoubleLiteralAsRawString) {
+    QStringList args = {"stdiolink_service", "script.js", "--config.ratio=0.75"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.rawConfigValues["ratio"].isString());
+    EXPECT_EQ(result.rawConfigValues["ratio"].toString(), "0.75");
+}
+
+TEST_F(ServiceArgsTest, KeepStringLiteralAsRawString) {
+    QStringList args = {"stdiolink_service", "script.js", "--config.name=hello"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.rawConfigValues["name"].isString());
+    EXPECT_EQ(result.rawConfigValues["name"].toString(), "hello");
+}
+
+TEST_F(ServiceArgsTest, ExtractConfigFilePath) {
+    QStringList args = {"stdiolink_service", "script.js", "--config-file=config.json"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    EXPECT_EQ(result.configFilePath, "config.json");
+}
+
+TEST_F(ServiceArgsTest, DumpSchemaFlag) {
+    QStringList args = {"stdiolink_service", "script.js", "--dump-config-schema"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    EXPECT_TRUE(result.dumpSchema);
+}
+
+TEST_F(ServiceArgsTest, MissingScriptPath) {
+    QStringList args = {"stdiolink_service", "--config.port=8080"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_FALSE(result.error.isEmpty());
+}
+
+TEST_F(ServiceArgsTest, KeepJsonArrayLiteralAsRawString) {
+    QStringList args = {"stdiolink_service", "script.js", "--config.tags=[1,2,3]"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.rawConfigValues["tags"].isString());
+    EXPECT_EQ(result.rawConfigValues["tags"].toString(), "[1,2,3]");
+}
+
+TEST_F(ServiceArgsTest, KeepJsonObjectLiteralAsRawString) {
+    QStringList args = {"stdiolink_service", "script.js", R"(--config.opts={"a":1})"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.rawConfigValues["opts"].isString());
+    EXPECT_EQ(result.rawConfigValues["opts"].toString(), R"({"a":1})");
+}
+
+TEST_F(ServiceArgsTest, MultipleConfigArgs) {
+    QStringList args = {"stdiolink_service", "script.js",
+                        "--config.port=8080",
+                        "--config.name=test",
+                        "--config.debug=false"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    EXPECT_EQ(result.rawConfigValues.size(), 3);
+}
+
+TEST_F(ServiceArgsTest, LoadConfigFileValid) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("config.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"port": 3000, "name": "test"})");
+    f.close();
+
+    QString err;
+    auto obj = ServiceArgs::loadConfigFile(path, err);
+    EXPECT_TRUE(err.isEmpty()) << err.toStdString();
+    EXPECT_EQ(obj["port"].toInt(), 3000);
+    EXPECT_EQ(obj["name"].toString(), "test");
+}
+
+TEST_F(ServiceArgsTest, LoadConfigFileNotFound) {
+    QString err;
+    auto obj = ServiceArgs::loadConfigFile("nonexistent_file.json", err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(obj.isEmpty());
+}
+
+TEST_F(ServiceArgsTest, LoadConfigFileMalformed) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write("{invalid json content");
+    f.close();
+
+    QString err;
+    auto obj = ServiceArgs::loadConfigFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+}
+
+TEST_F(ServiceArgsTest, HelpFlag) {
+    QStringList args = {"stdiolink_service", "--help"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.help);
+}
+
+TEST_F(ServiceArgsTest, VersionFlag) {
+    QStringList args = {"stdiolink_service", "--version"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.version);
+}

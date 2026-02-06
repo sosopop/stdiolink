@@ -28,6 +28,10 @@ set(TEST_SOURCES
     test_proxy_and_scheduler.cpp
     test_js_integration.cpp
     test_js_stress.cpp
+    test_service_config_schema.cpp
+    test_service_args.cpp
+    test_service_config_validator.cpp
+    test_service_config_js.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -42,6 +46,10 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_process.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_task_scheduler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_stdiolink_module.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_schema.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_args.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_validator.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/driver_proxy.cpp
 )
 

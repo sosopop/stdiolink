@@ -9,6 +9,10 @@ set(STDIOLINK_SERVICE_SOURCES
     bindings/js_process.cpp
     bindings/js_task_scheduler.cpp
     bindings/js_stdiolink_module.cpp
+    bindings/js_config.cpp
+    config/service_config_schema.cpp
+    config/service_args.cpp
+    config/service_config_validator.cpp
     proxy/driver_proxy.cpp
 )
 
@@ -22,6 +26,10 @@ set(STDIOLINK_SERVICE_HEADERS
     bindings/js_process.h
     bindings/js_task_scheduler.h
     bindings/js_stdiolink_module.h
+    bindings/js_config.h
+    config/service_config_schema.h
+    config/service_args.h
+    config/service_config_validator.h
     proxy/driver_proxy.h
 )
 

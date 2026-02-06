@@ -4,6 +4,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QTextStream>
@@ -52,9 +54,14 @@ struct RunResult {
     QString stderrText;
 };
 
-RunResult runServiceScript(const QString& scriptPath, int timeoutMs = 30000) {
+RunResult runServiceScript(const QString& scriptPath,
+                           const QStringList& extraArgs = {},
+                           int timeoutMs = 30000) {
     QProcess proc;
-    proc.start(servicePath(), {scriptPath});
+    QStringList args;
+    args << scriptPath;
+    args << extraArgs;
+    proc.start(servicePath(), args);
     RunResult result;
     result.finished = proc.waitForFinished(timeoutMs);
     if (!result.finished) {
@@ -273,4 +280,67 @@ TEST_F(JsIntegrationTest, CrossFileImport) {
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stderrText.contains("cross-file-ok 7"));
+}
+
+TEST_F(JsIntegrationTest, DumpSchemaOutputsJson) {
+    const QString scriptPath = writeScript(
+        m_tmpDir,
+        "dump_schema_ok.js",
+        "import { defineConfig } from 'stdiolink';\n"
+        "defineConfig({\n"
+        "  port: { type: 'int', required: true },\n"
+        "  name: { type: 'string', default: 'svc' }\n"
+        "});\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    const RunResult r = runServiceScript(scriptPath, {"--dump-config-schema"});
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 0);
+
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(r.stdoutText.toUtf8(), &err);
+    EXPECT_EQ(err.error, QJsonParseError::NoError);
+    EXPECT_TRUE(doc.isObject());
+    EXPECT_TRUE(doc.object().contains("fields"));
+}
+
+TEST_F(JsIntegrationTest, DumpSchemaWithoutDefineConfigFails) {
+    const QString scriptPath = writeScript(
+        m_tmpDir,
+        "dump_schema_no_define.js",
+        "console.log('no-define');\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    const RunResult r = runServiceScript(scriptPath, {"--dump-config-schema"});
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 2);
+    EXPECT_TRUE(r.stderrText.contains("requires the script to call defineConfig()"));
+}
+
+TEST_F(JsIntegrationTest, DumpSchemaModeBlocksOpenDriverAndExec) {
+    const QString openDriverScript = writeScript(
+        m_tmpDir,
+        "dump_schema_open_driver.js",
+        "import { defineConfig, openDriver } from 'stdiolink';\n"
+        "defineConfig({ p: { type: 'int', default: 1 } });\n"
+        "openDriver('dummy-driver');\n");
+    ASSERT_FALSE(openDriverScript.isEmpty());
+
+    const RunResult openDriverResult = runServiceScript(openDriverScript, {"--dump-config-schema"});
+    EXPECT_TRUE(openDriverResult.finished);
+    EXPECT_EQ(openDriverResult.exitCode, 2);
+    EXPECT_TRUE(openDriverResult.stderrText.contains("openDriver() is blocked in --dump-config-schema mode"));
+
+    const QString execScript = writeScript(
+        m_tmpDir,
+        "dump_schema_exec.js",
+        "import { defineConfig, exec } from 'stdiolink';\n"
+        "defineConfig({ p: { type: 'int', default: 1 } });\n"
+        "exec('cmd', ['/c', 'echo', 'x']);\n");
+    ASSERT_FALSE(execScript.isEmpty());
+
+    const RunResult execResult = runServiceScript(execScript, {"--dump-config-schema"});
+    EXPECT_TRUE(execResult.finished);
+    EXPECT_EQ(execResult.exitCode, 2);
+    EXPECT_TRUE(execResult.stderrText.contains("exec() is blocked in --dump-config-schema mode"));
 }
