@@ -1,1 +1,1 @@
-python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy
+python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy "(?i)stdiolink[/\\]src"

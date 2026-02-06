@@ -12,6 +12,11 @@
 #include <QClipboard>
 #include <QFileInfo>
 #include <QJsonDocument>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QTextEdit>
 #include "widgets/emoji_icon.h"
 
 ParameterForm::ParameterForm(QWidget *parent)
@@ -154,9 +159,23 @@ void ParameterForm::buildForm()
 
         // 连接值变化信号以更新命令行示例
         if (info.widget) {
-            // 尝试连接常见的值变化信号
             if (auto *lineEdit = qobject_cast<QLineEdit*>(info.widget)) {
                 connect(lineEdit, &QLineEdit::textChanged,
+                        this, &ParameterForm::updateCommandLineExample);
+            } else if (auto *textEdit = qobject_cast<QTextEdit*>(info.widget)) {
+                connect(textEdit, &QTextEdit::textChanged,
+                        this, &ParameterForm::updateCommandLineExample);
+            } else if (auto *spinBox = qobject_cast<QSpinBox*>(info.widget)) {
+                connect(spinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                        this, &ParameterForm::updateCommandLineExample);
+            } else if (auto *doubleSpinBox = qobject_cast<QDoubleSpinBox*>(info.widget)) {
+                connect(doubleSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                        this, &ParameterForm::updateCommandLineExample);
+            } else if (auto *checkBox = qobject_cast<QCheckBox*>(info.widget)) {
+                connect(checkBox, &QCheckBox::checkStateChanged,
+                        this, &ParameterForm::updateCommandLineExample);
+            } else if (auto *comboBox = qobject_cast<QComboBox*>(info.widget)) {
+                connect(comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                         this, &ParameterForm::updateCommandLineExample);
             }
         }
