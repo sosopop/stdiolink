@@ -1,5 +1,6 @@
 #include "modbus_rtu_client.h"
 #include <QDataStream>
+#include <QElapsedTimer>
 
 namespace modbus {
 
@@ -114,6 +115,46 @@ QByteArray ModbusRtuClient::buildRequest(FunctionCode fc, const QByteArray& pdu)
     return request;
 }
 
+QByteArray ModbusRtuClient::readResponse(int expectedMinLen)
+{
+    QByteArray response;
+    QElapsedTimer timer;
+    timer.start();
+
+    while (timer.elapsed() < m_timeout) {
+        if (m_socket.waitForReadyRead(100)) {
+            response.append(m_socket.readAll());
+        }
+
+        // 至少需要 5 字节才能判断响应类型: Unit ID + FC + 1 byte + CRC16
+        if (response.size() >= 5) {
+            uint8_t fc = static_cast<uint8_t>(response[1]);
+
+            // 异常响应固定 5 字节
+            if (fc & 0x80) {
+                if (response.size() >= 5) {
+                    return response;
+                }
+                continue;
+            }
+
+            // 计算预期长度
+            int expectedLen = expectedMinLen;
+            if (response.size() >= 3) {
+                uint8_t byteCount = static_cast<uint8_t>(response[2]);
+                // 读响应: Unit ID(1) + FC(1) + ByteCount(1) + Data(N) + CRC(2)
+                expectedLen = 3 + byteCount + 2;
+            }
+
+            if (response.size() >= expectedLen) {
+                return response;
+            }
+        }
+    }
+
+    return response;
+}
+
 ModbusResult ModbusRtuClient::parseReadBitsResponse(const QByteArray& response, uint16_t count)
 {
     ModbusResult result;
@@ -197,14 +238,11 @@ ModbusResult ModbusRtuClient::readCoils(uint16_t address, uint16_t count)
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
+    // 预期最小长度: Unit ID(1) + FC(1) + ByteCount(1) + Data(1) + CRC(2) = 6
+    QByteArray response = readResponse(6);
 
-    // RTU 最小响应: Unit ID + FC + CRC = 4 bytes
-    if (response.size() < 4) {
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -234,12 +272,10 @@ ModbusResult ModbusRtuClient::readDiscreteInputs(uint16_t address, uint16_t coun
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    QByteArray response = readResponse(6);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -269,12 +305,10 @@ ModbusResult ModbusRtuClient::readHoldingRegisters(uint16_t address, uint16_t co
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    QByteArray response = readResponse(5 + count * 2);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -304,12 +338,10 @@ ModbusResult ModbusRtuClient::readInputRegisters(uint16_t address, uint16_t coun
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    QByteArray response = readResponse(5 + count * 2);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -339,12 +371,11 @@ ModbusResult ModbusRtuClient::writeSingleCoil(uint16_t address, bool value)
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    // 写响应固定 8 字节
+    QByteArray response = readResponse(8);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -374,12 +405,10 @@ ModbusResult ModbusRtuClient::writeSingleRegister(uint16_t address, uint16_t val
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    QByteArray response = readResponse(8);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -419,12 +448,10 @@ ModbusResult ModbusRtuClient::writeMultipleCoils(uint16_t address, const QVector
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    QByteArray response = readResponse(8);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 
@@ -462,12 +489,10 @@ ModbusResult ModbusRtuClient::writeMultipleRegisters(uint16_t address, const QVe
     if (!m_socket.waitForBytesWritten(m_timeout)) {
         return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
 
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 4) {
+    QByteArray response = readResponse(8);
+
+    if (response.size() < 5) {
         return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
     }
 

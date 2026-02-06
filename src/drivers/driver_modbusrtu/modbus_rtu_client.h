@@ -88,6 +88,7 @@ public:
 
 private:
     QByteArray buildRequest(FunctionCode fc, const QByteArray& pdu);
+    QByteArray readResponse(int expectedMinLen);
     ModbusResult parseReadBitsResponse(const QByteArray& response, uint16_t count);
     ModbusResult parseReadRegistersResponse(const QByteArray& response);
     ModbusResult parseWriteResponse(const QByteArray& response);
