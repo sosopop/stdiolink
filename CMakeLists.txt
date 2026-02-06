@@ -25,6 +25,7 @@ endif()
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../vcpkg/scripts/buildsystems/vcpkg.cmake")
 
 # 查找依赖包
+find_package(qjs CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network WebSockets)
 find_package(GTest CONFIG REQUIRED)
 

@@ -28,6 +28,11 @@ public:
      */
     static QString toHtml(const meta::DriverMeta& meta);
 
+    /**
+     * 生成 TypeScript 声明文件
+     */
+    static QString toTypeScript(const meta::DriverMeta& meta);
+
 private:
     // Markdown helpers
     static QString formatFieldMarkdown(const meta::FieldMeta& field, int indent = 0);
@@ -41,6 +46,13 @@ private:
     // HTML helpers
     static QString generateHtmlStyle();
     static QString generateHtmlScript();
+
+    // TypeScript helpers
+    static QString fieldTypeToTs(meta::FieldType type);
+    static QString fieldToTsType(const meta::FieldMeta& field, int indent = 0);
+    static QString generateTsInterface(const QString& name,
+                                       const QVector<meta::FieldMeta>& fields,
+                                       int indent = 0);
 };
 
 } // namespace stdiolink

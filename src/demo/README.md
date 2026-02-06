@@ -9,7 +9,8 @@ demo/
 ├── demo_host/              # 综合 Host 演示程序
 ├── calculator_driver/      # 计算器 Driver
 ├── file_processor_driver/  # 文件处理 Driver
-└── device_simulator_driver/# 设备模拟 Driver
+├── device_simulator_driver/# 设备模拟 Driver
+└── js_runtime_demo/         # JS runtime (M21-M27) 演示脚本
 ```
 
 ## Demo 说明
@@ -56,6 +57,17 @@ demo/
 - 配置注入 (startupArgs)
 - 事件流 (scan 命令)
 
+### js_runtime_demo
+
+`stdiolink_service` 的综合脚本演示，覆盖 M21-M27：
+
+- JS 引擎与 `console.*` 输出桥接
+- ES Module 相对/父级导入
+- `Driver` / `Task` 绑定
+- `openDriver` 代理与调度行为
+- `exec` 进程调用
+- `--export-doc=ts` 类型声明导出
+
 ## 运行方式
 
 ```bash
@@ -65,6 +77,9 @@ demo/
 # 单独测试 Driver (Console 模式)
 ./build_ninja/src/demo/calculator_driver/calculator_driver.exe --help
 ./build_ninja/src/demo/calculator_driver/calculator_driver.exe add --a=10 --b=20
+
+# 运行 JS runtime 综合演示（构建后脚本会复制到 bin/js_runtime_demo）
+./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/00_all_in_one.js
 ```
 
 ## 功能覆盖

@@ -11,7 +11,7 @@ const QVector<SystemOptionMeta>& SystemOptionRegistry::options() {
         {"cmd", "c", "<command>", "Execute command", {}, "", true},
         {"export-meta", "E", "[=path]", "Export metadata as JSON", {}, "", false},
         {"export-doc", "D", "<fmt>[=path]", "Export documentation",
-         {"markdown", "openapi", "html"}, "", true},
+         {"markdown", "openapi", "html", "ts", "typescript", "dts"}, "", true},
         {"log", "L", "<path>", "Log file path", {}, "", true}
     };
     return opts;

@@ -281,6 +281,14 @@ TEST(ExportArgs, ParseExportDocWithPath) {
     EXPECT_EQ(args.exportDocPath, "api.json");
 }
 
+TEST(ExportArgs, ParseExportDocTypescript) {
+    const char* argv[] = {"prog", "--export-doc=ts=driver.d.ts"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(2, const_cast<char**>(argv)));
+    EXPECT_EQ(args.exportDocFormat, "ts");
+    EXPECT_EQ(args.exportDocPath, "driver.d.ts");
+}
+
 // ============================================
 // M13: 短参数测试
 // ============================================

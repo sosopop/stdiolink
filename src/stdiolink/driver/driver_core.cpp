@@ -403,12 +403,14 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
         output = doc.toJson(QJsonDocument::Indented);
     } else if (format == "html") {
         output = DocGenerator::toHtml(meta).toUtf8();
+    } else if (format == "ts" || format == "typescript" || format == "dts") {
+        output = DocGenerator::toTypeScript(meta).toUtf8();
     } else {
         QFile err;
         err.open(stderr, QIODevice::WriteOnly);
         err.write("Error: Unknown format '");
         err.write(format.toUtf8());
-        err.write("'. Supported: markdown, openapi, html\n");
+        err.write("'. Supported: markdown, openapi, html, ts\n");
         err.flush();
         return 1;
     }

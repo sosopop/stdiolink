@@ -1,6 +1,88 @@
 #include "doc_generator.h"
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QRegularExpression>
+
+namespace {
+
+QString indentStr(int indent) {
+    return QString(indent, ' ');
+}
+
+QString toPascalCase(const QString& text) {
+    QStringList parts;
+    QString current;
+    for (const QChar c : text) {
+        if (c.isLetterOrNumber()) {
+            current.append(c);
+        } else if (!current.isEmpty()) {
+            parts.push_back(current);
+            current.clear();
+        }
+    }
+    if (!current.isEmpty()) {
+        parts.push_back(current);
+    }
+    if (parts.isEmpty()) {
+        return "Generated";
+    }
+
+    QString out;
+    for (const QString& part : parts) {
+        if (part.isEmpty()) {
+            continue;
+        }
+        QString p = part;
+        p[0] = p[0].toUpper();
+        out += p;
+    }
+    if (out.isEmpty()) {
+        out = "Generated";
+    }
+    if (!out[0].isLetter()) {
+        out.prepend('N');
+    }
+    return out;
+}
+
+QString tsQuotedString(const QString& s) {
+    QString out = s;
+    out.replace("\\", "\\\\");
+    out.replace("'", "\\'");
+    return "'" + out + "'";
+}
+
+QString tsMemberName(const QString& name) {
+    static const QRegularExpression kIdentifierPattern("^[A-Za-z_$][A-Za-z0-9_$]*$");
+    if (kIdentifierPattern.match(name).hasMatch()) {
+        return name;
+    }
+    return tsQuotedString(name);
+}
+
+QString qjsonValueCompactString(const QJsonValue& v) {
+    if (v.isNull() || v.isUndefined()) {
+        return "null";
+    }
+    if (v.isBool()) {
+        return v.toBool() ? "true" : "false";
+    }
+    if (v.isDouble()) {
+        return QString::number(v.toDouble(), 'g', 15);
+    }
+    if (v.isString()) {
+        return "\"" + v.toString().replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+    if (v.isArray()) {
+        return QString::fromUtf8(QJsonDocument(v.toArray()).toJson(QJsonDocument::Compact));
+    }
+    if (v.isObject()) {
+        return QString::fromUtf8(QJsonDocument(v.toObject()).toJson(QJsonDocument::Compact));
+    }
+    return "null";
+}
+
+} // namespace
 
 namespace stdiolink {
 
@@ -292,6 +374,179 @@ QString DocGenerator::fieldTypeToOpenAPIType(meta::FieldType type) {
     default:
         return "object";
     }
+}
+
+// ============================================
+// TypeScript 生成
+// ============================================
+
+QString DocGenerator::toTypeScript(const meta::DriverMeta& meta) {
+    QString ts;
+
+    ts += "/**\n";
+    ts += " * " + (meta.info.name.isEmpty() ? QString("Driver") : meta.info.name);
+    if (!meta.info.description.isEmpty()) {
+        ts += " - " + meta.info.description;
+    }
+    ts += "\n";
+    if (!meta.info.version.isEmpty()) {
+        ts += " * @version " + meta.info.version + "\n";
+    }
+    if (!meta.info.vendor.isEmpty()) {
+        ts += " * @vendor " + meta.info.vendor + "\n";
+    }
+    ts += " */\n\n";
+
+    ts += "export interface TaskMessage {\n";
+    ts += "    status: string;\n";
+    ts += "    code: number;\n";
+    ts += "    data: any;\n";
+    ts += "}\n\n";
+
+    ts += "export interface Task {\n";
+    ts += "    tryNext(): TaskMessage | null;\n";
+    ts += "    waitNext(timeoutMs?: number): TaskMessage | null;\n";
+    ts += "    readonly done: boolean;\n";
+    ts += "    readonly exitCode: number;\n";
+    ts += "    readonly errorText: string;\n";
+    ts += "    readonly finalPayload: any;\n";
+    ts += "}\n\n";
+
+    ts += "export interface Driver {\n";
+    ts += "    start(program: string, args?: string[]): boolean;\n";
+    ts += "    request(cmd: string, data?: Record<string, any>): Task;\n";
+    ts += "    queryMeta(timeoutMs?: number): object | null;\n";
+    ts += "    terminate(): void;\n";
+    ts += "    readonly running: boolean;\n";
+    ts += "    readonly hasMeta: boolean;\n";
+    ts += "}\n\n";
+
+    for (const auto& cmd : meta.commands) {
+        const QString base = toPascalCase(cmd.name);
+        const QString paramsName = base + "Params";
+        const QString resultName = base + "Result";
+
+        if (!cmd.description.isEmpty()) {
+            ts += "/** " + cmd.description + " */\n";
+        }
+        ts += generateTsInterface(paramsName, cmd.params);
+
+        if (!cmd.returns.fields.isEmpty()) {
+            ts += generateTsInterface(resultName, cmd.returns.fields);
+        } else if (cmd.returns.type == meta::FieldType::Object) {
+            ts += "export interface " + resultName + " {\n";
+            ts += "    [key: string]: any;\n";
+            ts += "}\n\n";
+        } else {
+            ts += "export interface " + resultName + " {\n";
+            ts += "    value: " + fieldTypeToTs(cmd.returns.type) + ";\n";
+            ts += "}\n\n";
+        }
+    }
+
+    const QString proxyName = toPascalCase(meta.info.name.isEmpty() ? QString("Driver") : meta.info.name) + "Proxy";
+    ts += "export interface " + proxyName + " {\n";
+    for (const auto& cmd : meta.commands) {
+        const QString base = toPascalCase(cmd.name);
+        const QString paramsName = base + "Params";
+        const QString resultName = base + "Result";
+        ts += "    " + tsMemberName(cmd.name) + "(params?: " + paramsName + "): Promise<" + resultName + ">;\n";
+    }
+    ts += "    readonly $driver: Driver;\n";
+    ts += "    readonly $meta: object;\n";
+    ts += "    $rawRequest(cmd: string, data?: any): Task;\n";
+    ts += "    $close(): void;\n";
+    ts += "}\n\n";
+
+    ts += "export type DriverProxy = " + proxyName + ";\n";
+    return ts;
+}
+
+QString DocGenerator::fieldTypeToTs(meta::FieldType type) {
+    switch (type) {
+        case meta::FieldType::String:
+            return "string";
+        case meta::FieldType::Int:
+        case meta::FieldType::Int64:
+        case meta::FieldType::Double:
+            return "number";
+        case meta::FieldType::Bool:
+            return "boolean";
+        case meta::FieldType::Any:
+            return "any";
+        case meta::FieldType::Array:
+            return "any[]";
+        case meta::FieldType::Object:
+            return "Record<string, any>";
+        case meta::FieldType::Enum:
+            return "string";
+    }
+    return "any";
+}
+
+QString DocGenerator::fieldToTsType(const meta::FieldMeta& field, int indent) {
+    if (field.type == meta::FieldType::Enum) {
+        QStringList literals;
+        for (const auto& v : field.constraints.enumValues) {
+            literals << tsQuotedString(v.toString());
+        }
+        return literals.isEmpty() ? QString("string") : literals.join(" | ");
+    }
+
+    if (field.type == meta::FieldType::Array) {
+        if (!field.items) {
+            return "any[]";
+        }
+        QString itemType = fieldToTsType(*field.items, indent);
+        if (itemType.contains('|') || itemType.contains('\n')) {
+            itemType = "(" + itemType + ")";
+        }
+        return itemType + "[]";
+    }
+
+    if (field.type == meta::FieldType::Object) {
+        if (field.fields.isEmpty()) {
+            return "Record<string, any>";
+        }
+
+        QString ts = "{\n";
+        for (const auto& sub : field.fields) {
+            const QString optional = sub.required ? "" : "?";
+            ts += indentStr(indent + 4) + tsMemberName(sub.name) + optional + ": "
+                  + fieldToTsType(sub, indent + 4) + ";\n";
+        }
+        ts += indentStr(indent) + "}";
+        return ts;
+    }
+
+    return fieldTypeToTs(field.type);
+}
+
+QString DocGenerator::generateTsInterface(const QString& name,
+                                          const QVector<meta::FieldMeta>& fields,
+                                          int indent) {
+    QString ts;
+    ts += indentStr(indent) + "export interface " + name + " {\n";
+    if (fields.isEmpty()) {
+        ts += indentStr(indent + 4) + "[key: string]: any;\n";
+    }
+    for (const auto& f : fields) {
+        if (!f.description.isEmpty() || (!f.defaultValue.isNull() && !f.defaultValue.isUndefined())) {
+            ts += indentStr(indent + 4) + "/**\n";
+            if (!f.description.isEmpty()) {
+                ts += indentStr(indent + 4) + " * " + f.description + "\n";
+            }
+            if (!f.defaultValue.isNull() && !f.defaultValue.isUndefined()) {
+                ts += indentStr(indent + 4) + " * @default " + qjsonValueCompactString(f.defaultValue) + "\n";
+            }
+            ts += indentStr(indent + 4) + " */\n";
+        }
+        const QString optional = f.required ? "" : "?";
+        ts += indentStr(indent + 4) + tsMemberName(f.name) + optional + ": "
+              + fieldToTsType(f, indent + 4) + ";\n";
+    }
+    ts += indentStr(indent) + "}\n\n";
+    return ts;
 }
 
 // ============================================

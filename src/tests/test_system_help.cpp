@@ -59,6 +59,9 @@ TEST(SystemOptionRegistry, FindLongExportDoc) {
     EXPECT_TRUE(opt->choices.contains("markdown"));
     EXPECT_TRUE(opt->choices.contains("openapi"));
     EXPECT_TRUE(opt->choices.contains("html"));
+    EXPECT_TRUE(opt->choices.contains("ts"));
+    EXPECT_TRUE(opt->choices.contains("typescript"));
+    EXPECT_TRUE(opt->choices.contains("dts"));
 }
 
 TEST(SystemOptionRegistry, FindLongNonExistent) {
@@ -170,6 +173,7 @@ TEST(HelpGeneratorSystemOptions, ContainsChoices) {
     EXPECT_TRUE(output.contains("markdown"));
     EXPECT_TRUE(output.contains("openapi"));
     EXPECT_TRUE(output.contains("html"));
+    EXPECT_TRUE(output.contains("ts"));
 }
 
 TEST(HelpGeneratorSystemOptions, ContainsDescriptions) {

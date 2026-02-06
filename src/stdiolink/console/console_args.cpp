@@ -153,12 +153,19 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
         return true;
     }
 
-    // 如果没有 --cmd，默认进入 stdio 模式
-    // （可能只指定了 --profile=keepalive）
-    if (cmd.isEmpty()) {
-        return true;
+    // 显式 console 模式必须提供命令
+    if (mode == "console" && cmd.isEmpty()) {
+        errorMessage = "Console mode requires --cmd";
+        return false;
     }
 
+    // 传入 data 参数时必须提供命令
+    if (!data.isEmpty() && cmd.isEmpty()) {
+        errorMessage = "Data arguments require --cmd";
+        return false;
+    }
+
+    // 默认允许进入 stdio 模式（可能只指定了 --profile=keepalive）
     return true;
 }
 

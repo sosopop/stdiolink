@@ -1,0 +1,57 @@
+set(STDIOLINK_SERVICE_SOURCES
+    main.cpp
+    engine/js_engine.cpp
+    engine/console_bridge.cpp
+    engine/module_loader.cpp
+    utils/js_convert.cpp
+    bindings/js_task.cpp
+    bindings/js_driver.cpp
+    bindings/js_process.cpp
+    bindings/js_task_scheduler.cpp
+    bindings/js_stdiolink_module.cpp
+    proxy/driver_proxy.cpp
+)
+
+set(STDIOLINK_SERVICE_HEADERS
+    engine/js_engine.h
+    engine/console_bridge.h
+    engine/module_loader.h
+    utils/js_convert.h
+    bindings/js_task.h
+    bindings/js_driver.h
+    bindings/js_process.h
+    bindings/js_task_scheduler.h
+    bindings/js_stdiolink_module.h
+    proxy/driver_proxy.h
+)
+
+add_executable(stdiolink_service
+    ${STDIOLINK_SERVICE_SOURCES}
+    ${STDIOLINK_SERVICE_HEADERS}
+)
+
+target_include_directories(stdiolink_service PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(stdiolink_service PRIVATE
+    stdiolink
+    Qt6::Core
+)
+
+if(TARGET qjs)
+    target_link_libraries(stdiolink_service PRIVATE qjs)
+elseif(TARGET qjs::qjs)
+    target_link_libraries(stdiolink_service PRIVATE qjs::qjs)
+elseif(TARGET quickjs)
+    target_link_libraries(stdiolink_service PRIVATE quickjs)
+elseif(TARGET quickjs::quickjs)
+    target_link_libraries(stdiolink_service PRIVATE quickjs::quickjs)
+else()
+    message(FATAL_ERROR "Cannot find QuickJS target from qjs package")
+endif()
+
+set_target_properties(stdiolink_service PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
