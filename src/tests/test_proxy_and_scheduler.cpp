@@ -7,11 +7,11 @@
 #include <QTemporaryDir>
 #include <QTextStream>
 
+#include <quickjs.h>
 #include "bindings/js_stdiolink_module.h"
 #include "bindings/js_task_scheduler.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
-#include "quickjs.h"
 
 namespace {
 
@@ -105,13 +105,12 @@ protected:
 };
 
 TEST_F(JsProxyTest, ImportOpenDriver) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "import_open_driver.js",
-        "import { openDriver } from 'stdiolink';\n"
-        "(async () => {\n"
-        "  globalThis.ok = (typeof openDriver === 'function') ? 1 : 0;\n"
-        "})();\n");
+    const QString scriptPath =
+        writeScript(m_tmpDir, "import_open_driver.js",
+                    "import { openDriver } from 'stdiolink';\n"
+                    "(async () => {\n"
+                    "  globalThis.ok = (typeof openDriver === 'function') ? 1 : 0;\n"
+                    "})();\n");
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
@@ -119,18 +118,16 @@ TEST_F(JsProxyTest, ImportOpenDriver) {
 }
 
 TEST_F(JsProxyTest, OpenDriverStartFail) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "open_driver_fail.js",
-        "import { openDriver } from 'stdiolink';\n"
-        "(async () => {\n"
-        "  try {\n"
-        "    await openDriver('__nonexistent_driver__');\n"
-        "    globalThis.caught = 0;\n"
-        "  } catch (e) {\n"
-        "    globalThis.caught = 1;\n"
-        "  }\n"
-        "})();\n");
+    const QString scriptPath = writeScript(m_tmpDir, "open_driver_fail.js",
+                                           "import { openDriver } from 'stdiolink';\n"
+                                           "(async () => {\n"
+                                           "  try {\n"
+                                           "    await openDriver('__nonexistent_driver__');\n"
+                                           "    globalThis.caught = 0;\n"
+                                           "  } catch (e) {\n"
+                                           "    globalThis.caught = 1;\n"
+                                           "  }\n"
+                                           "})();\n");
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
@@ -141,18 +138,16 @@ TEST_F(JsProxyTest, ProxyCommandCall) {
     const QString driverPath = calculatorDriverPath();
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "proxy_command.js",
-        QString(
-            "import { openDriver } from 'stdiolink';\n"
-            "(async () => {\n"
-            "  const calc = await openDriver('%1');\n"
-            "  const r = await calc.add({ a: 5, b: 3 });\n"
-            "  globalThis.ok = (r && r.result === 8) ? 1 : 0;\n"
-            "  calc.$close();\n"
-            "})();\n")
-            .arg(escapeJsString(driverPath)));
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_command.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const calc = await openDriver('%1');\n"
+                            "  const r = await calc.add({ a: 5, b: 3 });\n"
+                            "  globalThis.ok = (r && r.result === 8) ? 1 : 0;\n"
+                            "  calc.$close();\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
@@ -164,20 +159,19 @@ TEST_F(JsProxyTest, ProxyReservedFieldsAndUndefinedCommand) {
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
     const QString scriptPath = writeScript(
-        m_tmpDir,
-        "proxy_fields.js",
-        QString(
-            "import { openDriver } from 'stdiolink';\n"
-            "(async () => {\n"
-            "  const calc = await openDriver('%1');\n"
-            "  globalThis.hasMeta = (calc.$meta && calc.$meta.commands) ? 1 : 0;\n"
-            "  globalThis.hasDriver = (calc.$driver && typeof calc.$driver.request === 'function') ? 1 : 0;\n"
-            "  const t = calc.$rawRequest('add', { a: 1, b: 2 });\n"
-            "  const m = t.waitNext(5000);\n"
-            "  globalThis.rawOk = (m && m.status === 'done') ? 1 : 0;\n"
-            "  globalThis.undefinedCmd = (calc.not_exist_cmd === undefined) ? 1 : 0;\n"
-            "  calc.$close();\n"
-            "})();\n")
+        m_tmpDir, "proxy_fields.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1');\n"
+                "  globalThis.hasMeta = (calc.$meta && calc.$meta.commands) ? 1 : 0;\n"
+                "  globalThis.hasDriver = (calc.$driver && typeof calc.$driver.request === "
+                "'function') ? 1 : 0;\n"
+                "  const t = calc.$rawRequest('add', { a: 1, b: 2 });\n"
+                "  const m = t.waitNext(5000);\n"
+                "  globalThis.rawOk = (m && m.status === 'done') ? 1 : 0;\n"
+                "  globalThis.undefinedCmd = (calc.not_exist_cmd === undefined) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
             .arg(escapeJsString(driverPath)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
@@ -193,23 +187,21 @@ TEST_F(JsProxyTest, SameInstanceConcurrentThrowsBusy) {
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
     const QString scriptPath = writeScript(
-        m_tmpDir,
-        "proxy_busy.js",
-        QString(
-            "import { openDriver } from 'stdiolink';\n"
-            "(async () => {\n"
-            "  const calc = await openDriver('%1');\n"
-            "  let busyCaught = 0;\n"
-            "  const p1 = calc.add({ a: 1, b: 2 });\n"
-            "  try {\n"
-            "    calc.subtract({ a: 3, b: 1 });\n"
-            "  } catch (e) {\n"
-            "    if (String(e).includes('DriverBusyError')) busyCaught = 1;\n"
-            "  }\n"
-            "  const r1 = await p1;\n"
-            "  globalThis.ok = (busyCaught === 1 && r1 && r1.result === 3) ? 1 : 0;\n"
-            "  calc.$close();\n"
-            "})();\n")
+        m_tmpDir, "proxy_busy.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1');\n"
+                "  let busyCaught = 0;\n"
+                "  const p1 = calc.add({ a: 1, b: 2 });\n"
+                "  try {\n"
+                "    calc.subtract({ a: 3, b: 1 });\n"
+                "  } catch (e) {\n"
+                "    if (String(e).includes('DriverBusyError')) busyCaught = 1;\n"
+                "  }\n"
+                "  const r1 = await p1;\n"
+                "  globalThis.ok = (busyCaught === 1 && r1 && r1.result === 3) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
             .arg(escapeJsString(driverPath)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
@@ -222,21 +214,19 @@ TEST_F(JsProxyTest, DifferentInstancesCanRunInParallel) {
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
     const QString scriptPath = writeScript(
-        m_tmpDir,
-        "proxy_parallel.js",
-        QString(
-            "import { openDriver } from 'stdiolink';\n"
-            "(async () => {\n"
-            "  const a = await openDriver('%1');\n"
-            "  const b = await openDriver('%1');\n"
-            "  const rs = await Promise.all([\n"
-            "    a.add({ a: 1, b: 2 }),\n"
-            "    b.add({ a: 3, b: 4 })\n"
-            "  ]);\n"
-            "  globalThis.ok = (rs[0].result === 3 && rs[1].result === 7) ? 1 : 0;\n"
-            "  a.$close();\n"
-            "  b.$close();\n"
-            "})();\n")
+        m_tmpDir, "proxy_parallel.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const a = await openDriver('%1');\n"
+                "  const b = await openDriver('%1');\n"
+                "  const rs = await Promise.all([\n"
+                "    a.add({ a: 1, b: 2 }),\n"
+                "    b.add({ a: 3, b: 4 })\n"
+                "  ]);\n"
+                "  globalThis.ok = (rs[0].result === 3 && rs[1].result === 7) ? 1 : 0;\n"
+                "  a.$close();\n"
+                "  b.$close();\n"
+                "})();\n")
             .arg(escapeJsString(driverPath)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
@@ -248,26 +238,43 @@ TEST_F(JsProxyTest, DriverErrorBecomesThrow) {
     const QString driverPath = calculatorDriverPath();
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "proxy_error.js",
-        QString(
-            "import { openDriver } from 'stdiolink';\n"
-            "(async () => {\n"
-            "  const calc = await openDriver('%1');\n"
-            "  let caught = 0;\n"
-            "  try {\n"
-            "    await calc.divide({ a: 1, b: 0 });\n"
-            "  } catch (e) {\n"
-            "    caught = 1;\n"
-            "  }\n"
-            "  globalThis.ok = caught;\n"
-            "  calc.$close();\n"
-            "})();\n")
-            .arg(escapeJsString(driverPath)));
+    const QString scriptPath = writeScript(m_tmpDir, "proxy_error.js",
+                                           QString("import { openDriver } from 'stdiolink';\n"
+                                                   "(async () => {\n"
+                                                   "  const calc = await openDriver('%1');\n"
+                                                   "  let caught = 0;\n"
+                                                   "  try {\n"
+                                                   "    await calc.divide({ a: 1, b: 0 });\n"
+                                                   "  } catch (e) {\n"
+                                                   "    caught = 1;\n"
+                                                   "  }\n"
+                                                   "  globalThis.ok = caught;\n"
+                                                   "  calc.$close();\n"
+                                                   "})();\n")
+                                               .arg(escapeJsString(driverPath)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
 }
 
+TEST_F(JsProxyTest, CloseTerminatesDriver) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_close.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const calc = await openDriver('%1');\n"
+                            "  globalThis.runningBefore = calc.$driver.running ? 1 : 0;\n"
+                            "  calc.$close();\n"
+                            "  globalThis.runningAfter = calc.$driver.running ? 1 : 0;\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "runningBefore"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "runningAfter"), 0);
+}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "quickjs.h"
+#include <quickjs.h>
 #include "stdiolink/host/task.h"
 
 class JsTaskBinding {

@@ -3,7 +3,7 @@
 #include <QJsonDocument>
 #include <QLoggingCategory>
 #include <QStringList>
-#include "quickjs.h"
+#include <quickjs.h>
 
 namespace {
 
@@ -79,4 +79,3 @@ void ConsoleBridge::install(JSContext* ctx) {
     JS_SetPropertyStr(ctx, global, "console", console);
     JS_FreeValue(ctx, global);
 }
-

@@ -1,9 +1,8 @@
 #pragma once
 
-#include "quickjs.h"
+#include <quickjs.h>
 
 class JsProcessBinding {
 public:
     static JSValue getExecFunction(JSContext* ctx);
 };
-

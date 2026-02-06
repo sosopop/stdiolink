@@ -5,7 +5,7 @@
 #include <QFileInfo>
 #include <QHash>
 #include <QLoggingCategory>
-#include "quickjs.h"
+#include <quickjs.h>
 
 namespace {
 
@@ -27,11 +27,9 @@ QString normalizeSeparators(const QString& path) {
 }
 
 bool isRelativeSpecifier(const QString& specifier) {
-    return specifier.startsWith("./")
-        || specifier.startsWith("../")
+    return specifier.startsWith("./") || specifier.startsWith("../")
 #ifdef Q_OS_WIN
-        || specifier.startsWith(".\\")
-        || specifier.startsWith("..\\")
+           || specifier.startsWith(".\\") || specifier.startsWith("..\\")
 #endif
         ;
 }
@@ -78,7 +76,8 @@ void ModuleLoader::install(JSContext* ctx) {
     if (!ctx) {
         return;
     }
-    JS_SetModuleLoaderFunc(JS_GetRuntime(ctx), &ModuleLoader::normalize, &ModuleLoader::loader, nullptr);
+    JS_SetModuleLoaderFunc(JS_GetRuntime(ctx), &ModuleLoader::normalize, &ModuleLoader::loader,
+                           nullptr);
 }
 
 void ModuleLoader::addBuiltin(const QString& name, JSModuleDef* (*init)(JSContext*, const char*)) {
@@ -88,9 +87,7 @@ void ModuleLoader::addBuiltin(const QString& name, JSModuleDef* (*init)(JSContex
     builtins().insert(name, init);
 }
 
-char* ModuleLoader::normalize(JSContext* ctx,
-                              const char* baseName,
-                              const char* name,
+char* ModuleLoader::normalize(JSContext* ctx, const char* baseName, const char* name,
                               void* opaque) {
     Q_UNUSED(opaque);
     if (!ctx || !name) {
@@ -103,10 +100,10 @@ char* ModuleLoader::normalize(JSContext* ctx,
     }
 
     if (!QDir::isAbsolutePath(moduleName) && !isRelativeSpecifier(moduleName)) {
-        JS_ThrowReferenceError(
-            ctx,
-            "Unsupported bare module specifier '%s'; only builtins or relative/absolute file paths are allowed",
-            name);
+        JS_ThrowReferenceError(ctx,
+                               "Unsupported bare module specifier '%s'; only builtins or "
+                               "relative/absolute file paths are allowed",
+                               name);
         return nullptr;
     }
 
@@ -116,17 +113,13 @@ char* ModuleLoader::normalize(JSContext* ctx,
 
     if (fileInfo.exists() && fileInfo.isDir()) {
         JS_ThrowReferenceError(
-            ctx,
-            "Directory import is not supported for '%s'; use an explicit file path",
-            name);
+            ctx, "Directory import is not supported for '%s'; use an explicit file path", name);
         return nullptr;
     }
 
     if (!hasSupportedExtension(absolutePath)) {
         JS_ThrowReferenceError(
-            ctx,
-            "Module specifier '%s' must include an explicit .js or .mjs extension",
-            name);
+            ctx, "Module specifier '%s' must include an explicit .js or .mjs extension", name);
         return nullptr;
     }
 
@@ -163,8 +156,8 @@ JSModuleDef* ModuleLoader::loader(JSContext* ctx, const char* moduleName, void* 
     const QByteArray code = file.readAll();
     file.close();
 
-    JSValue modVal = JS_Eval(ctx, code.constData(), static_cast<size_t>(code.size()),
-                             moduleName, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+    JSValue modVal = JS_Eval(ctx, code.constData(), static_cast<size_t>(code.size()), moduleName,
+                             JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
     if (JS_IsException(modVal)) {
         return nullptr;
     }

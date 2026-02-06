@@ -86,6 +86,8 @@ bool JsTaskScheduler::poll(int timeoutMs) {
             JSValue msg = messageToJs(m_ctx, anyItem.msg);
             settleTask(index, msg, false);
         }
+        // Intermediate messages (e.g. "progress") are intentionally ignored.
+        // The Proxy layer only resolves on the final done/error response.
     } else {
         // No message in this round; finish any task that is already done.
         for (int i = m_pending.size() - 1; i >= 0; --i) {

@@ -7,9 +7,9 @@
 #include <QTemporaryDir>
 #include <QTextStream>
 
+#include <quickjs.h>
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
-#include "quickjs.h"
 
 namespace {
 
@@ -81,11 +81,10 @@ TEST_F(JsEngineScaffoldTest, EvalSyntaxErrorReturns1) {
 }
 
 TEST_F(JsEngineScaffoldTest, PromiseJobsAreDrained) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "promise.js",
-        "globalThis.result = 0;\n"
-        "Promise.resolve(42).then(v => { globalThis.result = v; });\n");
+    const QString scriptPath =
+        writeScript(m_tmpDir, "promise.js",
+                    "globalThis.result = 0;\n"
+                    "Promise.resolve(42).then(v => { globalThis.result = v; });\n");
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(m_engine->evalFile(scriptPath), 0);
@@ -98,12 +97,10 @@ TEST_F(JsEngineScaffoldTest, PromiseJobsAreDrained) {
 
 TEST_F(JsEngineScaffoldTest, ConsoleBridgeCallable) {
     ConsoleBridge::install(m_engine->context());
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "console.js",
-        "console.log('a=', 1, {x:2});\n"
-        "console.warn('w');\n"
-        "console.error('e');\n");
+    const QString scriptPath = writeScript(m_tmpDir, "console.js",
+                                           "console.log('a=', 1, {x:2});\n"
+                                           "console.warn('w');\n"
+                                           "console.error('e');\n");
     ASSERT_FALSE(scriptPath.isEmpty());
     EXPECT_EQ(m_engine->evalFile(scriptPath), 0);
 }

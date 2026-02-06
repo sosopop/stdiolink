@@ -2,7 +2,7 @@
 
 #include <QVector>
 
-#include "quickjs.h"
+#include <quickjs.h>
 #include "stdiolink/host/task.h"
 
 class JsTaskScheduler {
@@ -31,4 +31,3 @@ private:
     JSContext* m_ctx = nullptr;
     QVector<PendingTask> m_pending;
 };
-

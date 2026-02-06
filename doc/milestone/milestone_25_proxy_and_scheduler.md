@@ -48,7 +48,7 @@
 #include <QVector>
 #include "stdiolink/host/task.h"
 #include "stdiolink/host/wait_any.h"
-#include "quickjs.h"
+#include <quickjs.h>
 
 class JsTaskScheduler {
 public:

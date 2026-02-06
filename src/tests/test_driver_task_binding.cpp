@@ -9,10 +9,10 @@
 #include <QTemporaryDir>
 #include <QTextStream>
 
+#include <quickjs.h>
 #include "bindings/js_stdiolink_module.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
-#include "quickjs.h"
 #include "utils/js_convert.h"
 
 namespace {
@@ -123,12 +123,11 @@ protected:
 };
 
 TEST_F(JsDriverBindingTest, ImportAndConstructDriver) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "import_driver.js",
-        "import { Driver } from 'stdiolink';\n"
-        "const d = new Driver();\n"
-        "globalThis.ok = (typeof Driver === 'function' && d) ? 1 : 0;\n");
+    const QString scriptPath =
+        writeScript(m_tmpDir, "import_driver.js",
+                    "import { Driver } from 'stdiolink';\n"
+                    "const d = new Driver();\n"
+                    "globalThis.ok = (typeof Driver === 'function' && d) ? 1 : 0;\n");
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
@@ -136,12 +135,11 @@ TEST_F(JsDriverBindingTest, ImportAndConstructDriver) {
 }
 
 TEST_F(JsDriverBindingTest, StartNonexistentReturnsFalse) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "start_nonexistent.js",
-        "import { Driver } from 'stdiolink';\n"
-        "const d = new Driver();\n"
-        "globalThis.ok = d.start('__missing_driver__') ? 0 : 1;\n");
+    const QString scriptPath =
+        writeScript(m_tmpDir, "start_nonexistent.js",
+                    "import { Driver } from 'stdiolink';\n"
+                    "const d = new Driver();\n"
+                    "globalThis.ok = d.start('__missing_driver__') ? 0 : 1;\n");
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
@@ -152,19 +150,18 @@ TEST_F(JsDriverBindingTest, RequestAndWaitNextWithCalculatorDriver) {
     const QString bin = driverBinaryPath();
     ASSERT_TRUE(QFileInfo::exists(bin));
 
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "request_wait.js",
-        QString(
-            "import { Driver } from 'stdiolink';\n"
-            "const d = new Driver();\n"
-            "if (!d.start('%1')) throw new Error('start failed');\n"
-            "const t = d.request('add', { a: 10, b: 20 });\n"
-            "const m = t.waitNext(5000);\n"
-            "globalThis.ok = (m && m.status === 'done' && m.data && m.data.result === 30) ? 1 : 0;\n"
-            "globalThis.done = t.done ? 1 : 0;\n"
-            "d.terminate();\n")
-            .arg(escapeForSingleQuoteJs(bin)));
+    const QString scriptPath =
+        writeScript(m_tmpDir, "request_wait.js",
+                    QString("import { Driver } from 'stdiolink';\n"
+                            "const d = new Driver();\n"
+                            "if (!d.start('%1')) throw new Error('start failed');\n"
+                            "const t = d.request('add', { a: 10, b: 20 });\n"
+                            "const m = t.waitNext(5000);\n"
+                            "globalThis.ok = (m && m.status === 'done' && m.data && m.data.result "
+                            "=== 30) ? 1 : 0;\n"
+                            "globalThis.done = t.done ? 1 : 0;\n"
+                            "d.terminate();\n")
+                        .arg(escapeForSingleQuoteJs(bin)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
@@ -176,22 +173,20 @@ TEST_F(JsDriverBindingTest, QueryMetaReturnsObject) {
     const QString bin = driverBinaryPath();
     ASSERT_TRUE(QFileInfo::exists(bin));
 
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "query_meta.js",
-        QString(
-            "import { Driver } from 'stdiolink';\n"
-            "const d = new Driver();\n"
-            "if (!d.start('%1')) throw new Error('start failed');\n"
-            "const meta = d.queryMeta(5000);\n"
-            "globalThis.hasMeta = meta ? 1 : 0;\n"
-            "globalThis.hasCommands = (meta && meta.commands && meta.commands.length > 0) ? 1 : 0;\n"
-            "d.terminate();\n")
-            .arg(escapeForSingleQuoteJs(bin)));
+    const QString scriptPath =
+        writeScript(m_tmpDir, "query_meta.js",
+                    QString("import { Driver } from 'stdiolink';\n"
+                            "const d = new Driver();\n"
+                            "if (!d.start('%1')) throw new Error('start failed');\n"
+                            "const meta = d.queryMeta(5000);\n"
+                            "globalThis.hasMeta = meta ? 1 : 0;\n"
+                            "globalThis.hasCommands = (meta && meta.commands && "
+                            "meta.commands.length > 0) ? 1 : 0;\n"
+                            "d.terminate();\n")
+                        .arg(escapeForSingleQuoteJs(bin)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "hasMeta"), 1);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "hasCommands"), 1);
 }
-

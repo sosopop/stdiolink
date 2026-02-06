@@ -33,7 +33,7 @@
 // bindings/js_process.h
 #pragma once
 
-#include "quickjs.h"
+#include <quickjs.h>
 
 class JsProcessBinding {
 public:

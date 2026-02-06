@@ -29,7 +29,7 @@
 > | 模块解析 | 基础模块加载 | **增强模块加载器**，支持更灵活的路径解析逻辑 |
 >
 > **实践要点**：
-> - 所有 QuickJS API 调用以 `#include "quickjs.h"` 中的实际签名为准
+> - 所有 QuickJS API 调用以 `#include <quickjs.h>` 中的实际签名为准
 > - 不要从网上搜索官方 QuickJS 的用法直接套用，签名可能不同
 > - `JS_NewClassID` 必须传入 `JSRuntime*` 参数，这是最常见的编译错误来源
 
@@ -119,7 +119,7 @@ private:
 #include "js_engine.h"
 #include <QFile>
 #include <QDebug>
-#include "quickjs.h"
+#include <quickjs.h>
 
 JsEngine::JsEngine() {
     m_rt = JS_NewRuntime();
@@ -213,7 +213,7 @@ public:
 // engine/console_bridge.cpp
 #include "console_bridge.h"
 #include <QDebug>
-#include "quickjs.h"
+#include <quickjs.h>
 
 // 将多个 JS 参数拼接为字符串
 static QString argsToString(JSContext* ctx, int argc, JSValue* argv) {

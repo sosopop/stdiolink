@@ -3,10 +3,10 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QLoggingCategory>
+#include <quickjs.h>
 #include "bindings/js_driver.h"
 #include "bindings/js_task.h"
 #include "module_loader.h"
-#include "quickjs.h"
 
 JsEngine::JsEngine() {
     m_rt = JS_NewRuntime();
@@ -67,6 +67,32 @@ int JsEngine::evalFile(const QString& filePath) {
                           evalName.constData(), JS_EVAL_TYPE_MODULE);
     if (JS_IsException(val)) {
         printException(m_ctx);
+        JS_FreeValue(m_ctx, val);
+        return 1;
+    }
+
+    // QuickJS may represent module-evaluation failures as a rejected Promise
+    // instead of returning JS_EXCEPTION directly.
+    if (JS_IsPromise(val) && JS_PromiseState(m_ctx, val) == JS_PROMISE_REJECTED) {
+        JSValue reason = JS_PromiseResult(m_ctx, val);
+        const char* reasonText = JS_ToCString(m_ctx, reason);
+        if (reasonText) {
+            qCritical().noquote() << QString::fromUtf8(reasonText);
+            JS_FreeCString(m_ctx, reasonText);
+        } else {
+            qCritical() << "JavaScript module evaluation failed";
+        }
+
+        JSValue stack = JS_GetPropertyStr(m_ctx, reason, "stack");
+        if (!JS_IsUndefined(stack)) {
+            const char* stackText = JS_ToCString(m_ctx, stack);
+            if (stackText) {
+                qCritical().noquote() << QString::fromUtf8(stackText);
+                JS_FreeCString(m_ctx, stackText);
+            }
+        }
+        JS_FreeValue(m_ctx, stack);
+        JS_FreeValue(m_ctx, reason);
         JS_FreeValue(m_ctx, val);
         return 1;
     }

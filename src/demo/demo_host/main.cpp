@@ -26,25 +26,22 @@
 
 using namespace stdiolink;
 
-static QTextStream& out()
-{
+static QTextStream& out() {
     static QFile file;
     static QTextStream stream;
     if (!file.isOpen()) {
-        file.open(stdout, QIODevice::WriteOnly);
+        (void)file.open(stdout, QIODevice::WriteOnly);
         stream.setDevice(&file);
     }
     return stream;
 }
 
-static void printJson(const QJsonObject& obj)
-{
+static void printJson(const QJsonObject& obj) {
     out() << QJsonDocument(obj).toJson(QJsonDocument::Compact) << "\n";
     out().flush();
 }
 
-static void demoBasicUsage(const QString& path)
-{
+static void demoBasicUsage(const QString& path) {
     out() << "\n=== 1. Basic Usage ===\n";
     Driver d;
     if (!d.start(path + "/calculator_driver.exe")) {
@@ -62,8 +59,7 @@ static void demoBasicUsage(const QString& path)
     d.terminate();
 }
 
-static void demoEventStream(const QString& path)
-{
+static void demoEventStream(const QString& path) {
     out() << "\n=== 2. Event Stream ===\n";
     Driver d;
     d.start(path + "/calculator_driver.exe");
@@ -78,21 +74,20 @@ static void demoEventStream(const QString& path)
     while (t.waitNext(msg, 5000)) {
         out() << "  " << msg.status << ": ";
         printJson(msg.payload.toObject());
-        if (msg.status == "done") break;
+        if (msg.status == "done")
+            break;
     }
     d.terminate();
 }
 
-static void demoMultiDriver(const QString& path)
-{
+static void demoMultiDriver(const QString& path) {
     out() << "\n=== 3. Multi-Driver (waitAnyNext) ===\n";
     Driver d1, d2;
     d1.start(path + "/calculator_driver.exe");
     d2.start(path + "/device_simulator_driver.exe");
 
     QVector<Task> tasks;
-    tasks << d1.request("statistics", QJsonObject{
-        {"numbers", QJsonArray{1, 2, 3, 4, 5}}});
+    tasks << d1.request("statistics", QJsonObject{{"numbers", QJsonArray{1, 2, 3, 4, 5}}});
     tasks << d2.request("scan", QJsonObject{{"count", 3}});
 
     AnyItem item;
@@ -104,8 +99,7 @@ static void demoMultiDriver(const QString& path)
     d2.terminate();
 }
 
-static void demoMetaQuery(const QString& path)
-{
+static void demoMetaQuery(const QString& path) {
     out() << "\n=== 4. Meta Query ===\n";
     Driver d;
     d.start(path + "/calculator_driver.exe");
@@ -123,8 +117,7 @@ static void demoMetaQuery(const QString& path)
     d.terminate();
 }
 
-static void demoFormGenerator(const QString& path)
-{
+static void demoFormGenerator(const QString& path) {
     out() << "\n=== 5. Form Generator ===\n";
     Driver d;
     d.start(path + "/device_simulator_driver.exe");
@@ -141,8 +134,7 @@ static void demoFormGenerator(const QString& path)
     d.terminate();
 }
 
-static void demoConfigInjector()
-{
+static void demoConfigInjector() {
     out() << "\n=== 6. Config Injector ===\n";
     QJsonObject config{{"timeout", 3000}, {"debug", true}};
     meta::ConfigApply apply;
@@ -153,17 +145,16 @@ static void demoConfigInjector()
     out().flush();
 }
 
-static void demoVersionChecker()
-{
+static void demoVersionChecker() {
     out() << "\n=== 7. Version Checker ===\n";
     out() << "  Current: " << MetaVersionChecker::getCurrentVersion() << "\n";
     out() << "  Supported: " << MetaVersionChecker::getSupportedVersions().join(", ") << "\n";
-    out() << "  1.0 compatible: " << (MetaVersionChecker::isCompatible("1.0", "1.0") ? "true" : "false") << "\n";
+    out() << "  1.0 compatible: "
+          << (MetaVersionChecker::isCompatible("1.0", "1.0") ? "true" : "false") << "\n";
     out().flush();
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
     QString path = app.applicationDirPath();
 

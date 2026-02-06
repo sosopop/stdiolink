@@ -2,7 +2,7 @@
 
 #include <QJsonObject>
 #include <QJsonValue>
-#include "quickjs.h"
+#include <quickjs.h>
 
 JSValue qjsonToJsValue(JSContext* ctx, const QJsonValue& val);
 JSValue qjsonObjectToJsValue(JSContext* ctx, const QJsonObject& obj);

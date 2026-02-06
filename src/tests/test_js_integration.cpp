@@ -238,3 +238,39 @@ TEST_F(JsIntegrationTest, ConsoleOutputDoesNotPolluteStdout) {
     EXPECT_TRUE(r.stderrText.contains("m27-log"));
     EXPECT_TRUE(r.stderrText.contains("m27-warn"));
 }
+
+TEST_F(JsIntegrationTest, UncaughtExceptionExitsWithError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir,
+        "uncaught.js",
+        "throw new Error('test uncaught');\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    const RunResult r = runServiceScript(scriptPath);
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 1);
+    EXPECT_TRUE(r.stderrText.contains("test uncaught"));
+}
+
+TEST_F(JsIntegrationTest, CrossFileImport) {
+    // Create lib file
+    QFile libFile(m_tmpDir.path() + "/lib.js");
+    ASSERT_TRUE(libFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    libFile.write("export function add(a, b) { return a + b; }\n");
+    libFile.close();
+
+    // Create main file that imports lib
+    const QString scriptPath = writeScript(
+        m_tmpDir,
+        "main.js",
+        "import { add } from './lib.js';\n"
+        "const r = add(3, 4);\n"
+        "if (r !== 7) throw new Error('cross-file import failed');\n"
+        "console.log('cross-file-ok', r);\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    const RunResult r = runServiceScript(scriptPath);
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 0);
+    EXPECT_TRUE(r.stderrText.contains("cross-file-ok 7"));
+}

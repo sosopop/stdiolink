@@ -6,10 +6,10 @@
 #include <QTemporaryDir>
 #include <QTextStream>
 
+#include <quickjs.h>
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
 #include "engine/module_loader.h"
-#include "quickjs.h"
 
 namespace {
 
@@ -88,11 +88,9 @@ protected:
 
 TEST_F(EsModuleLoaderTest, ImportRelativePath) {
     writeFile(m_tmpDir, "lib/math.js", "export function square(x) { return x * x; }\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { square } from './lib/math.js';\n"
-        "globalThis.result = square(4);\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { square } from './lib/math.js';\n"
+                                       "globalThis.result = square(4);\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -101,11 +99,9 @@ TEST_F(EsModuleLoaderTest, ImportRelativePath) {
 
 TEST_F(EsModuleLoaderTest, ImportParentPath) {
     writeFile(m_tmpDir, "shared/utils.js", "export function double(x) { return x * 2; }\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "app/main.js",
-        "import { double } from '../shared/utils.js';\n"
-        "globalThis.result = double(5);\n");
+    const QString mainPath = writeFile(m_tmpDir, "app/main.js",
+                                       "import { double } from '../shared/utils.js';\n"
+                                       "globalThis.result = double(5);\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -116,12 +112,10 @@ TEST_F(EsModuleLoaderTest, ImportAbsolutePath) {
     const QString libPath = writeFile(m_tmpDir, "lib/value.js", "export const VALUE = 42;\n");
     ASSERT_FALSE(libPath.isEmpty());
 
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        QString("import { VALUE } from '%1';\n"
-                "globalThis.result = VALUE;\n")
-            .arg(QDir::fromNativeSeparators(libPath)));
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       QString("import { VALUE } from '%1';\n"
+                                               "globalThis.result = VALUE;\n")
+                                           .arg(QDir::fromNativeSeparators(libPath)));
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -129,11 +123,9 @@ TEST_F(EsModuleLoaderTest, ImportAbsolutePath) {
 }
 
 TEST_F(EsModuleLoaderTest, ImportNonexistentFileFails) {
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { missing } from './nope.js';\n"
-        "globalThis.result = missing;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { missing } from './nope.js';\n"
+                                       "globalThis.result = missing;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_NE(evalAndDrain(mainPath), 0);
@@ -141,11 +133,9 @@ TEST_F(EsModuleLoaderTest, ImportNonexistentFileFails) {
 
 TEST_F(EsModuleLoaderTest, ExportDefaultWorks) {
     writeFile(m_tmpDir, "config.js", "export default { port: 8080 };\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import config from './config.js';\n"
-        "globalThis.result = config.port;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import config from './config.js';\n"
+                                       "globalThis.result = config.port;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -154,11 +144,9 @@ TEST_F(EsModuleLoaderTest, ExportDefaultWorks) {
 
 TEST_F(EsModuleLoaderTest, BuiltinModuleIntercept) {
     ModuleLoader::addBuiltin("test_builtin_magic", createBuiltinMagic);
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { MAGIC } from 'test_builtin_magic';\n"
-        "globalThis.result = MAGIC;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { MAGIC } from 'test_builtin_magic';\n"
+                                       "globalThis.result = MAGIC;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -167,11 +155,9 @@ TEST_F(EsModuleLoaderTest, BuiltinModuleIntercept) {
 
 TEST_F(EsModuleLoaderTest, ImportWithoutExtensionFails) {
     writeFile(m_tmpDir, "lib/math.js", "export const X = 1;\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { X } from './lib/math';\n"
-        "globalThis.result = X;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { X } from './lib/math';\n"
+                                       "globalThis.result = X;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_NE(evalAndDrain(mainPath), 0);
@@ -179,40 +165,32 @@ TEST_F(EsModuleLoaderTest, ImportWithoutExtensionFails) {
 
 TEST_F(EsModuleLoaderTest, DirectoryImportIndexJsIsNotAllowed) {
     writeFile(m_tmpDir, "pkg/index.js", "export const X = 2;\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { X } from './pkg';\n"
-        "globalThis.result = X;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { X } from './pkg';\n"
+                                       "globalThis.result = X;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_NE(evalAndDrain(mainPath), 0);
 }
 
 TEST_F(EsModuleLoaderTest, BareSpecifierRejected) {
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { X } from 'not_builtin';\n"
-        "globalThis.result = X;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { X } from 'not_builtin';\n"
+                                       "globalThis.result = X;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_NE(evalAndDrain(mainPath), 0);
 }
 
 TEST_F(EsModuleLoaderTest, NormalizedEquivalentRelativePathsLoadOnce) {
-    writeFile(
-        m_tmpDir,
-        "lib/once.js",
-        "globalThis.__onceLoads = (globalThis.__onceLoads || 0) + 1;\n"
-        "export const VALUE = 7;\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { VALUE as A } from './lib/once.js';\n"
-        "import { VALUE as B } from './lib/../lib/once.js';\n"
-        "globalThis.result = A + B;\n"
-        "globalThis.loads = globalThis.__onceLoads;\n");
+    writeFile(m_tmpDir, "lib/once.js",
+              "globalThis.__onceLoads = (globalThis.__onceLoads || 0) + 1;\n"
+              "export const VALUE = 7;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { VALUE as A } from './lib/once.js';\n"
+                                       "import { VALUE as B } from './lib/../lib/once.js';\n"
+                                       "globalThis.result = A + B;\n"
+                                       "globalThis.loads = globalThis.__onceLoads;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -221,23 +199,19 @@ TEST_F(EsModuleLoaderTest, NormalizedEquivalentRelativePathsLoadOnce) {
 }
 
 TEST_F(EsModuleLoaderTest, RelativeAndAbsolutePathShareCache) {
-    const QString modPath = writeFile(
-        m_tmpDir,
-        "lib/shared.js",
-        "globalThis.__sharedLoads = (globalThis.__sharedLoads || 0) + 1;\n"
-        "export const V = 11;\n");
+    const QString modPath =
+        writeFile(m_tmpDir, "lib/shared.js",
+                  "globalThis.__sharedLoads = (globalThis.__sharedLoads || 0) + 1;\n"
+                  "export const V = 11;\n");
     ASSERT_FALSE(modPath.isEmpty());
     const QString absPath = QDir::fromNativeSeparators(QFileInfo(modPath).absoluteFilePath());
 
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        QString(
-            "import { V as A } from './lib/shared.js';\n"
-            "import { V as B } from '%1';\n"
-            "globalThis.result = A + B;\n"
-            "globalThis.loads = globalThis.__sharedLoads;\n")
-            .arg(escapeForSingleQuotedJs(absPath)));
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       QString("import { V as A } from './lib/shared.js';\n"
+                                               "import { V as B } from '%1';\n"
+                                               "globalThis.result = A + B;\n"
+                                               "globalThis.loads = globalThis.__sharedLoads;\n")
+                                           .arg(escapeForSingleQuotedJs(absPath)));
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -247,11 +221,9 @@ TEST_F(EsModuleLoaderTest, RelativeAndAbsolutePathShareCache) {
 
 TEST_F(EsModuleLoaderTest, MjsExtensionSupported) {
     writeFile(m_tmpDir, "lib/value.mjs", "export const VALUE = 321;\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { VALUE } from './lib/value.mjs';\n"
-        "globalThis.result = VALUE;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { VALUE } from './lib/value.mjs';\n"
+                                       "globalThis.result = VALUE;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
@@ -260,18 +232,14 @@ TEST_F(EsModuleLoaderTest, MjsExtensionSupported) {
 
 #ifdef Q_OS_WIN
 TEST_F(EsModuleLoaderTest, WindowsBackslashSpecifierSupportedAndDeduped) {
-    writeFile(
-        m_tmpDir,
-        "lib/win_once.js",
-        "globalThis.__winLoads = (globalThis.__winLoads || 0) + 1;\n"
-        "export const VALUE = 5;\n");
-    const QString mainPath = writeFile(
-        m_tmpDir,
-        "main.js",
-        "import { VALUE as A } from './lib/win_once.js';\n"
-        "import { VALUE as B } from '.\\\\lib\\\\win_once.js';\n"
-        "globalThis.result = A + B;\n"
-        "globalThis.loads = globalThis.__winLoads;\n");
+    writeFile(m_tmpDir, "lib/win_once.js",
+              "globalThis.__winLoads = (globalThis.__winLoads || 0) + 1;\n"
+              "export const VALUE = 5;\n");
+    const QString mainPath = writeFile(m_tmpDir, "main.js",
+                                       "import { VALUE as A } from './lib/win_once.js';\n"
+                                       "import { VALUE as B } from '.\\\\lib\\\\win_once.js';\n"
+                                       "globalThis.result = A + B;\n"
+                                       "globalThis.loads = globalThis.__winLoads;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);

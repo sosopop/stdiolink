@@ -61,7 +61,7 @@
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QJsonArray>
-#include "quickjs.h"
+#include <quickjs.h>
 
 JSValue qjsonToJsValue(JSContext* ctx, const QJsonValue& val);
 QJsonValue jsValueToQJson(JSContext* ctx, JSValue val);
@@ -75,7 +75,7 @@ QJsonObject jsValueToQJsonObject(JSContext* ctx, JSValue val);
 // bindings/js_driver.h
 #pragma once
 
-#include "quickjs.h"
+#include <quickjs.h>
 
 class JsDriverBinding {
 public:
@@ -107,7 +107,7 @@ class Driver {
 // bindings/js_task.h
 #pragma once
 
-#include "quickjs.h"
+#include <quickjs.h>
 
 class JsTaskBinding {
 public:
@@ -197,7 +197,7 @@ JSModuleDef* jsInitStdiolinkModule(JSContext* ctx, const char* name) {
 #include <gtest/gtest.h>
 #include "utils/js_convert.h"
 #include "engine/js_engine.h"
-#include "quickjs.h"
+#include <quickjs.h>
 
 class JsConvertTest : public ::testing::Test {
 protected:
