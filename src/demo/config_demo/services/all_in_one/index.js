@@ -5,7 +5,11 @@ import { exec } from "stdiolink";
 function findService() {
     const candidates = [
         "./stdiolink_service.exe",
-        "./stdiolink_service"
+        "./stdiolink_service",
+        "./build_ninja/bin/stdiolink_service.exe",
+        "./build_ninja/bin/stdiolink_service",
+        "stdiolink_service.exe",
+        "stdiolink_service"
     ];
     for (const c of candidates) {
         try {
@@ -18,35 +22,54 @@ function findService() {
     throw new Error("Cannot find stdiolink_service executable");
 }
 
+function findScenarioBase(service) {
+    const bases = [
+        "config_demo/services",
+        "src/demo/config_demo/services"
+    ];
+    for (const base of bases) {
+        try {
+            const probe = exec(service, [`${base}/basic_types`, "--help"], { timeout: 5000 });
+            if (probe.exitCode === 0) {
+                return base;
+            }
+        } catch (e) {
+            // try next
+        }
+    }
+    throw new Error("Cannot find config_demo services directory");
+}
+
 const service = findService();
+const scenarioBase = findScenarioBase(service);
 
 const scenarios = [
     {
-        dir: "config_demo/services/basic_types",
+        dir: `${scenarioBase}/basic_types`,
         args: ["--config.name=myApp", "--config.port=8080"]
     },
     {
-        dir: "config_demo/services/constraints",
+        dir: `${scenarioBase}/constraints`,
         args: ["--config.port=8080", "--config.name=myService"]
     },
     {
-        dir: "config_demo/services/nested_object",
+        dir: `${scenarioBase}/nested_object`,
         args: ["--config.server.port=8080", "--config.database.name=mydb"]
     },
     {
-        dir: "config_demo/services/array_and_enum",
+        dir: `${scenarioBase}/array_and_enum`,
         args: ["--config.level=3", "--config.mode=fast"]
     },
     {
-        dir: "config_demo/services/config_file_merge",
+        dir: `${scenarioBase}/config_file_merge`,
         args: [
-            "--config-file=config_demo/services/config/sample_config.json",
+            `--config-file=${scenarioBase}/config/sample_config.json`,
             "--config.port=9999",
             "--config.name=cli-override"
         ]
     },
     {
-        dir: "config_demo/services/readonly_and_errors",
+        dir: `${scenarioBase}/readonly_and_errors`,
         args: []
     }
 ];

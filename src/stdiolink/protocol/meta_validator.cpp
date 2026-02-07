@@ -223,6 +223,15 @@ QJsonObject DefaultFiller::fillDefaults(const QJsonObject& data,
             !field.defaultValue.isUndefined()) {
             result[field.name] = field.defaultValue;
         }
+
+        // Recurse into object fields to fill nested defaults
+        if (field.type == FieldType::Object && !field.fields.isEmpty()) {
+            QJsonObject nested = result.contains(field.name)
+                                     ? result[field.name].toObject()
+                                     : QJsonObject{};
+            nested = fillDefaults(nested, field.fields);
+            result[field.name] = nested;
+        }
     }
 
     return result;

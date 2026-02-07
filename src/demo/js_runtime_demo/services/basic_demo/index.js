@@ -5,7 +5,11 @@ import { exec } from "stdiolink";
 function findService() {
     const candidates = [
         "./stdiolink_service.exe",
-        "./stdiolink_service"
+        "./stdiolink_service",
+        "./build_ninja/bin/stdiolink_service.exe",
+        "./build_ninja/bin/stdiolink_service",
+        "stdiolink_service.exe",
+        "stdiolink_service"
     ];
     for (const c of candidates) {
         try {
@@ -18,12 +22,31 @@ function findService() {
     throw new Error("Cannot find stdiolink_service executable");
 }
 
+function findServiceBase(service) {
+    const bases = [
+        "js_runtime_demo/services",
+        "src/demo/js_runtime_demo/services"
+    ];
+    for (const base of bases) {
+        try {
+            const probe = exec(service, [`${base}/engine_modules`, "--help"], { timeout: 5000 });
+            if (probe.exitCode === 0) {
+                return base;
+            }
+        } catch (e) {
+            // try next
+        }
+    }
+    throw new Error("Cannot find js_runtime_demo services directory");
+}
+
 const service = findService();
+const serviceBase = findServiceBase(service);
 const services = [
-    "js_runtime_demo/services/engine_modules",
-    "js_runtime_demo/services/driver_task",
-    "js_runtime_demo/services/proxy_scheduler",
-    "js_runtime_demo/services/process_types"
+    `${serviceBase}/engine_modules`,
+    `${serviceBase}/driver_task`,
+    `${serviceBase}/proxy_scheduler`,
+    `${serviceBase}/process_types`
 ];
 
 console.log("=== JS runtime demo start (M21-M27) ===");
