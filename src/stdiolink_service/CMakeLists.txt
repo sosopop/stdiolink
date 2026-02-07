@@ -13,6 +13,7 @@ set(STDIOLINK_SERVICE_SOURCES
     config/service_config_schema.cpp
     config/service_args.cpp
     config/service_config_validator.cpp
+    config/service_config_help.cpp
     proxy/driver_proxy.cpp
 )
 
@@ -30,6 +31,7 @@ set(STDIOLINK_SERVICE_HEADERS
     config/service_config_schema.h
     config/service_args.h
     config/service_config_validator.h
+    config/service_config_help.h
     proxy/driver_proxy.h
 )
 

@@ -8,6 +8,7 @@
 #include "bindings/js_stdiolink_module.h"
 #include "bindings/js_task_scheduler.h"
 #include "config/service_args.h"
+#include "config/service_config_help.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
 
@@ -60,6 +61,16 @@ void printVersion() {
     err.flush();
 }
 
+void silentMessageHandler(QtMsgType type, const QMessageLogContext&, const QString& msg) {
+    // Only pass through fatal messages; suppress debug/warning/critical during --help script run
+    if (type == QtFatalMsg) {
+        QByteArray line = "Fatal: " + msg.toUtf8() + '\n';
+        std::fwrite(line.constData(), 1, static_cast<size_t>(line.size()), stderr);
+        std::fflush(stderr);
+        std::abort();
+    }
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -73,6 +84,39 @@ int main(int argc, char* argv[]) {
 
     if (parsed.help) {
         printHelp();
+        if (parsed.scriptPath.isEmpty() || !QFileInfo::exists(parsed.scriptPath)) {
+            return 0;
+        }
+        // Script provided: run in dumpSchema mode to capture config schema
+        qInstallMessageHandler(silentMessageHandler);
+        JsEngine engine;
+        if (!engine.context()) {
+            return 0;
+        }
+        ConsoleBridge::install(engine.context());
+        JsConfigBinding::attachRuntime(engine.runtime());
+        JsConfigBinding::setRawConfig(engine.context(), {}, {}, true);
+        engine.registerModule("stdiolink", jsInitStdiolinkModule);
+        JsTaskScheduler scheduler(engine.context());
+        JsTaskScheduler::installGlobal(engine.context(), &scheduler);
+        engine.evalFile(parsed.scriptPath);
+        while (scheduler.hasPending() || engine.hasPendingJobs()) {
+            if (scheduler.hasPending()) {
+                scheduler.poll(50);
+            }
+            while (engine.hasPendingJobs()) {
+                engine.executePendingJobs();
+            }
+        }
+        if (JsConfigBinding::hasSchema(engine.context())) {
+            auto schema = JsConfigBinding::getSchema(engine.context());
+            QString configHelp = ServiceConfigHelp::generate(schema);
+            if (!configHelp.isEmpty()) {
+                QTextStream err(stderr);
+                err << "\n" << configHelp;
+                err.flush();
+            }
+        }
         return 0;
     }
     if (parsed.version) {

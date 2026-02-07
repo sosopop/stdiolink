@@ -54,7 +54,7 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
 
         if (arg == "--help" || arg == "-h") {
             result.help = true;
-            return result;
+            continue;
         }
         if (arg == "--version" || arg == "-v") {
             result.version = true;
@@ -103,7 +103,7 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
         return result;
     }
 
-    if (scriptPath.isEmpty()) {
+    if (scriptPath.isEmpty() && !result.help) {
         result.error = "no script path provided";
         return result;
     }

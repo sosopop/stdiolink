@@ -11,6 +11,9 @@ stdiolink 采用三层架构设计：
 │                   应用层 (Application)               │
 │         业务逻辑、命令处理器、UI 集成                  │
 ├─────────────────────────────────────────────────────┤
+│              JS Service 运行时 (可选)                 │
+│    QuickJS-NG / openDriver / exec / defineConfig    │
+├─────────────────────────────────────────────────────┤
 │                   框架层 (Framework)                 │
 │    DriverCore / Driver / Task / MetaBuilder         │
 ├─────────────────────────────────────────────────────┤
@@ -134,3 +137,4 @@ Host                              Driver
 - [协议层文档](04-protocol/README.md) - 了解 JSONL 协议细节
 - [Driver 端开发](05-driver/README.md) - 开发 Driver 程序
 - [Host 端开发](06-host/README.md) - 开发 Host 程序
+- [JS Service 运行时](10-js-service/README.md) - 使用 JS 脚本编排 Driver

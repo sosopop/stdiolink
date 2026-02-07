@@ -2,15 +2,19 @@
 
 ## Project Structure & Module Organization
 
-- `src/stdiolink/` contains the core library.
-- `src/stdiolink/protocol/` holds JSONL protocol and meta types/validators.
-- `src/stdiolink/driver/` is the Driver-side runtime (stdio responders, DriverCore, meta builder).
-- `src/stdiolink/host/` is the Host-side runtime (Driver wrapper, wait_any, meta cache, UI form generator).
-- `src/stdiolink/console/` provides console-mode support.
+- `src/stdiolink/` contains the core library modules.
+- `src/stdiolink/protocol/` holds JSONL protocol plus meta types/validators.
+- `src/stdiolink/driver/` is the Driver-side runtime (responders, DriverCore, meta builder/export).
+- `src/stdiolink/host/` is the Host-side runtime (Driver wrapper, task/wait_any, meta cache, form generation).
+- `src/stdiolink/console/` provides console-mode parsing/responding.
+- `src/stdiolink/doc/` contains built-in document generation helpers.
+- `src/stdiolink_service/` contains the JS/runtime service executable (engine, bindings, proxy, config).
+- `src/driverlab/` contains the GUI testing tool (UI, models, resources).
+- `src/drivers/` contains production/sample driver implementations (modbus, 3dvision, etc.).
+- `src/demo/` contains demo drivers and host examples.
 - `src/tests/` contains unit and integration tests (GoogleTest).
-- `src/demo/` contains sample drivers and host demos.
 - `tools/` holds developer utilities such as `run-clang-tidy.py`.
-- `doc/` contains design and milestone documents.
+- `doc/manual/` is the user/developer manual; `doc/milestone/` tracks implementation milestones.
 
 ## Build, Test, and Development Commands
 
@@ -18,6 +22,8 @@
 - `ninja -C build_ninja` or `cmake --build build_ninja --parallel 8`: incremental build.
 - `./build_ninja/src/tests/stdiolink_tests.exe`: run all tests.
 - `./build_ninja/src/tests/stdiolink_tests.exe --gtest_filter=TestName.*`: run a single test suite.
+- `cmake --build build_ninja --target driverlab`: build the `driverlab` GUI target when iterating UI tooling.
+- `cmake --build build_ninja --target stdiolink_service`: build the JS service runtime executable.
 - `python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy`: static analysis.
 
 ## Coding Style & Naming Conventions
@@ -31,6 +37,7 @@
 
 - Framework: GoogleTest. Tests live in `src/tests/` and follow `test_*.cpp` naming.
 - Add unit tests for protocol/meta serialization, validation, and host/driver utilities.
+- For `stdiolink_service` changes, add/extend tests covering config validation, JS engine bindings, and proxy/scheduler behavior.
 - Prefer focused tests with clear assertions; cover edge cases (invalid input, boundary values).
 
 ## Commit & Pull Request Guidelines
@@ -42,4 +49,4 @@
 ## Configuration & Tooling Notes
 
 - Build artifacts land in `build_ninja/`.
-- Meta-system design documents live under `doc/` for reference when changing public schemas.
+- Public protocol/meta changes should be aligned with docs under `doc/manual/` and relevant milestone docs under `doc/milestone/`.

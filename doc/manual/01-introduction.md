@@ -98,9 +98,12 @@ Driver 可以通过元数据描述自己支持的命令、参数类型和约束�
 | 多 Driver 并发 | 同时管理多个 Driver 进程 |
 | 事件流 | 支持中间状态和进度反馈 |
 | UI 生成 | 从元数据自动生成表单描述 |
-| 文档生成 | 自动生成 Markdown/OpenAPI 文档 |
+| 文档生成 | 自动生成 Markdown/OpenAPI/TypeScript 文档 |
+| JS Service 运行时 | 使用 JavaScript 脚本编排 Driver 调用 |
+| 配置系统 | 类型安全的外部配置参数管理 |
 
 ## 下一步
 
 - [快速入门](02-quick-start.md) - 开始使用 stdiolink
 - [架构概述](03-architecture.md) - 深入了解系统架构
+- [JS Service 运行时](10-js-service/README.md) - 使用 JS 脚本编排 Driver

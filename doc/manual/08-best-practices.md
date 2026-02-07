@@ -56,3 +56,28 @@ d.terminate();  // 不要忘记
 ### 并行处理
 
 使用 `waitAnyNext` 并行处理多个任务。
+
+## JS Service 开发
+
+### 优先使用 openDriver()
+
+推荐使用 `openDriver()` Proxy 而非直接操作 `Driver`/`Task`：
+
+```js
+// 推荐
+const calc = await openDriver('./calculator_driver');
+const result = await calc.add({ a: 1, b: 2 });
+calc.$close();
+```
+
+### 使用 defineConfig() 管理配置
+
+将外部参数通过配置系统管理，而非硬编码：
+
+```js
+defineConfig({
+    driverPath: { type: 'string', required: true },
+    timeout: { type: 'int', default: 5000 }
+});
+const config = getConfig();
+```
