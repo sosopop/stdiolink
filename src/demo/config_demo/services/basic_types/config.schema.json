@@ -1,0 +1,27 @@
+{
+    "name": {
+        "type": "string",
+        "required": true,
+        "description": "Application name"
+    },
+    "port": {
+        "type": "int",
+        "required": true,
+        "description": "Listen port"
+    },
+    "ratio": {
+        "type": "double",
+        "default": 0.5,
+        "description": "Processing ratio (0~1)"
+    },
+    "debug": {
+        "type": "bool",
+        "default": false,
+        "description": "Enable debug mode"
+    },
+    "metadata": {
+        "type": "any",
+        "default": null,
+        "description": "Arbitrary metadata"
+    }
+}

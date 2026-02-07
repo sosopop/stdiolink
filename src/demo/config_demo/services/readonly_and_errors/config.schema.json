@@ -1,0 +1,3 @@
+{
+    "value": { "type": "int", "default": 42, "description": "Test value" }
+}

@@ -35,18 +35,6 @@ QString escapeJsString(const QString& s) {
     return out;
 }
 
-QString writeScript(const QTemporaryDir& dir, const QString& name, const QString& content) {
-    const QString path = dir.path() + "/" + name;
-    QFile f(path);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        return QString();
-    }
-    QTextStream out(&f);
-    out << content;
-    out.flush();
-    return path;
-}
-
 struct RunResult {
     bool finished = false;
     int exitCode = -1;
@@ -54,12 +42,12 @@ struct RunResult {
     QString stderrText;
 };
 
-RunResult runServiceScript(const QString& scriptPath,
-                           const QStringList& extraArgs = {},
-                           int timeoutMs = 30000) {
+RunResult runServiceDir(const QString& dirPath,
+                        const QStringList& extraArgs = {},
+                        int timeoutMs = 30000) {
     QProcess proc;
     QStringList args;
-    args << scriptPath;
+    args << dirPath;
     args << extraArgs;
     proc.start(servicePath(), args);
     RunResult result;
@@ -84,13 +72,35 @@ protected:
         ASSERT_TRUE(QFileInfo::exists(calculatorDriverPath()));
     }
 
+    QString createServiceDir(const QString& jsCode,
+                             const QByteArray& schema = "{}") {
+        static int counter = 0;
+        QString dirPath = m_tmpDir.path() + "/svc_" + QString::number(counter++);
+        QDir().mkpath(dirPath);
+
+        QFile mf(dirPath + "/manifest.json");
+        EXPECT_TRUE(mf.open(QIODevice::WriteOnly));
+        mf.write(R"({"manifestVersion":"1","id":"test","name":"Test","version":"1.0"})");
+        mf.close();
+
+        QFile sf(dirPath + "/config.schema.json");
+        EXPECT_TRUE(sf.open(QIODevice::WriteOnly));
+        sf.write(schema);
+        sf.close();
+
+        QFile jf(dirPath + "/index.js");
+        EXPECT_TRUE(jf.open(QIODevice::WriteOnly | QIODevice::Text));
+        jf.write(jsCode.toUtf8());
+        jf.close();
+
+        return dirPath;
+    }
+
     QTemporaryDir m_tmpDir;
 };
 
 TEST_F(JsIntegrationTest, BasicDriverUsage) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "basic_usage.js",
+    QString dir = createServiceDir(
         QString(
             "import { Driver } from 'stdiolink';\n"
             "const d = new Driver();\n"
@@ -101,9 +111,8 @@ TEST_F(JsIntegrationTest, BasicDriverUsage) {
             "console.log('basic-ok', m.data.result);\n"
             "d.terminate();\n")
             .arg(escapeJsString(calculatorDriverPath())));
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stdoutText.isEmpty());
@@ -111,9 +120,7 @@ TEST_F(JsIntegrationTest, BasicDriverUsage) {
 }
 
 TEST_F(JsIntegrationTest, ProxyDriverUsage) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "proxy_usage.js",
+    QString dir = createServiceDir(
         QString(
             "import { openDriver } from 'stdiolink';\n"
             "(async () => {\n"
@@ -124,18 +131,15 @@ TEST_F(JsIntegrationTest, ProxyDriverUsage) {
             "  calc.$close();\n"
             "})();\n")
             .arg(escapeJsString(calculatorDriverPath())));
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stderrText.contains("proxy-ok 8"));
 }
 
 TEST_F(JsIntegrationTest, MultiDriverParallelUsage) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "multi_driver.js",
+    QString dir = createServiceDir(
         QString(
             "import { openDriver } from 'stdiolink';\n"
             "(async () => {\n"
@@ -151,9 +155,8 @@ TEST_F(JsIntegrationTest, MultiDriverParallelUsage) {
             "  b.$close();\n"
             "})();\n")
             .arg(escapeJsString(calculatorDriverPath())));
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stderrText.contains("parallel-ok 10"));
@@ -175,19 +178,16 @@ TEST_F(JsIntegrationTest, ProcessExecUsage) {
         "if (!r.stdout.includes('hello-m27')) throw new Error('stdout mismatch');\n"
         "console.log('exec-ok', r.exitCode);\n";
 #endif
-    const QString scriptPath = writeScript(m_tmpDir, "process_exec.js", script);
-    ASSERT_FALSE(scriptPath.isEmpty());
+    QString dir = createServiceDir(script);
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stderrText.contains("exec-ok 0"));
 }
 
 TEST_F(JsIntegrationTest, DriverStartFailureIsCatchable) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "driver_start_fail.js",
+    QString dir = createServiceDir(
         "import { openDriver } from 'stdiolink';\n"
         "(async () => {\n"
         "  try {\n"
@@ -197,48 +197,37 @@ TEST_F(JsIntegrationTest, DriverStartFailureIsCatchable) {
         "    console.error('start-fail', String(e));\n"
         "  }\n"
         "})();\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stderrText.contains("start-fail"));
 }
 
 TEST_F(JsIntegrationTest, ModuleNotFoundFailsProcess) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "module_not_found.js",
+    QString dir = createServiceDir(
         "import { missing } from './no_such_file.js';\n"
         "console.log(missing);\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 1);
 }
 
 TEST_F(JsIntegrationTest, SyntaxErrorFailsProcess) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "syntax_error.js",
-        "let = ;\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
+    QString dir = createServiceDir("let = ;\n");
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 1);
 }
 
 TEST_F(JsIntegrationTest, ConsoleOutputDoesNotPolluteStdout) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "console_output.js",
+    QString dir = createServiceDir(
         "console.log('m27-log');\n"
         "console.warn('m27-warn');\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stdoutText.isEmpty());
@@ -247,53 +236,39 @@ TEST_F(JsIntegrationTest, ConsoleOutputDoesNotPolluteStdout) {
 }
 
 TEST_F(JsIntegrationTest, UncaughtExceptionExitsWithError) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "uncaught.js",
-        "throw new Error('test uncaught');\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
+    QString dir = createServiceDir("throw new Error('test uncaught');\n");
 
-    const RunResult r = runServiceScript(scriptPath);
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 1);
     EXPECT_TRUE(r.stderrText.contains("test uncaught"));
 }
 
 TEST_F(JsIntegrationTest, CrossFileImport) {
-    // Create lib file
-    QFile libFile(m_tmpDir.path() + "/lib.js");
-    ASSERT_TRUE(libFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    libFile.write("export function add(a, b) { return a + b; }\n");
-    libFile.close();
-
-    // Create main file that imports lib
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "main.js",
+    QString dir = createServiceDir(
         "import { add } from './lib.js';\n"
         "const r = add(3, 4);\n"
         "if (r !== 7) throw new Error('cross-file import failed');\n"
         "console.log('cross-file-ok', r);\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
 
-    const RunResult r = runServiceScript(scriptPath);
+    // Create lib file in the same service directory
+    QFile libFile(dir + "/lib.js");
+    ASSERT_TRUE(libFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    libFile.write("export function add(a, b) { return a + b; }\n");
+    libFile.close();
+
+    const RunResult r = runServiceDir(dir);
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_TRUE(r.stderrText.contains("cross-file-ok 7"));
 }
 
 TEST_F(JsIntegrationTest, DumpSchemaOutputsJson) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "dump_schema_ok.js",
-        "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({\n"
-        "  port: { type: 'int', required: true },\n"
-        "  name: { type: 'string', default: 'svc' }\n"
-        "});\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
+    QString dir = createServiceDir(
+        "// index.js not executed in dump mode\n",
+        R"({"port":{"type":"int","required":true}})");
 
-    const RunResult r = runServiceScript(scriptPath, {"--dump-config-schema"});
+    const RunResult r = runServiceDir(dir, {"--dump-config-schema"});
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
 
@@ -304,43 +279,58 @@ TEST_F(JsIntegrationTest, DumpSchemaOutputsJson) {
     EXPECT_TRUE(doc.object().contains("fields"));
 }
 
-TEST_F(JsIntegrationTest, DumpSchemaWithoutDefineConfigFails) {
-    const QString scriptPath = writeScript(
-        m_tmpDir,
-        "dump_schema_no_define.js",
-        "console.log('no-define');\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
+TEST_F(JsIntegrationTest, DumpSchemaMalformedFileFails) {
+    QString dir = createServiceDir("// unused\n", "{invalid json");
 
-    const RunResult r = runServiceScript(scriptPath, {"--dump-config-schema"});
+    const RunResult r = runServiceDir(dir, {"--dump-config-schema"});
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 2);
-    EXPECT_TRUE(r.stderrText.contains("requires the script to call defineConfig()"));
 }
 
-TEST_F(JsIntegrationTest, DumpSchemaModeBlocksOpenDriverAndExec) {
-    const QString openDriverScript = writeScript(
-        m_tmpDir,
-        "dump_schema_open_driver.js",
-        "import { defineConfig, openDriver } from 'stdiolink';\n"
-        "defineConfig({ p: { type: 'int', default: 1 } });\n"
-        "openDriver('dummy-driver');\n");
-    ASSERT_FALSE(openDriverScript.isEmpty());
+TEST_F(JsIntegrationTest, ConfigInjectionViaServiceDir) {
+    QByteArray schema = R"({
+        "port": { "type": "int", "required": true },
+        "name": { "type": "string", "default": "default" }
+    })";
 
-    const RunResult openDriverResult = runServiceScript(openDriverScript, {"--dump-config-schema"});
-    EXPECT_TRUE(openDriverResult.finished);
-    EXPECT_EQ(openDriverResult.exitCode, 2);
-    EXPECT_TRUE(openDriverResult.stderrText.contains("openDriver() is blocked in --dump-config-schema mode"));
+    QString dir = createServiceDir(
+        "import { getConfig } from 'stdiolink';\n"
+        "const cfg = getConfig();\n"
+        "console.log('port:', cfg.port);\n"
+        "console.log('name:', cfg.name);\n",
+        schema);
 
-    const QString execScript = writeScript(
-        m_tmpDir,
-        "dump_schema_exec.js",
-        "import { defineConfig, exec } from 'stdiolink';\n"
-        "defineConfig({ p: { type: 'int', default: 1 } });\n"
-        "exec('cmd', ['/c', 'echo', 'x']);\n");
-    ASSERT_FALSE(execScript.isEmpty());
-
-    const RunResult execResult = runServiceScript(execScript, {"--dump-config-schema"});
-    EXPECT_TRUE(execResult.finished);
-    EXPECT_EQ(execResult.exitCode, 2);
-    EXPECT_TRUE(execResult.stderrText.contains("exec() is blocked in --dump-config-schema mode"));
+    auto r = runServiceDir(dir, {"--config.port=8080"});
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 0);
+    EXPECT_TRUE(r.stderrText.contains("port: 8080"));
+    EXPECT_TRUE(r.stderrText.contains("name: default"));
 }
+
+TEST_F(JsIntegrationTest, HelpShowsConfigSchemaHelp) {
+    QByteArray schema = R"({
+        "port": { "type": "int", "required": true, "description": "Listen port" },
+        "debug": { "type": "bool", "default": false, "description": "Debug mode" }
+    })";
+
+    QString dir = createServiceDir("// unused\n", schema);
+
+    auto r = runServiceDir(dir, {"--help"});
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 0);
+    EXPECT_TRUE(r.stderrText.contains("--config.port"));
+    EXPECT_TRUE(r.stderrText.contains("Listen port"));
+    EXPECT_TRUE(r.stderrText.contains("--config.debug"));
+}
+
+TEST_F(JsIntegrationTest, UnknownFieldTypeFailsWithExit2) {
+    QByteArray schema = R"({"port": {"type": "integr"}})";
+
+    QString dir = createServiceDir("// unused\n", schema);
+
+    auto r = runServiceDir(dir);
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 2);
+    EXPECT_TRUE(r.stderrText.contains("unknown field type"));
+}
+

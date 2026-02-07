@@ -12,7 +12,7 @@ stdiolink 采用三层架构设计：
 │         业务逻辑、命令处理器、UI 集成                  │
 ├─────────────────────────────────────────────────────┤
 │              JS Service 运行时 (可选)                 │
-│    QuickJS-NG / openDriver / exec / defineConfig    │
+│    QuickJS-NG / openDriver / exec / getConfig   │
 ├─────────────────────────────────────────────────────┤
 │                   框架层 (Framework)                 │
 │    DriverCore / Driver / Task / MetaBuilder         │

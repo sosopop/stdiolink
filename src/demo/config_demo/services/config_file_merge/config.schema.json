@@ -1,0 +1,45 @@
+{
+    "port": {
+        "type": "int",
+        "required": true,
+        "description": "Listen port",
+        "constraints": { "min": 1, "max": 65535 }
+    },
+    "name": {
+        "type": "string",
+        "required": true,
+        "description": "Application name"
+    },
+    "debug": {
+        "type": "bool",
+        "default": false,
+        "description": "Enable debug mode"
+    },
+    "mode": {
+        "type": "string",
+        "default": "normal",
+        "description": "Run mode",
+        "constraints": { "enumValues": ["fast", "normal", "slow"] }
+    },
+    "server": {
+        "type": "object",
+        "description": "Server configuration",
+        "fields": {
+            "host": { "type": "string", "default": "0.0.0.0", "description": "Bind address" },
+            "port": { "type": "int", "default": 8080, "description": "Server port" },
+            "ssl": { "type": "bool", "default": false, "description": "Enable SSL" }
+        }
+    },
+    "tags": {
+        "type": "array",
+        "default": [],
+        "description": "Tags",
+        "items": { "type": "string" }
+    },
+    "ratio": {
+        "type": "double",
+        "default": 0.5,
+        "description": "Processing ratio",
+        "constraints": { "min": 0, "max": 1 }
+    }
+}

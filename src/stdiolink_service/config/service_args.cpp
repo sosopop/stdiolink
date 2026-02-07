@@ -43,11 +43,11 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
     // appArgs[0] is the executable name, skip it
     const int count = appArgs.size();
     if (count < 2) {
-        result.error = "no script path provided";
+        result.error = "no service directory provided";
         return result;
     }
 
-    QString scriptPath;
+    QString serviceDir;
 
     for (int i = 1; i < count; ++i) {
         const QString& arg = appArgs[i];
@@ -86,9 +86,9 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
             continue;
         }
 
-        // Non-option argument: treat as script path
-        if (scriptPath.isEmpty() && !arg.startsWith("--")) {
-            scriptPath = arg;
+        // Non-option argument: treat as service directory
+        if (serviceDir.isEmpty() && !arg.startsWith("--")) {
+            serviceDir = arg;
             continue;
         }
 
@@ -103,12 +103,12 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
         return result;
     }
 
-    if (scriptPath.isEmpty() && !result.help) {
-        result.error = "no script path provided";
+    if (serviceDir.isEmpty() && !result.help) {
+        result.error = "no service directory provided";
         return result;
     }
 
-    result.scriptPath = scriptPath;
+    result.serviceDir = serviceDir;
     return result;
 }
 

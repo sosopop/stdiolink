@@ -30,8 +30,8 @@ Driver 端的核心类，处理通信和命令分发。
 **DriverMeta**
 驱动元数据，描述 Driver 的完整能力。
 
-**defineConfig**
-JS Service 中声明配置 schema 的函数，复用 FieldMeta 类型系统。
+**config.schema.json**
+服务目录中的配置 schema 文件，声明配置字段的类型和约束，复用 FieldMeta 类型系统。
 
 ## F
 

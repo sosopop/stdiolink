@@ -1,0 +1,27 @@
+{
+    "port": {
+        "type": "int",
+        "required": true,
+        "description": "Listen port (1-65535)",
+        "constraints": { "min": 1, "max": 65535 }
+    },
+    "name": {
+        "type": "string",
+        "required": true,
+        "description": "Service name (identifier format)",
+        "constraints": { "minLength": 1, "maxLength": 32, "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$" }
+    },
+    "ratio": {
+        "type": "double",
+        "default": 0.5,
+        "description": "Ratio (0.0-1.0)",
+        "constraints": { "min": 0.0, "max": 1.0 }
+    },
+    "tags": {
+        "type": "array",
+        "default": [],
+        "description": "Tags (max 10 items)",
+        "items": { "type": "string" },
+        "constraints": { "maxItems": 10 }
+    }
+}

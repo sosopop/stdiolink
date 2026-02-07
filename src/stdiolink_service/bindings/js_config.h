@@ -2,7 +2,6 @@
 
 #include <quickjs.h>
 #include <QJsonObject>
-#include "config/service_config_schema.h"
 
 namespace stdiolink_service {
 
@@ -11,21 +10,13 @@ public:
     static void attachRuntime(JSRuntime* rt);
     static void detachRuntime(JSRuntime* rt);
 
-    static JSValue getDefineConfigFunction(JSContext* ctx);
+    /// 获取 getConfig() 函数对象
     static JSValue getGetConfigFunction(JSContext* ctx);
 
-    static bool hasSchema(JSContext* ctx);
-    static ServiceConfigSchema getSchema(JSContext* ctx);
+    /// 注入已合并校验的最终配置（C++ 侧调用）
+    static void setMergedConfig(JSContext* ctx, const QJsonObject& mergedConfig);
 
-    static void setRawConfig(JSContext* ctx,
-                             const QJsonObject& rawCli,
-                             const QJsonObject& file,
-                             bool dumpSchemaMode);
-
-    static bool isDumpSchemaMode(JSContext* ctx);
-    static void markBlockedSideEffect(JSContext* ctx);
-    static bool takeBlockedSideEffectFlag(JSContext* ctx);
-
+    /// 重置状态（测试用）
     static void reset(JSContext* ctx);
 };
 

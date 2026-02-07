@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTemporaryDir>
 #include "config/service_config_schema.h"
 
 using namespace stdiolink_service;
@@ -174,4 +176,150 @@ TEST(ServiceConfigSchema, EmptySchema) {
     EXPECT_TRUE(schema.fields.isEmpty());
     QJsonObject json = schema.toJson();
     EXPECT_EQ(json["fields"].toArray().size(), 0);
+}
+
+TEST(ServiceConfigSchema, FromJsonFileValid) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("config.schema.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({
+        "port": { "type": "int", "required": true, "description": "listen port" },
+        "debug": { "type": "bool", "default": false }
+    })");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_TRUE(err.isEmpty()) << err.toStdString();
+    EXPECT_EQ(schema.fields.size(), 2);
+    EXPECT_NE(schema.findField("port"), nullptr);
+    EXPECT_NE(schema.findField("debug"), nullptr);
+}
+
+TEST(ServiceConfigSchema, FromJsonFileNotFound) {
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile("nonexistent.json", err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(schema.fields.isEmpty());
+}
+
+TEST(ServiceConfigSchema, FromJsonFileMalformedJson) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write("{invalid json");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+}
+
+TEST(ServiceConfigSchema, FromJsonFileNotObject) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("array.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write("[]");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+}
+
+TEST(ServiceConfigSchema, FromJsonFileUnknownFieldType) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad_type.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"port": {"type": "integr"}})");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(err.contains("unknown field type"));
+    EXPECT_TRUE(err.contains("port"));
+}
+
+TEST(ServiceConfigSchema, FromJsonFileUnknownNestedFieldType) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad_nested.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"server": {"type": "object", "fields": {"host": {"type": "strng"}}}})");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(err.contains("server.host"));
+}
+
+TEST(ServiceConfigSchema, FromJsonFileFieldDescriptorNotObject) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad_desc.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"port": 123})");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(err.contains("must be a JSON object"));
+}
+
+TEST(ServiceConfigSchema, FromJsonFileItemsNotObject) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad_items.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"tags": {"type": "array", "items": "string"}})");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(err.contains("items"));
+}
+
+TEST(ServiceConfigSchema, FromJsonFileFieldsNotObject) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("bad_fields.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"server": {"type": "object", "fields": [1,2,3]}})");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(err.contains("fields"));
+}
+
+TEST(ServiceConfigSchema, FromJsonFileEmptyObject) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("empty.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write("{}");
+    f.close();
+
+    QString err;
+    auto schema = ServiceConfigSchema::fromJsonFile(path, err);
+    EXPECT_TRUE(err.isEmpty()) << err.toStdString();
+    EXPECT_TRUE(schema.fields.isEmpty());
 }

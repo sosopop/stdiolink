@@ -1,0 +1,20 @@
+{
+    "server": {
+        "type": "object",
+        "description": "Server configuration",
+        "fields": {
+            "host": { "type": "string", "default": "localhost", "description": "Bind address" },
+            "port": { "type": "int", "required": true, "description": "Listen port" },
+            "ssl": { "type": "bool", "default": false, "description": "Enable SSL" }
+        }
+    },
+    "database": {
+        "type": "object",
+        "description": "Database configuration",
+        "fields": {
+            "host": { "type": "string", "default": "127.0.0.1", "description": "DB host" },
+            "port": { "type": "int", "default": 5432, "description": "DB port" },
+            "name": { "type": "string", "required": true, "description": "DB name" }
+        }
+    }
+}

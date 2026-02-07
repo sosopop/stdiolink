@@ -3,7 +3,6 @@
 #include <QHash>
 #include <memory>
 
-#include "js_config.h"
 #include "js_task.h"
 #include "stdiolink/host/driver.h"
 #include "utils/js_convert.h"
@@ -107,10 +106,6 @@ JSValue jsDriverCtor(JSContext* ctx, JSValueConst, int, JSValueConst*) {
 }
 
 JSValue jsDriverStart(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
-    if (stdiolink_service::JsConfigBinding::isDumpSchemaMode(ctx)) {
-        stdiolink_service::JsConfigBinding::markBlockedSideEffect(ctx);
-        return JS_ThrowInternalError(ctx, "Driver.start() is blocked in --dump-config-schema mode");
-    }
     JsDriverOpaque* opaque = getDriverOpaque(ctx, thisVal);
     if (!opaque || !opaque->driver) {
         return JS_EXCEPTION;

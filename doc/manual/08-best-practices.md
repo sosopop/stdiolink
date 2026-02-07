@@ -70,14 +70,19 @@ const result = await calc.add({ a: 1, b: 2 });
 calc.$close();
 ```
 
-### 使用 defineConfig() 管理配置
+### 使用 config.schema.json 管理配置
 
 将外部参数通过配置系统管理，而非硬编码：
 
+`config.schema.json`：
+```json
+{
+    "driverPath": { "type": "string", "required": true },
+    "timeout": { "type": "int", "default": 5000 }
+}
+```
+
+`index.js`：
 ```js
-defineConfig({
-    driverPath: { type: 'string', required: true },
-    timeout: { type: 'int', default: 5000 }
-});
 const config = getConfig();
 ```

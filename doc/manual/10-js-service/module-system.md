@@ -15,7 +15,7 @@ stdiolink_service 使用 ES Module 规范，脚本以模块模式执行，支持
 `stdiolink` 是唯一的内置模块，提供所有框架 API：
 
 ```js
-import { Driver, openDriver, exec, defineConfig, getConfig } from 'stdiolink';
+import { Driver, openDriver, exec, getConfig } from 'stdiolink';
 ```
 
 内置模块名称会被拦截，不经过文件系统查找。

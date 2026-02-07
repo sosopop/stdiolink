@@ -20,7 +20,7 @@ JS Service 运行时将 stdiolink 的核心能力暴露为 JS API，使开发者
 ├─────────────────────────────────────────────┤
 │            stdiolink 内置模块                 │
 │  Driver / Task / openDriver / exec          │
-│  defineConfig / getConfig                   │
+│  getConfig                                  │
 ├─────────────────────────────────────────────┤
 │           QuickJS-NG 引擎                    │
 │  JsEngine / ModuleLoader / ConsoleBridge    │
@@ -33,7 +33,7 @@ JS Service 运行时将 stdiolink 的核心能力暴露为 JS API，使开发者
 ## 运行方式
 
 ```bash
-stdiolink_service <script.js> [options]
+stdiolink_service <service_dir> [options]
 ```
 
 脚本以 ES Module 模式执行，支持 `import`/`export` 语法。
@@ -42,7 +42,7 @@ stdiolink_service <script.js> [options]
 
 | 选项 | 说明 |
 |------|------|
-| `-h, --help` | 显示帮助（有脚本时同时显示配置项帮助） |
+| `-h, --help` | 显示帮助（有服务目录时同时显示配置项帮助） |
 | `-v, --version` | 显示版本 |
 | `--config.key=value` | 设置配置值 |
 | `--config-file=<path>` | 从 JSON 文件加载配置 |
@@ -55,7 +55,6 @@ import {
     Driver,         // Driver 类（底层 API）
     openDriver,     // Proxy 工厂函数（推荐）
     exec,           // 外部进程执行
-    defineConfig,   // 声明配置 schema
     getConfig       // 读取配置值
 } from 'stdiolink';
 ```
@@ -67,4 +66,4 @@ import {
 - [Driver/Task 绑定](driver-binding.md) - 底层 Driver 和 Task API
 - [进程调用](process-binding.md) - exec() 外部进程执行
 - [Proxy 代理与并发调度](proxy-and-scheduler.md) - openDriver() 与异步调用
-- [配置系统](config-schema.md) - defineConfig/getConfig 配置管理
+- [配置系统](config-schema.md) - config.schema.json 与 getConfig 配置管理

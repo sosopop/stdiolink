@@ -8,7 +8,7 @@ namespace stdiolink_service {
 class ServiceArgs {
 public:
     struct ParseResult {
-        QString scriptPath;
+        QString serviceDir;           // 服务目录路径
         QJsonObject rawConfigValues;  // --config.* 解析结果（叶子值均为 raw string）
         QString configFilePath;       // --config-file 路径
         bool dumpSchema = false;      // --dump-config-schema

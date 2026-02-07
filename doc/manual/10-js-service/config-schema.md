@@ -1,25 +1,31 @@
 # 配置系统
 
-stdiolink_service 提供类型安全的配置参数机制，通过 `defineConfig()` 声明 schema，通过 `getConfig()` 读取配置值。
+stdiolink_service 提供类型安全的配置参数机制，通过 `config.schema.json` 声明 schema，通过 `getConfig()` 读取配置值。
 
 ## 基本用法
 
-```js
-import { defineConfig, getConfig } from 'stdiolink';
+在服务目录中创建 `config.schema.json`：
 
-defineConfig({
-    port: {
-        type: 'int',
-        required: true,
-        description: '监听端口',
-        constraints: { min: 1, max: 65535 }
+```json
+{
+    "port": {
+        "type": "int",
+        "required": true,
+        "description": "监听端口",
+        "constraints": { "min": 1, "max": 65535 }
     },
-    debug: {
-        type: 'bool',
-        default: false,
-        description: '启用调试模式'
+    "debug": {
+        "type": "bool",
+        "default": false,
+        "description": "启用调试模式"
     }
-});
+}
+```
+
+在 `index.js` 中读取配置：
+
+```js
+import { getConfig } from 'stdiolink';
 
 const config = getConfig();
 console.log(config.port);   // 8080（命令行传入）
@@ -76,7 +82,7 @@ console.log(config.debug);  // false（默认值）
 |--------|------|------|
 | 1 | 命令行参数 | `--config.port=8080` |
 | 2 | 配置文件 | `--config-file=config.json` |
-| 3 | Schema 默认值 | `defineConfig()` 中的 `default` |
+| 3 | Schema 默认值 | `config.schema.json` 中的 `default` |
 
 合并规则：object 类型深合并，array/scalar 整值覆盖。
 
@@ -84,13 +90,13 @@ console.log(config.debug);  // false（默认值）
 
 ```bash
 # 直接传入配置
-stdiolink_service script.js --config.port=8080 --config.name=myService
+stdiolink_service ./my_service --config.port=8080 --config.name=myService
 
 # 使用配置文件
-stdiolink_service script.js --config-file=config.json
+stdiolink_service ./my_service --config-file=config.json
 
 # 配置文件 + 命令行覆盖
-stdiolink_service script.js --config-file=config.json --config.debug=true
+stdiolink_service ./my_service --config-file=config.json --config.debug=true
 ```
 
 ### 嵌套路径
@@ -102,18 +108,18 @@ stdiolink_service script.js --config-file=config.json --config.debug=true
 --config.server.port=3000
 ```
 
-对应 schema：
+对应 `config.schema.json`：
 
-```js
-defineConfig({
-    server: {
-        type: 'object',
-        fields: {
-            host: { type: 'string', default: 'localhost' },
-            port: { type: 'int', required: true }
+```json
+{
+    "server": {
+        "type": "object",
+        "fields": {
+            "host": { "type": "string", "default": "localhost" },
+            "port": { "type": "int", "required": true }
         }
     }
-});
+}
 ```
 
 ## Schema 导出
@@ -121,7 +127,7 @@ defineConfig({
 导出配置 schema 为 JSON 格式：
 
 ```bash
-stdiolink_service script.js --dump-config-schema
+stdiolink_service ./my_service --dump-config-schema
 ```
 
 输出示例：
@@ -142,10 +148,10 @@ stdiolink_service script.js --dump-config-schema
 
 ## 配置帮助
 
-当脚本定义了配置 schema 时，`--help` 会自动展示配置项帮助：
+当服务目录包含配置 schema 时，`--help` 会自动展示配置项帮助：
 
 ```bash
-stdiolink_service script.js --help
+stdiolink_service ./my_service --help
 ```
 
 输出示例：
@@ -171,15 +177,15 @@ Config:
 
 | 场景 | 行为 |
 |------|------|
-| 必填字段缺失 | `defineConfig()` 抛出 JS 异常，退出码 1 |
-| 类型不匹配 | 抛出异常，含字段名和期望类型 |
-| 约束校验失败 | 抛出异常，含字段名和约束描述 |
+| 必填字段缺失 | stderr 报错，退出码 1 |
+| 类型不匹配 | stderr 报错，含字段名和期望类型，退出码 1 |
+| 约束校验失败 | stderr 报错，含字段名和约束描述，退出码 1 |
 | 配置文件不存在 | stderr 报错，退出码 2 |
 | JSON 格式错误 | stderr 报错，退出码 2 |
-| 重复调用 `defineConfig()` | 抛出异常 |
+| `config.schema.json` 缺失 | stderr 报错，退出码 2 |
 
 ## getConfig() 行为
 
-- `defineConfig()` 之前调用 `getConfig()` 返回空对象 `{}`
-- `defineConfig()` 之后调用 `getConfig()` 返回只读（冻结）的合并后配置对象
+- `getConfig()` 返回只读（冻结）的合并后配置对象
 - 多次调用 `getConfig()` 返回同一对象
+- 未注入配置时返回空对象 `{}`

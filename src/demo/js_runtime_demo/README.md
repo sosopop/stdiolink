@@ -22,24 +22,27 @@ build_ninja.bat
 
 ## Run one-by-one
 
-Run from repo root:
+Run from `build_ninja/bin`:
 
 ```powershell
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/01_engine_modules.js
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/02_driver_task.js
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/03_proxy_scheduler.js
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/04_process_and_types.js
+cd build_ninja/bin
+
+./stdiolink_service.exe js_runtime_demo/services/engine_modules
+./stdiolink_service.exe js_runtime_demo/services/driver_task
+./stdiolink_service.exe js_runtime_demo/services/proxy_scheduler
+./stdiolink_service.exe js_runtime_demo/services/process_types
 ```
 
 ## Run all in one
 
 ```powershell
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/00_all_in_one.js
+cd build_ninja/bin
+./stdiolink_service.exe js_runtime_demo/services/basic_demo
 ```
 
 ## Expected behavior summary
 
-- Scenario 01 prints module math results and console messages.
-- Scenario 02 starts calculator driver, queries meta, receives `batch` events, and prints one error response sample.
-- Scenario 03 uses `openDriver`, shows parallel calls across two driver instances, and shows same-instance busy protection.
-- Scenario 04 runs `exec` and exports TS declaration via `calculator_driver --export-doc=ts`.
+- engine_modules prints module math results and console messages.
+- driver_task starts calculator driver, queries meta, receives `batch` events, and prints one error response sample.
+- proxy_scheduler uses `openDriver`, shows parallel calls across two driver instances, and shows same-instance busy protection.
+- process_types runs `exec` and exports TS declaration via `calculator_driver --export-doc=ts`.

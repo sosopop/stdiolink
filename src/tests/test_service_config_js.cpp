@@ -16,22 +16,6 @@
 
 using namespace stdiolink_service;
 
-namespace {
-
-QString writeScript(const QTemporaryDir& dir, const QString& name, const QString& content) {
-    const QString path = dir.path() + "/" + name;
-    QFile f(path);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        return QString();
-    }
-    QTextStream out(&f);
-    out << content;
-    out.flush();
-    return path;
-}
-
-} // namespace
-
 class ServiceConfigJsTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -44,12 +28,16 @@ protected:
     }
 
     void TearDown() override {
+        JsConfigBinding::reset(m_engine->context());
         m_engine.reset();
     }
 
     int evalScript(const QString& name, const QString& content) {
-        const QString path = writeScript(m_tmpDir, name, content);
-        if (path.isEmpty()) return -1;
+        const QString path = m_tmpDir.path() + "/" + name;
+        QFile f(path);
+        if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return -1;
+        f.write(content.toUtf8());
+        f.close();
         return m_engine->evalFile(path);
     }
 
@@ -57,19 +45,13 @@ protected:
     std::unique_ptr<JsEngine> m_engine;
 };
 
-TEST_F(ServiceConfigJsTest, DefineAndGetConfig) {
-    JsConfigBinding::setRawConfig(
+TEST_F(ServiceConfigJsTest, GetConfigReturnsInjectedConfig) {
+    JsConfigBinding::setMergedConfig(
         m_engine->context(),
-        QJsonObject{{"port", 8080}, {"name", "test"}},
-        QJsonObject{},
-        false);
-    int ret = evalScript("define_get.js",
-        "import { defineConfig, getConfig } from 'stdiolink';\n"
-        "defineConfig({\n"
-        "    port: { type: 'int', required: true },\n"
-        "    name: { type: 'string', required: true },\n"
-        "    debug: { type: 'bool', default: false }\n"
-        "});\n"
+        QJsonObject{{"port", 8080}, {"name", "test"}, {"debug", false}});
+
+    int ret = evalScript("get_config.js",
+        "import { getConfig } from 'stdiolink';\n"
         "const cfg = getConfig();\n"
         "if (cfg.port !== 8080) throw new Error('port mismatch');\n"
         "if (cfg.name !== 'test') throw new Error('name mismatch');\n"
@@ -79,14 +61,12 @@ TEST_F(ServiceConfigJsTest, DefineAndGetConfig) {
 }
 
 TEST_F(ServiceConfigJsTest, ConfigIsReadOnly) {
-    JsConfigBinding::setRawConfig(
+    JsConfigBinding::setMergedConfig(
         m_engine->context(),
-        QJsonObject{{"port", 3000}},
-        QJsonObject{},
-        false);
+        QJsonObject{{"port", 3000}});
+
     int ret = evalScript("readonly.js",
-        "import { defineConfig, getConfig } from 'stdiolink';\n"
-        "defineConfig({ port: { type: 'int', required: true } });\n"
+        "import { getConfig } from 'stdiolink';\n"
         "const cfg = getConfig();\n"
         "try {\n"
         "    cfg.port = 9999;\n"
@@ -98,81 +78,17 @@ TEST_F(ServiceConfigJsTest, ConfigIsReadOnly) {
     EXPECT_EQ(ret, 0);
 }
 
-TEST_F(ServiceConfigJsTest, DuplicateDefineConfigThrows) {
-    JsConfigBinding::setRawConfig(m_engine->context(), QJsonObject{}, QJsonObject{}, false);
-    int ret = evalScript("dup_define.js",
-        "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({ a: { type: 'string', default: '' } });\n"
-        "try {\n"
-        "    defineConfig({ b: { type: 'int', default: 0 } });\n"
-        "    throw new Error('should not reach');\n"
-        "} catch (e) {\n"
-        "    if (e.message === 'should not reach') throw e;\n"
-        "}\n"
-    );
-    EXPECT_EQ(ret, 0);
-}
+TEST_F(ServiceConfigJsTest, DefineConfigNotExported) {
+    JsConfigBinding::setMergedConfig(m_engine->context(), QJsonObject{});
 
-TEST_F(ServiceConfigJsTest, RequiredFieldMissingThrows) {
-    JsConfigBinding::setRawConfig(m_engine->context(), QJsonObject{}, QJsonObject{}, false);
-    int ret = evalScript("required_missing.js",
+    int ret = evalScript("no_define.js",
         "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({ port: { type: 'int', required: true } });\n"
     );
     EXPECT_NE(ret, 0);
 }
 
-TEST_F(ServiceConfigJsTest, TypeMismatchThrows) {
-    JsConfigBinding::setRawConfig(
-        m_engine->context(),
-        QJsonObject{{"port", "not_a_number"}},
-        QJsonObject{},
-        false);
-    int ret = evalScript("type_mismatch.js",
-        "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({ port: { type: 'int', required: true } });\n"
-    );
-    EXPECT_NE(ret, 0);
-}
-
-TEST_F(ServiceConfigJsTest, ConstraintViolationThrows) {
-    JsConfigBinding::setRawConfig(
-        m_engine->context(),
-        QJsonObject{{"port", 99999}},
-        QJsonObject{},
-        false);
-    int ret = evalScript("constraint_fail.js",
-        "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({\n"
-        "    port: { type: 'int', required: true,\n"
-        "            constraints: { min: 1, max: 65535 } }\n"
-        "});\n"
-    );
-    EXPECT_NE(ret, 0);
-}
-
-TEST_F(ServiceConfigJsTest, CliOverridesFileConfig) {
-    JsConfigBinding::setRawConfig(
-        m_engine->context(),
-        QJsonObject{{"port", 9090}},
-        QJsonObject{{"port", 3000}, {"name", "fromFile"}},
-        false);
-    int ret = evalScript("cli_override.js",
-        "import { defineConfig, getConfig } from 'stdiolink';\n"
-        "defineConfig({\n"
-        "    port: { type: 'int', required: true },\n"
-        "    name: { type: 'string', required: true }\n"
-        "});\n"
-        "const cfg = getConfig();\n"
-        "if (cfg.port !== 9090) throw new Error('cli should override file');\n"
-        "if (cfg.name !== 'fromFile') throw new Error('file should fill name');\n"
-    );
-    EXPECT_EQ(ret, 0);
-}
-
-TEST_F(ServiceConfigJsTest, GetConfigBeforeDefineReturnsEmpty) {
-    JsConfigBinding::setRawConfig(m_engine->context(), QJsonObject{}, QJsonObject{}, false);
-    int ret = evalScript("get_before_define.js",
+TEST_F(ServiceConfigJsTest, GetConfigWithNoInjectionReturnsEmpty) {
+    int ret = evalScript("get_empty.js",
         "import { getConfig } from 'stdiolink';\n"
         "const cfg = getConfig();\n"
         "if (Object.keys(cfg).length !== 0) throw new Error('expected empty');\n"
@@ -180,38 +96,75 @@ TEST_F(ServiceConfigJsTest, GetConfigBeforeDefineReturnsEmpty) {
     EXPECT_EQ(ret, 0);
 }
 
-TEST_F(ServiceConfigJsTest, SchemaAccessibleFromCpp) {
-    JsConfigBinding::setRawConfig(
+TEST_F(ServiceConfigJsTest, GetConfigReturnsNestedValues) {
+    JsConfigBinding::setMergedConfig(
         m_engine->context(),
-        QJsonObject{{"port", 8080}},
-        QJsonObject{},
-        false);
-    evalScript("schema_access.js",
-        "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({\n"
-        "    port: { type: 'int', required: true,\n"
-        "            description: 'listen port',\n"
-        "            constraints: { min: 1, max: 65535 } }\n"
-        "});\n"
-    );
-    EXPECT_TRUE(JsConfigBinding::hasSchema(m_engine->context()));
-    auto schema = JsConfigBinding::getSchema(m_engine->context());
-    EXPECT_EQ(schema.fields.size(), 1);
-    EXPECT_EQ(schema.fields[0].name, "port");
-    auto json = schema.toJson();
-    EXPECT_FALSE(json.isEmpty());
-}
+        QJsonObject{{"port", 9090}, {"name", "fromCli"}});
 
-TEST_F(ServiceConfigJsTest, DumpSchemaMode) {
-    JsConfigBinding::setRawConfig(m_engine->context(), QJsonObject{}, QJsonObject{}, true);
-    int ret = evalScript("dump_schema.js",
-        "import { defineConfig } from 'stdiolink';\n"
-        "defineConfig({\n"
-        "    port: { type: 'int', required: true },\n"
-        "    name: { type: 'string', default: 'svc' }\n"
-        "});\n"
+    int ret = evalScript("nested_values.js",
+        "import { getConfig } from 'stdiolink';\n"
+        "const cfg = getConfig();\n"
+        "if (cfg.port !== 9090) throw new Error('port mismatch');\n"
+        "if (cfg.name !== 'fromCli') throw new Error('name mismatch');\n"
     );
     EXPECT_EQ(ret, 0);
-    EXPECT_TRUE(JsConfigBinding::hasSchema(m_engine->context()));
-    EXPECT_TRUE(JsConfigBinding::isDumpSchemaMode(m_engine->context()));
 }
+
+TEST_F(ServiceConfigJsTest, SetMergedConfigOverwritesPrevious) {
+    JsConfigBinding::setMergedConfig(
+        m_engine->context(),
+        QJsonObject{{"port", 99999}});
+    JsConfigBinding::setMergedConfig(
+        m_engine->context(),
+        QJsonObject{{"port", 3000}});
+
+    int ret = evalScript("overwrite.js",
+        "import { getConfig } from 'stdiolink';\n"
+        "const cfg = getConfig();\n"
+        "if (cfg.port !== 3000) throw new Error('expected overwritten value');\n"
+    );
+    EXPECT_EQ(ret, 0);
+}
+
+TEST_F(ServiceConfigJsTest, GetConfigReturnsBoolValues) {
+    JsConfigBinding::setMergedConfig(
+        m_engine->context(),
+        QJsonObject{{"debug", true}, {"verbose", false}});
+
+    int ret = evalScript("bool_values.js",
+        "import { getConfig } from 'stdiolink';\n"
+        "const cfg = getConfig();\n"
+        "if (cfg.debug !== true) throw new Error('debug mismatch');\n"
+        "if (cfg.verbose !== false) throw new Error('verbose mismatch');\n"
+    );
+    EXPECT_EQ(ret, 0);
+}
+
+TEST_F(ServiceConfigJsTest, ResetClearsConfig) {
+    JsConfigBinding::setMergedConfig(
+        m_engine->context(),
+        QJsonObject{{"port", 8080}});
+    JsConfigBinding::reset(m_engine->context());
+
+    int ret = evalScript("after_reset.js",
+        "import { getConfig } from 'stdiolink';\n"
+        "const cfg = getConfig();\n"
+        "if (Object.keys(cfg).length !== 0) throw new Error('expected empty after reset');\n"
+    );
+    EXPECT_EQ(ret, 0);
+}
+
+TEST_F(ServiceConfigJsTest, GetConfigMultipleCallsReturnSameData) {
+    JsConfigBinding::setMergedConfig(
+        m_engine->context(),
+        QJsonObject{{"port", 8080}});
+
+    int ret = evalScript("multi_call.js",
+        "import { getConfig } from 'stdiolink';\n"
+        "const a = getConfig();\n"
+        "const b = getConfig();\n"
+        "if (a.port !== b.port) throw new Error('inconsistent');\n"
+    );
+    EXPECT_EQ(ret, 0);
+}
+

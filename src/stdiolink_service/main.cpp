@@ -9,6 +9,10 @@
 #include "bindings/js_task_scheduler.h"
 #include "config/service_args.h"
 #include "config/service_config_help.h"
+#include "config/service_config_schema.h"
+#include "config/service_config_validator.h"
+#include "config/service_directory.h"
+#include "config/service_manifest.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
 
@@ -45,10 +49,10 @@ void utf8MessageHandler(QtMsgType type, const QMessageLogContext&, const QString
 
 void printHelp() {
     QTextStream err(stderr);
-    err << "Usage: stdiolink_service <script.js> [options]\n";
+    err << "Usage: stdiolink_service <service_dir> [options]\n";
     err << "Options:\n";
-    err << "  --help                  Show this help\n";
-    err << "  --version               Show version\n";
+    err << "  -h, --help              Show this help\n";
+    err << "  -v, --version           Show version\n";
     err << "  --config.key=value      Set config value\n";
     err << "  --config-file=<path>    Load config from JSON file\n";
     err << "  --dump-config-schema    Dump config schema and exit\n";
@@ -61,14 +65,13 @@ void printVersion() {
     err.flush();
 }
 
-void silentMessageHandler(QtMsgType type, const QMessageLogContext&, const QString& msg) {
-    // Only pass through fatal messages; suppress debug/warning/critical during --help script run
-    if (type == QtFatalMsg) {
-        QByteArray line = "Fatal: " + msg.toUtf8() + '\n';
-        std::fwrite(line.constData(), 1, static_cast<size_t>(line.size()), stderr);
-        std::fflush(stderr);
-        std::abort();
+void printServiceHelp(const stdiolink_service::ServiceManifest& manifest) {
+    QTextStream err(stderr);
+    err << manifest.name << " v" << manifest.version << "\n";
+    if (!manifest.description.isEmpty()) {
+        err << manifest.description << "\n";
     }
+    err.flush();
 }
 
 } // namespace
@@ -82,41 +85,9 @@ int main(int argc, char* argv[]) {
 
     auto parsed = ServiceArgs::parse(app.arguments());
 
-    if (parsed.help) {
+    // Global help (no service directory)
+    if (parsed.help && parsed.serviceDir.isEmpty()) {
         printHelp();
-        if (parsed.scriptPath.isEmpty() || !QFileInfo::exists(parsed.scriptPath)) {
-            return 0;
-        }
-        // Script provided: run in dumpSchema mode to capture config schema
-        qInstallMessageHandler(silentMessageHandler);
-        JsEngine engine;
-        if (!engine.context()) {
-            return 0;
-        }
-        ConsoleBridge::install(engine.context());
-        JsConfigBinding::attachRuntime(engine.runtime());
-        JsConfigBinding::setRawConfig(engine.context(), {}, {}, true);
-        engine.registerModule("stdiolink", jsInitStdiolinkModule);
-        JsTaskScheduler scheduler(engine.context());
-        JsTaskScheduler::installGlobal(engine.context(), &scheduler);
-        engine.evalFile(parsed.scriptPath);
-        while (scheduler.hasPending() || engine.hasPendingJobs()) {
-            if (scheduler.hasPending()) {
-                scheduler.poll(50);
-            }
-            while (engine.hasPendingJobs()) {
-                engine.executePendingJobs();
-            }
-        }
-        if (JsConfigBinding::hasSchema(engine.context())) {
-            auto schema = JsConfigBinding::getSchema(engine.context());
-            QString configHelp = ServiceConfigHelp::generate(schema);
-            if (!configHelp.isEmpty()) {
-                QTextStream err(stderr);
-                err << "\n" << configHelp;
-                err.flush();
-            }
-        }
         return 0;
     }
     if (parsed.version) {
@@ -130,11 +101,55 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    if (!QFileInfo::exists(parsed.scriptPath)) {
+    // Validate service directory
+    ServiceDirectory svcDir(parsed.serviceDir);
+    QString dirErr;
+    if (!svcDir.validate(dirErr)) {
         QTextStream err(stderr);
-        err << "File not found: " << parsed.scriptPath << "\n";
+        err << "Error: " << dirErr << "\n";
         err.flush();
         return 2;
+    }
+
+    // Load manifest
+    QString mErr;
+    auto manifest = ServiceManifest::loadFromFile(svcDir.manifestPath(), mErr);
+    if (!mErr.isEmpty()) {
+        QTextStream err(stderr);
+        err << "Error: " << mErr << "\n";
+        err.flush();
+        return 2;
+    }
+
+    // Load config schema (needed by both --help and normal execution)
+    QString schemaErr;
+    auto schema = ServiceConfigSchema::fromJsonFile(svcDir.configSchemaPath(), schemaErr);
+    if (!schemaErr.isEmpty()) {
+        QTextStream err(stderr);
+        err << "Error: " << schemaErr << "\n";
+        err.flush();
+        return 2;
+    }
+
+    // --help with service directory: show manifest info + general help + config help
+    if (parsed.help) {
+        printServiceHelp(manifest);
+        printHelp();
+        const QString configHelp = ServiceConfigHelp::generate(schema);
+        if (!configHelp.isEmpty()) {
+            QTextStream err(stderr);
+            err << "\n" << configHelp;
+            err.flush();
+        }
+        return 0;
+    }
+
+    // --dump-config-schema: output standardized schema JSON
+    if (parsed.dumpSchema) {
+        QTextStream out(stdout);
+        out << QJsonDocument(schema.toJson()).toJson(QJsonDocument::Indented);
+        out.flush();
+        return 0;
     }
 
     // Load config file if specified
@@ -150,6 +165,18 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Merge and validate config (cli > file > defaults)
+    QJsonObject mergedConfig;
+    auto vr = ServiceConfigValidator::mergeAndValidate(
+        schema, fileConfig, parsed.rawConfigValues,
+        UnknownFieldPolicy::Reject, mergedConfig);
+    if (!vr.valid) {
+        QTextStream err(stderr);
+        err << "Error: config validation failed: " << vr.toString() << "\n";
+        err.flush();
+        return 1;
+    }
+
     JsEngine engine;
     if (!engine.context()) {
         return 1;
@@ -158,16 +185,13 @@ int main(int argc, char* argv[]) {
     ConsoleBridge::install(engine.context());
 
     JsConfigBinding::attachRuntime(engine.runtime());
-    JsConfigBinding::setRawConfig(engine.context(),
-                                  parsed.rawConfigValues,
-                                  fileConfig,
-                                  parsed.dumpSchema);
+    JsConfigBinding::setMergedConfig(engine.context(), mergedConfig);
 
     engine.registerModule("stdiolink", jsInitStdiolinkModule);
     JsTaskScheduler scheduler(engine.context());
     JsTaskScheduler::installGlobal(engine.context(), &scheduler);
 
-    int ret = engine.evalFile(parsed.scriptPath);
+    int ret = engine.evalFile(svcDir.entryPath());
 
     // Drain pending jobs
     while (scheduler.hasPending() || engine.hasPendingJobs()) {
@@ -180,27 +204,6 @@ int main(int argc, char* argv[]) {
     }
     if (ret == 0 && engine.hadJobError()) {
         ret = 1;
-    }
-
-    // --dump-config-schema mode
-    if (parsed.dumpSchema) {
-        if (ret != 0) {
-            if (JsConfigBinding::takeBlockedSideEffectFlag(engine.context())) {
-                return 2;
-            }
-            return ret;
-        }
-        if (!JsConfigBinding::hasSchema(engine.context())) {
-            QTextStream err(stderr);
-            err << "Error: --dump-config-schema requires the script to call defineConfig()\n";
-            err.flush();
-            return 2;
-        }
-        auto schema = JsConfigBinding::getSchema(engine.context());
-        QTextStream out(stdout);
-        out << QJsonDocument(schema.toJson()).toJson(QJsonDocument::Indented);
-        out.flush();
-        return 0;
     }
 
     return ret;

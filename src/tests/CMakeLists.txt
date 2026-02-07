@@ -32,6 +32,9 @@ set(TEST_SOURCES
     test_service_args.cpp
     test_service_config_validator.cpp
     test_service_config_js.cpp
+    test_service_manifest.cpp
+    test_service_directory.cpp
+    test_service_loader.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -50,6 +53,8 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_schema.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_args.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_validator.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_manifest.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_directory.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/driver_proxy.cpp
 )
 

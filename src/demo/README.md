@@ -78,8 +78,8 @@ demo/
 ./build_ninja/src/demo/calculator_driver/calculator_driver.exe --help
 ./build_ninja/src/demo/calculator_driver/calculator_driver.exe add --a=10 --b=20
 
-# 运行 JS runtime 综合演示（构建后脚本会复制到 bin/js_runtime_demo）
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/00_all_in_one.js
+# 运行 JS runtime 综合演示（构建后服务目录会复制到 bin/js_runtime_demo）
+./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/services/basic_demo
 ```
 
 ## 功能覆盖

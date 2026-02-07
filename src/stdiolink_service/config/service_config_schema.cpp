@@ -1,5 +1,8 @@
 #include "service_config_schema.h"
 
+#include <QFile>
+#include <QJsonDocument>
+#include <QSet>
 #include "stdiolink/protocol/meta_types.h"
 
 using stdiolink::meta::Constraints;
@@ -8,6 +11,93 @@ using stdiolink::meta::FieldType;
 using stdiolink::meta::fieldTypeFromString;
 
 namespace stdiolink_service {
+
+namespace {
+
+/// 已知的合法类型字符串集合
+bool isKnownFieldType(const QString& typeStr) {
+    static const QSet<QString> known = {
+        "string", "int", "integer", "int64", "double", "number",
+        "bool", "boolean", "object", "array", "enum", "any"
+    };
+    return known.contains(typeStr);
+}
+
+/// 带错误检查的递归解析（内部实现）
+ServiceConfigSchema parseObject(const QJsonObject& obj, const QString& pathPrefix, QString& error) {
+    ServiceConfigSchema schema;
+    for (auto it = obj.begin(); it != obj.end(); ++it) {
+        const QString& fieldName = it.key();
+        const QString fieldPath = pathPrefix.isEmpty() ? fieldName : (pathPrefix + "." + fieldName);
+        if (!it.value().isObject()) {
+            error = QString("field descriptor for \"%1\" must be a JSON object").arg(fieldPath);
+            return {};
+        }
+        const QJsonObject desc = it.value().toObject();
+
+        // Validate type string
+        const QString typeStr = desc.value("type").toString("any");
+        if (!isKnownFieldType(typeStr)) {
+            error = QString("unknown field type \"%1\" for field \"%2\"").arg(typeStr, fieldPath);
+            return {};
+        }
+
+        FieldMeta field;
+        field.name = fieldName;
+        field.type = fieldTypeFromString(typeStr);
+        field.required = desc.value("required").toBool(false);
+        field.description = desc.value("description").toString();
+
+        if (desc.contains("default")) {
+            field.defaultValue = desc.value("default");
+        }
+
+        if (desc.contains("constraints")) {
+            QJsonObject cObj = desc.value("constraints").toObject();
+            if (cObj.contains("enumValues")) {
+                cObj["enum"] = cObj.take("enumValues");
+            }
+            field.constraints = Constraints::fromJson(cObj);
+        }
+
+        if (desc.contains("items")) {
+            if (!desc.value("items").isObject()) {
+                error = QString("\"items\" for field \"%1\" must be a JSON object").arg(fieldPath);
+                return {};
+            }
+            auto itemMeta = std::make_shared<FieldMeta>();
+            const QJsonObject itemObj = desc.value("items").toObject();
+            const QString itemTypeStr = itemObj.value("type").toString("any");
+            if (!isKnownFieldType(itemTypeStr)) {
+                error = QString("unknown item type \"%1\" for field \"%2\"").arg(itemTypeStr, fieldPath);
+                return {};
+            }
+            itemMeta->type = fieldTypeFromString(itemTypeStr);
+            if (itemObj.contains("constraints")) {
+                itemMeta->constraints = Constraints::fromJson(itemObj.value("constraints").toObject());
+            }
+            field.items = itemMeta;
+        }
+
+        if (desc.contains("fields")) {
+            if (!desc.value("fields").isObject()) {
+                error = QString("\"fields\" for field \"%1\" must be a JSON object").arg(fieldPath);
+                return {};
+            }
+            const QJsonObject fieldsObj = desc.value("fields").toObject();
+            ServiceConfigSchema nested = parseObject(fieldsObj, fieldPath, error);
+            if (!error.isEmpty()) {
+                return {};
+            }
+            field.fields = nested.fields;
+        }
+
+        schema.fields.append(field);
+    }
+    return schema;
+}
+
+} // namespace
 
 ServiceConfigSchema ServiceConfigSchema::fromJsObject(const QJsonObject& obj) {
     ServiceConfigSchema schema;
@@ -53,6 +143,30 @@ ServiceConfigSchema ServiceConfigSchema::fromJsObject(const QJsonObject& obj) {
         schema.fields.append(field);
     }
     return schema;
+}
+
+ServiceConfigSchema ServiceConfigSchema::fromJsonFile(const QString& filePath, QString& error) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        error = QString("cannot open config schema file: %1").arg(filePath);
+        return {};
+    }
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError parseErr;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseErr);
+    if (parseErr.error != QJsonParseError::NoError) {
+        error = QString("config.schema.json parse error: %1").arg(parseErr.errorString());
+        return {};
+    }
+    if (!doc.isObject()) {
+        error = "config.schema.json must be a JSON object";
+        return {};
+    }
+
+    error.clear();
+    return parseObject(doc.object(), QString(), error);
 }
 
 QJsonObject ServiceConfigSchema::toJson() const {

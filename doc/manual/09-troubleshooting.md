@@ -67,7 +67,7 @@ if (!d.start(path)) {
 
 ### 配置校验失败
 
-**症状：** `defineConfig()` 抛出异常
+**症状：** 启动时 stderr 报配置校验错误，退出码 1
 
 **可能原因：**
 - 必填字段未通过 `--config.key=value` 提供
@@ -76,11 +76,11 @@ if (!d.start(path)) {
 
 **解决方案：**
 ```bash
-# 查看脚本的配置项帮助
-stdiolink_service script.js --help
+# 查看服务的配置项帮助
+stdiolink_service ./my_service --help
 
 # 导出 schema 检查字段定义
-stdiolink_service script.js --dump-config-schema
+stdiolink_service ./my_service --dump-config-schema
 ```
 
 ### openDriver() 启动失败

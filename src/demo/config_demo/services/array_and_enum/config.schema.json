@@ -1,0 +1,26 @@
+{
+    "mode": {
+        "type": "string",
+        "default": "normal",
+        "description": "Run mode",
+        "constraints": { "enumValues": ["fast", "normal", "slow", "debug"] }
+    },
+    "tags": {
+        "type": "array",
+        "default": [],
+        "description": "Tags list",
+        "items": { "type": "string" },
+        "constraints": { "maxItems": 10 }
+    },
+    "ports": {
+        "type": "array",
+        "default": [80],
+        "description": "Listen ports",
+        "items": { "type": "int", "constraints": { "min": 1, "max": 65535 } }
+    },
+    "level": {
+        "type": "int",
+        "required": true,
+        "description": "Priority level"
+    }
+}

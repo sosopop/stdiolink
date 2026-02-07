@@ -31,6 +31,10 @@ JsEngine::JsEngine() {
 
 JsEngine::~JsEngine() {
     JSRuntime* oldRt = m_rt;
+    // Detach bindings before freeing context/runtime so cached JSValues can be freed
+    JsDriverBinding::detachRuntime(oldRt);
+    JsTaskBinding::detachRuntime(oldRt);
+    stdiolink_service::JsConfigBinding::detachRuntime(oldRt);
     if (m_ctx) {
         JS_FreeContext(m_ctx);
         m_ctx = nullptr;
@@ -39,9 +43,6 @@ JsEngine::~JsEngine() {
         JS_FreeRuntime(m_rt);
         m_rt = nullptr;
     }
-    JsDriverBinding::detachRuntime(oldRt);
-    JsTaskBinding::detachRuntime(oldRt);
-    stdiolink_service::JsConfigBinding::detachRuntime(oldRt);
 }
 
 void JsEngine::registerModule(const QString& name, JSModuleDef* (*init)(JSContext*, const char*)) {

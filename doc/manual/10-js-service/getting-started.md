@@ -9,7 +9,26 @@
 
 ## 最小示例
 
-创建 `hello.js`：
+创建服务目录 `hello/`，包含三个文件：
+
+`manifest.json`：
+
+```json
+{
+    "manifestVersion": "1",
+    "id": "hello",
+    "name": "Hello",
+    "version": "1.0"
+}
+```
+
+`config.schema.json`：
+
+```json
+{}
+```
+
+`index.js`：
 
 ```js
 import { openDriver } from 'stdiolink';
@@ -23,25 +42,31 @@ calc.$close();
 运行：
 
 ```bash
-stdiolink_service hello.js
+stdiolink_service ./hello
 ```
 
 ## 使用配置参数
 
-创建 `configured.js`：
+创建服务目录 `my_calc/`，包含三个文件：
+
+`config.schema.json`：
+
+```json
+{
+    "driverPath": {
+        "type": "string",
+        "required": true,
+        "description": "Driver 可执行文件路径"
+    },
+    "a": { "type": "int", "required": true, "description": "第一个操作数" },
+    "b": { "type": "int", "required": true, "description": "第二个操作数" }
+}
+```
+
+`index.js`：
 
 ```js
-import { defineConfig, getConfig, openDriver } from 'stdiolink';
-
-defineConfig({
-    driverPath: {
-        type: 'string',
-        required: true,
-        description: 'Driver 可执行文件路径'
-    },
-    a: { type: 'int', required: true, description: '第一个操作数' },
-    b: { type: 'int', required: true, description: '第二个操作数' }
-});
+import { getConfig, openDriver } from 'stdiolink';
 
 const config = getConfig();
 const calc = await openDriver(config.driverPath);
@@ -53,7 +78,7 @@ calc.$close();
 运行：
 
 ```bash
-stdiolink_service configured.js \
+stdiolink_service ./my_calc \
     --config.driverPath=./calculator_driver \
     --config.a=5 --config.b=3
 ```
@@ -61,7 +86,7 @@ stdiolink_service configured.js \
 查看配置帮助：
 
 ```bash
-stdiolink_service configured.js --help
+stdiolink_service ./my_calc --help
 ```
 
 ## 执行外部进程

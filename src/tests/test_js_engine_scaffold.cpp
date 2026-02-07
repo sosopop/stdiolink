@@ -144,10 +144,12 @@ TEST_F(StdioLinkServiceEntryTest, MissingFileReturns2) {
 TEST_F(StdioLinkServiceEntryTest, BasicScriptWritesStderr) {
     QTemporaryDir dir;
     ASSERT_TRUE(dir.isValid());
-    const QString scriptPath = writeScript(dir, "main.js", "console.log('hello-m21');\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
+    writeScript(dir, "manifest.json",
+                R"({"manifestVersion":"1","id":"test","name":"Test","version":"1.0"})");
+    writeScript(dir, "config.schema.json", "{}");
+    writeScript(dir, "index.js", "console.log('hello-m21');\n");
 
-    const RunResult result = runService({scriptPath});
+    const RunResult result = runService({dir.path()});
     EXPECT_EQ(result.exitCode, 0);
     EXPECT_TRUE(result.stdoutText.isEmpty());
     EXPECT_TRUE(result.stderrText.contains("hello-m21"));
@@ -156,9 +158,11 @@ TEST_F(StdioLinkServiceEntryTest, BasicScriptWritesStderr) {
 TEST_F(StdioLinkServiceEntryTest, SyntaxErrorReturns1) {
     QTemporaryDir dir;
     ASSERT_TRUE(dir.isValid());
-    const QString scriptPath = writeScript(dir, "bad.js", "let = ;\n");
-    ASSERT_FALSE(scriptPath.isEmpty());
+    writeScript(dir, "manifest.json",
+                R"({"manifestVersion":"1","id":"test","name":"Test","version":"1.0"})");
+    writeScript(dir, "config.schema.json", "{}");
+    writeScript(dir, "index.js", "let = ;\n");
 
-    const RunResult result = runService({scriptPath});
+    const RunResult result = runService({dir.path()});
     EXPECT_EQ(result.exitCode, 1);
 }

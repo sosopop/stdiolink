@@ -19,11 +19,7 @@
 ## Build, Test, and Development Commands
 
 - `build_ninja.bat` or `build_ninja.bat Release`: configure/build with CMake + Ninja (Windows).
-- `ninja -C build_ninja` or `cmake --build build_ninja --parallel 8`: incremental build.
 - `./build_ninja/src/tests/stdiolink_tests.exe`: run all tests.
-- `./build_ninja/src/tests/stdiolink_tests.exe --gtest_filter=TestName.*`: run a single test suite.
-- `cmake --build build_ninja --target driverlab`: build the `driverlab` GUI target when iterating UI tooling.
-- `cmake --build build_ninja --target stdiolink_service`: build the JS service runtime executable.
 - `python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy`: static analysis.
 
 ## Coding Style & Naming Conventions
