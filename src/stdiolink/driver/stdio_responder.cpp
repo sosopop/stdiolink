@@ -26,7 +26,7 @@ void StdioResponder::error(int code, const QJsonValue& payload) {
 void StdioResponder::writeResponse(const QString& status, int code, const QJsonValue& payload) {
     static QFile output;
     if (!output.isOpen()) {
-        output.open(stdout, QIODevice::WriteOnly);
+        (void)output.open(stdout, QIODevice::WriteOnly);
     }
 
     QByteArray data = serializeResponse(status, code, payload);

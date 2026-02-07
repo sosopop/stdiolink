@@ -29,7 +29,7 @@ static void stderrMessageHandler(QtMsgType type,
 
     static QFile errFile;
     if (!errFile.isOpen()) {
-        errFile.open(stderr, QIODevice::WriteOnly);
+        (void)errFile.open(stderr, QIODevice::WriteOnly);
     }
 
     errFile.write(formatPrefix(type));

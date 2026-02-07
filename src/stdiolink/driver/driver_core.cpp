@@ -40,7 +40,7 @@ int DriverCore::runStdioMode() {
     }
 
     QFile input;
-    input.open(stdin, QIODevice::ReadOnly);
+    (void)input.open(stdin, QIODevice::ReadOnly);
     QTextStream in(&input);
 
     while (!in.atEnd()) {
@@ -66,7 +66,7 @@ int DriverCore::run(int argc, char* argv[]) {
     ConsoleArgs args;
     if (!args.parse(argc, argv)) {
         QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
+        (void)err.open(stderr, QIODevice::WriteOnly);
         err.write(args.errorMessage.toUtf8());
         err.write("\n");
         err.flush();
@@ -77,7 +77,7 @@ int DriverCore::run(int argc, char* argv[]) {
     if (!args.logPath.isEmpty()) {
         if (!installFileLogger(args.logPath)) {
             QFile err;
-            err.open(stderr, QIODevice::WriteOnly);
+            (void)err.open(stderr, QIODevice::WriteOnly);
             err.write("Failed to open log file: ");
             err.write(args.logPath.toUtf8());
             err.write("\n");
@@ -278,7 +278,7 @@ int DriverCore::runConsoleMode(const ConsoleArgs& args) {
 
 void DriverCore::printHelp() {
     QFile err;
-    err.open(stderr, QIODevice::WriteOnly);
+    (void)err.open(stderr, QIODevice::WriteOnly);
     QTextStream ts(&err);
 
     if (m_metaHandler) {
@@ -311,7 +311,7 @@ void DriverCore::printHelp() {
 
 void DriverCore::printVersion() {
     QFile err;
-    err.open(stderr, QIODevice::WriteOnly);
+    (void)err.open(stderr, QIODevice::WriteOnly);
     QTextStream ts(&err);
 
     if (m_metaHandler) {
@@ -329,7 +329,7 @@ void DriverCore::printVersion() {
 
 int DriverCore::printCommandHelp(const QString& cmdName) {
     QFile err;
-    err.open(stderr, QIODevice::WriteOnly);
+    (void)err.open(stderr, QIODevice::WriteOnly);
     QTextStream ts(&err);
 
     if (!m_metaHandler) {
@@ -353,7 +353,7 @@ int DriverCore::printCommandHelp(const QString& cmdName) {
 int DriverCore::handleExportMeta(const ConsoleArgs& args) {
     if (!m_metaHandler) {
         QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
+        (void)err.open(stderr, QIODevice::WriteOnly);
         err.write("No metadata available\n");
         err.flush();
         return 1;
@@ -364,7 +364,7 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
     if (args.exportMetaPath.isEmpty()) {
         // 输出到 stdout
         QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
+        (void)out.open(stdout, QIODevice::WriteOnly);
         out.write(MetaExporter::exportJson(meta, true));
         out.flush();
         return 0;
@@ -373,7 +373,7 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
     // 输出到文件
     if (!MetaExporter::exportToFile(meta, args.exportMetaPath)) {
         QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
+        (void)err.open(stderr, QIODevice::WriteOnly);
         err.write("Failed to write file: ");
         err.write(args.exportMetaPath.toUtf8());
         err.write("\n");
@@ -386,7 +386,7 @@ int DriverCore::handleExportMeta(const ConsoleArgs& args) {
 int DriverCore::handleExportDoc(const ConsoleArgs& args) {
     if (m_metaHandler == nullptr) {
         QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
+        (void)err.open(stderr, QIODevice::WriteOnly);
         err.write("Error: No meta handler registered\n");
         err.flush();
         return 1;
@@ -407,7 +407,7 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
         output = DocGenerator::toTypeScript(meta).toUtf8();
     } else {
         QFile err;
-        err.open(stderr, QIODevice::WriteOnly);
+        (void)err.open(stderr, QIODevice::WriteOnly);
         err.write("Error: Unknown format '");
         err.write(format.toUtf8());
         err.write("'. Supported: markdown, openapi, html, ts\n");
@@ -420,7 +420,7 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
         QFile file(args.exportDocPath);
         if (!file.open(QIODevice::WriteOnly)) {
             QFile err;
-            err.open(stderr, QIODevice::WriteOnly);
+            (void)err.open(stderr, QIODevice::WriteOnly);
             err.write("Error: Cannot write to ");
             err.write(args.exportDocPath.toUtf8());
             err.write("\n");
@@ -431,7 +431,7 @@ int DriverCore::handleExportDoc(const ConsoleArgs& args) {
         file.close();
     } else {
         QFile out;
-        out.open(stdout, QIODevice::WriteOnly);
+        (void)out.open(stdout, QIODevice::WriteOnly);
         out.write(output);
         out.flush();
     }
