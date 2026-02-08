@@ -2,8 +2,8 @@ export function driverPathCandidates(baseName) {
     return [
         `./${baseName}.exe`,
         `./${baseName}`,
-        `./build_ninja/bin/${baseName}.exe`,
-        `./build_ninja/bin/${baseName}`
+        `./build/bin/${baseName}.exe`,
+        `./build/bin/${baseName}`
     ];
 }
 

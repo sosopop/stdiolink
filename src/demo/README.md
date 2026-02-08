@@ -72,14 +72,14 @@ demo/
 
 ```bash
 # 运行综合演示
-./build_ninja/src/demo/demo_host/demo_host.exe
+./build/bin/demo_host.exe
 
 # 单独测试 Driver (Console 模式)
-./build_ninja/src/demo/calculator_driver/calculator_driver.exe --help
-./build_ninja/src/demo/calculator_driver/calculator_driver.exe add --a=10 --b=20
+./build/bin/calculator_driver.exe --help
+./build/bin/calculator_driver.exe add --a=10 --b=20
 
 # 运行 JS runtime 综合演示（构建后服务目录会复制到 bin/js_runtime_demo）
-./build_ninja/bin/stdiolink_service.exe ./build_ninja/bin/js_runtime_demo/services/basic_demo
+./build/bin/stdiolink_service.exe ./build/bin/js_runtime_demo/services/basic_demo
 ```
 
 ## 功能覆盖

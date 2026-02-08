@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {{
 """
 
 GITIGNORE_TEMPLATE = """build/
-build_ninja/
+build_vs/
 .vscode/
 .idea/
 *.user

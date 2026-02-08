@@ -1,9 +1,10 @@
 build/
+build_vs/
 vcpkg_installed/
 .vscode/
-build_ninja
 .cache
 compile_commands.json
 single_include/
 .claude/settings.local.json
 nul
+.DS_Store

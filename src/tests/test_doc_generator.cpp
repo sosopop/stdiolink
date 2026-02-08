@@ -5,6 +5,7 @@
 #include <QProcess>
 #include "stdiolink/doc/doc_generator.h"
 #include "stdiolink/protocol/meta_types.h"
+#include "stdiolink/platform/platform_utils.h"
 
 using namespace stdiolink;
 
@@ -357,11 +358,8 @@ TEST(DocGenerator, TypeScriptEmptyMeta) {
 }
 
 TEST(DocGenerator, TypeScriptExportDocCli) {
-    QString exe = QCoreApplication::applicationDirPath() + "/calculator_driver";
-#ifdef Q_OS_WIN
-    exe += ".exe";
-#endif
-    exe = QDir::fromNativeSeparators(exe);
+    QString exe = PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "calculator_driver");
     ASSERT_TRUE(QFileInfo::exists(exe));
 
     QProcess proc;

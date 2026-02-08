@@ -12,7 +12,7 @@
 
 ```bash
 # Windows (使用 Ninja)
-build_ninja.bat
+build.bat
 
 # 或使用 CMake
 cmake -B build -G Ninja

@@ -44,33 +44,33 @@ doc/                   # 设计文档与里程碑
 ## 4. 构建与运行
 
 ### 构建项目 (Windows)
-推荐使用 `build_ninja.bat` 进行构建：
+推荐使用 `build.bat` 进行构建：
 
 ```powershell
 # 首次配置和构建 (Debug)
-.\build_ninja.bat
+.\build.bat
 
 # 构建 Release 版本
-.\build_ninja.bat Release
+.\build.bat Release
 
 # 增量构建
-cmake --build build_ninja --parallel 8
+cmake --build build --parallel 8
 ```
-构建产物位于 `build_ninja/src/` 或 `build_ninja/bin/` 下。
+构建产物位于 `build/bin/` 下。
 
 ### 运行测试
 ```powershell
 # 运行所有单元测试
-.\build_ninja\src\tests\stdiolink_tests.exe
+.\build\bin\stdiolink_tests.exe
 
 # 运行单个测试套件
-.\build_ninja\src\tests\stdiolink_tests.exe --gtest_filter=MetaValidatorTest.*
+.\build\bin\stdiolink_tests.exe --gtest_filter=MetaValidatorTest.*
 ```
 
 ### 静态分析
 ```powershell
 # clang-tidy 检查
-python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy
+python ./tools/run-clang-tidy.py -p build -j 8 -quiet -config-file .clang-tidy
 ```
 
 ## 5. 开发规范与约定

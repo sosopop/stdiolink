@@ -3,15 +3,13 @@
 #include <gtest/gtest.h>
 #include "stdiolink/host/driver.h"
 #include "stdiolink/host/task.h"
+#include "stdiolink/platform/platform_utils.h"
 
 using namespace stdiolink;
 
 // 测试 Driver 程序路径
-#ifdef _WIN32
-static const QString TestDriver = "test_driver.exe";
-#else
-static const QString TestDriver = "./test_driver";
-#endif
+static const QString TestDriver =
+    PlatformUtils::executablePath(".", "test_driver");
 
 // ============================================
 // Task 基础测试

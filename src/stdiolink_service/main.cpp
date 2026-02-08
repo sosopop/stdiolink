@@ -15,19 +15,9 @@
 #include "config/service_manifest.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
-
-#ifdef Q_OS_WIN
-#include <windows.h>
-#endif
+#include "stdiolink/platform/platform_utils.h"
 
 namespace {
-
-void initConsoleEncoding() {
-#ifdef Q_OS_WIN
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-#endif
-}
 
 void utf8MessageHandler(QtMsgType type, const QMessageLogContext&, const QString& msg) {
     QByteArray line;
@@ -77,7 +67,7 @@ void printServiceHelp(const stdiolink_service::ServiceManifest& manifest) {
 } // namespace
 
 int main(int argc, char* argv[]) {
-    initConsoleEncoding();
+    stdiolink::PlatformUtils::initConsoleEncoding();
     qInstallMessageHandler(utf8MessageHandler);
     QCoreApplication app(argc, argv);
 

@@ -5,15 +5,13 @@
 #include <set>
 #include "stdiolink/host/driver.h"
 #include "stdiolink/host/wait_any.h"
+#include "stdiolink/platform/platform_utils.h"
 
 using namespace stdiolink;
 
 // 测试 Driver 程序路径
-#ifdef _WIN32
-static const QString TestDriver = "test_driver.exe";
-#else
-static const QString TestDriver = "./test_driver";
-#endif
+static const QString TestDriver =
+    PlatformUtils::executablePath(".", "test_driver");
 
 class WaitAnyTest : public ::testing::Test {
 protected:

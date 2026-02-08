@@ -13,24 +13,12 @@
 #include "stdiolink/console/console_responder.h"
 #include "stdiolink/protocol/jsonl_serializer.h"
 #include "stdiolink/protocol/meta_validator.h"
-
-#ifdef Q_OS_WIN
-#include <windows.h>
-#endif
+#include "stdiolink/platform/platform_utils.h"
 
 namespace stdiolink {
 
-namespace {
-void initConsoleEncoding() {
-#ifdef Q_OS_WIN
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-#endif
-}
-}
-
 int DriverCore::run() {
-    initConsoleEncoding();
+    PlatformUtils::initConsoleEncoding();
     return runStdioMode();
 }
 
@@ -61,7 +49,7 @@ int DriverCore::runStdioMode() {
 }
 
 int DriverCore::run(int argc, char* argv[]) {
-    initConsoleEncoding();
+    PlatformUtils::initConsoleEncoding();
 
     ConsoleArgs args;
     if (!args.parse(argc, argv)) {

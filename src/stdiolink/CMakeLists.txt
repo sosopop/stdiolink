@@ -39,12 +39,17 @@ set(DOC_SOURCES
     doc/doc_generator.cpp
 )
 
+set(PLATFORM_SOURCES
+    platform/platform_utils.cpp
+)
+
 set(ALL_SOURCES
     ${PROTOCOL_SOURCES}
     ${DRIVER_SOURCES}
     ${HOST_SOURCES}
     ${CONSOLE_SOURCES}
     ${DOC_SOURCES}
+    ${PLATFORM_SOURCES}
 )
 
 # Windows: 动态库, 其他平台: 静态库

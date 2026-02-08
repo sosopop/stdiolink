@@ -89,31 +89,32 @@ if not exist "%VCPKG_TOOLCHAIN%" (
     exit /b 1
 )
 
-:: Create build directory
+:: Create build directory if it doesn't exist (optional, cmake -B does this too)
 if not exist %BUILD_DIR% (
     echo Creating build directory...
     mkdir %BUILD_DIR%
 )
 
-:: Change to build directory
-cd %BUILD_DIR%
+:: Note: We do NOT 'cd' into the build directory anymore.
 
 echo ========================================
 echo Configuring project with CMake...
 echo ========================================
 
-
 :: Configure with CMake
-cmake .. ^
+:: -S . : Source is current directory
+:: -B "%BUILD_DIR%" : Build directory target
+cmake -S . -B "%BUILD_DIR%" ^
     -DCMAKE_TOOLCHAIN_FILE="%VCPKG_TOOLCHAIN%" ^
     -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
     -DCMAKE_INSTALL_PREFIX="%CD%\%INSTALL_DIR%" ^
     -DVCPKG_TARGET_TRIPLET=x64-windows ^
-    -DVCPKG_INSTALLED_DIR="%CD%\..\vcpkg_installed"
+    -DVCPKG_INSTALLED_DIR="%CD%\..\vcpkg_installed" ^
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+    -G "Ninja"
 
 if %errorlevel% neq 0 (
     echo Error: CMake configuration failed
-    cd ..
     exit /b 1
 )
 
@@ -121,12 +122,11 @@ echo ========================================
 echo Building project...
 echo ========================================
 
-:: Build the project
-cmake --build . --config %BUILD_TYPE% --parallel 8
+:: Build the project inside the specified build dir
+cmake --build "%BUILD_DIR%" --config %BUILD_TYPE% --parallel 8
 
 if %errorlevel% neq 0 (
     echo Error: Build failed
-    cd ..
     exit /b 1
 )
 
@@ -134,17 +134,13 @@ echo ========================================
 echo Installing project...
 echo ========================================
 
-:: Install the project
-cmake --install . --config %BUILD_TYPE%
+:: Install the project from the specified build dir
+cmake --install "%BUILD_DIR%" --config %BUILD_TYPE%
 
 if %errorlevel% neq 0 (
     echo Error: Installation failed
-    cd ..
     exit /b 1
 )
-
-:: Return to root directory
-cd ..
 
 echo ========================================
 echo Build completed successfully!

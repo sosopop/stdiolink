@@ -6,8 +6,8 @@ function findService() {
     const candidates = [
         "./stdiolink_service.exe",
         "./stdiolink_service",
-        "./build_ninja/bin/stdiolink_service.exe",
-        "./build_ninja/bin/stdiolink_service",
+        "./build/bin/stdiolink_service.exe",
+        "./build/bin/stdiolink_service",
         "stdiolink_service.exe",
         "stdiolink_service"
     ];

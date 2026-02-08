@@ -4,16 +4,13 @@
 #include <QJsonDocument>
 #include <QProcess>
 #include <QTemporaryDir>
+#include "stdiolink/platform/platform_utils.h"
 
 class ServiceLoaderTest : public ::testing::Test {
 protected:
     QString servicePath() {
-        QString path = QCoreApplication::applicationDirPath()
-                       + "/stdiolink_service";
-#ifdef Q_OS_WIN
-        path += ".exe";
-#endif
-        return path;
+        return stdiolink::PlatformUtils::executablePath(
+            QCoreApplication::applicationDirPath(), "stdiolink_service");
     }
 
     void createFile(const QString& path, const QByteArray& content) {

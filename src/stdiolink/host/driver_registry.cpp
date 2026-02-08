@@ -4,6 +4,7 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QJsonDocument>
+#include "stdiolink/platform/platform_utils.h"
 
 namespace stdiolink {
 
@@ -65,11 +66,7 @@ void DriverRegistry::scanDirectory(const QString& path) {
                 // 查找可执行文件
                 QDir dir(dirPath);
                 QStringList exeFilters;
-#ifdef Q_OS_WIN
-                exeFilters << "*.exe";
-#else
-                exeFilters << "*";
-#endif
+                exeFilters << PlatformUtils::executableFilter();
                 auto exeFiles = dir.entryList(exeFilters, QDir::Files | QDir::Executable);
                 if (!exeFiles.isEmpty()) {
                     config.program = dir.absoluteFilePath(exeFiles.first());

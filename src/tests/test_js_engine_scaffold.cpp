@@ -10,6 +10,7 @@
 #include <quickjs.h>
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
+#include "stdiolink/platform/platform_utils.h"
 
 namespace {
 
@@ -28,11 +29,8 @@ QString writeScript(const QTemporaryDir& dir, const QString& relativePath, const
 }
 
 QString servicePath() {
-    QString path = QCoreApplication::applicationDirPath() + "/stdiolink_service";
-#ifdef Q_OS_WIN
-    path += ".exe";
-#endif
-    return path;
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "stdiolink_service");
 }
 
 int readGlobalInt(JSContext* ctx, const char* key) {

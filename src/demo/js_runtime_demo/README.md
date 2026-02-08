@@ -2,7 +2,7 @@
 
 This demo set is under `src/demo/js_runtime_demo` and is copied to:
 
-- `build_ninja/bin/js_runtime_demo`
+- `build/bin/js_runtime_demo`
 
 It demonstrates all milestone features from M21 to M27:
 
@@ -17,15 +17,15 @@ It demonstrates all milestone features from M21 to M27:
 ## Build
 
 ```powershell
-build_ninja.bat
+build.bat
 ```
 
 ## Run one-by-one
 
-Run from `build_ninja/bin`:
+Run from `build/bin`:
 
 ```powershell
-cd build_ninja/bin
+cd build/bin
 
 ./stdiolink_service.exe js_runtime_demo/services/engine_modules
 ./stdiolink_service.exe js_runtime_demo/services/driver_task
@@ -36,7 +36,7 @@ cd build_ninja/bin
 ## Run all in one
 
 ```powershell
-cd build_ninja/bin
+cd build/bin
 ./stdiolink_service.exe js_runtime_demo/services/basic_demo
 ```
 

@@ -2,15 +2,7 @@
 #include "system_options.h"
 #include <QJsonArray>
 #include <QJsonDocument>
-
-#ifdef Q_OS_WIN
-#include <io.h>
-#include <cstdio>
-#define isatty _isatty
-#define fileno _fileno
-#else
-#include <unistd.h>
-#endif
+#include "stdiolink/platform/platform_utils.h"
 
 namespace stdiolink {
 
@@ -192,7 +184,7 @@ void ConsoleArgs::parseDataArg(const QString& key, const QString& value) {
 }
 
 bool ConsoleArgs::isInteractiveStdin() {
-    return isatty(fileno(stdin)) != 0;
+    return PlatformUtils::isInteractiveTerminal(stdin);
 }
 
 bool ConsoleArgs::parseShortArg(const QString& arg, int& index, int argc, char* argv[]) {

@@ -9,23 +9,18 @@
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QTextStream>
+#include "stdiolink/platform/platform_utils.h"
 
 namespace {
 
 QString servicePath() {
-    QString path = QCoreApplication::applicationDirPath() + "/stdiolink_service";
-#ifdef Q_OS_WIN
-    path += ".exe";
-#endif
-    return QDir::fromNativeSeparators(path);
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "stdiolink_service");
 }
 
 QString calculatorDriverPath() {
-    QString path = QCoreApplication::applicationDirPath() + "/calculator_driver";
-#ifdef Q_OS_WIN
-    path += ".exe";
-#endif
-    return QDir::fromNativeSeparators(path);
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "calculator_driver");
 }
 
 QString escapeJsString(const QString& s) {

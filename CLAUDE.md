@@ -4,11 +4,23 @@
 
 ## 构建
 
+### Windows
+
 ```bash
-build_ninja.bat                              # 首次构建
-cmake --build build_ninja --parallel 8       # 增量构建
-./build_ninja/bin/stdiolink_tests.exe        # 运行测试
+build.bat                                    # 首次构建（Ninja）
+cmake --build build --parallel 8             # 增量构建
+./build/bin/stdiolink_tests.exe              # 运行测试
 ```
+
+### macOS / Linux
+
+```bash
+./build.sh [Debug|Release]                   # 首次构建（默认 Debug）
+cmake --build build --parallel 8             # 增量构建
+./build/bin/stdiolink_tests                   # 运行测试
+```
+
+> `build.sh` 会自动检测 vcpkg（`VCPKG_ROOT` > 当前目录 > 上级目录 > PATH），并根据架构选择 triplet（`arm64-osx` / `x64-osx`），使用 Ninja 生成构建。
 
 ## 代码规范
 

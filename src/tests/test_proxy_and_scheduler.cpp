@@ -12,6 +12,7 @@
 #include "bindings/js_task_scheduler.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
+#include "stdiolink/platform/platform_utils.h"
 
 namespace {
 
@@ -47,11 +48,8 @@ QString escapeJsString(const QString& s) {
 }
 
 QString calculatorDriverPath() {
-    QString path = QCoreApplication::applicationDirPath() + "/calculator_driver";
-#ifdef Q_OS_WIN
-    path += ".exe";
-#endif
-    return QDir::fromNativeSeparators(path);
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "calculator_driver");
 }
 
 } // namespace

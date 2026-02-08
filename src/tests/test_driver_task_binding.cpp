@@ -14,6 +14,7 @@
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
 #include "utils/js_convert.h"
+#include "stdiolink/platform/platform_utils.h"
 
 namespace {
 
@@ -42,11 +43,8 @@ int readGlobalInt(JSContext* ctx, const char* key) {
 }
 
 QString driverBinaryPath() {
-    QString path = QCoreApplication::applicationDirPath() + "/calculator_driver";
-#ifdef Q_OS_WIN
-    path += ".exe";
-#endif
-    return QDir::fromNativeSeparators(path);
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "calculator_driver");
 }
 
 QString escapeForSingleQuoteJs(const QString& s) {

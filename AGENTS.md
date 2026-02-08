@@ -18,9 +18,10 @@
 
 ## Build, Test, and Development Commands
 
-- `build_ninja.bat` or `build_ninja.bat Release`: configure/build with CMake + Ninja (Windows).
-- `./build_ninja/src/tests/stdiolink_tests.exe`: run all tests.
-- `python ./tools/run-clang-tidy.py -p build_ninja -j 8 -quiet -config-file .clang-tidy`: static analysis.
+- `build.bat` or `build.bat Release`: configure/build with CMake + Ninja (Windows).
+- `./build.sh` or `./build.sh Release`: configure/build with CMake + Ninja (macOS/Linux).
+- `./build/bin/stdiolink_tests.exe`: run all tests.
+- `python ./tools/run-clang-tidy.py -p build -j 8 -quiet -config-file .clang-tidy`: static analysis.
 
 ## Coding Style & Naming Conventions
 
@@ -44,5 +45,5 @@
 
 ## Configuration & Tooling Notes
 
-- Build artifacts land in `build_ninja/`.
+- Build artifacts land in `build/`.
 - Public protocol/meta changes should be aligned with docs under `doc/manual/` and relevant milestone docs under `doc/milestone/`.

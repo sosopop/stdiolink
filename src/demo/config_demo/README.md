@@ -2,12 +2,12 @@
 
 M28 配置功能综合演示，展示 `stdiolink_service` 的类型安全配置系统。
 
-构建后位于 `build_ninja/bin/config_demo/`。
+构建后位于 `build/bin/config_demo/`。
 
 ## 构建
 
 ```powershell
-build_ninja.bat
+build.bat
 ```
 
 ## 场景说明
@@ -23,10 +23,10 @@ build_ninja.bat
 
 ## 逐个运行
 
-从 `build_ninja/bin` 目录执行：
+从 `build/bin` 目录执行：
 
 ```powershell
-cd build_ninja/bin
+cd build/bin
 
 # 场景1：基础类型
 ./stdiolink_service.exe config_demo/services/basic_types --config.name=myApp --config.port=8080
@@ -53,7 +53,7 @@ cd build_ninja/bin
 ## 一键运行全部
 
 ```powershell
-cd build_ninja/bin
+cd build/bin
 ./stdiolink_service.exe config_demo/services/all_in_one
 ```
 
