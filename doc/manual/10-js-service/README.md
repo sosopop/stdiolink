@@ -45,7 +45,7 @@ stdiolink_service <service_dir> [options]
 | `-h, --help` | 显示帮助（有服务目录时同时显示配置项帮助） |
 | `-v, --version` | 显示版本 |
 | `--config.key=value` | 设置配置值 |
-| `--config-file=<path>` | 从 JSON 文件加载配置 |
+| `--config-file=<path>` | 从 JSON 文件加载配置（`-` 表示 stdin） |
 | `--dump-config-schema` | 导出配置 schema 并退出 |
 
 ## stdiolink 模块导出

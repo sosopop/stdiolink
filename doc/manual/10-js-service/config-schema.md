@@ -81,7 +81,7 @@ console.log(config.debug);  // false（默认值）
 | 优先级 | 来源 | 示例 |
 |--------|------|------|
 | 1 | 命令行参数 | `--config.port=8080` |
-| 2 | 配置文件 | `--config-file=config.json` |
+| 2 | 配置文件 | `--config-file=config.json`（或 `--config-file=-` 从 stdin 读取） |
 | 3 | Schema 默认值 | `config.schema.json` 中的 `default` |
 
 合并规则：object 类型深合并，array/scalar 整值覆盖。
@@ -94,6 +94,9 @@ stdiolink_service ./my_service --config.port=8080 --config.name=myService
 
 # 使用配置文件
 stdiolink_service ./my_service --config-file=config.json
+
+# 从 stdin 读取配置
+cat config.json | stdiolink_service ./my_service --config-file=-
 
 # 配置文件 + 命令行覆盖
 stdiolink_service ./my_service --config-file=config.json --config.debug=true
@@ -161,7 +164,7 @@ Options:
   -h, --help                Show this help
   -v, --version             Show version
       --config.key=value    Set config value
-      --config-file=<path>  Load config from JSON file
+      --config-file=<path>  Load config from JSON file ('-' for stdin)
       --dump-config-schema  Dump config schema and exit
 
 Config:

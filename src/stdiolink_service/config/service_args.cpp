@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <cstdio>
 
 namespace stdiolink_service {
 
@@ -113,10 +114,18 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
 }
 
 QJsonObject ServiceArgs::loadConfigFile(const QString& filePath, QString& error) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        error = QString("cannot open config file: %1").arg(filePath);
-        return {};
+    QFile file;
+    if (filePath == "-") {
+        if (!file.open(stdin, QIODevice::ReadOnly)) {
+            error = "cannot read config from stdin";
+            return {};
+        }
+    } else {
+        file.setFileName(filePath);
+        if (!file.open(QIODevice::ReadOnly)) {
+            error = QString("cannot open config file: %1").arg(filePath);
+            return {};
+        }
     }
 
     const QByteArray data = file.readAll();

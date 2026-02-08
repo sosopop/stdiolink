@@ -44,7 +44,7 @@ void printHelp() {
     err << "  -h, --help              Show this help\n";
     err << "  -v, --version           Show version\n";
     err << "  --config.key=value      Set config value\n";
-    err << "  --config-file=<path>    Load config from JSON file\n";
+    err << "  --config-file=<path>    Load config from JSON file ('-' for stdin)\n";
     err << "  --dump-config-schema    Dump config schema and exit\n";
     err.flush();
 }

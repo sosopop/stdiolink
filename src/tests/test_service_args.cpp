@@ -2,6 +2,12 @@
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
+#include <cstdio>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include "config/service_args.h"
 
 using namespace stdiolink_service;
@@ -133,6 +139,46 @@ TEST_F(ServiceArgsTest, LoadConfigFileMalformed) {
     QString err;
     auto obj = ServiceArgs::loadConfigFile(path, err);
     EXPECT_FALSE(err.isEmpty());
+}
+
+TEST_F(ServiceArgsTest, LoadConfigFileFromStdin) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("stdin.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"port": 9001, "name": "stdin"})");
+    f.close();
+
+#ifdef _WIN32
+    const int saved = _dup(_fileno(stdin));
+    ASSERT_GE(saved, 0);
+    FILE* in = _fsopen(path.toLocal8Bit().constData(), "rb", _SH_DENYNO);
+    ASSERT_NE(in, nullptr);
+    ASSERT_EQ(_dup2(_fileno(in), _fileno(stdin)), 0);
+#else
+    const int saved = dup(fileno(stdin));
+    ASSERT_GE(saved, 0);
+    FILE* in = std::fopen(path.toLocal8Bit().constData(), "rb");
+    ASSERT_NE(in, nullptr);
+    ASSERT_EQ(dup2(fileno(in), fileno(stdin)), 0);
+#endif
+    std::fclose(in);
+
+    QString err;
+    auto obj = ServiceArgs::loadConfigFile("-", err);
+
+#ifdef _WIN32
+    _dup2(saved, _fileno(stdin));
+    _close(saved);
+#else
+    dup2(saved, fileno(stdin));
+    close(saved);
+#endif
+
+    EXPECT_TRUE(err.isEmpty()) << err.toStdString();
+    EXPECT_EQ(obj["port"].toInt(), 9001);
+    EXPECT_EQ(obj["name"].toString(), "stdin");
 }
 
 TEST_F(ServiceArgsTest, HelpFlag) {
