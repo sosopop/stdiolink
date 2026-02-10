@@ -26,7 +26,7 @@ set(HOST_SOURCES
     host/form_generator.cpp
     host/config_injector.cpp
     host/meta_version_checker.cpp
-    host/driver_registry.cpp
+    host/driver_catalog.cpp
 )
 
 set(CONSOLE_SOURCES

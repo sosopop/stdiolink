@@ -53,7 +53,7 @@ Service (1) ──────► Project (N) ──────► Instance (M)
 
 | 术语 | 定义 | 示例 |
 |------|------|------|
-| **Driver** | 可执行文件，文件名以 `driver.` 前缀开头 | `driver.modbus` |
+| **Driver** | Driver 可执行文件（建议按目录管理，并通过 `driver.meta.json` 描述） | `drivers/modbus/driver_modbustcp` |
 | **Service** | 服务模板目录，包含代码和 Schema | `services/data-collector/` |
 | **Project** | Service 的实例化配置文件，必须符合 Service 的 Schema | `projects/silo-a.json` |
 | **Instance** | Project 的运行时进程实例（内存对象） | `inst_abc123` |
@@ -68,10 +68,14 @@ Service (1) ──────► Project (N) ──────► Instance (M)
 <data_root>/
 ├── config.json                # 管理器配置 (可选)
 │
-├── drivers/                   # Driver 可执行文件
-│   ├── driver.calculator      # ✅ 自动识别 (ID: calculator)
-│   ├── driver.modbus          # ✅ 自动识别 (ID: modbus)
-│   └── driver.vision          # ✅ 自动识别 (ID: vision)
+├── drivers/                   # Driver 目录（建议复用 DriverScanner + DriverCatalog）
+│   ├── modbus/
+│   │   ├── driver.meta.json   # ✅ 自动识别 Driver 元信息
+│   │   └── driver_modbustcp   # ✅ 可执行文件（Windows 下可为 .exe）
+│   ├── broken-driver.failed/  # ❌ 导出 meta 失败后标记，扫描时跳过
+│   └── vision/
+│       ├── driver.meta.json
+│       └── driver_3dvision
 │
 ├── services/                  # Service 模板目录
 │   │
@@ -103,7 +107,7 @@ Service (1) ──────► Project (N) ──────► Instance (M)
 │   ├── silo-b/                # Project silo-b 的工作目录
 │   └── monitor-1/             # Project monitor-1 的工作目录
 │
-├── logs/                      # 日志目录
+├── logs/                      # 日志目录（v1: Project 级聚合日志）
 │   ├── manager.log            # 管理器日志
 │   ├── silo-a.log             # Project silo-a 的运行日志
 │   ├── silo-b.log             # Project silo-b 的运行日志
@@ -140,6 +144,11 @@ Service (1) ──────► Project (N) ──────► Instance (M)
       "host": {
         "type": "string",
         "description": "设备 IP 地址",
+        "required": true
+      },
+      "driverProgram": {
+        "type": "string",
+        "description": "Driver 可执行文件路径（相对 data_root 或绝对路径）",
         "required": true
       },
       "port": {
@@ -196,6 +205,12 @@ Service (1) ──────► Project (N) ──────► Instance (M)
 }
 ```
 
+#### Schema 格式说明
+
+- `config.schema.json` 的输入格式采用“顶层字段对象”形式（与 `ServiceConfigSchema::fromJsonFile` 对齐）
+- `stdiolink_service --dump-config-schema` 输出的是标准化表示（`{"fields":[...]}`），用于展示/调试，不作为源 schema 文件格式回写
+- Manager 侧 API 返回 schema 时，建议保留源格式，避免前后格式不一致
+
 #### index.js
 ```javascript
 import { getConfig, openDriver } from 'stdiolink';
@@ -203,7 +218,7 @@ import { getConfig, openDriver } from 'stdiolink';
 const config = getConfig(); // 获取 Project 配置（已验证符合 schema）
 
 // 根据配置打开 Driver
-const driver = await openDriver('drivers/driver.modbus', [
+const driver = await openDriver(config.device.driverProgram, [
   '--host=' + config.device.host,
   '--port=' + String(config.device.port),
   '--slave=' + String(config.device.slaveId)
@@ -236,6 +251,7 @@ await driver.$close();
   "config": {
     "device": {
       "host": "192.168.1.100",
+      "driverProgram": "drivers/modbus/driver_modbustcp",
       "port": 502,
       "slaveId": 1
     },
@@ -256,6 +272,7 @@ await driver.$close();
 - `config` 对象必须符合 `data-collector/config.schema.json` 的约束
 - Manager 在加载时会验证配置是否符合 Schema
 - 验证失败的 Project 会被标记为 invalid，不会启动
+- `enabled` 仅控制自动调度（manual 模式下仍可通过 API 手动启动）
 
 #### projects/silo-b.json (同一 Service，不同配置)
 ```json
@@ -272,6 +289,7 @@ await driver.$close();
   "config": {
     "device": {
       "host": "192.168.1.101",
+      "driverProgram": "drivers/modbus/driver_modbustcp",
       "port": 502,
       "slaveId": 2
     },
@@ -295,7 +313,9 @@ await driver.$close();
 
 ```
 1. 扫描 drivers/ 目录
-   → 发现所有 driver.* 可执行文件
+   → 复用 `stdiolink::DriverScanner::scanDirectory()`（`src/stdiolink/host/driver_catalog.*`）
+   → 按 `driver.meta.json` 发现 Driver
+   → 跳过目录名以 `.failed` 结尾的 Driver 目录
    
 2. 扫描 services/ 目录
    → 加载所有 Service 模板
@@ -318,7 +338,33 @@ await driver.$close();
 6. 启动 HTTP API 服务
 ```
 
-### 5.2 配置验证
+### 5.2 Driver 扫描与 meta 自修复策略
+
+**扫描规则**:
+- 仅扫描 `drivers/` 下非 `.failed` 后缀目录
+- 若目录内存在 `driver.meta.json`，按现有流程加载
+- 若目录内不存在 `driver.meta.json`，尝试执行 Driver 导出：
+  - `<driver_program> --export-meta=<driver_dir>/driver.meta.json`
+
+**导出失败处理**:
+- 导出失败（进程启动失败、超时、退出码非 0、输出文件缺失/非法）时：
+  - 将目录重命名为 `<dir>.failed`
+  - 记录失败原因到 manager 日志
+- 后续自动扫描和手动扫描默认均跳过 `.failed` 目录
+
+**手动重扫**:
+- 管理器支持手动触发 Driver 重扫，用于更新 `driver.meta.json`
+- 手动重扫默认行为：
+  - 对已有 `driver.meta.json` 的目录尝试重新导出覆盖（刷新元数据）
+  - 对缺失 `driver.meta.json` 的目录继续执行导出流程
+  - 仍跳过 `.failed` 目录（需要先人工改名恢复）
+
+**实现边界**:
+- `ServiceScanner` / `DriverScanner` 是编排层，底层文件校验与解析复用：
+  - Service: `ServiceDirectory` + `ServiceManifest` + `ServiceConfigSchema`
+  - Driver: `stdiolink::DriverScanner` + `stdiolink::DriverCatalog`
+
+### 5.3 配置验证
 
 **验证流程**:
 ```
@@ -327,7 +373,7 @@ await driver.$close();
   2. 提取 serviceId
   3. 查找对应的 Service
   4. 加载 Service 的 config.schema.json
-  5. 使用 stdiolink::meta::MetaValidator 验证 config
+  5. 使用 `stdiolink_service::ServiceConfigValidator` 合并默认值并验证 config
   6. 验证通过 → Project 标记为 valid
   7. 验证失败 → Project 标记为 invalid，记录错误原因
 ```
@@ -338,9 +384,13 @@ await driver.$close();
 Project project = loadProjectFile("projects/silo-a.json");
 Service service = getService(project.serviceId);
 
-ValidationResult result = MetaValidator::validateConfig(
-    project.config,
-    service.configSchema
+QJsonObject mergedConfig;
+ValidationResult result = ServiceConfigValidator::mergeAndValidate(
+    service.configSchema,
+    QJsonObject{},          // fileConfig: Project 场景可为空
+    project.config,         // 直接视作 typed config
+    UnknownFieldPolicy::Reject,
+    mergedConfig
 );
 
 if (result.valid) {
@@ -348,24 +398,28 @@ if (result.valid) {
     scheduleProject(project);
 } else {
     project.status = "invalid";
-    project.error = result.errorMessage;
-    qWarning() << "Project" << project.id << "invalid:" << result.errorMessage;
+    project.error = result.toString();
+    qWarning() << "Project" << project.id << "invalid:" << result.toString();
 }
 ```
 
-### 5.3 Instance 生命周期
+### 5.4 Instance 生命周期
 
 ```
 启动 Instance:
   1. 读取 Project 配置
-  2. 合并 Schema 默认值和 Project config
-  3. 验证最终配置
-  4. 生成临时配置文件: /tmp/instance_{id}_config.json
+  2. 使用 ServiceConfigValidator 预校验（用于 Manager 侧状态与错误提示）
+  3. 解析 `stdiolink_service` 路径（优先级）:
+     1) `config.json.serviceProgram`
+     2) 与 `stdiolink_server` 同目录下的 `stdiolink_service` 可执行文件
+     3) PATH 中的 `stdiolink_service`
+  4. 生成临时配置文件（建议 QTemporaryFile，路径由平台决定）
+     - 写入内容为 Project 原始 config（非 mergedConfig）
+     - 由 `stdiolink_service` 在启动时做最终 merge+validate
   5. 启动子进程:
-     stdiolink_service <service_dir> --config-file=<temp_config>
-  6. 设置环境变量
-  7. 重定向日志到 logs/{projectId}.log
-  8. 记录 Instance 到内存
+     <stdiolink_service_path> <service_dir> --config-file=<temp_config>
+  6. 重定向日志到 logs/{projectId}.log
+  7. 记录 Instance 到内存
 
 监控 Instance:
   1. 监听 QProcess::finished 信号
@@ -375,6 +429,18 @@ if (result.valid) {
      - 其他 → 不重启
   4. 从内存移除 Instance 对象
   5. 清理临时配置文件
+```
+
+### 5.5 Manager 关闭流程
+
+```
+收到 SIGTERM/SIGINT:
+  1. 设置 shuttingDown 标记（停止接受新的 start/reload/scan 请求）
+  2. 停止所有调度器（fixed_rate 定时器、daemon 自动重启）
+  3. 向所有 running Instance 发送 terminate()
+  4. 等待实例退出（graceTimeoutMs，默认 5000）
+  5. 超时未退出的实例执行 kill()
+  6. 清理临时配置文件并退出
 ```
 
 ---
@@ -409,7 +475,7 @@ Response:
   "version": "1.0.0",
   "serviceDir": "services/data-collector",
   "manifest": { ... },
-  "configSchema": { ... },  ← 返回 Schema，用于创建 Project
+  "configSchema": { ... },  ← 返回源格式 Schema（与 config.schema.json 一致）
   "projects": ["silo-a", "silo-b"]
 }
 ```
@@ -477,7 +543,11 @@ Request:
   "enabled": false,
   "schedule": { "type": "manual" },
   "config": {                     ← 必须符合 Service 的 Schema
-    "device": { "host": "192.168.1.102", "port": 502 },
+    "device": {
+      "host": "192.168.1.102",
+      "driverProgram": "drivers/modbus/driver_modbustcp",
+      "port": 502
+    },
     "polling": { "registers": [0, 1, 2] }
   }
 }
@@ -485,12 +555,18 @@ Response:
   201 Created (配置验证通过)
   400 Bad Request (配置不符合 Schema)
 
+约束:
+- `id` 必须匹配正则 `^[A-Za-z0-9_-]+$`
+- 禁止包含 `/`、`\\`、`..`、空白字符
+- 实际文件名固定为 `projects/{id}.json`
+
 # 更新 Project
 PUT /api/projects/{id}
 Request: (同创建)
 Response:
   200 OK (验证通过并保存)
   400 Bad Request (配置不符合 Schema)
+  409 Conflict (请求体 `id` 存在且与路径 `{id}` 不一致)
 
 # 验证 Project 配置 (不保存)
 POST /api/projects/{id}/validate
@@ -500,18 +576,15 @@ Request:
 }
 Response:
 {
-  "valid": true,
-  "errors": []
+  "valid": true
 }
 或
 {
   "valid": false,
-  "errors": [
-    {
-      "field": "device.host",
-      "message": "Required field missing"
-    }
-  ]
+  "error": {
+    "field": "device.host",
+    "message": "required field 'host' is missing"
+  }
 }
 
 # 删除 Project
@@ -525,6 +598,11 @@ Response:
   "instanceId": "inst_xyz789",
   "pid": 12346
 }
+
+并发行为:
+- `manual`: 若已有运行实例，返回 `409 Conflict`（避免重复触发）
+- `fixed_rate`: 视为“立即触发一次”；若达到 `maxConcurrent`，返回 `409 Conflict`
+- `daemon`: 若已运行，返回 `200 OK` 且 `no-op`
 
 # 停止 Project (停止所有实例)
 POST /api/projects/{id}/stop
@@ -563,7 +641,38 @@ Response: 200 OK
 
 # 获取 Instance 日志
 GET /api/instances/{id}/logs?lines=100
+
+说明:
+- v1 日志为 Project 级聚合日志，`{id}` 会先映射到 `projectId` 再读取 `logs/{projectId}.log`
+- 该接口不保证“仅该实例”日志切片（多实例并发时会混写）
 ```
+
+### 6.4 Driver API
+
+```
+# 列出已发现 Driver
+GET /api/drivers
+
+# 手动触发 Driver 重扫并刷新 meta
+POST /api/drivers/scan
+Request:
+{
+  "refreshMeta": true       // 可选，默认 true
+}
+Response:
+{
+  "scanned": 12,
+  "updated": 9,
+  "newlyFailed": 1,
+  "skippedFailed": 2
+}
+```
+
+### 6.5 安全边界
+
+- v1 默认监听 `127.0.0.1`，未内置鉴权（认证/授权暂不纳入本期）
+- 若使用 `--host=0.0.0.0` 或非 loopback 地址，必须在外层反向代理/网关提供鉴权与访问控制
+- 破坏性接口（start/stop/delete/terminate/scan）建议仅在受信网络暴露
 
 ---
 
@@ -626,13 +735,15 @@ T=20s: Instance B 已结束 → 启动 Instance C
 {
   "schedule": {
     "type": "daemon",
-    "restartDelayMs": 3000
+    "restartDelayMs": 3000,
+    "maxConsecutiveFailures": 5
   }
 }
 ```
 
 **参数**:
 - `restartDelayMs`: 异常退出后重启延迟（毫秒，默认 3000）
+- `maxConsecutiveFailures`: 连续异常退出阈值（默认 5）
 
 **行为**:
 ```
@@ -642,7 +753,12 @@ T=20s: Instance B 已结束 → 启动 Instance C
 Instance 退出时:
   if (exitCode == 0):
     记录日志，不重启 (正常退出)
+    consecutiveFailures = 0
   else:
+    consecutiveFailures += 1
+    if (consecutiveFailures >= maxConsecutiveFailures):
+      标记 Project 为 crash_loop，停止自动重启，等待人工处理
+      return
     等待 restartDelayMs
     启动新 Instance B
 ```
@@ -668,23 +784,24 @@ ValidationResult validateProject(const Project& project) {
     // 1. 检查 Service 是否存在
     Service service = serviceScanner.getService(project.serviceId);
     if (!service.valid) {
-        return ValidationResult::fail("Service not found: " + project.serviceId);
+        return ValidationResult::fail("serviceId", "service not found: " + project.serviceId);
     }
     
-    // 2. 加载 Service 的 Schema
-    ConfigSchema schema = service.loadConfigSchema();
-    
-    // 3. 使用 stdiolink::meta::MetaValidator 验证
-    ValidationResult result = MetaValidator::validateConfig(
+    // 2. 通过 ServiceConfigValidator 合并默认值并验证
+    QJsonObject merged;
+    ValidationResult result = ServiceConfigValidator::mergeAndValidate(
+        service.configSchema,
+        QJsonObject{},          // fileConfig
         project.config,
-        schema
+        UnknownFieldPolicy::Reject,
+        merged
     );
     
     if (!result.valid) {
         return result; // 返回详细错误信息
     }
     
-    // 4. 验证 schedule 参数
+    // 3. 验证 schedule 参数
     result = validateSchedule(project.schedule);
     
     return result;
@@ -703,20 +820,10 @@ ValidationResult validateProject(const Project& project) {
 ```json
 {
   "valid": false,
-  "errors": [
-    {
-      "field": "device.host",
-      "message": "Required field missing"
-    },
-    {
-      "field": "polling.intervalMs",
-      "message": "Value 50 < min 100"
-    },
-    {
-      "field": "output.format",
-      "message": "Invalid enum value 'xml', expected: json, csv"
-    }
-  ]
+  "error": {
+    "field": "polling.intervalMs",
+    "message": "value 50 < min 100"
+  }
 }
 ```
 
@@ -757,7 +864,7 @@ data/
     "intervalMs": 5000
   },
   "config": {
-    "device": { "host": "192.168.1.100", "port": 502, "slaveId": 1 },
+    "device": { "host": "192.168.1.100", "driverProgram": "drivers/modbus/driver_modbustcp", "port": 502, "slaveId": 1 },
     "polling": { "intervalMs": 1000, "registers": [0, 1, 2, 3] },
     "output": { "format": "json", "filePath": "output/data.json" }
   }
@@ -775,7 +882,7 @@ data/
     "restartDelayMs": 3000
   },
   "config": {
-    "device": { "host": "192.168.1.101", "port": 502, "slaveId": 2 },
+    "device": { "host": "192.168.1.101", "driverProgram": "drivers/modbus/driver_modbustcp", "port": 502, "slaveId": 2 },
     "polling": { "intervalMs": 2000, "registers": [0, 1] },
     "output": { "format": "csv", "filePath": "output/data.csv" }
   }
@@ -792,7 +899,7 @@ data/
     "type": "manual"
   },
   "config": {
-    "device": { "host": "192.168.1.102", "port": 502, "slaveId": 3 },
+    "device": { "host": "192.168.1.102", "driverProgram": "drivers/modbus/driver_modbustcp", "port": 502, "slaveId": 3 },
     "polling": { "intervalMs": 1000, "registers": [0] },
     "output": { "format": "json", "filePath": "output/data.json" }
   }
@@ -849,6 +956,26 @@ stdiolink_server [选项]
   stdiolink_server --data-root=/var/stdiolink
 ```
 
+### 10.1 config.json（可选）
+
+`<data_root>/config.json` 用于提供默认配置，建议格式：
+
+```json
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "logLevel": "info",
+  "serviceProgram": ""
+}
+```
+
+字段说明:
+- `host` / `port` / `logLevel`: 与命令行同名参数含义一致
+- `serviceProgram`: `stdiolink_service` 可执行文件绝对路径（可选）
+
+优先级:
+- CLI 参数 > `config.json` > 内置默认值
+
 ---
 
 ## 11. 核心类设计
@@ -856,7 +983,8 @@ stdiolink_server [选项]
 ```cpp
 // 主管理器
 class ServerManager {
-    DriverScanner driverScanner;
+    DriverManagerScanner driverScanner;
+    DriverCatalog driverCatalog;
     ServiceScanner serviceScanner;
     ProjectManager projectManager;
     InstanceManager instanceManager;
@@ -866,20 +994,42 @@ class ServerManager {
     void initialize();
     void validateAllProjects();
     void startScheduling();
+    void rescanDrivers(bool refreshMeta = true);
 };
 
 // Service 扫描器
+// 组合复用 ServiceDirectory/ServiceManifest/ServiceConfigSchema，不重复实现底层校验
 class ServiceScanner {
     struct ServiceInfo {
         QString id;
         QString name;
         QString serviceDir;
-        ConfigSchema configSchema; // 解析的 Schema
+        stdiolink_service::ServiceConfigSchema configSchema; // 解析的 Schema
         bool valid;
     };
     
     QMap<QString, ServiceInfo> scan(const QString& dir);
     ServiceInfo getService(const QString& id);
+};
+
+// Driver 扫描器（Manager 编排层）
+// 组合复用 stdiolink::DriverScanner + stdiolink::DriverCatalog，补充 .failed 跳过与导出失败隔离策略
+class DriverManagerScanner {
+public:
+    struct ScanStat {
+        int scanned = 0;
+        int updated = 0;
+        int newlyFailed = 0;
+        int skippedFailed = 0;
+    };
+
+    ScanStat scan(const QString& dir,
+                  bool refreshMeta = true);
+};
+
+// Driver 目录快照（Manager 持有）
+class DriverCatalog {
+    QMap<QString, DriverConfig> drivers;
 };
 
 // Project 管理器
@@ -916,10 +1066,10 @@ class InstanceManager {
     QList<Instance*> getInstances(const QString& projectId = "");
 };
 
-// 配置验证器 (复用 stdiolink::meta::MetaValidator)
+// 配置验证器 (复用 stdiolink_service::ServiceConfigValidator)
 ValidationResult validateProjectConfig(
     const QJsonObject& config,
-    const ConfigSchema& schema
+    const stdiolink_service::ServiceConfigSchema& schema
 );
 ```
 

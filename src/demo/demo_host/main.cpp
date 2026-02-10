@@ -6,9 +6,8 @@
  * 2. Task 和 waitAnyNext
  * 3. 元数据查询
  * 4. UI 表单生成
- * 5. DriverRegistry
- * 6. ConfigInjector
- * 7. MetaVersionChecker
+ * 5. ConfigInjector
+ * 6. MetaVersionChecker
  */
 
 #include <QCoreApplication>
@@ -19,7 +18,6 @@
 
 #include "stdiolink/host/config_injector.h"
 #include "stdiolink/host/driver.h"
-#include "stdiolink/host/driver_registry.h"
 #include "stdiolink/host/form_generator.h"
 #include "stdiolink/host/meta_version_checker.h"
 #include "stdiolink/host/wait_any.h"
@@ -135,7 +133,7 @@ static void demoFormGenerator(const QString& path) {
 }
 
 static void demoConfigInjector() {
-    out() << "\n=== 6. Config Injector ===\n";
+    out() << "\n=== 5. Config Injector ===\n";
     QJsonObject config{{"timeout", 3000}, {"debug", true}};
     meta::ConfigApply apply;
     apply.method = "startupArgs";
@@ -146,7 +144,7 @@ static void demoConfigInjector() {
 }
 
 static void demoVersionChecker() {
-    out() << "\n=== 7. Version Checker ===\n";
+    out() << "\n=== 6. Version Checker ===\n";
     out() << "  Current: " << MetaVersionChecker::getCurrentVersion() << "\n";
     out() << "  Supported: " << MetaVersionChecker::getSupportedVersions().join(", ") << "\n";
     out() << "  1.0 compatible: "

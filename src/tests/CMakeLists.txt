@@ -19,7 +19,7 @@ set(TEST_SOURCES
     test_advanced_ui.cpp
     test_config_inject.cpp
     test_version_negotiate.cpp
-    test_driver_registry.cpp
+    test_driver_catalog.cpp
     test_system_help.cpp
     test_js_engine_scaffold.cpp
     test_es_module_loader.cpp
