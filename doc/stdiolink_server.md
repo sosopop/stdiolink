@@ -989,13 +989,21 @@ class ServerManager {
     ProjectManager projectManager;
     InstanceManager instanceManager;
     ScheduleEngine scheduleEngine;
-    HttpServer httpServer;
-    
+
     void initialize();
     void validateAllProjects();
     void startScheduling();
     void rescanDrivers(bool refreshMeta = true);
 };
+
+// HTTP API 路由（基于 Qt6::HttpServer）
+// main.cpp 中创建 QHttpServer 实例，由 ApiRouter 注册路由
+class ApiRouter : public QObject {
+    ServerManager* manager;
+    void registerRoutes(QHttpServer& server);
+    // 路由处理方法：handleServiceList, handleProjectStart, ...
+};
+// WebSocket 预留：后续可通过 QWebSocketServer 扩展实时事件推送
 
 // Service 扫描器
 // 组合复用 ServiceDirectory/ServiceManifest/ServiceConfigSchema，不重复实现底层校验
