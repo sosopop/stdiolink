@@ -62,14 +62,15 @@ class SingleHeaderPacker:
 
         # 源文件部分
         if self._source_files:
+            impl_macro = guard_name.replace("_SINGLE_HEADER_HPP", "_IMPLEMENTATION")
             lines.append("")
             lines.append("// ============ Implementation ============")
-            lines.append("#ifdef STDIOLINK_IMPLEMENTATION")
+            lines.append(f"#ifdef {impl_macro}")
             lines.append("")
             for src in self._source_files:
                 lines.extend(self._read_source(src))
                 lines.append("")
-            lines.append("#endif // STDIOLINK_IMPLEMENTATION")
+            lines.append(f"#endif // {impl_macro}")
 
         lines.append("")
         lines.append(f"#endif // {guard_name}")
@@ -279,6 +280,10 @@ def pack_single_header(
     packer.process_entry(entry_header)
     packer.write(output_file, guard_name)
 
+    # 删除临时入口头文件
+    entry_header.unlink(missing_ok=True)
+    print(f"Removed temp entry header: {entry_header}")
+
     print(f"Generated: {output_file}")
     print(f"File size: {output_file.stat().st_size} bytes")
     print(f"Headers expanded: {len(packer._included) - len(packer._source_files)}")
@@ -293,8 +298,8 @@ def main():
     parser.add_argument(
         "dir_path",
         nargs="?",
-        default=str(SRC_DIR / "stdiolink"),
-        help="要打包的目录路径 (默认: src/stdiolink)",
+        default=".",
+        help="要打包的目录路径 (默认: 当前目录)",
     )
     parser.add_argument(
         "--output",
