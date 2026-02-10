@@ -8,6 +8,7 @@ set(STDIOLINK_SERVICE_SOURCES
     bindings/js_driver.cpp
     bindings/js_process.cpp
     bindings/js_task_scheduler.cpp
+    bindings/js_wait_any_scheduler.cpp
     bindings/js_stdiolink_module.cpp
     bindings/js_config.cpp
     config/service_config_schema.cpp
@@ -17,6 +18,7 @@ set(STDIOLINK_SERVICE_SOURCES
     config/service_manifest.cpp
     config/service_directory.cpp
     proxy/driver_proxy.cpp
+    proxy/wait_any_wrapper.cpp
 )
 
 set(STDIOLINK_SERVICE_HEADERS
@@ -28,6 +30,7 @@ set(STDIOLINK_SERVICE_HEADERS
     bindings/js_driver.h
     bindings/js_process.h
     bindings/js_task_scheduler.h
+    bindings/js_wait_any_scheduler.h
     bindings/js_stdiolink_module.h
     bindings/js_config.h
     config/service_config_schema.h
@@ -37,6 +40,7 @@ set(STDIOLINK_SERVICE_HEADERS
     config/service_manifest.h
     config/service_directory.h
     proxy/driver_proxy.h
+    proxy/wait_any_wrapper.h
 )
 
 add_executable(stdiolink_service

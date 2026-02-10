@@ -74,6 +74,21 @@ drvB.$close();
 
 内部通过 `JsTaskScheduler` 基于 `waitAnyNext` 实现单线程多任务调度。
 
+## waitAny 多路监听
+
+`waitAny(tasks, timeoutMs?)` 支持在 JS 层异步等待多个 Task，并保留中间 `event` 消息：
+
+```js
+import { waitAny } from 'stdiolink';
+
+const result = await waitAny([taskA, taskB], 3000);
+if (result) {
+    console.log(result.taskIndex, result.msg.status, result.msg.data);
+}
+```
+
+`waitAny` 适合进度流、多路事件监听等场景，详细说明见 [wait-any-binding.md](wait-any-binding.md)。
+
 ### 并发语义
 
 | 场景 | 行为 |
@@ -87,4 +102,5 @@ drvB.$close();
 |-----|---------|------|
 | `task.waitNext()` | 同步阻塞 | 底层 API，阻塞 JS 线程 |
 | `calc.add(params)` | 异步 Promise | Proxy 层，通过调度器非阻塞 |
+| `waitAny(tasks, timeoutMs?)` | 异步 Promise | 多路监听，保留中间 event |
 | `$rawRequest(cmd, data)` | 返回 Task | 底层 API，用户自行决定同步/异步 |

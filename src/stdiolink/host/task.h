@@ -26,6 +26,8 @@ public:
     bool tryNext(Message& out);
     bool waitNext(Message& out, int timeoutMs = -1);
     bool hasQueued() const;
+    const TaskState* stateId() const { return m_st.get(); }
+    void forceTerminal(int code, const QString& error);
 
     Driver* owner() const { return m_drv; }
 

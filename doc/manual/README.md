@@ -45,6 +45,7 @@ stdiolink 是一个基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过
 - [Driver/Task 绑定](10-js-service/driver-binding.md) - 底层 Driver 和 Task API
 - [进程调用](10-js-service/process-binding.md) - exec() 外部进程执行
 - [Proxy 代理与并发调度](10-js-service/proxy-and-scheduler.md) - openDriver() 与异步调用
+- [多路事件监听](10-js-service/wait-any-binding.md) - waitAny() 异步多 Task 监听
 - [配置系统](10-js-service/config-schema.md) - config.schema.json 与 getConfig 配置管理
 
 ### 参考资料

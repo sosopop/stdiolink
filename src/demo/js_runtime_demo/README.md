@@ -1,10 +1,10 @@
-# JS Runtime Demo (M21-M27)
+# JS Runtime Demo (M21-M33)
 
 This demo set is under `src/demo/js_runtime_demo` and is copied to:
 
 - `build/bin/js_runtime_demo`
 
-It demonstrates all milestone features from M21 to M27:
+It demonstrates milestone features from M21 to M33:
 
 - M21: JS engine scaffold and `console.*` bridge
 - M22: ES module loading (relative + parent imports)
@@ -13,6 +13,7 @@ It demonstrates all milestone features from M21 to M27:
 - M25: `openDriver` proxy and scheduler behavior
 - M26: Driver `--export-doc=ts` TypeScript declaration export
 - M27: End-to-end composition
+- M33: `waitAny(tasks, timeoutMs?)` multi-task event listening
 
 ## Build
 
@@ -30,6 +31,7 @@ cd build/bin
 ./stdiolink_service.exe js_runtime_demo/services/engine_modules
 ./stdiolink_service.exe js_runtime_demo/services/driver_task
 ./stdiolink_service.exe js_runtime_demo/services/proxy_scheduler
+./stdiolink_service.exe js_runtime_demo/services/wait_any
 ./stdiolink_service.exe js_runtime_demo/services/process_types
 ```
 
@@ -45,4 +47,5 @@ cd build/bin
 - engine_modules prints module math results and console messages.
 - driver_task starts calculator driver, queries meta, receives `batch` events, and prints one error response sample.
 - proxy_scheduler uses `openDriver`, shows parallel calls across two driver instances, and shows same-instance busy protection.
+- wait_any shows asynchronous multi-task event listening with intermediate event preservation.
 - process_types runs `exec` and exports TS declaration via `calculator_driver --export-doc=ts`.

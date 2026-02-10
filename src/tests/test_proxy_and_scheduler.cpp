@@ -10,6 +10,7 @@
 #include <quickjs.h>
 #include "bindings/js_stdiolink_module.h"
 #include "bindings/js_task_scheduler.h"
+#include "bindings/js_wait_any_scheduler.h"
 #include "engine/console_bridge.h"
 #include "engine/js_engine.h"
 #include "stdiolink/platform/platform_utils.h"
@@ -75,17 +76,23 @@ protected:
         m_engine = std::make_unique<JsEngine>();
         ASSERT_NE(m_engine->context(), nullptr);
         m_scheduler = std::make_unique<JsTaskScheduler>(m_engine->context());
+        m_waitAnyScheduler = std::make_unique<WaitAnyScheduler>(m_engine->context());
 
         ConsoleBridge::install(m_engine->context());
         m_engine->registerModule("stdiolink", jsInitStdiolinkModule);
         JsTaskScheduler::installGlobal(m_engine->context(), m_scheduler.get());
+        WaitAnyScheduler::installGlobal(m_engine->context(), m_waitAnyScheduler.get());
     }
 
     int runScript(const QString& path) {
         int ret = m_engine->evalFile(path);
-        while (m_scheduler->hasPending() || m_engine->hasPendingJobs()) {
+        while (m_scheduler->hasPending() || m_waitAnyScheduler->hasPending()
+               || m_engine->hasPendingJobs()) {
             if (m_scheduler->hasPending()) {
                 m_scheduler->poll(50);
+            }
+            if (m_waitAnyScheduler->hasPending()) {
+                m_waitAnyScheduler->poll(50);
             }
             while (m_engine->hasPendingJobs()) {
                 m_engine->executePendingJobs();
@@ -99,8 +106,106 @@ protected:
 
     std::unique_ptr<JsEngine> m_engine;
     std::unique_ptr<JsTaskScheduler> m_scheduler;
+    std::unique_ptr<WaitAnyScheduler> m_waitAnyScheduler;
     QTemporaryDir m_tmpDir;
 };
+
+TEST_F(JsProxyTest, ImportWaitAny) {
+    const QString scriptPath =
+        writeScript(m_tmpDir, "import_wait_any.js",
+                    "import { waitAny } from 'stdiolink';\n"
+                    "globalThis.ok = (typeof waitAny === 'function') ? 1 : 0;\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, WaitAnyEmptyTasksReturnsNull) {
+    const QString scriptPath =
+        writeScript(m_tmpDir, "wait_any_empty.js",
+                    "import { waitAny } from 'stdiolink';\n"
+                    "(async () => {\n"
+                    "  const result = await waitAny([]);\n"
+                    "  globalThis.ok = (result === null) ? 1 : 0;\n"
+                    "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, WaitAnyPreservesEventAndDone) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "wait_any_event_done.js",
+        QString("import { openDriver, waitAny } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1');\n"
+                "  const task = calc.$rawRequest('batch', {\n"
+                "    operations: [\n"
+                "      { type: 'add', a: 1, b: 2 },\n"
+                "      { type: 'mul', a: 3, b: 4 }\n"
+                "    ]\n"
+                "  });\n"
+                "  const first = await waitAny([task], 5000);\n"
+                "  let gotEvent = !!(first && first.taskIndex === 0 && first.msg && first.msg.status === "
+                "'event');\n"
+                "  let gotDone = false;\n"
+                "  while (true) {\n"
+                "    const result = await waitAny([task], 5000);\n"
+                "    if (!result) {\n"
+                "      break;\n"
+                "    }\n"
+                "    if (result.msg && result.msg.status === 'done') {\n"
+                "      gotDone = true;\n"
+                "      break;\n"
+                "    }\n"
+                "  }\n"
+                "  globalThis.ok = (gotEvent && gotDone) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, WaitAnyConflictRejectsSamePendingTask) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "wait_any_conflict.js",
+        QString("import { openDriver, waitAny } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1');\n"
+                "  const task = calc.$rawRequest('batch', {\n"
+                "    operations: [\n"
+                "      { type: 'add', a: 1, b: 2 },\n"
+                "      { type: 'sub', a: 9, b: 4 }\n"
+                "    ]\n"
+                "  });\n"
+                "  const p1 = waitAny([task], 5000);\n"
+                "  let conflict = 0;\n"
+                "  try {\n"
+                "    await waitAny([task], 5000);\n"
+                "  } catch (e) {\n"
+                "    conflict = 1;\n"
+                "  }\n"
+                "  const first = await p1;\n"
+                "  globalThis.ok = (conflict === 1 && first && first.msg) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
 
 TEST_F(JsProxyTest, ImportOpenDriver) {
     const QString scriptPath =

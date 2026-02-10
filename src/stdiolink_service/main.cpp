@@ -6,6 +6,7 @@
 
 #include "bindings/js_config.h"
 #include "bindings/js_stdiolink_module.h"
+#include "bindings/js_wait_any_scheduler.h"
 #include "bindings/js_task_scheduler.h"
 #include "config/service_args.h"
 #include "config/service_config_help.h"
@@ -179,14 +180,19 @@ int main(int argc, char* argv[]) {
 
     engine.registerModule("stdiolink", jsInitStdiolinkModule);
     JsTaskScheduler scheduler(engine.context());
+    WaitAnyScheduler waitAnyScheduler(engine.context());
     JsTaskScheduler::installGlobal(engine.context(), &scheduler);
+    WaitAnyScheduler::installGlobal(engine.context(), &waitAnyScheduler);
 
     int ret = engine.evalFile(svcDir.entryPath());
 
     // Drain pending jobs
-    while (scheduler.hasPending() || engine.hasPendingJobs()) {
+    while (scheduler.hasPending() || waitAnyScheduler.hasPending() || engine.hasPendingJobs()) {
         if (scheduler.hasPending()) {
             scheduler.poll(50);
+        }
+        if (waitAnyScheduler.hasPending()) {
+            waitAnyScheduler.poll(50);
         }
         while (engine.hasPendingJobs()) {
             engine.executePendingJobs();

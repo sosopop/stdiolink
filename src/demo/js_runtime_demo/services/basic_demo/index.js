@@ -46,10 +46,11 @@ const services = [
     `${serviceBase}/engine_modules`,
     `${serviceBase}/driver_task`,
     `${serviceBase}/proxy_scheduler`,
+    `${serviceBase}/wait_any`,
     `${serviceBase}/process_types`
 ];
 
-console.log("=== JS runtime demo start (M21-M27) ===");
+console.log("=== JS runtime demo start (M21-M33) ===");
 
 for (const svc of services) {
     console.log("--- Running:", svc, "---");
@@ -62,4 +63,4 @@ for (const svc of services) {
     }
 }
 
-console.log("=== JS runtime demo done (M21-M27) ===");
+console.log("=== JS runtime demo done (M21-M33) ===");

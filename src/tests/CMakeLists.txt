@@ -48,6 +48,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_driver.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_process.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_task_scheduler.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_wait_any_scheduler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_stdiolink_module.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_config.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_schema.cpp
@@ -56,6 +57,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_manifest.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_directory.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/driver_proxy.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/wait_any_wrapper.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE

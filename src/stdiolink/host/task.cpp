@@ -33,6 +33,16 @@ bool Task::hasQueued() const {
     return m_st && !m_st->queue.empty();
 }
 
+void Task::forceTerminal(int code, const QString& error) {
+    if (!m_st || m_st->terminal) {
+        return;
+    }
+
+    m_st->terminal = true;
+    m_st->exitCode = code;
+    m_st->errorText = error;
+}
+
 bool Task::tryNext(Message& out) {
     if (!m_st || m_st->queue.empty())
         return false;

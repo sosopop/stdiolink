@@ -6,6 +6,7 @@
 #include "js_process.h"
 #include "js_task.h"
 #include "proxy/driver_proxy.h"
+#include "proxy/wait_any_wrapper.h"
 
 namespace {
 
@@ -25,21 +26,35 @@ int jsStdiolinkModuleInit(JSContext* ctx, JSModuleDef* module) {
         JS_FreeValue(ctx, execFn);
         return -1;
     }
+    JSValue waitAnyFn = createWaitAnyFunction(ctx);
+    if (JS_IsException(waitAnyFn)) {
+        JS_FreeValue(ctx, openDriverFn);
+        JS_FreeValue(ctx, driverCtor);
+        JS_FreeValue(ctx, execFn);
+        return -1;
+    }
 
     JSValue getConfigFn = stdiolink_service::JsConfigBinding::getGetConfigFunction(ctx);
 
     if (JS_SetModuleExport(ctx, module, "Driver", driverCtor) < 0) {
+        JS_FreeValue(ctx, waitAnyFn);
         JS_FreeValue(ctx, openDriverFn);
         JS_FreeValue(ctx, execFn);
         JS_FreeValue(ctx, getConfigFn);
         return -1;
     }
     if (JS_SetModuleExport(ctx, module, "exec", execFn) < 0) {
+        JS_FreeValue(ctx, waitAnyFn);
         JS_FreeValue(ctx, openDriverFn);
         JS_FreeValue(ctx, getConfigFn);
         return -1;
     }
     if (JS_SetModuleExport(ctx, module, "openDriver", openDriverFn) < 0) {
+        JS_FreeValue(ctx, waitAnyFn);
+        JS_FreeValue(ctx, getConfigFn);
+        return -1;
+    }
+    if (JS_SetModuleExport(ctx, module, "waitAny", waitAnyFn) < 0) {
         JS_FreeValue(ctx, getConfigFn);
         return -1;
     }
@@ -63,6 +78,9 @@ JSModuleDef* jsInitStdiolinkModule(JSContext* ctx, const char* name) {
         return nullptr;
     }
     if (JS_AddModuleExport(ctx, module, "openDriver") < 0) {
+        return nullptr;
+    }
+    if (JS_AddModuleExport(ctx, module, "waitAny") < 0) {
         return nullptr;
     }
     if (JS_AddModuleExport(ctx, module, "getConfig") < 0) {

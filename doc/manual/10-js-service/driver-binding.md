@@ -3,6 +3,7 @@
 底层 API，提供对 Driver 进程和 Task 请求的直接控制。
 
 > 大多数场景推荐使用 [openDriver() Proxy](proxy-and-scheduler.md) 代替直接操作 Driver/Task。
+> 如需同时监听多个 Task（并保留中间 event），参见 [waitAny()](wait-any-binding.md)。
 
 ## Driver 类
 
