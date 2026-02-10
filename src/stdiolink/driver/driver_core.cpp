@@ -61,20 +61,8 @@ int DriverCore::run(int argc, char* argv[]) {
         return 1;
     }
 
-    // 初始化日志
-    if (!args.logPath.isEmpty()) {
-        if (!installFileLogger(args.logPath)) {
-            QFile err;
-            (void)err.open(stderr, QIODevice::WriteOnly);
-            err.write("Failed to open log file: ");
-            err.write(args.logPath.toUtf8());
-            err.write("\n");
-            err.flush();
-            return 1;
-        }
-    } else {
-        installStderrLogger();
-    }
+    // 初始化日志（全部输出到 stderr）
+    installStderrLogger();
 
     // 无参数且 stdin 为交互终端时，输出帮助
     if (argc == 1 && ConsoleArgs::isInteractiveStdin()) {

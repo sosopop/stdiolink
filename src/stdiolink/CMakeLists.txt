@@ -52,13 +52,7 @@ set(ALL_SOURCES
     ${PLATFORM_SOURCES}
 )
 
-# Windows: 动态库, 其他平台: 静态库
-if(WIN32)
-    add_library(stdiolink SHARED ${ALL_SOURCES})
-    target_compile_definitions(stdiolink PRIVATE STDIOLINK_BUILDING_DLL)
-else()
-    add_library(stdiolink STATIC ${ALL_SOURCES})
-endif()
+add_library(stdiolink STATIC ${ALL_SOURCES})
 
 target_include_directories(stdiolink PUBLIC
     ${CMAKE_SOURCE_DIR}/src
@@ -67,7 +61,5 @@ target_include_directories(stdiolink PUBLIC
 target_link_libraries(stdiolink PUBLIC Qt6::Core)
 
 set_target_properties(stdiolink PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )

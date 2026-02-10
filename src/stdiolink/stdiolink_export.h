@@ -1,11 +1,4 @@
 #pragma once
 
-#ifdef _WIN32
-    #ifdef STDIOLINK_BUILDING_DLL
-        #define STDIOLINK_API __declspec(dllexport)
-    #else
-        #define STDIOLINK_API __declspec(dllimport)
-    #endif
-#else
-    #define STDIOLINK_API
-#endif
+// stdiolink 为静态库，无需导出符号
+#define STDIOLINK_API

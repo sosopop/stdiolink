@@ -4,8 +4,6 @@
 
 namespace stdiolink {
 
-static QFile* g_logFile = nullptr;
-
 static QByteArray formatPrefix(QtMsgType type) {
     switch (type) {
     case QtDebugMsg:
@@ -42,44 +40,8 @@ static void stderrMessageHandler(QtMsgType type,
     }
 }
 
-static void fileMessageHandler(QtMsgType type,
-                                const QMessageLogContext& context,
-                                const QString& msg) {
-    Q_UNUSED(context)
-
-    if (g_logFile == nullptr || !g_logFile->isOpen()) {
-        return;
-    }
-
-    g_logFile->write(formatPrefix(type));
-    g_logFile->write(msg.toUtf8());
-    g_logFile->write("\n");
-    g_logFile->flush();
-
-    if (type == QtFatalMsg) {
-        abort();
-    }
-}
-
 void installStderrLogger() {
     qInstallMessageHandler(stderrMessageHandler);
-}
-
-bool installFileLogger(const QString& filePath) {
-    if (g_logFile != nullptr) {
-        g_logFile->close();
-        delete g_logFile;
-    }
-
-    g_logFile = new QFile(filePath);
-    if (!g_logFile->open(QIODevice::WriteOnly | QIODevice::Append)) {
-        delete g_logFile;
-        g_logFile = nullptr;
-        return false;
-    }
-
-    qInstallMessageHandler(fileMessageHandler);
-    return true;
 }
 
 } // namespace stdiolink

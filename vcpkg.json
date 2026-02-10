@@ -4,7 +4,9 @@
   "dependencies": [
     "qtbase",
     "qtwebsockets",
+    "qthttpserver",
     "gtest",
-    "quickjs-ng"
+    "quickjs-ng",
+    "spdlog"
   ]
 }
