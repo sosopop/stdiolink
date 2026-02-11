@@ -35,6 +35,16 @@ set(TEST_SOURCES
     test_service_manifest.cpp
     test_service_directory.cpp
     test_service_loader.cpp
+    test_server_args.cpp
+    test_server_config.cpp
+    test_service_scanner.cpp
+    test_driver_manager_scanner.cpp
+    test_schedule.cpp
+    test_project_manager.cpp
+    test_instance_manager.cpp
+    test_schedule_engine.cpp
+    test_server_manager.cpp
+    test_api_router.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -58,16 +68,30 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_directory.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/driver_proxy.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/wait_any_wrapper.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/config/server_args.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/config/server_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/schedule.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/project.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/project_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/instance_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/schedule_engine.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/scanner/service_scanner.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/scanner/driver_manager_scanner.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/api_router.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/server_manager.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server
 )
 
 target_link_libraries(stdiolink_tests PRIVATE
     stdiolink
     GTest::gtest
+    Qt6::Network
+    Qt6::HttpServer
 )
 
 if(TARGET qjs)
@@ -100,3 +124,23 @@ target_link_libraries(test_driver PRIVATE stdiolink)
 set_target_properties(test_driver PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+# test_meta_driver (支持 --export-meta 的测试 Driver)
+add_executable(test_meta_driver test_meta_driver_main.cpp)
+
+target_link_libraries(test_meta_driver PRIVATE stdiolink)
+
+set_target_properties(test_meta_driver PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# test_service_stub (用于 server manager / scheduler 测试的服务进程替身)
+add_executable(test_service_stub test_service_stub_main.cpp)
+
+target_link_libraries(test_service_stub PRIVATE Qt6::Core)
+
+set_target_properties(test_service_stub PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_service_stub)

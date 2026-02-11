@@ -11,12 +11,7 @@ set(STDIOLINK_SERVICE_SOURCES
     bindings/js_wait_any_scheduler.cpp
     bindings/js_stdiolink_module.cpp
     bindings/js_config.cpp
-    config/service_config_schema.cpp
     config/service_args.cpp
-    config/service_config_validator.cpp
-    config/service_config_help.cpp
-    config/service_manifest.cpp
-    config/service_directory.cpp
     proxy/driver_proxy.cpp
     proxy/wait_any_wrapper.cpp
 )
@@ -43,6 +38,24 @@ set(STDIOLINK_SERVICE_HEADERS
     proxy/wait_any_wrapper.h
 )
 
+add_library(stdiolink_service_config STATIC
+    config/service_config_schema.cpp
+    config/service_config_validator.cpp
+    config/service_config_help.cpp
+    config/service_manifest.cpp
+    config/service_directory.cpp
+)
+
+target_include_directories(stdiolink_service_config PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(stdiolink_service_config PUBLIC
+    stdiolink
+    Qt6::Core
+)
+
 add_executable(stdiolink_service
     ${STDIOLINK_SERVICE_SOURCES}
     ${STDIOLINK_SERVICE_HEADERS}
@@ -54,6 +67,7 @@ target_include_directories(stdiolink_service PRIVATE
 )
 
 target_link_libraries(stdiolink_service PRIVATE
+    stdiolink_service_config
     stdiolink
     Qt6::Core
 )
