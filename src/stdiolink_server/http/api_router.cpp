@@ -99,6 +99,18 @@ QJsonObject projectToJson(const Project& project,
     return out;
 }
 
+QString scheduleTypeToString(ScheduleType type) {
+    switch (type) {
+    case ScheduleType::Manual:
+        return "manual";
+    case ScheduleType::FixedRate:
+        return "fixed_rate";
+    case ScheduleType::Daemon:
+        return "daemon";
+    }
+    return "manual";
+}
+
 bool loadProjectFromFile(const QString& filePath,
                          const QString& id,
                          Project& project,
@@ -161,6 +173,9 @@ void ApiRouter::registerRoutes(QHttpServer& server) {
     server.route("/api/services/<arg>", Method::Get, [this](const QString& id, const QHttpServerRequest& req) {
         return handleServiceDetail(id, req);
     });
+    server.route("/api/services/scan", Method::Post, [this](const QHttpServerRequest& req) {
+        return handleServiceScan(req);
+    });
 
     server.route("/api/projects", Method::Get, [this](const QHttpServerRequest& req) {
         return handleProjectList(req);
@@ -196,6 +211,9 @@ void ApiRouter::registerRoutes(QHttpServer& server) {
         [this](const QString& id, const QHttpServerRequest& req) {
             return handleProjectReload(id, req);
         });
+    server.route("/api/projects/<arg>/runtime", Method::Get, [this](const QString& id, const QHttpServerRequest& req) {
+        return handleProjectRuntime(id, req);
+    });
 
     server.route("/api/instances", Method::Get, [this](const QHttpServerRequest& req) {
         return handleInstanceList(req);
@@ -280,6 +298,65 @@ QHttpServerResponse ApiRouter::handleServiceDetail(const QString& id,
     result["manifest"] = manifestToJson(service.manifest);
     result["configSchema"] = service.rawConfigSchema;
     result["projects"] = projectIds;
+    return jsonResponse(result);
+}
+
+QHttpServerResponse ApiRouter::handleServiceScan(const QHttpServerRequest& req) {
+    QJsonObject body;
+    QString error;
+    if (!parseJsonObjectBody(req, body, error)) {
+        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    }
+
+    bool revalidateProjects = true;
+    if (body.contains("revalidateProjects")) {
+        if (!body.value("revalidateProjects").isBool()) {
+            return errorResponse(QHttpServerResponse::StatusCode::BadRequest,
+                                 "field 'revalidateProjects' must be a bool");
+        }
+        revalidateProjects = body.value("revalidateProjects").toBool(true);
+    }
+
+    bool restartScheduling = true;
+    if (body.contains("restartScheduling")) {
+        if (!body.value("restartScheduling").isBool()) {
+            return errorResponse(QHttpServerResponse::StatusCode::BadRequest,
+                                 "field 'restartScheduling' must be a bool");
+        }
+        restartScheduling = body.value("restartScheduling").toBool(true);
+    }
+
+    bool stopInvalidProjects = false;
+    if (body.contains("stopInvalidProjects")) {
+        if (!body.value("stopInvalidProjects").isBool()) {
+            return errorResponse(QHttpServerResponse::StatusCode::BadRequest,
+                                 "field 'stopInvalidProjects' must be a bool");
+        }
+        stopInvalidProjects = body.value("stopInvalidProjects").toBool(false);
+    }
+
+    const ServerManager::ServiceRescanStats stats =
+        m_manager->rescanServices(revalidateProjects, restartScheduling, stopInvalidProjects);
+
+    QJsonArray invalidProjects;
+    for (const QString& id : stats.invalidProjectIds) {
+        invalidProjects.append(id);
+    }
+
+    QJsonObject result;
+    result["scannedDirs"] = stats.scanStats.scannedDirs;
+    result["loadedServices"] = stats.scanStats.loadedServices;
+    result["failedServices"] = stats.scanStats.failedServices;
+    result["added"] = stats.added;
+    result["removed"] = stats.removed;
+    result["updated"] = stats.updated;
+    result["unchanged"] = stats.unchanged;
+    result["revalidatedProjects"] = stats.revalidatedProjects;
+    result["becameValid"] = stats.becameValid;
+    result["becameInvalid"] = stats.becameInvalid;
+    result["remainedInvalid"] = stats.remainedInvalid;
+    result["schedulingRestarted"] = stats.schedulingRestarted;
+    result["invalidProjects"] = invalidProjects;
     return jsonResponse(result);
 }
 
@@ -542,6 +619,55 @@ QHttpServerResponse ApiRouter::handleProjectReload(const QString& id,
     m_manager->startScheduling();
 
     return jsonResponse(projectToJson(project, m_manager->instanceManager()));
+}
+
+QHttpServerResponse ApiRouter::handleProjectRuntime(const QString& id,
+                                                    const QHttpServerRequest& req) {
+    Q_UNUSED(req);
+
+    auto pIt = m_manager->projects().find(id);
+    if (pIt == m_manager->projects().end()) {
+        return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project not found");
+    }
+
+    const Project& project = pIt.value();
+    auto* instanceManager = m_manager->instanceManager();
+    const int runningCount = instanceManager->instanceCount(id);
+
+    QJsonArray instances;
+    for (const Instance* inst : instanceManager->getInstances(id)) {
+        instances.append(instanceToJson(*inst));
+    }
+
+    const ScheduleEngine::ProjectRuntimeState runtime =
+        m_manager->scheduleEngine()->projectRuntimeState(id);
+
+    QJsonObject schedule;
+    schedule["type"] = scheduleTypeToString(project.schedule.type);
+    schedule["timerActive"] = runtime.timerActive;
+    schedule["restartSuppressed"] = runtime.restartSuppressed;
+    schedule["consecutiveFailures"] = runtime.consecutiveFailures;
+    schedule["shuttingDown"] = runtime.shuttingDown;
+    schedule["autoRestarting"] =
+        project.schedule.type == ScheduleType::Daemon
+        && project.enabled
+        && project.valid
+        && !runtime.shuttingDown
+        && !runtime.restartSuppressed;
+
+    QJsonObject result;
+    result["id"] = project.id;
+    result["enabled"] = project.enabled;
+    result["valid"] = project.valid;
+    if (!project.error.isEmpty()) {
+        result["error"] = project.error;
+    }
+    result["status"] = projectStatus(project, runningCount);
+    result["runningInstances"] = runningCount;
+    result["instances"] = instances;
+    result["schedule"] = schedule;
+
+    return jsonResponse(result);
 }
 
 QHttpServerResponse ApiRouter::handleInstanceList(const QHttpServerRequest& req) {

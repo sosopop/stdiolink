@@ -78,6 +78,7 @@ demo/
 - Instance 列表/终止/日志
 - Driver 扫描与 meta 刷新
 - `manual` / `fixed_rate` / `daemon` 调度行为
+- 启动脚本会将 `calculator_driver`、`driver_modbusrtu`、`driver_modbustcp`、`driver_3dvision` 复制到 demo `data_root/drivers/`（仅用于扫描演示，不自动执行）
 
 ## 运行方式
 

@@ -141,6 +141,42 @@ TEST(ServerManagerTest, RescanDriversLoadsMeta) {
     EXPECT_TRUE(manager.driverCatalog()->hasDriver("test-meta-driver"));
 }
 
+TEST(ServerManagerTest, RescanServicesRevalidatesProjects) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+    ASSERT_TRUE(manager.projects().value("p1").valid);
+
+    // Remove service directory and trigger manual service scan.
+    ASSERT_TRUE(QDir(root + "/services/demo").removeRecursively());
+    const ServerManager::ServiceRescanStats stats =
+        manager.rescanServices(true, false, false);
+
+    EXPECT_EQ(stats.removed, 1);
+    EXPECT_EQ(stats.revalidatedProjects, 1);
+    EXPECT_EQ(stats.becameInvalid, 1);
+    EXPECT_FALSE(stats.schedulingRestarted);
+    EXPECT_TRUE(stats.invalidProjectIds.contains("p1"));
+    ASSERT_TRUE(manager.projects().contains("p1"));
+    EXPECT_FALSE(manager.projects().value("p1").valid);
+}
+
 TEST(ServerManagerTest, InitializeFailsWhenDataRootMissing) {
     ServerConfig cfg;
     ServerManager manager("/path/does/not/exist", cfg);

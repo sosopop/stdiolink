@@ -17,6 +17,13 @@ namespace stdiolink_server {
 class ScheduleEngine : public QObject {
     Q_OBJECT
 public:
+    struct ProjectRuntimeState {
+        bool shuttingDown = false;
+        bool restartSuppressed = false;
+        bool timerActive = false;
+        int consecutiveFailures = 0;
+    };
+
     explicit ScheduleEngine(InstanceManager* instanceMgr,
                             QObject* parent = nullptr);
 
@@ -26,6 +33,7 @@ public:
     void stopAll();
     void stopProject(const QString& projectId);
     void resumeProject(const QString& projectId);
+    ProjectRuntimeState projectRuntimeState(const QString& projectId) const;
 
     void setShuttingDown(bool value) { m_shuttingDown = value; }
     bool isShuttingDown() const { return m_shuttingDown; }

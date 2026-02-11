@@ -3,6 +3,7 @@
 #include <QMap>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 #include "config/server_config.h"
 #include "manager/instance_manager.h"
@@ -17,6 +18,20 @@ namespace stdiolink_server {
 class ServerManager : public QObject {
     Q_OBJECT
 public:
+    struct ServiceRescanStats {
+        ServiceScanner::ScanStats scanStats;
+        int added = 0;
+        int removed = 0;
+        int updated = 0;
+        int unchanged = 0;
+        int revalidatedProjects = 0;
+        int becameValid = 0;
+        int becameInvalid = 0;
+        int remainedInvalid = 0;
+        bool schedulingRestarted = false;
+        QStringList invalidProjectIds;
+    };
+
     explicit ServerManager(const QString& dataRoot,
                            const ServerConfig& config,
                            QObject* parent = nullptr);
@@ -35,6 +50,9 @@ public:
     stdiolink::DriverCatalog* driverCatalog() { return &m_driverCatalog; }
 
     DriverManagerScanner::ScanStats rescanDrivers(bool refreshMeta = true);
+    ServiceRescanStats rescanServices(bool revalidateProjects = true,
+                                      bool restartScheduling = true,
+                                      bool stopInvalidProjects = false);
 
     QString dataRoot() const { return m_dataRoot; }
 

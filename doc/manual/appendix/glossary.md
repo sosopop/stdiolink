@@ -30,6 +30,9 @@ Driver 端的核心类，处理通信和命令分发。
 **DriverMeta**
 驱动元数据，描述 Driver 的完整能力。
 
+**DriverManagerScanner**
+Manager 层的 Driver 扫描器，在核心库 `DriverScanner` 基础上补充 `.failed` 隔离策略、meta 自动导出和手动重扫能力。
+
 **config.schema.json**
 服务目录中的配置 schema 文件，声明配置字段的类型和约束，复用 FieldMeta 类型系统。
 
@@ -56,6 +59,12 @@ Driver 端的核心类，处理通信和命令分发。
 
 **IResponder**
 响应输出接口。
+
+**Instance**
+一个正在运行的 `stdiolink_service` 子进程，由 `InstanceManager` 创建和管理。
+
+**InstanceManager**
+管理 Instance 生命周期的组件，负责子进程的创建、监控、终止和日志重定向。
 
 ## J
 
@@ -86,16 +95,40 @@ JS Service 的 Driver 工厂函数，启动进程、获取元数据并返回 Pro
 
 ## P
 
+**Project**
+对某个 Service 的一次实例化配置，包含业务参数（config）和调度策略（schedule）。存储为 `projects/{id}.json` 文件。
+
+**ProjectManager**
+管理 Project 配置文件的 CRUD 和 Schema 验证的组件。
+
 **Proxy（Driver Proxy）**
 `openDriver()` 返回的代理对象，将 Driver 命令映射为异步方法调用。
 
 ## S
 
-**Stdio 模式**
-标准 IPC 模式，通过 stdin/stdout 通信。
+**Schedule**
+Project 的调度策略配置，支持 manual（手动）、fixed_rate（定时）、daemon（守护）三种类型。
+
+**ScheduleEngine**
+调度引擎，根据 Project 的 Schedule 配置自动编排 Instance 的启停。
+
+**ServerManager**
+`stdiolink_server` 的编排层，统一持有所有子系统引用，协调初始化、调度和关闭流程。
+
+**Service**
+一个 JS Service 目录模板，包含 `manifest.json`、`config.schema.json`、`index.js`。由 `ServiceScanner` 自动发现。
+
+**ServiceScanner**
+扫描 `services/` 目录，发现并加载所有可用 Service 模板的组件。
 
 **ServiceConfigSchema**
 JS Service 的配置 schema 结构，复用 FieldMeta 描述配置字段。
+
+**Stdio 模式**
+标准 IPC 模式，通过 stdin/stdout 通信。
+
+**stdiolink_server**
+服务管理器，提供 Service 编排、Project 管理、Instance 生命周期管理、调度引擎和 HTTP API。
 
 **stdiolink_service**
 基于 QuickJS-NG 的 JS Service 运行时，使用 JS 脚本编排 Driver 调用。

@@ -277,3 +277,127 @@ TEST(ApiRouterTest, CreateAndDeleteProjectViaHttp) {
     EXPECT_FALSE(manager.projects().contains("p2"));
     EXPECT_FALSE(QFile::exists(root + "/projects/p2.json"));
 }
+
+TEST(ApiRouterTest, ServiceScanRefreshesServiceCatalog) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+    ASSERT_EQ(manager.services().size(), 1);
+
+    // Add a new service after startup; it should be discovered by /api/services/scan.
+    writeService(root, "extra");
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/scan"),
+                            QJsonDocument(QJsonObject{}).toJson(QJsonDocument::Compact),
+                            status,
+                            body,
+                            error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    QJsonObject scanObj;
+    ASSERT_TRUE(parseJsonObject(body, scanObj));
+    EXPECT_EQ(scanObj.value("added").toInt(), 1);
+    EXPECT_EQ(scanObj.value("loadedServices").toInt(), 2);
+    EXPECT_EQ(scanObj.value("revalidatedProjects").toInt(), 1);
+    EXPECT_TRUE(scanObj.value("invalidProjects").toArray().isEmpty());
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    QJsonObject listObj;
+    ASSERT_TRUE(parseJsonObject(body, listObj));
+    const QJsonArray services = listObj.value("services").toArray();
+    EXPECT_EQ(services.size(), 2);
+    EXPECT_TRUE(manager.services().contains("extra"));
+}
+
+TEST(ApiRouterTest, ProjectRuntimeShowsScheduleAndInstanceState) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/p1/runtime"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    QJsonObject runtime;
+    ASSERT_TRUE(parseJsonObject(body, runtime));
+    EXPECT_EQ(runtime.value("id").toString(), "p1");
+    EXPECT_EQ(runtime.value("runningInstances").toInt(), 0);
+    EXPECT_EQ(runtime.value("status").toString(), "stopped");
+
+    const QJsonObject schedule = runtime.value("schedule").toObject();
+    EXPECT_EQ(schedule.value("type").toString(), "manual");
+    EXPECT_FALSE(schedule.value("timerActive").toBool());
+    EXPECT_FALSE(schedule.value("restartSuppressed").toBool());
+    EXPECT_FALSE(schedule.value("autoRestarting").toBool());
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/missing/runtime"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}

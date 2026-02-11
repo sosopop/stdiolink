@@ -70,4 +70,75 @@ DriverManagerScanner::ScanStats ServerManager::rescanDrivers(bool refreshMeta) {
     return stats;
 }
 
+ServerManager::ServiceRescanStats ServerManager::rescanServices(bool revalidateProjects,
+                                                                bool restartScheduling,
+                                                                bool stopInvalidProjects) {
+    ServiceRescanStats stats;
+    const QMap<QString, ServiceInfo> oldServices = m_services;
+
+    m_services = m_serviceScanner.scan(m_dataRoot + "/services", &stats.scanStats);
+
+    for (auto it = m_services.begin(); it != m_services.end(); ++it) {
+        const QString& id = it.key();
+        const ServiceInfo& cur = it.value();
+        auto oldIt = oldServices.find(id);
+        if (oldIt == oldServices.end()) {
+            stats.added++;
+            continue;
+        }
+
+        const ServiceInfo& prev = oldIt.value();
+        const bool changed = prev.name != cur.name
+                             || prev.version != cur.version
+                             || prev.serviceDir != cur.serviceDir
+                             || prev.rawConfigSchema != cur.rawConfigSchema;
+        if (changed) {
+            stats.updated++;
+        } else {
+            stats.unchanged++;
+        }
+    }
+
+    for (auto it = oldServices.begin(); it != oldServices.end(); ++it) {
+        if (!m_services.contains(it.key())) {
+            stats.removed++;
+        }
+    }
+
+    if (revalidateProjects) {
+        for (auto it = m_projects.begin(); it != m_projects.end(); ++it) {
+            Project& project = it.value();
+            const bool wasValid = project.valid;
+            const bool nowValid = m_projectManager.validateProject(project, m_services);
+            stats.revalidatedProjects++;
+
+            if (nowValid) {
+                if (!wasValid) {
+                    stats.becameValid++;
+                }
+                continue;
+            }
+
+            if (wasValid) {
+                stats.becameInvalid++;
+            } else {
+                stats.remainedInvalid++;
+            }
+            stats.invalidProjectIds.push_back(project.id);
+
+            if (stopInvalidProjects) {
+                m_scheduleEngine->stopProject(project.id);
+                m_instanceManager->terminateByProject(project.id);
+            }
+        }
+    }
+
+    if (restartScheduling) {
+        m_scheduleEngine->startAll(m_projects, m_services);
+        stats.schedulingRestarted = true;
+    }
+
+    return stats;
+}
+
 } // namespace stdiolink_server

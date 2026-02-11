@@ -48,6 +48,16 @@ stdiolink 是一个基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过
 - [多路事件监听](10-js-service/wait-any-binding.md) - waitAny() 异步多 Task 监听
 - [配置系统](10-js-service/config-schema.md) - config.schema.json 与 getConfig 配置管理
 
+### Server 管理器（stdiolink_server）
+
+- [Server 概述](11-server/README.md) - 管控面架构、生命周期模型、子系统总览
+- [快速入门](11-server/getting-started.md) - 启动配置、目录结构、命令行参数
+- [Service 扫描](11-server/service-scanner.md) - Service 目录约定与扫描机制
+- [Driver 扫描](11-server/driver-scanner.md) - Driver 元数据导出与失败隔离
+- [Project 管理](11-server/project-management.md) - Project 配置格式、验证、调度参数
+- [Instance 与调度](11-server/instance-and-schedule.md) - 实例生命周期与三种调度策略
+- [HTTP API 参考](11-server/http-api.md) - 完整的 REST API 接口文档
+
 ### 参考资料
 
 - [最佳实践](08-best-practices.md) - 设计模式、性能优化、安全建议

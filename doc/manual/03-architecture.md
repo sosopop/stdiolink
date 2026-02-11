@@ -8,6 +8,10 @@ stdiolink 采用三层架构设计：
 
 ```
 ┌─────────────────────────────────────────────────────┐
+│            Server 管控面 (stdiolink_server)           │
+│  ServiceScanner · ProjectManager · ScheduleEngine    │
+│  InstanceManager · HTTP API (QHttpServer)            │
+├─────────────────────────────────────────────────────┤
 │                   应用层 (Application)               │
 │         业务逻辑、命令处理器、UI 集成                  │
 ├─────────────────────────────────────────────────────┤
@@ -138,3 +142,4 @@ Host                              Driver
 - [Driver 端开发](05-driver/README.md) - 开发 Driver 程序
 - [Host 端开发](06-host/README.md) - 开发 Host 程序
 - [JS Service 运行时](10-js-service/README.md) - 使用 JS 脚本编排 Driver
+- [Server 管理器](11-server/README.md) - 服务编排与 HTTP API 管控

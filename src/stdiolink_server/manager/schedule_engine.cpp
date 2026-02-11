@@ -128,6 +128,15 @@ void ScheduleEngine::resumeProject(const QString& projectId) {
     m_consecutiveFailures.remove(projectId);
 }
 
+ScheduleEngine::ProjectRuntimeState ScheduleEngine::projectRuntimeState(const QString& projectId) const {
+    ProjectRuntimeState state;
+    state.shuttingDown = m_shuttingDown;
+    state.restartSuppressed = m_restartSuppressed.contains(projectId);
+    state.timerActive = m_timers.contains(projectId);
+    state.consecutiveFailures = m_consecutiveFailures.value(projectId, 0);
+    return state;
+}
+
 void ScheduleEngine::onInstanceFinished(const QString& instanceId,
                                         const QString& projectId,
                                         int exitCode,

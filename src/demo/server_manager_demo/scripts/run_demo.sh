@@ -28,14 +28,16 @@ find_bin_dir() {
     return 1
 }
 
-prepare_demo_driver() {
+copy_one_driver() {
     local bin_dir="$1"
-    local src="${bin_dir}/calculator_driver${EXE_SUFFIX}"
-    local dst_dir="${DATA_ROOT}/drivers/calculator_demo"
-    local dst="${dst_dir}/calculator_driver${EXE_SUFFIX}"
+    local src_name="$2"
+    local dst_name="$3"
+    local src="${bin_dir}/${src_name}${EXE_SUFFIX}"
+    local dst_dir="${DATA_ROOT}/drivers/${dst_name}"
+    local dst="${dst_dir}/${src_name}${EXE_SUFFIX}"
 
     if [[ ! -x "${src}" ]]; then
-        echo "[run_demo] calculator_driver not found, skip driver demo preparation"
+        echo "[run_demo] ${src_name} not found, skip"
         return 0
     fi
 
@@ -43,6 +45,14 @@ prepare_demo_driver() {
     cp -f "${src}" "${dst}"
     chmod +x "${dst}" || true
     echo "[run_demo] prepared demo driver: ${dst}"
+}
+
+prepare_demo_drivers() {
+    local bin_dir="$1"
+    copy_one_driver "${bin_dir}" "calculator_driver" "calculator_demo"
+    copy_one_driver "${bin_dir}" "driver_modbusrtu" "modbusrtu_demo"
+    copy_one_driver "${bin_dir}" "driver_modbustcp" "modbustcp_demo"
+    copy_one_driver "${bin_dir}" "driver_3dvision" "vision3d_demo"
 }
 
 BIN_DIR="$(find_bin_dir || true)"
@@ -59,7 +69,7 @@ if [[ ! -d "${DATA_ROOT}" ]]; then
     exit 1
 fi
 
-prepare_demo_driver "${BIN_DIR}"
+prepare_demo_drivers "${BIN_DIR}"
 
 DISPLAY_HOST="127.0.0.1"
 DISPLAY_PORT="18080"

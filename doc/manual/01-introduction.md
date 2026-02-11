@@ -101,9 +101,12 @@ Driver 可以通过元数据描述自己支持的命令、参数类型和约束�
 | 文档生成 | 自动生成 Markdown/OpenAPI/TypeScript 文档 |
 | JS Service 运行时 | 使用 JavaScript 脚本编排 Driver 调用 |
 | 配置系统 | 类型安全的外部配置参数管理 |
+| Server 管理器 | Service/Project/Instance 编排与 HTTP API 管控 |
+| 调度引擎 | 支持手动、定时、守护三种调度策略 |
 
 ## 下一步
 
 - [快速入门](02-quick-start.md) - 开始使用 stdiolink
 - [架构概述](03-architecture.md) - 深入了解系统架构
 - [JS Service 运行时](10-js-service/README.md) - 使用 JS 脚本编排 Driver
+- [Server 管理器](11-server/README.md) - 服务编排与 HTTP API 管控

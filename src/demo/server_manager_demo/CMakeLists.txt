@@ -24,3 +24,15 @@ endif()
 if(TARGET calculator_driver)
     add_dependencies(server_manager_demo_assets calculator_driver)
 endif()
+
+if(TARGET driver_modbusrtu)
+    add_dependencies(server_manager_demo_assets driver_modbusrtu)
+endif()
+
+if(TARGET driver_modbustcp)
+    add_dependencies(server_manager_demo_assets driver_modbustcp)
+endif()
+
+if(TARGET driver_3dvision)
+    add_dependencies(server_manager_demo_assets driver_3dvision)
+endif()

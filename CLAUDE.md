@@ -100,10 +100,11 @@ JS Service 运行时：QuickJS 引擎、模块加载、Driver/Task/Process/Confi
 
 ## Server API 速览
 
-`stdiolink_server` 当前注册 API（M38）：
+`stdiolink_server` 当前注册 API（M40）：
 
 - `GET /api/services`
 - `GET /api/services/{id}`
+- `POST /api/services/scan`
 - `GET /api/projects`
 - `POST /api/projects`
 - `GET /api/projects/{id}`
@@ -113,11 +114,16 @@ JS Service 运行时：QuickJS 引擎、模块加载、Driver/Task/Process/Confi
 - `POST /api/projects/{id}/start`
 - `POST /api/projects/{id}/stop`
 - `POST /api/projects/{id}/reload`
+- `GET /api/projects/{id}/runtime`
 - `GET /api/instances`
 - `POST /api/instances/{id}/terminate`
 - `GET /api/instances/{id}/logs`
 - `GET /api/drivers`
 - `POST /api/drivers/scan`
+
+后续 API 规划与 dashboard backlog 见：
+
+- `doc/todolist.md`
 
 ## 发布与打包
 
@@ -157,4 +163,5 @@ tools/publish_release.sh --with-tests
 
 - M1-M33：已落地（协议、元数据、Host/Driver、JS runtime 等）
 - M34-M38：已落地（Server 扫描、Project/Instance/Schedule、HTTP API）
-- M39：进行中（ServerManager 全链路 demo + 发布流程完善）
+- M39：已落地（ServerManager 全链路 demo + 发布脚本）
+- M40：已落地（Service 手动重扫 + Project runtime API）

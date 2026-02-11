@@ -19,6 +19,7 @@ private:
     QHttpServerResponse handleServiceList(const QHttpServerRequest& req);
     QHttpServerResponse handleServiceDetail(const QString& id,
                                             const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceScan(const QHttpServerRequest& req);
 
     QHttpServerResponse handleProjectList(const QHttpServerRequest& req);
     QHttpServerResponse handleProjectDetail(const QString& id,
@@ -36,6 +37,8 @@ private:
                                           const QHttpServerRequest& req);
     QHttpServerResponse handleProjectReload(const QString& id,
                                             const QHttpServerRequest& req);
+    QHttpServerResponse handleProjectRuntime(const QString& id,
+                                             const QHttpServerRequest& req);
 
     QHttpServerResponse handleInstanceList(const QHttpServerRequest& req);
     QHttpServerResponse handleInstanceTerminate(const QString& id,
