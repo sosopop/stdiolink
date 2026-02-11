@@ -103,9 +103,6 @@ API（只读对象）：
 
 - `SYSTEM.os`: 当前系统标识（`windows`/`macos`/`linux`）
 - `SYSTEM.arch`: CPU 架构（如 `x86_64` / `arm64`）
-- `SYSTEM.pathSep`: 路径分隔符（Windows 为 `\\`，其余为 `/`）
-- `SYSTEM.lineSep`: 换行符（Windows 为 `\r\n`，其余为 `\n`）
-- `SYSTEM.exeSuffix`: 可执行后缀（Windows 为 `.exe`，其余为空串）
 - `SYSTEM.isWindows/isMac/isLinux`: 平台布尔位
 
 另外补充“当前应用相关路径”（均为绝对路径，规范化输出）：
