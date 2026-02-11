@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StdioLink WebUI Prototype - Codex</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <div class="app-shell" id="appShell">
+    <header class="app-header">
+      <div class="header-left">
+        <button class="icon-btn header-btn" id="menuToggle" aria-label="Toggle sidebar">☰</button>
+        <div>
+          <div class="header-title">StdioLink Console</div>
+          <div class="header-subtitle" id="headerSubtitle">Dashboard / System overview</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="search-field header-search">
+          <span class="search-icon">⌕</span>
+          <input id="globalSearch" type="text" placeholder="Search services/projects... ( / )" aria-label="Global search">
+        </div>
+        <button class="icon-btn header-btn" id="shortcutBtn" title="快捷键 ?" aria-label="Show shortcuts">?</button>
+        <button class="icon-btn header-btn" aria-label="Notifications">🔔</button>
+        <button class="icon-btn header-btn" aria-label="User menu">MC</button>
+      </div>
+      <div class="top-progress" id="topProgress"></div>
+    </header>
+
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div class="brand-meta">
+          <div class="brand-title">StdioLink</div>
+          <div class="brand-sub">UI Prototype v1.1</div>
+        </div>
+      </div>
+      <nav class="side-nav" id="sideNav">
+        <button class="nav-item active" data-page="dashboard"><span class="ni">◫</span><span class="nl">Dashboard</span></button>
+        <button class="nav-item" data-page="projects"><span class="ni">▣</span><span class="nl">Projects</span></button>
+        <button class="nav-item" data-page="services"><span class="ni">◧</span><span class="nl">Services</span></button>
+        <button class="nav-item" data-page="service-detail"><span class="ni">☰</span><span class="nl">Service Detail</span></button>
+        <button class="nav-item" data-page="project-form"><span class="ni">✎</span><span class="nl">Project Form</span></button>
+        <button class="nav-item" data-page="instances"><span class="ni">▶</span><span class="nl">Instances</span></button>
+        <button class="nav-item" data-page="drivers"><span class="ni">⚙</span><span class="nl">Drivers</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="nav-item" data-page="settings"><span class="ni">⚑</span><span class="nl">Settings</span></button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div id="pageContainer" class="page-container"></div>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav">
+      <button class="bn-item active" data-page="dashboard">Dashboard</button>
+      <button class="bn-item" data-page="projects">Projects</button>
+      <button class="bn-item" data-page="services">Services</button>
+      <button class="bn-item" data-page="instances">Instances</button>
+      <button class="bn-item" data-page="drivers">Drivers</button>
+    </nav>
+  </div>
+
+  <div class="modal-root" id="logsModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="logs"></div>
+    <section class="modal-panel modal-xl" role="dialog" aria-modal="true" aria-label="Instance logs viewer">
+      <header class="modal-header">
+        <div>
+          <h3 id="logsTitle">Instance Logs</h3>
+          <p class="modal-sub" id="logsSub">inst-000 / project</p>
+        </div>
+        <div class="inline-actions">
+          <button class="btn btn-ghost">Download</button>
+          <button class="btn btn-secondary" id="logsRefreshBtn">Refresh</button>
+          <button class="icon-btn" data-close="logs" aria-label="Close">✕</button>
+        </div>
+      </header>
+      <div class="modal-body logs-layout">
+        <div class="log-viewer" id="logViewer"></div>
+        <aside class="logs-tools">
+          <label class="field">
+            <span>Log Level</span>
+            <select id="logLevelSelect">
+              <option value="all">All</option>
+              <option value="debug">Debug</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="error">Error</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Search</span>
+            <input id="logSearchInput" type="text" placeholder="Find in logs...">
+          </label>
+          <label class="switch">
+            <input id="autoScrollToggle" type="checkbox" checked>
+            <span>Auto scroll</span>
+          </label>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-root" id="shortcutModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="shortcut"></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+      <header class="modal-header compact">
+        <h3>Keyboard Shortcuts</h3>
+        <button class="icon-btn" data-close="shortcut" aria-label="Close">✕</button>
+      </header>
+      <div class="modal-body">
+        <table class="mini-table">
+          <tbody>
+            <tr><td>/</td><td>聚焦搜索框</td></tr>
+            <tr><td>Ctrl/Cmd + K</td><td>打开命令面板</td></tr>
+            <tr><td>Ctrl/Cmd + S</td><td>保存表单（Project Form）</td></tr>
+            <tr><td>Ctrl/Cmd + R</td><td>刷新当前页（原型模式）</td></tr>
+            <tr><td>Esc</td><td>关闭弹层 / 清空日志搜索</td></tr>
+            <tr><td>?</td><td>打开快捷键帮助</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-root" id="commandModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="command"></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-label="Command palette">
+      <header class="modal-header compact">
+        <h3>Command Palette</h3>
+        <button class="icon-btn" data-close="command" aria-label="Close">✕</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>Type a command</span>
+          <input id="commandInput" type="text" placeholder="Try: go projects / open logs / scan services">
+        </label>
+        <div class="command-list" id="commandList"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-root" id="confirmModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="confirm"></div>
+    <section class="modal-panel modal-sm" role="dialog" aria-modal="true" aria-label="Confirm dangerous action">
+      <header class="modal-header compact">
+        <h3 id="confirmTitle">Delete Project</h3>
+        <button class="icon-btn" data-close="confirm" aria-label="Close">✕</button>
+      </header>
+      <div class="modal-body">
+        <p id="confirmText">Are you sure?</p>
+        <div class="inline-actions right">
+          <button class="btn btn-secondary" data-close="confirm">Cancel</button>
+          <button class="btn btn-danger" id="confirmActionBtn">Delete</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toastRoot" class="toast-root" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -15,6 +15,20 @@
 - **异步任务模型**: Host 侧提供 Future/Promise 风格的 `Task` 句柄，支持 `waitAnyNext` 并发等待多个 Driver。
 - **自动文档与 UI**: 基于元数据自动生成 Markdown/OpenAPI 文档以及 UI 描述模型。
 
+### 设计目标
+1. **标准化与简易性**: 利用标准流 (stdin/stdout) 和 JSONL 建立统一通信规范，降低接入成本。
+2. **自描述与发现 (Self-Description)**: Driver 主动声明能力（命令、参数、事件），支持 Host 动态发现与校验。
+3. **开发体验优先**: 提供自动文档生成、Console 调试模式及 UI 描述模型，减少重复劳动。
+4. **灵活的运行模式**: 同时支持机器自动化的 StdIO 模式和人工交互的 Console 模式。
+
+### 架构分层
+- **协议层 (Protocol)**: 基于 stdin/stdout 的 JSONL 流，确保跨平台与无阻塞处理。
+- **模型层 (Host-Driver)**: 
+    - **Driver**: 独立进程，基于 `IMetaCommandHandler` 实现业务逻辑与元数据导出。
+    - **Host**: 进程管理器，提供 `Task` 异步句柄与 `waitAnyNext` 并发调度。
+- **元数据层 (Metadata)**: 定义命令 (`Command`)、参数 (`Field`) 与校验规则，驱动文档与 UI 生成。
+- **适配层 (Adapter)**: `stdiolink/console` 模块负责将命令行参数转换为协议标准 JSON 请求。
+
 ## 2. 技术栈
 - **语言**: C++17
 - **框架**: Qt5 (Core, Widgets)
