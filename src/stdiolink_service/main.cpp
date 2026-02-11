@@ -1,10 +1,18 @@
 #include <QCoreApplication>
+#include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QTextStream>
 #include <cstdio>
 
 #include "bindings/js_config.h"
+#include "bindings/js_constants.h"
+#include "bindings/js_path.h"
+#include "bindings/js_fs.h"
+#include "bindings/js_time.h"
+#include "bindings/js_http.h"
+#include "bindings/js_log.h"
+#include "bindings/js_process_async.h"
 #include "bindings/js_stdiolink_module.h"
 #include "bindings/js_wait_any_scheduler.h"
 #include "bindings/js_task_scheduler.h"
@@ -178,7 +186,29 @@ int main(int argc, char* argv[]) {
     JsConfigBinding::attachRuntime(engine.runtime());
     JsConfigBinding::setMergedConfig(engine.context(), mergedConfig);
 
+    JsConstantsBinding::attachRuntime(engine.runtime());
+    JsTimeBinding::attachRuntime(engine.runtime());
+    JsHttpBinding::attachRuntime(engine.runtime());
+    JsProcessAsyncBinding::attachRuntime(engine.runtime());
+    JsConstantsBinding::setPathContext(engine.context(), {
+        QCoreApplication::applicationFilePath(),
+        QCoreApplication::applicationDirPath(),
+        QDir::currentPath(),
+        parsed.serviceDir,
+        svcDir.entryPath(),
+        QFileInfo(svcDir.entryPath()).absolutePath(),
+        QDir::tempPath(),
+        QDir::homePath()
+    });
+
     engine.registerModule("stdiolink", jsInitStdiolinkModule);
+    engine.registerModule("stdiolink/constants", JsConstantsBinding::initModule);
+    engine.registerModule("stdiolink/path", JsPathBinding::initModule);
+    engine.registerModule("stdiolink/fs", JsFsBinding::initModule);
+    engine.registerModule("stdiolink/time", JsTimeBinding::initModule);
+    engine.registerModule("stdiolink/http", JsHttpBinding::initModule);
+    engine.registerModule("stdiolink/log", JsLogBinding::initModule);
+    engine.registerModule("stdiolink/process", JsProcessAsyncBinding::initModule);
     JsTaskScheduler scheduler(engine.context());
     WaitAnyScheduler waitAnyScheduler(engine.context());
     JsTaskScheduler::installGlobal(engine.context(), &scheduler);
@@ -186,8 +216,13 @@ int main(int argc, char* argv[]) {
 
     int ret = engine.evalFile(svcDir.entryPath());
 
-    // Drain pending jobs
-    while (scheduler.hasPending() || waitAnyScheduler.hasPending() || engine.hasPendingJobs()) {
+    // Drain pending jobs (scheduler + waitAny + QuickJS jobs + async bindings)
+    while (scheduler.hasPending() || waitAnyScheduler.hasPending()
+           || engine.hasPendingJobs()
+           || JsTimeBinding::hasPending(engine.context())
+           || JsHttpBinding::hasPending(engine.context())
+           || JsProcessAsyncBinding::hasPending(engine.context())) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         if (scheduler.hasPending()) {
             scheduler.poll(50);
         }

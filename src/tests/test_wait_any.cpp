@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QJsonObject>
 #include <gtest/gtest.h>
 #include <map>
@@ -134,4 +135,23 @@ TEST_F(WaitAnyTest, EventStream) {
 
     d1.terminate();
     d2.terminate();
+}
+
+TEST_F(WaitAnyTest, DriverExitWithoutTerminalDoesNotHangWaitAny) {
+    Driver d;
+    ASSERT_TRUE(d.start(m_driverPath));
+
+    QVector<Task> tasks;
+    tasks << d.request("exit_now");
+
+    AnyItem item;
+    QElapsedTimer timer;
+    timer.start();
+    const bool got = waitAnyNext(tasks, item, 1000);
+
+    EXPECT_FALSE(got);
+    EXPECT_TRUE(tasks[0].isDone());
+    EXPECT_EQ(tasks[0].exitCode(), 1001);
+    EXPECT_TRUE(tasks[0].errorText().contains("program="));
+    EXPECT_LT(timer.elapsed(), 500);
 }

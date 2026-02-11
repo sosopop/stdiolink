@@ -76,11 +76,11 @@ cmake --build build --parallel 8             # 增量构建
 
 ### `src/stdiolink/`
 
-核心库：协议、Driver 端、Host 端、Console、文档生成。
+核心库：协议、Driver 端、Host 端（含进程早退快速失败机制）、Console、文档生成。
 
 ### `src/stdiolink_service/`
 
-JS Service 运行时：QuickJS 引擎、模块加载、Driver/Task/Process/Config 绑定、配置校验、代理与调度。
+JS Service 运行时：QuickJS 引擎、模块加载、C++ 绑定（Driver/Task/Process/Config/Constants/Path/Fs/Time/Http/Log/ProcessAsync）、配置校验、代理与调度。
 
 ### `src/stdiolink_server/`
 
@@ -165,3 +165,11 @@ tools/publish_release.sh --with-tests
 - M34-M38：已落地（Server 扫描、Project/Instance/Schedule、HTTP API）
 - M39：已落地（ServerManager 全链路 demo + 发布脚本）
 - M40：已落地（Service 手动重扫 + Project runtime API）
+- M41：已落地（JS Constants & Config deep freeze 绑定）
+- M42：已落地（JS Path 绑定）
+- M43：已落地（JS Fs 绑定）
+- M44：已落地（JS Time 绑定）
+- M45：已落地（JS Http 绑定）
+- M46：已落地（JS Log 绑定）
+- M47：已落地（JS Process Async 绑定：execAsync / spawn）
+- M48：已落地（openDriver options 增强：profilePolicy / startupArgs / env）

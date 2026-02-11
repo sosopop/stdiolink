@@ -16,6 +16,9 @@ public:
                 r.event(0, QJsonObject{{"step", i}});
             }
             r.done(0, QJsonObject{{"total", steps}});
+        } else if (cmd == "exit_now") {
+            // Simulate a driver that exits before sending terminal response.
+            QCoreApplication::exit(0);
         } else {
             r.error(404, QJsonObject{{"message", "unknown command"}});
         }

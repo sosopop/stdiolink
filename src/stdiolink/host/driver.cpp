@@ -39,6 +39,18 @@ bool Driver::isRunning() const {
     return m_proc.state() == QProcess::Running;
 }
 
+QString Driver::exitContext() const {
+    const QString program = m_proc.program().isEmpty() ? QStringLiteral("<unknown>")
+                                                       : m_proc.program();
+    const bool notRunning = m_proc.state() == QProcess::NotRunning;
+    const int exitCode = notRunning ? m_proc.exitCode() : -1;
+    const QString exitStatus = notRunning
+                                   ? (m_proc.exitStatus() == QProcess::CrashExit ? "crash" : "normal")
+                                   : "running";
+    return QStringLiteral("program=%1, exitCode=%2, exitStatus=%3")
+        .arg(program, QString::number(exitCode), exitStatus);
+}
+
 Task Driver::request(const QString& cmd, const QJsonObject& data) {
     m_cur = std::make_shared<TaskState>();
 
@@ -49,8 +61,23 @@ Task Driver::request(const QString& cmd, const QJsonObject& data) {
 
     QByteArray line = QJsonDocument(req).toJson(QJsonDocument::Compact);
     line.append('\n');
-    m_proc.write(line);
-    m_proc.waitForBytesWritten(1000);
+    const qint64 written = m_proc.write(line);
+    if (written < 0) {
+        pushError(1001, QJsonObject{
+                            {"message", "failed to write request: " + exitContext()},
+                        });
+    } else {
+        // Best-effort flush: avoid blocking up to 1s when process is already gone.
+        if (m_proc.state() == QProcess::Running) {
+            m_proc.waitForBytesWritten(10);
+        }
+        if (m_proc.state() != QProcess::Running && !m_cur->terminal) {
+            pushError(1001, QJsonObject{
+                                {"message", "driver process exited while sending request: "
+                                                + exitContext()},
+                            });
+        }
+    }
 
     m_buf.clear();
 

@@ -53,6 +53,11 @@ QString calculatorDriverPath() {
         QCoreApplication::applicationDirPath(), "calculator_driver");
 }
 
+QString slowMetaDriverPath() {
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "test_slow_meta_driver");
+}
+
 } // namespace
 
 TEST(JsTaskSchedulerTest, InitiallyEmpty) {
@@ -380,4 +385,243 @@ TEST_F(JsProxyTest, CloseTerminatesDriver) {
     EXPECT_EQ(runScript(scriptPath), 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "runningBefore"), 1);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "runningAfter"), 0);
+}
+
+// ── M48: profilePolicy tests ──
+
+TEST_F(JsProxyTest, ProfilePolicyAutoInjectsKeepaliveWhenMissing) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "profile_auto_inject.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1');\n"
+                "  const r1 = await calc.add({ a: 1, b: 2 });\n"
+                "  const r2 = await calc.add({ a: 3, b: 4 });\n"
+                "  globalThis.ok = (r1.result === 3 && r2.result === 7) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, ProfilePolicyForceKeepaliveOverridesExistingProfile) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "profile_force_keepalive.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1', ['--profile=oneshot'], {\n"
+                "    profilePolicy: 'force-keepalive'\n"
+                "  });\n"
+                "  const r1 = await calc.add({ a: 1, b: 2 });\n"
+                "  const r2 = await calc.add({ a: 3, b: 4 });\n"
+                "  globalThis.forceOk = (r1.result === 3 && r2.result === 7) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "forceOk"), 1);
+}
+
+TEST_F(JsProxyTest, ProfilePolicyPreservePassesArgsThroughUnchanged) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    // preserve with explicit --profile=keepalive: args pass through unchanged,
+    // so two commands should succeed (proving preserve didn't strip the profile).
+    const QString scriptPath = writeScript(
+        m_tmpDir, "profile_preserve.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1', ['--profile=keepalive'], {\n"
+                "    profilePolicy: 'preserve'\n"
+                "  });\n"
+                "  const r1 = await calc.add({ a: 1, b: 2 });\n"
+                "  const r2 = await calc.add({ a: 3, b: 4 });\n"
+                "  globalThis.preserveOk = (r1.result === 3 && r2.result === 7) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "preserveOk"), 1);
+}
+
+// ── M48: metaTimeoutMs tests ──
+
+TEST_F(JsProxyTest, MetaTimeoutMsCustomValueWorks) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "meta_timeout_custom.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const calc = await openDriver('%1', [], { metaTimeoutMs: 10000 });\n"
+                "  const r = await calc.add({ a: 10, b: 20 });\n"
+                "  globalThis.metaOk = (r.result === 30) ? 1 : 0;\n"
+                "  calc.$close();\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "metaOk"), 1);
+}
+
+TEST_F(JsProxyTest, MetaTimeoutMsTooSmallCausesOpenDriverReject) {
+    const QString driverPath = slowMetaDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "meta_timeout_reject.js",
+        QString("import { openDriver } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  let caught = 0;\n"
+                "  try {\n"
+                "    await openDriver('%1', ['--meta-delay-ms=3000'], {\n"
+                "      metaTimeoutMs: 100\n"
+                "    });\n"
+                "  } catch (e) {\n"
+                "    caught = String(e).includes('metadata') || String(e).includes('timeoutMs') ? 1 : 0;\n"
+                "  }\n"
+                "  globalThis.timeoutCaught = caught;\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "timeoutCaught"), 1);
+}
+
+// ── M48: parameter validation tests ──
+
+TEST_F(JsProxyTest, OpenDriverOptionsNotObjectThrowsTypeError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir, "opts_not_object.js",
+        "import { openDriver } from 'stdiolink';\n"
+        "(async () => {\n"
+        "  let caught = 0;\n"
+        "  try {\n"
+        "    await openDriver('dummy', [], 'bad');\n"
+        "  } catch (e) {\n"
+        "    caught = (e instanceof TypeError) ? 1 : 0;\n"
+        "  }\n"
+        "  globalThis.optsErr = caught;\n"
+        "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "optsErr"), 1);
+}
+
+TEST_F(JsProxyTest, OpenDriverOptionsUnknownKeyThrowsTypeError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir, "opts_unknown_key.js",
+        "import { openDriver } from 'stdiolink';\n"
+        "(async () => {\n"
+        "  let caught = 0;\n"
+        "  try {\n"
+        "    await openDriver('dummy', [], { foo: 1 });\n"
+        "  } catch (e) {\n"
+        "    caught = (e instanceof TypeError && String(e).includes('foo')) ? 1 : 0;\n"
+        "  }\n"
+        "  globalThis.unknownKey = caught;\n"
+        "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "unknownKey"), 1);
+}
+
+TEST_F(JsProxyTest, OpenDriverInvalidProfilePolicyThrowsTypeError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir, "opts_bad_profile.js",
+        "import { openDriver } from 'stdiolink';\n"
+        "(async () => {\n"
+        "  let caught = 0;\n"
+        "  try {\n"
+        "    await openDriver('dummy', [], { profilePolicy: 'bogus' });\n"
+        "  } catch (e) {\n"
+        "    caught = (e instanceof TypeError) ? 1 : 0;\n"
+        "  }\n"
+        "  globalThis.badProfile = caught;\n"
+        "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "badProfile"), 1);
+}
+
+TEST_F(JsProxyTest, OpenDriverInvalidMetaTimeoutThrowsRangeError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir, "opts_bad_timeout.js",
+        "import { openDriver } from 'stdiolink';\n"
+        "(async () => {\n"
+        "  let negCaught = 0, nanCaught = 0, fracCaught = 0;\n"
+        "  try { await openDriver('d', [], { metaTimeoutMs: -1 }); }\n"
+        "  catch (e) { negCaught = (e instanceof RangeError) ? 1 : 0; }\n"
+        "  try { await openDriver('d', [], { metaTimeoutMs: NaN }); }\n"
+        "  catch (e) { nanCaught = (e instanceof RangeError) ? 1 : 0; }\n"
+        "  try { await openDriver('d', [], { metaTimeoutMs: 1.5 }); }\n"
+        "  catch (e) { fracCaught = (e instanceof RangeError) ? 1 : 0; }\n"
+        "  globalThis.negCaught = negCaught;\n"
+        "  globalThis.nanCaught = nanCaught;\n"
+        "  globalThis.fracCaught = fracCaught;\n"
+        "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "negCaught"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "nanCaught"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "fracCaught"), 1);
+}
+
+TEST_F(JsProxyTest, OpenDriverArgsNotArrayThrowsTypeError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir, "args_not_array.js",
+        "import { openDriver } from 'stdiolink';\n"
+        "(async () => {\n"
+        "  let caught = 0;\n"
+        "  try {\n"
+        "    await openDriver('dummy', 123);\n"
+        "  } catch (e) {\n"
+        "    caught = (e instanceof TypeError) ? 1 : 0;\n"
+        "  }\n"
+        "  globalThis.argsErr = caught;\n"
+        "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "argsErr"), 1);
+}
+
+TEST_F(JsProxyTest, OpenDriverMetaTimeoutMsNotNumberThrowsTypeError) {
+    const QString scriptPath = writeScript(
+        m_tmpDir, "timeout_not_number.js",
+        "import { openDriver } from 'stdiolink';\n"
+        "(async () => {\n"
+        "  let caught = 0;\n"
+        "  try {\n"
+        "    await openDriver('dummy', [], { metaTimeoutMs: 'fast' });\n"
+        "  } catch (e) {\n"
+        "    caught = (e instanceof TypeError) ? 1 : 0;\n"
+        "  }\n"
+        "  globalThis.typeErr = caught;\n"
+        "})();\n");
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "typeErr"), 1);
 }

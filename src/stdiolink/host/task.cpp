@@ -66,10 +66,17 @@ bool Task::waitNext(Message& out, int timeoutMs) {
 
     QEventLoop loop;
     QTimer timer;
+    auto exitedMsg = [&] {
+        return QStringLiteral("driver process exited without sending a response: %1")
+            .arg(m_drv ? m_drv->exitContext() : QStringLiteral("program=<unknown>, exitCode=-1, exitStatus=unknown"));
+    };
 
     auto quitIfReady = [&] {
         if (m_drv)
             m_drv->pumpStdout();
+        if (!hasQueued() && !isDone() && m_drv && !m_drv->isRunning()) {
+            forceTerminal(1001, exitedMsg());
+        }
         if (hasQueued() || isDone())
             loop.quit();
     };
@@ -77,6 +84,15 @@ bool Task::waitNext(Message& out, int timeoutMs) {
     QObject::connect(m_drv->process(), &QProcess::readyReadStandardOutput, &loop, quitIfReady);
     QObject::connect(m_drv->process(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                      &loop, quitIfReady);
+
+    // Pre-check: 进程可能在建立连接前已退出，此时 finished 信号不会再触发
+    if (!m_drv->isRunning()) {
+        m_drv->pumpStdout();
+        if (tryNext(out))
+            return true;
+        forceTerminal(1001, exitedMsg());
+        return false;
+    }
 
     if (timeoutMs >= 0) {
         timer.setSingleShot(true);

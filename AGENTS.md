@@ -21,7 +21,7 @@
 
 - `build.bat` or `build.bat Release`: configure/build with CMake + Ninja (Windows).
 - `./build.sh` or `./build.sh Release`: configure/build with CMake + Ninja (macOS/Linux).
-- `./build/bin/stdiolink_tests.exe`: run all tests.
+- `./build/bin/stdiolink_tests`: run all tests (Windows binary may be `stdiolink_tests.exe`).
 - `python ./tools/run-clang-tidy.py -p build -j 8 -quiet -config-file .clang-tidy`: static analysis.
 - `./tools/publish_release.sh --build-dir build --output-dir release`: package compiled artifacts and demo assets into a release directory.
 
@@ -37,6 +37,7 @@
 - Framework: GoogleTest. Tests live in `src/tests/` and follow `test_*.cpp` naming.
 - Add unit tests for protocol/meta serialization, validation, and host/driver utilities.
 - For `stdiolink_service` changes, add/extend tests covering config validation, JS engine bindings, and proxy/scheduler behavior.
+- For `src/stdiolink/host/` request lifecycle changes, add/extend regression tests that cover driver early-exit during `waitNext/waitAnyNext` (see `test_host_driver.cpp`, `test_wait_any.cpp`).
 - Prefer focused tests with clear assertions; cover edge cases (invalid input, boundary values).
 
 ## Commit & Pull Request Guidelines

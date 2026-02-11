@@ -2,6 +2,7 @@
 
 #include <QHash>
 #include "utils/js_convert.h"
+#include "utils/js_freeze.h"
 
 namespace stdiolink_service {
 
@@ -23,22 +24,6 @@ ConfigState& stateFor(JSContext* ctx) {
     return s_configStates[runtimeKey(ctx)];
 }
 
-JSValue freezeObject(JSContext* ctx, JSValue obj) {
-    JSValue global = JS_GetGlobalObject(ctx);
-    JSValue objectCtor = JS_GetPropertyStr(ctx, global, "Object");
-    JSValue freezeFn = JS_GetPropertyStr(ctx, objectCtor, "freeze");
-    JSValue result = JS_Call(ctx, freezeFn, objectCtor, 1, &obj);
-    JS_FreeValue(ctx, freezeFn);
-    JS_FreeValue(ctx, objectCtor);
-    JS_FreeValue(ctx, global);
-    if (JS_IsException(result)) {
-        JS_FreeValue(ctx, result);
-        return obj;
-    }
-    JS_FreeValue(ctx, result);
-    return obj;
-}
-
 void clearCachedConfig(ConfigState& state) {
     if (!JS_IsUndefined(state.cachedConfigJs) && state.ownerCtx) {
         JS_FreeValue(state.ownerCtx, state.cachedConfigJs);
@@ -51,7 +36,7 @@ JSValue jsGetConfig(JSContext* ctx, JSValueConst, int, JSValueConst*) {
     auto& state = stateFor(ctx);
     if (JS_IsUndefined(state.cachedConfigJs)) {
         JSValue configJs = qjsonObjectToJsValue(ctx, state.mergedConfig);
-        state.cachedConfigJs = freezeObject(ctx, configJs);
+        state.cachedConfigJs = deepFreezeObject(ctx, configJs);
         state.ownerCtx = ctx;
     }
     return JS_DupValue(ctx, state.cachedConfigJs);

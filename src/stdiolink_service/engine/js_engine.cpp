@@ -5,7 +5,11 @@
 #include <QLoggingCategory>
 #include <quickjs.h>
 #include "bindings/js_config.h"
+#include "bindings/js_constants.h"
+#include "bindings/js_time.h"
+#include "bindings/js_http.h"
 #include "bindings/js_driver.h"
+#include "bindings/js_process_async.h"
 #include "bindings/js_task.h"
 #include "module_loader.h"
 
@@ -35,6 +39,10 @@ JsEngine::~JsEngine() {
     JsDriverBinding::detachRuntime(oldRt);
     JsTaskBinding::detachRuntime(oldRt);
     stdiolink_service::JsConfigBinding::detachRuntime(oldRt);
+    stdiolink_service::JsConstantsBinding::detachRuntime(oldRt);
+    stdiolink_service::JsTimeBinding::detachRuntime(oldRt);
+    stdiolink_service::JsHttpBinding::detachRuntime(oldRt);
+    stdiolink_service::JsProcessAsyncBinding::detachRuntime(oldRt);
     if (m_ctx) {
         JS_FreeContext(m_ctx);
         m_ctx = nullptr;

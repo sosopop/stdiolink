@@ -33,6 +33,7 @@ public:
 
     QProcess* process() { return &m_proc; }
     bool isRunning() const;
+    QString exitContext() const;
     bool hasQueued() const;
     bool isCurrentTerminal() const;
 

@@ -59,6 +59,15 @@ bool waitAnyNext(QVector<Task>& tasks, AnyItem& out, int timeoutMs,
                 t.owner()->pumpStdout();
             }
         }
+        // 进程已退出但未收到 terminal 响应 → forceTerminal
+        for (auto& t : tasks) {
+            if (t.isValid() && !t.isDone() && !t.hasQueued()
+                && t.owner() && !t.owner()->isRunning()) {
+                t.forceTerminal(1001, QStringLiteral(
+                                           "driver process exited without sending a response: %1")
+                                           .arg(t.owner()->exitContext()));
+            }
+        }
         // 检查是否有消息或全部完成
         for (const auto& t : tasks) {
             if (t.hasQueued()) {
@@ -83,6 +92,33 @@ bool waitAnyNext(QVector<Task>& tasks, AnyItem& out, int timeoutMs,
             connections.append(conn1);
             connections.append(conn2);
         }
+    }
+
+    // Pre-check: 进程可能在建立连接前已退出，此时 finished 信号不会再触发
+    for (auto& t : tasks) {
+        if (t.isValid() && !t.isDone() && t.owner() && !t.owner()->isRunning()) {
+            t.owner()->pumpStdout();
+            if (!t.hasQueued()) {
+                t.forceTerminal(1001, QStringLiteral(
+                                           "driver process exited without sending a response: %1")
+                                           .arg(t.owner()->exitContext()));
+            }
+        }
+    }
+    for (int i = 0; i < tasks.size(); ++i) {
+        Message m;
+        if (tasks[i].tryNext(m)) {
+            out.taskIndex = i;
+            out.msg = std::move(m);
+            for (const auto& conn : connections)
+                QObject::disconnect(conn);
+            return true;
+        }
+    }
+    if (allDone()) {
+        for (const auto& conn : connections)
+            QObject::disconnect(conn);
+        return false;
     }
 
     // 设置超时

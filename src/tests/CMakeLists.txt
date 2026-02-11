@@ -32,6 +32,13 @@ set(TEST_SOURCES
     test_service_args.cpp
     test_service_config_validator.cpp
     test_service_config_js.cpp
+    test_constants_binding.cpp
+    test_path_binding.cpp
+    test_fs_binding.cpp
+    test_time_binding.cpp
+    test_http_binding.cpp
+    test_log_binding.cpp
+    test_process_async_binding.cpp
     test_service_manifest.cpp
     test_service_directory.cpp
     test_service_loader.cpp
@@ -54,6 +61,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/engine/console_bridge.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/engine/module_loader.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/utils/js_convert.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/utils/js_freeze.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_task.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_driver.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_process.cpp
@@ -61,6 +69,13 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_wait_any_scheduler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_stdiolink_module.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_constants.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_path.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_fs.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_time.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_http.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_log.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_process_async.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_schema.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_args.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_validator.cpp
@@ -144,3 +159,25 @@ set_target_properties(test_service_stub PROPERTIES
 )
 
 add_dependencies(stdiolink_tests test_service_stub)
+
+# test_process_async_stub (用于异步进程绑定测试的桩进程)
+add_executable(test_process_async_stub test_process_async_stub_main.cpp)
+
+target_link_libraries(test_process_async_stub PRIVATE Qt6::Core)
+
+set_target_properties(test_process_async_stub PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_process_async_stub)
+
+# test_slow_meta_driver (用于 M48 metaTimeoutMs 测试的慢元数据驱动)
+add_executable(test_slow_meta_driver test_slow_meta_driver_main.cpp)
+
+target_link_libraries(test_slow_meta_driver PRIVATE stdiolink)
+
+set_target_properties(test_slow_meta_driver PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_slow_meta_driver)

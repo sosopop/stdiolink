@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QJsonObject>
 #include <gtest/gtest.h>
 #include "stdiolink/host/driver.h"
@@ -189,4 +190,40 @@ TEST_F(DriverIntegrationTest, MultipleEvents) {
     EXPECT_EQ(messages.back().status, "done");
 
     d.terminate();
+}
+
+TEST_F(DriverIntegrationTest, WaitNextFastFailsWhenDriverExitsWithoutTerminal) {
+    Driver d;
+    ASSERT_TRUE(d.start(m_driverPath));
+
+    Task t = d.request("exit_now");
+    QElapsedTimer timer;
+    timer.start();
+
+    Message msg;
+    const bool got = t.waitNext(msg, 1000);
+
+    EXPECT_FALSE(got);
+    EXPECT_TRUE(t.isDone());
+    EXPECT_EQ(t.exitCode(), 1001);
+    EXPECT_TRUE(t.errorText().contains("program="));
+    EXPECT_LT(timer.elapsed(), 900);
+}
+
+TEST_F(DriverIntegrationTest, RequestAfterTerminateReturnsErrorWithoutLongBlock) {
+    Driver d;
+    ASSERT_TRUE(d.start(m_driverPath));
+    d.terminate();
+
+    QElapsedTimer timer;
+    timer.start();
+    Task t = d.request("echo", QJsonObject{{"msg", "x"}});
+    const qint64 requestElapsedMs = timer.elapsed();
+
+    Message msg;
+    EXPECT_TRUE(t.waitNext(msg, 100));
+    EXPECT_EQ(msg.status, "error");
+    EXPECT_EQ(msg.code, 1001);
+    EXPECT_TRUE(msg.payload.toObject().value("message").toString().contains("program="));
+    EXPECT_LT(requestElapsedMs, 200);
 }

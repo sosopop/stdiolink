@@ -39,6 +39,17 @@
   - 返回计数：`serviceCount`、`projectCount`（valid/invalid）、`instanceCount`、`driverCount`
   - 用于容器探针、监控接入、负载均衡探活
 
+### Driver 进程提前退出的快速失败（M48 复盘项，范围已收敛）
+
+- 已修复：
+  - `js_driver.cpp:154` — `jsDriverRequest()` 发送前 `isRunning()` 检查（主路径快速失败）
+  - `task.cpp` — `waitNext` 的 `quitIfReady` 增加进程退出检测 + `forceTerminal`；建立信号连接后增加 pre-check
+  - `wait_any.cpp` — `waitAnyNext` 的 `quitIfReady` 增加同等逻辑 + 连接后 pre-check
+- 已完成收口：
+  - `forceTerminal` 错误信息已带上下文（`program`、`exitCode`、`exitStatus`）
+  - 新增专用回归测试覆盖 `waitNext/waitAnyNext` 等待期间 driver 提前退出
+  - `Driver::request()` 发送路径从固定 `1000ms` 阻塞改为短时 best-effort 刷新，并在发送失败/发送中退出时立即产出错误终态
+
 ---
 
 ## P1（中优先级，增强管理效率）
