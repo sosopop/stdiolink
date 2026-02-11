@@ -10,7 +10,8 @@ demo/
 ├── calculator_driver/      # 计算器 Driver
 ├── file_processor_driver/  # 文件处理 Driver
 ├── device_simulator_driver/# 设备模拟 Driver
-└── js_runtime_demo/         # JS runtime (M21-M27) 演示脚本
+├── js_runtime_demo/         # JS runtime (M21-M27) 演示脚本
+└── server_manager_demo/     # server manager (M34-M38) 演示资产
 ```
 
 ## Demo 说明
@@ -68,6 +69,16 @@ demo/
 - `exec` 进程调用
 - `--export-doc=ts` 类型声明导出
 
+### server_manager_demo
+
+`stdiolink_server` 的全链路演示资产，覆盖 M34-M38：
+
+- Service 扫描
+- Project CRUD/validate/start/stop/reload
+- Instance 列表/终止/日志
+- Driver 扫描与 meta 刷新
+- `manual` / `fixed_rate` / `daemon` 调度行为
+
 ## 运行方式
 
 ```bash
@@ -80,6 +91,10 @@ demo/
 
 # 运行 JS runtime 综合演示（构建后服务目录会复制到 bin/js_runtime_demo）
 ./build/bin/stdiolink_service.exe ./build/bin/js_runtime_demo/services/basic_demo
+
+# 运行 server manager demo
+bash ./build/bin/server_manager_demo/scripts/run_demo.sh
+bash ./build/bin/server_manager_demo/scripts/api_smoke.sh
 ```
 
 ## 功能覆盖

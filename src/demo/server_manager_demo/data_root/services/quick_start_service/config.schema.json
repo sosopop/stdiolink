@@ -1,0 +1,24 @@
+{
+  "mode": {
+    "type": "enum",
+    "default": "normal",
+    "constraints": {
+      "enumValues": [
+        "normal",
+        "crash"
+      ]
+    }
+  },
+  "runMs": {
+    "type": "int",
+    "default": 300,
+    "constraints": {
+      "min": 0,
+      "max": 60000
+    }
+  },
+  "message": {
+    "type": "string",
+    "default": "hello"
+  }
+}

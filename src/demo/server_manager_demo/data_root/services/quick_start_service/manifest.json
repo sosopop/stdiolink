@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "quick_start_service",
+  "name": "Quick Start Service",
+  "version": "1.0.0",
+  "description": "Service used by server_manager_demo projects"
+}
