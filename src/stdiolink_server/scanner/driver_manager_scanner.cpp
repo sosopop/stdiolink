@@ -1,5 +1,6 @@
 #include "driver_manager_scanner.h"
 
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDebug>
 #include <QDir>
@@ -80,6 +81,18 @@ bool DriverManagerScanner::tryExportMeta(const QString& executable,
     QProcess proc;
     proc.setProgram(executable);
     proc.setArguments({"--export-meta=" + metaPath});
+    
+    // Add application directory to PATH so driver can find Qt DLLs
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString appDir = QCoreApplication::applicationDirPath();
+    QString pathValue = env.value("PATH");
+    if (!pathValue.isEmpty()) {
+        env.insert("PATH", appDir + ";" + pathValue);
+    } else {
+        env.insert("PATH", appDir);
+    }
+    proc.setProcessEnvironment(env);
+    
     proc.start();
     if (!proc.waitForFinished(kExportTimeoutMs)) {
         proc.kill();
