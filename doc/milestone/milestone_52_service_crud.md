@@ -115,13 +115,17 @@ driver.close();
 
 ### 3.2 `DELETE /api/services/{id}` — 删除 Service
 
-请求体（可选）：
+查询参数：
 
-```json
-{
-  "force": false
-}
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `force` | bool | 是否强制删除（默认 false） |
+
 ```
+DELETE /api/services/my-service?force=true
+```
+
+> **设计决策**：`force` 使用查询参数而非请求体。部分 HTTP 客户端和代理对 DELETE 请求体的支持不一致（RFC 9110 允许但不鼓励），查询参数更可靠。
 
 前置检查：
 
@@ -140,10 +144,10 @@ driver.close();
 新增 public 方法：
 
 ```cpp
-std::optional<ServiceInfo> loadSingle(const QString& serviceDir) const;
+std::optional<ServiceInfo> loadSingle(const QString& serviceDir, QString& error) const;
 ```
 
-复用已有 `loadService()` 的逻辑，不执行目录扫描，仅加载指定目录的 Service。创建 Service 后优先调用此方法加载到内存，避免全量 `scan()`。
+复用已有 `loadService()` 的逻辑，不执行目录扫描，仅加载指定目录的 Service。创建 Service 后优先调用此方法加载到内存，避免全量 `scan()`。`error` 参数用于返回加载失败的具体原因（如 manifest 格式错误），便于 API 层返回有意义的错误信息。
 
 如不希望暴露 `loadSingle()`，可退回到调用 `ServiceScanner::scan()` 全量重扫，保证方案可落地。
 
@@ -166,7 +170,7 @@ std::optional<ServiceInfo> loadSingle(const QString& serviceDir) const;
 10. 返回 201 响应
 ```
 
-任何步骤失败时回滚（删除已创建的目录）。
+任何步骤失败时回滚：递归删除已创建的目录（`QDir(serviceDir).removeRecursively()`）。回滚本身失败时记录 warning 日志但不影响错误响应返回。
 
 ### 4.2 manifest.json 生成
 
@@ -194,10 +198,10 @@ bool isValidServiceId(const QString& id) {
 ### 4.4 Service 删除流程
 
 ```
-1. 检查 Service 存在性（内存 m_services）
+1. 检查 Service 存在性（内存 m_services + 文件系统目录）
 2. 查找关联 Project
-3. 非 force 且有关联 → 409
-4. force 时：标记关联 Project invalid + 设 error
+3. 非 force 且有关联 → 409（响应体列出关联 Project ID）
+4. force 时：标记关联 Project invalid + 设 error 信息
 5. 递归删除 data_root/services/{id}/ 目录
 6. 从 m_services 移除
 7. 返回 204

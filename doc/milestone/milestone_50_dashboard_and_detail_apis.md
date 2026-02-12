@@ -66,7 +66,7 @@ WebUI Dashboard 需要展示系统状态汇总（Service/Project/Instance/Driver
 - `counts`：遍历内存中的 services/projects/instances/drivers 统计
 - `system.platform`：`QSysInfo::productType()` + `QSysInfo::currentCpuArchitecture()`
 - `system.cpuCores`：`QThread::idealThreadCount()`
-- `system.totalMemoryBytes`：暂不实现（需平台相关 API），首版返回 0 或省略
+- `system.totalMemoryBytes`：使用平台 API 获取（Linux: `sysinfo()`，macOS: `sysctl(HW_MEMSIZE)`，Windows: `GlobalMemoryStatusEx()`）。如跨平台实现复杂度过高，首版可省略此字段，在 M56 ProcessMonitor 中统一处理
 - 注意：不含 `serverCpuPercent`/`serverMemoryRssBytes`（自身资源采集归入 M56 ProcessMonitor）
 - 注意：不含 `driverlabConnections`（归入 M55 DriverLab WebSocket）
 
@@ -206,7 +206,7 @@ server.route("/api/drivers/<arg>", QHttpServerRequest::Method::Get,
              });
 ```
 
-注意：`GET /api/instances/<arg>` 可能与已有的 `POST /api/instances/<arg>/terminate` 和 `GET /api/instances/<arg>/logs` 路由冲突，需确认 QHttpServer 按方法+路径精确匹配的行为。如有冲突，调整路由注册顺序（长路径优先）。
+注意：QHttpServer Router 按规则列表顺序遍历、首次命中即返回（见 `QHttpServerRouter::handleRequest` 实现）。`/api/instances/<arg>/terminate` 和 `/api/instances/<arg>/logs` 路径更长，且 HTTP 方法不同（POST / GET），只要在 `/api/instances/<arg>` GET 之前注册即可避免被吞掉。建议保持现有注册顺序：先注册子路由（terminate、logs），再注册 `GET /api/instances/<arg>`。
 
 ### 4.4 DriverMeta JSON 序列化
 
@@ -271,7 +271,7 @@ server.route("/api/drivers/<arg>", QHttpServerRequest::Method::Get,
 ## 7. 风险与控制
 
 - **风险 1**：`GET /api/instances/<arg>` 与已有子路由的注册顺序问题
-  - 控制：在 QHttpServer 中，更长的精确路径优先匹配；确保 `/api/instances/<arg>/terminate` 和 `/api/instances/<arg>/logs` 在 `/api/instances/<arg>` 之前注册
+  - 控制：QHttpServer Router 按注册顺序遍历、首次命中返回。必须先注册更长的子路由（`/terminate`、`/logs`），再注册 `GET /api/instances/<arg>`，否则短路由会吞掉子路由请求。增加回归测试确认
 - **风险 2**：`DriverMeta::toJson()` 缺失或不完整
   - 控制：检查现有 `DriverMeta` 序列化实现，必要时补充
 - **风险 3**：system 信息获取的跨平台差异

@@ -71,6 +71,8 @@ Qt 6.8+ 的 `QAbstractHttpServer::addWebSocketUpgradeVerifier()` 原生支持 We
 
 `exec` 消息转发逻辑：将 `{"cmd":"read_register","data":{"address":100}}` 写入 Driver stdin。
 
+`cancel` 语义：关闭 Driver 进程的 stdin（`QProcess::closeWriteChannel()`），使 Driver 感知到输入结束并自行退出。不发送 SIGINT/SIGTERM，因为 Driver 协议层没有"取消"语义，关闭 stdin 是最安全的中断方式。KeepAlive 模式下 cancel 会导致 Driver 退出并关闭 WebSocket；OneShot 模式下 Driver 退出后等待下一条 exec 自动重启。
+
 ### 3.5 连接参数
 
 ```
@@ -139,6 +141,10 @@ private:
     QVector<DriverLabWsConnection*> m_connections;
 
     // verifier 回调中暂存参数，onNewWebSocketConnection 中取用
+    // 注意：依赖 verifier 回调和 newWebSocketConnection 信号的 1:1 顺序对应。
+    // Qt 文档未明确保证此顺序，实现时需验证。如不可靠，
+    // 可改用 QMap<QWebSocket*, PendingInfo> 在 onNewWebSocketConnection 中
+    // 通过 socket 的 requestUrl() 重新解析参数（更健壮但有少量重复解析）。
     struct PendingInfo {
         QString driverId;
         QString runMode;
@@ -283,7 +289,9 @@ void DriverLabWsConnection::forwardStdoutLine(const QByteArray& line) {
 
 连接建立后自动查询 Meta：向 Driver stdin 写入 `{"cmd":"meta.describe","data":{}}\n`，等待 stdout 返回 ok 消息。首条 stdout ok 消息作为 meta 推送给客户端。
 
-如果 Meta 查询超时（5 秒），推送 error 消息但不关闭连接。
+实现方式：使用 `m_metaSent` 标志位 + `QTimer::singleShot()` 实现异步超时。`onDriverStdoutReady` 中检查 `!m_metaSent` 时将首条 ok 响应作为 meta 推送，并设置 `m_metaSent = true`。超时回调中检查 `!m_metaSent` 则推送 error 消息。不使用阻塞等待，不阻塞 Qt 事件循环。
+
+如果 Meta 查询超时（5 秒），推送 error 消息但不关闭连接（Driver 可能不支持 meta.describe 但仍可正常工作）。
 
 ---
 
@@ -367,7 +375,7 @@ void DriverLabWsConnection::forwardStdoutLine(const QByteArray& line) {
 - **风险 2**：verifier 回调中无法传递 driverId 到 `onNewWebSocketConnection`
   - 控制：使用 `m_pendingQueue` 暂存 verifier 中解析的参数；`newWebSocketConnection` 信号触发时从队列取出
 - **风险 3**：Driver 进程退出信号和 WebSocket 断开信号的竞态
-  - 控制：在 `onSocketDisconnected` 中检查进程是否已退出再决定是否 terminate；在 `onDriverFinished` 中检查 socket 是否已断开再决定是否发送消息
+  - 控制：在 `onSocketDisconnected` 中检查进程是否已退出再决定是否 terminate；在 `onDriverFinished` 中检查 socket 是否已断开再决定是否发送消息。OneShot 模式下自动重启时，需加 `m_restarting` 标志位防止 `onDriverFinished` 和 `handleExecMessage` 中的重启逻辑重入
 - **风险 4**：Meta 查询超时阻塞事件循环
   - 控制：使用异步等待（QTimer + 信号槽），不阻塞 Qt 事件循环
 

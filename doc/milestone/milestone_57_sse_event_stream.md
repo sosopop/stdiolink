@@ -57,11 +57,23 @@ data: {"instanceId":"inst_abc","projectId":"silo-a","exitCode":0,"status":"stopp
 
 本里程碑采用 `QHttpServerResponder` 的 chunked 写入能力实现 SSE：
 
-- 连接建立时调用 `writeBeginChunked(...)` 发送 `text/event-stream` 响应头
-- 事件到达时调用 `writeChunk(...)` 持续推送 `event: ...\ndata: ...\n\n`
-- 连接关闭时调用 `writeEndChunked(...)` 并清理连接对象
+- 连接建立时调用 chunked 写入 API 发送 `text/event-stream` 响应头
+- 事件到达时调用 chunk 写入持续推送 `event: ...\ndata: ...\n\n`
+- 连接关闭时结束 chunked 传输并清理连接对象
+
+> **实现前须验证**：`QHttpServerResponder` 的 chunked 写入 API 名称和签名需以 Qt 6.10.0 实际头文件为准。文档中使用的 `writeBeginChunked()`/`writeChunk()`/`writeEndChunked()` 为推测名称，实际可能不同。建议先编写最小 demo 验证 chunked 写入流程和 responder 生命周期管理。
 
 不使用 `QTcpSocket*` 绕过 QHttpServer 的实现，避免引入额外生命周期管理风险。
+
+### 3.3.1 心跳与断连检测
+
+SSE 连接断开时，服务端可能无法立即感知（TCP 半开连接问题）。通过定期发送 SSE 注释行作为心跳：
+
+```
+: heartbeat\n\n
+```
+
+每 30 秒发送一次。如果 `writeChunk()` 返回写入失败，则认为连接已断开，触发清理。
 
 ### 3.4 过滤机制
 
@@ -167,9 +179,13 @@ private:
 在 `ServerManager` 初始化时，将各 Manager 的信号连接到 `EventBus`：
 
 ```cpp
-// InstanceManager 信号
+// InstanceManager 信号（已有，参数需适配）
 connect(m_instanceManager, &InstanceManager::instanceStarted,
-        m_eventBus, [this](const QString& instanceId, const QString& projectId, qint64 pid) {
+        m_eventBus, [this](const QString& instanceId, const QString& projectId) {
+    // pid 需从 Instance 对象获取（信号本身不携带 pid）
+    qint64 pid = 0;
+    if (auto* inst = m_instanceManager->getInstance(instanceId))
+        pid = inst->pid;
     m_eventBus->publish("instance.started", QJsonObject{
         {"instanceId", instanceId},
         {"projectId", projectId},
@@ -179,28 +195,33 @@ connect(m_instanceManager, &InstanceManager::instanceStarted,
 
 connect(m_instanceManager, &InstanceManager::instanceFinished,
         m_eventBus, [this](const QString& instanceId, const QString& projectId,
-                           int exitCode, const QString& status) {
+                           int exitCode, QProcess::ExitStatus exitStatus) {
     m_eventBus->publish("instance.finished", QJsonObject{
         {"instanceId", instanceId},
         {"projectId", projectId},
         {"exitCode", exitCode},
-        {"status", status}
+        {"status", exitStatus == QProcess::NormalExit ? "normal" : "crashed"}
     });
 });
 
-// 类似连接 ScheduleEngine、ServiceScanner、DriverManagerScanner 的信号...
+// ScheduleEngine 信号（需新增）类似连接...
 ```
 
 ### 4.4 所需的 Manager 信号补充
 
-部分 Manager 可能缺少必要的信号（如 `InstanceManager::instanceStarted`），需要在本里程碑中补充：
+`InstanceManager` 已有 `instanceStarted` 和 `instanceFinished` 信号，但参数签名与 EventBus 所需不完全匹配：
+
+| 类 | 现有信号 | 需要调整 |
+|----|----------|----------|
+| `InstanceManager` | `instanceStarted(instanceId, projectId)` | 缺少 `pid` 参数，需补充或在 EventBus 连接时从 Instance 对象获取 |
+| `InstanceManager` | `instanceFinished(instanceId, projectId, exitCode, exitStatus)` | `exitStatus` 是 `QProcess::ExitStatus` 枚举，需转换为字符串 |
+
+其他 Manager 可能缺少必要的信号：
 
 | 类 | 信号 | 说明 |
 |----|------|------|
-| `InstanceManager` | `instanceStarted(instanceId, projectId, pid)` | 实例启动 |
-| `InstanceManager` | `instanceFinished(instanceId, projectId, exitCode, status)` | 实例退出 |
-| `ScheduleEngine` | `scheduleTriggered(projectId, scheduleType)` | 调度触发 |
-| `ScheduleEngine` | `scheduleSuppressed(projectId, reason, failures)` | 调度抑制 |
+| `ScheduleEngine` | `scheduleTriggered(projectId, scheduleType)` | 调度触发（需新增） |
+| `ScheduleEngine` | `scheduleSuppressed(projectId, reason, failures)` | 调度抑制（需新增） |
 
 ---
 
@@ -278,10 +299,10 @@ connect(m_instanceManager, &InstanceManager::instanceFinished,
 
 ## 7. 风险与控制
 
-- **风险 1**：SSE chunked 写入生命周期处理不当导致连接泄漏
-  - 控制：统一封装 `beginStream()/sendEvent()/writeEndChunked()`，并在断连和析构路径双重清理
-- **风险 2**：SSE 连接数量过多导致资源消耗
-  - 控制：设定最大 SSE 连接数（如 50），超限拒绝新连接
+- **风险 1**：SSE chunked 写入 API 名称/签名与实际不符
+  - 控制：实现前先编写最小 demo 验证 `QHttpServerResponder` 的 chunked 写入流程；确认 responder 的所有权语义（move-only 还是可拷贝）
+- **风险 2**：SSE 连接断开后服务端无法及时感知（TCP 半开连接）
+  - 控制：每 30 秒发送心跳注释行（`: heartbeat\n\n`），写入失败即触发清理
 - **风险 3**：Manager 信号补充影响已有逻辑
   - 控制：仅新增信号声明和 emit，不修改已有逻辑流程；信号是单向通知，不影响调用方
 

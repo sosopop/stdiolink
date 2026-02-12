@@ -11,8 +11,8 @@
 - 新增 `PATCH /api/projects/{id}/enabled` — 切换 Project 启用状态
 - 新增 `GET /api/projects/{id}/logs` — Project 级日志（不依赖 Instance 存活）
 - 新增 `GET /api/projects/runtime` — 批量运行态查询（避免 N+1 请求）
-- 保持已有 API 行为完全兼容
-- 路由注册时确保 `/api/projects/runtime` 在 `/api/projects/<arg>` 之前，避免静态路径被动态路由吞掉
+- 响应格式从纯数组变为 `{ projects: [...], total, page, pageSize }` 对象，这是**破坏性变更**。WebUI 是唯一消费方且尚未上线，直接切换新格式
+- 路由注册时 `/api/projects/runtime` **必须**在 `/api/projects/<arg>` 之前注册。QHttpServer Router 按注册顺序遍历、首次命中返回，若动态路由先注册，`runtime` 会被当作 `id=runtime` 吞掉
 
 ---
 
@@ -176,6 +176,8 @@ QHttpServerResponse ApiRouter::handleProjectList(const QHttpServerRequest& req) 
 
 ### 4.2 日志文件尾部读取
 
+> **注意**：`api_router.cpp` 中已有 `readTailLines()` 实现（用于 `GET /api/instances/{id}/logs`），但当前实现是加载整个文件后取尾部行。本里程碑应将其重构为从文件尾部反向读取的高效实现，并在两处复用。
+
 ```cpp
 QStringList readLastLines(const QString& filePath, int count) {
     QFile file(filePath);
@@ -229,23 +231,24 @@ QHttpServerResponse ApiRouter::handleProjectEnabled(const QString& id,
         m_manager->scheduleEngine()->stopProject(id);
         m_manager->instanceManager()->terminateByProject(id);
     } else {
-        m_manager->scheduleEngine()->resumeProject(id);
-        m_manager->startScheduling();  // 复用现有入口重建调度状态
+        // 注意：startScheduling() 会重建所有 Project 的调度状态，
+        // 不是仅恢复单个 Project。如果性能敏感，后续可新增
+        // scheduleEngine()->resumeProject(id) 做单 Project 恢复。
+        // 当前阶段复用 startScheduling() 即可。
+        m_manager->startScheduling();
     }
 
     return jsonResponse(projectToJson(*it));
 }
 ```
 
-### 4.4 路由注册顺序（关键）
+### 4.4 路由注册（关键）
 
-QHttpServer Router 按注册顺序匹配规则。若先注册 `/api/projects/<arg>`，则 `/api/projects/runtime` 会被当作 `id=runtime` 命中错误 handler。
-
-应先注册静态路径，再注册动态路径：
+QHttpServer Router 按注册顺序遍历规则列表，首次命中即返回。`/api/projects/runtime` **必须**在 `/api/projects/<arg>` 之前注册，否则 `runtime` 会被动态占位符当作 `id=runtime` 吞掉：
 
 ```cpp
-server.route("/api/projects/runtime", Method::Get, ...);   // 先
-server.route("/api/projects/<arg>", Method::Get, ...);     // 后
+server.route("/api/projects/runtime", Method::Get, ...);   // 必须先注册
+server.route("/api/projects/<arg>", Method::Get, ...);     // 后注册
 ```
 
 ---
@@ -316,25 +319,24 @@ server.route("/api/projects/<arg>", Method::Get, ...);     // 后
 
 ### 6.2 验收标准
 
-- `GET /api/projects` 支持过滤和分页，向后兼容（无参数时行为不变）
+- `GET /api/projects` 支持过滤和分页。响应格式从纯数组变为 `{ projects, total, page, pageSize }` 对象（破坏性变更，WebUI 尚未上线故可直接切换）
 - `PATCH /api/projects/{id}/enabled` 切换启停并联动调度
 - `GET /api/projects/{id}/logs` 从文件尾部高效读取日志
 - `GET /api/projects/runtime` 批量返回运行态
 - 全部单元测试通过
-- 现有 API 行为无破坏
 
 ---
 
 ## 7. 风险与控制
 
-- **风险 1**：`handleProjectList` 改造破坏已有行为
-  - 控制：无过滤参数时返回全量数据，仅增加 `total`/`page`/`pageSize` 元信息，不改变 `projects` 数组内容
+- **风险 1**：`handleProjectList` 响应格式变更
+  - 控制：响应从纯数组变为 `{ projects, total, page, pageSize }` 对象，是破坏性变更。WebUI 尚未上线，无外部消费方，直接切换新格式。已有测试需同步更新断言
 - **风险 2**：enabled 切换与调度引擎的线程安全
   - 控制：所有操作在 Qt 主事件循环中串行执行，无并发问题
 - **风险 3**：大日志文件尾部读取性能
   - 控制：从文件尾部按块反向读取，不加载整个文件；`lines` 上限 5000
-- **风险 4**：`/api/projects/runtime` 被 `/api/projects/<arg>` 路由抢占
-  - 控制：静态路由优先注册，并增加回归测试覆盖该路径
+- **风险 4**：`/api/projects/runtime` 被 `/api/projects/<arg>` 路由吞掉
+  - 控制：QHttpServer Router 按注册顺序首次命中返回，静态路由 `/api/projects/runtime` 必须先于动态路由 `/api/projects/<arg>` 注册。增加回归测试覆盖该路径
 
 ---
 

@@ -39,14 +39,34 @@ bool ServiceFileHandler::isPathSafe(const QString& serviceDir,
     // 2. 禁止绝对路径
     if (QDir::isAbsolutePath(relativePath)) return false;
 
-    // 3. 禁止含 ".." 的路径
-    if (relativePath.contains("..")) return false;
+    // 3. 禁止含 ".." 路径段（按路径分隔符拆分后逐段检查）
+    //    注意：不能用 contains("..") 做子串匹配，否则会误拦 "..hidden" 等合法文件名
+    const QStringList segments = relativePath.split(QRegularExpression("[/\\\\]"));
+    for (const auto& seg : segments) {
+        if (seg == "..") return false;
+    }
 
     // 4. 规范化后检查前缀
     const QString basePath = QDir::cleanPath(QDir(serviceDir).absolutePath());
     const QString resolved = QDir::cleanPath(
         QDir(serviceDir).absoluteFilePath(relativePath));
-    return resolved.startsWith(basePath + "/");
+    if (!resolved.startsWith(basePath + "/")) return false;
+
+    // 5. 符号链接检查：逐级检查路径上的每个中间目录和目标文件（如存在）
+    //    是否为符号链接，命中则拒绝
+    QFileInfo resolvedInfo(resolved);
+    if (resolvedInfo.exists() && resolvedInfo.isSymLink()) return false;
+    // 检查中间目录
+    QDir dir(serviceDir);
+    for (const auto& seg : segments) {
+        if (seg.isEmpty() || seg == ".") continue;
+        QString stepPath = dir.absoluteFilePath(seg);
+        QFileInfo stepInfo(stepPath);
+        if (stepInfo.exists() && stepInfo.isSymLink()) return false;
+        dir.setPath(stepPath);
+    }
+
+    return true;
 }
 ```
 
@@ -56,42 +76,33 @@ bool ServiceFileHandler::isPathSafe(const QString& serviceDir,
 - 原因：`canonicalFilePath()` 对不存在的文件返回空字符串，导致新文件创建场景误判
 - 对符号链接：除 `cleanPath` 前缀检查外，额外校验路径上的中间目录和目标文件（如存在）不得为符号链接；命中符号链接直接拒绝（400）
 
-### 3.2 原子写入（write-to-temp-then-rename）
+### 3.2 原子写入（QSaveFile）
+
+Qt 提供 `QSaveFile` 内置原子写入支持（write-to-temp-then-rename），跨平台处理了 Windows 上 rename 不支持覆盖等细节，无需手动实现：
 
 ```cpp
 bool ServiceFileHandler::atomicWrite(const QString& filePath,
                                       const QByteArray& content,
                                       QString& error) {
-    const QString tmpPath = filePath + ".tmp";
-
-    // 1. 写入临时文件
-    QFile tmpFile(tmpPath);
-    if (!tmpFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        error = "failed to create temp file";
+    QSaveFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        error = QString("failed to open for writing: %1").arg(file.errorString());
         return false;
     }
-    if (tmpFile.write(content) != content.size()) {
-        tmpFile.close();
-        QFile::remove(tmpPath);
+    if (file.write(content) != content.size()) {
+        file.cancelWriting();
         error = "write incomplete";
         return false;
     }
-    tmpFile.close();
-
-    // 2. 原子替换（POSIX rename(2) 是原子操作）
-    // 先删除已存在的目标文件（Windows 上 rename 不支持覆盖）
-    if (QFile::exists(filePath))
-        QFile::remove(filePath);
-
-    if (!QFile::rename(tmpPath, filePath)) {
-        QFile::remove(tmpPath);
-        error = "rename failed";
+    if (!file.commit()) {
+        error = QString("commit failed: %1").arg(file.errorString());
         return false;
     }
-
     return true;
 }
 ```
+
+> **设计决策**：使用 `QSaveFile` 而非手动 temp+rename。`QSaveFile` 内部处理了 POSIX `rename(2)` 原子性和 Windows 上的覆盖问题，代码更简洁且经过 Qt 充分测试。
 
 ### 3.3 文件列表 `GET /api/services/{id}/files`
 
@@ -257,8 +268,13 @@ if (relativePath == "manifest.json") {
         return errorResponse(500, error);
 
     // 不要直接写 m_manager->services()（当前是 const 访问器）
-    // 方案 A：新增 ServerManager::reloadService(serviceId, error) 仅重载单个 Service
-    // 方案 B：调用 m_manager->rescanServices(...) 做全量重扫（实现更简单）
+    // 方案 A（推荐）：新增 ServerManager::reloadService(serviceId, error)
+    //   仅重载单个 Service（复用 ServiceScanner::loadSingle()，M52 已新增）
+    // 方案 B：调用全量重扫（实现更简单但性能差）
+    //
+    // 注意：reloadService() 是本里程碑新增的方法，需在 ServerManager 中实现。
+    // 内部逻辑：调用 ServiceScanner::loadSingle() 重新解析目录，
+    // 然后替换 m_services 中对应条目。
     QString refreshError;
     if (!m_manager->reloadService(serviceId, refreshError))
         return errorResponse(500, refreshError);
@@ -305,7 +321,7 @@ if (relativePath == "manifest.json") {
 | 6 | `"foo/./bar/../../../etc/passwd"` | ❌ unsafe | 混合穿越 |
 | 7 | `"/etc/passwd"` | ❌ unsafe | 绝对路径 |
 | 8 | `"foo/../bar"` | ❌ unsafe | 含 `..` |
-| 9 | `"..hidden"` | ❌ unsafe | `..` 前缀 |
+| 9 | `"..hidden"` | ✅ safe | 合法文件名（按段检查 `..`，不做子串匹配） |
 | 10 | `"foo/bar/../../baz"` | ❌ unsafe | 多层回退 |
 | 11 | `"./index.js"` | ✅ safe | 当前目录前缀 |
 | 12 | `"a/b/c/d.js"` | ✅ safe | 深层子目录 |
@@ -359,8 +375,8 @@ if (relativePath == "manifest.json") {
 
 - **风险 1**：路径穿越防护遗漏
   - 控制：测试覆盖 12+ 种变体；`..` 检测作为第一道防线，`cleanPath` + 前缀检查作为第二道，符号链接检测作为第三道
-- **风险 2**：原子写入在 Windows 上 rename 覆盖失败
-  - 控制：Windows 上先 `QFile::remove()` 目标文件再 `rename()`
+- **风险 2**：原子写入跨平台差异
+  - 控制：使用 Qt 内置 `QSaveFile`，已处理 POSIX/Windows 差异
 - **风险 3**：manifest/schema 写入校验与 ServiceScanner 解析逻辑不一致
   - 控制：复用相同的解析函数（`ServiceManifest::fromJson`、`ServiceConfigSchema` 的解析逻辑）
 

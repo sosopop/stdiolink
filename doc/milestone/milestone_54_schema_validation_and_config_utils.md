@@ -163,10 +163,13 @@ public:
     static ServiceConfigSchema fromJsonObject(const QJsonObject& obj,
                                                QString& error);
 
-    /// 保持现有接口：导出为 {"fields":[...]} 对象
+    /// 保持现有接口：导出为 {"fields":[...]} 数组包装格式
+    /// 与当前 toJson() 实现一致（见 service_config_schema.cpp:172）
     QJsonObject toJson() const;
 
-    /// 新增：直接导出 FieldMeta 数组，供 API 返回 configSchemaFields 使用
+    /// 新增：直接导出 FieldMeta 数组格式 [{"name":"fieldName","type":...}, ...]
+    /// 用于 API 返回 configSchemaFields，与 DriverMeta.params 格式统一
+    /// 前端可复用同一套表单生成逻辑
     QJsonArray toFieldMetaArray() const;
 
     /// 生成默认配置
@@ -182,25 +185,18 @@ public:
 
 ### 4.2 `fromJsonObject()` 实现
 
+`service_config_schema.cpp` 中已有匿名命名空间的 `parseObject(const QJsonObject&, const QString&, QString&)` 函数，实现了完整的带错误检查的递归解析。`fromJsonObject()` 应直接调用它：
+
 ```cpp
 ServiceConfigSchema ServiceConfigSchema::fromJsonObject(const QJsonObject& obj,
                                                           QString& error) {
-    ServiceConfigSchema schema;
-    // 复用已有 parseObject() 逻辑
-    // parseObject 内部校验类型合法性、约束完整性等
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        const QString fieldName = it.key();
-        const QJsonObject fieldObj = it.value().toObject();
-
-        FieldMeta meta;
-        if (!parseFieldMeta(fieldName, fieldObj, meta, error)) {
-            return {}; // error 已填充
-        }
-        schema.fields.append(meta);
-    }
-    return schema;
+    // 直接复用已有的 parseObject()（匿名命名空间内部函数）
+    // parseObject 已处理类型校验、约束解析、嵌套结构等
+    return parseObject(obj, "", error);
 }
 ```
+
+> **注意**：`parseObject()` 当前在匿名命名空间中，`fromJsonObject()` 作为同文件的成员函数可以直接调用。无需提取或重构 `parseObject()`。
 
 ### 4.3 `generateDefaults()` 实现
 

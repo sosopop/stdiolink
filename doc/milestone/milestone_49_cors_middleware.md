@@ -41,9 +41,13 @@ WebUI 作为 SPA 与 API 服务器必然跨域（即使同机器也是不同端�
 OPTIONS /api/* → 204 No Content + CORS 头
 ```
 
+QHttpServer 不支持真正的通配路由（`/api/*`），需按路径段数分别注册 `<arg>` 占位符。当前 API 最深路径为 4 段（如 `/api/services/{id}/files/content`），因此注册 1-4 段即可覆盖。后续新增更深层 API 路径时需同步补充 OPTIONS 路由。
+
 ### 3.3 实现方式
 
 QHttpServer 从 Qt 6.8 起支持 after-request 处理器（`QHttpServer::addAfterRequestHandler()`），可在响应发出前统一注入 CORS 头，无需在每个 handler 中手动添加。
+
+> **实现前须验证**：`addAfterRequestHandler` 的回调签名需以 Qt 6.10.0 实际头文件为准。文档示例中使用 `(const QHttpServerRequest&, QHttpServerResponse&)` 签名，如实际 API 不同（如返回 `QHttpServerResponse` 而非引用修改），需相应调整。建议先编写最小 demo 验证。
 
 **方案**：
 

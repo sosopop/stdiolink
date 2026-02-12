@@ -74,7 +74,7 @@ struct ProcessTreeSummary {
 | 线程数 | `/proc/{pid}/stat` 第 20 字段 |
 | 启动时间 | `/proc/{pid}/stat` 第 22 字段 + boot time |
 | I/O | `/proc/{pid}/io`（`read_bytes`/`write_bytes`） |
-| 子进程 | 遍历 `/proc/` 下所有 pid 目录，匹配 ppid |
+| 子进程 | 优先使用 `/proc/{pid}/task/{pid}/children`（内核 ≥ 3.5），仅返回直接子进程 PID，无需遍历整个 `/proc`；如该文件不存在则回退到遍历 `/proc/*/stat` 匹配 ppid |
 
 **Windows**：
 
@@ -146,7 +146,9 @@ struct CpuSample {
 }
 ```
 
-错误码：`404`（Instance 不存在）、`410`（Instance 已退出，进程不存在）
+错误码：`404`（Instance 不存在——包括已退出的 Instance，因为当前实现在进程退出后立即从内存删除）
+
+> **注意**：当前 `InstanceManager::onProcessFinished` 在进程退出后调用 `m_instances.erase()`，已退出的 Instance 无法通过 ID 查到，统一返回 404。若未来需要保留历史 Instance 记录（如用于审计），可引入 `410 Gone` 区分"从未存在"和"曾存在但已退出"。
 
 ### 3.5 `GET /api/instances/{id}/resources`
 
@@ -208,11 +210,11 @@ public:
     static ProcessTreeSummary summarize(const QVector<ProcessInfo>& processes);
 
 private:
-    /// 获取指定进程的子进程 PID 列表
-    static QVector<qint64> getChildPids(qint64 pid);
+    /// 获取指定进程的子进程 PID 列表（平台相关实现）
+    QVector<qint64> getChildPids(qint64 pid);
 
-    /// 读取单个进程的原始信息
-    static ProcessInfo readProcessInfo(qint64 pid);
+    /// 读取单个进程的原始信息（平台相关实现）
+    ProcessInfo readProcessInfo(qint64 pid);
 
     /// CPU 采样缓存
     struct CpuSample {
@@ -264,6 +266,22 @@ ProcessInfo ProcessMonitor::readProcessInfo(qint64 pid) {
 
 QVector<qint64> ProcessMonitor::getChildPids(qint64 pid) {
     QVector<qint64> children;
+
+    // 优先使用 /proc/{pid}/task/{pid}/children（内核 ≥ 3.5，高效）
+    QFile childrenFile(QString("/proc/%1/task/%1/children").arg(pid));
+    if (childrenFile.open(QIODevice::ReadOnly)) {
+        const QString data = QString(childrenFile.readAll()).trimmed();
+        if (!data.isEmpty()) {
+            for (const auto& token : data.split(' ', Qt::SkipEmptyParts)) {
+                bool ok;
+                qint64 childPid = token.toLongLong(&ok);
+                if (ok) children.append(childPid);
+            }
+        }
+        return children;
+    }
+
+    // 回退：遍历 /proc/*/stat 匹配 ppid
     QDir procDir("/proc");
     for (const auto& entry : procDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         bool ok;
@@ -295,7 +313,12 @@ ProcessInfo ProcessMonitor::readProcessInfo(qint64 pid) {
     info.name = "unknown";
     return info;
 }
-// ...
+
+QVector<qint64> ProcessMonitor::getChildPids(qint64 pid) {
+    Q_UNUSED(pid);
+    qWarning() << "ProcessMonitor: getChildPids not implemented for this platform";
+    return {};
+}
 #endif
 ```
 
@@ -308,7 +331,7 @@ QHttpServerResponse ApiRouter::handleProcessTree(const QString& id,
     auto* inst = m_manager->instanceManager()->findInstance(id);
     if (!inst) return errorResponse(StatusCode::NotFound, "instance not found");
     if (inst->status != "running")
-        return errorResponse(StatusCode::Gone, "instance not running");
+        return errorResponse(StatusCode::NotFound, "instance not running");
 
     // 2. 获取进程树
     auto tree = m_manager->processMonitor()->getProcessTree(inst->pid);
@@ -365,7 +388,7 @@ QHttpServerResponse ApiRouter::handleProcessTree(const QString& id,
 | 11 | getProcessFamily 平坦列表 | 包含根进程和所有子进程 |
 | 12 | includeChildren=false | 仅返回根进程 |
 
-**注意**：ProcessMonitor 测试依赖平台，CI 在 Linux 上运行。测试中启动 `sleep` 等简单子进程验证进程树采集。
+**注意**：ProcessMonitor 测试依赖平台，CI 在 Linux 上运行。测试中启动 `sleep` 等简单子进程验证进程树采集。macOS/Windows 上使用 `QSKIP("ProcessMonitor not implemented on this platform")` 跳过平台相关测试，仅运行 `summarize()` 等纯逻辑测试。
 
 **API 测试（test_api_router.cpp）**：
 
@@ -374,7 +397,7 @@ QHttpServerResponse ApiRouter::handleProcessTree(const QString& id,
 | 13 | `GET /process-tree` 运行中 Instance | 200 + tree 含根节点 |
 | 14 | `GET /process-tree` tree.summary 字段完整 | totalProcesses ≥ 1 |
 | 15 | `GET /process-tree` Instance 不存在 | 404 |
-| 16 | `GET /process-tree` Instance 已退出 | 410 |
+| 16 | `GET /process-tree` Instance 已退出 | 404（当前实现进程退出后从内存删除） |
 | 17 | `GET /resources` 运行中 Instance | 200 + processes 数组非空 |
 | 18 | `GET /resources?includeChildren=false` | processes 仅含 1 个（根进程） |
 | 19 | `GET /resources` summary 字段完整 | totalProcesses/totalCpuPercent 等存在 |
@@ -395,7 +418,7 @@ QHttpServerResponse ApiRouter::handleProcessTree(const QString& id,
 - **风险 1**：`/proc` 文件系统读取权限不足（容器环境）
   - 控制：读取 `/proc/{pid}/stat` 只需对进程有读权限，通常同用户进程无问题；测试中验证权限
 - **风险 2**：进程枚举遍历 `/proc` 性能问题
-  - 控制：子进程查找需遍历所有 `/proc/*/stat`，但 Instance 通常子进程较少；如有性能问题，可改用 `/proc/{pid}/task/{tid}/children`（需内核 ≥ 3.5）
+  - 控制：优先使用 `/proc/{pid}/task/{pid}/children`（内核 ≥ 3.5），直接返回子进程列表无需遍历；仅在该文件不存在时回退到全量扫描。Instance 通常子进程较少，性能影响可控
 - **风险 3**：CPU 采样缓存无限增长
   - 控制：`cleanupSamples()` 在每次 getProcessTree/getProcessFamily 调用后清理已退出进程的缓存
 - **风险 4**：跨平台差异导致数据语义不一致
