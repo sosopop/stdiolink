@@ -128,6 +128,9 @@ QString InstanceManager::startInstance(const Project& project,
     proc->setStandardOutputFile(logPath, QIODevice::Append);
     proc->setStandardErrorFile(logPath, QIODevice::Append);
 
+    inst->workingDirectory = workspaceDir;
+    inst->logPath = logPath;
+    inst->commandLine = QStringList{program} + proc->arguments();
     inst->process = proc;
 
     connect(proc,

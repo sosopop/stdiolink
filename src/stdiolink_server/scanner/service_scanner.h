@@ -4,6 +4,8 @@
 #include <QMap>
 #include <QString>
 
+#include <optional>
+
 #include "config/service_config_schema.h"
 #include "config/service_manifest.h"
 
@@ -32,6 +34,9 @@ public:
 
     QMap<QString, ServiceInfo> scan(const QString& servicesDir,
                                     ScanStats* stats = nullptr) const;
+
+    std::optional<ServiceInfo> loadSingle(const QString& serviceDir,
+                                          QString& error) const;
 
 private:
     ServiceInfo loadService(const QString& serviceDir) const;

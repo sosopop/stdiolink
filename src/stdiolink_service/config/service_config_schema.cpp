@@ -145,6 +145,12 @@ ServiceConfigSchema ServiceConfigSchema::fromJsObject(const QJsonObject& obj) {
     return schema;
 }
 
+ServiceConfigSchema ServiceConfigSchema::fromJsonObject(const QJsonObject& obj,
+                                                          QString& error) {
+    error.clear();
+    return parseObject(obj, QString(), error);
+}
+
 ServiceConfigSchema ServiceConfigSchema::fromJsonFile(const QString& filePath, QString& error) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -177,6 +183,44 @@ QJsonObject ServiceConfigSchema::toJson() const {
     QJsonObject result;
     result["fields"] = fieldsArray;
     return result;
+}
+
+QJsonArray ServiceConfigSchema::toFieldMetaArray() const {
+    QJsonArray arr;
+    for (const auto& field : fields) {
+        arr.append(field.toJson());
+    }
+    return arr;
+}
+
+QJsonObject ServiceConfigSchema::generateDefaults() const {
+    QJsonObject config;
+    for (const auto& field : fields) {
+        if (!field.defaultValue.isNull() && !field.defaultValue.isUndefined()) {
+            config[field.name] = field.defaultValue;
+        }
+    }
+    return config;
+}
+
+QStringList ServiceConfigSchema::requiredFieldNames() const {
+    QStringList names;
+    for (const auto& field : fields) {
+        if (field.required) {
+            names.append(field.name);
+        }
+    }
+    return names;
+}
+
+QStringList ServiceConfigSchema::optionalFieldNames() const {
+    QStringList names;
+    for (const auto& field : fields) {
+        if (!field.required) {
+            names.append(field.name);
+        }
+    }
+    return names;
 }
 
 const FieldMeta* ServiceConfigSchema::findField(const QString& name) const {

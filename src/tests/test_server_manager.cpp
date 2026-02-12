@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -184,4 +185,247 @@ TEST(ServerManagerTest, InitializeFailsWhenDataRootMissing) {
     QString error;
     EXPECT_FALSE(manager.initialize(error));
     EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerManagerTest, ServerStatusReturnsCorrectCounts) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    cfg.host = "0.0.0.0";
+    cfg.port = 7777;
+
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+
+    const auto s = manager.serverStatus();
+    EXPECT_EQ(s.version, "0.1.0");
+    EXPECT_TRUE(s.startedAt.isValid());
+    EXPECT_GE(s.uptimeMs, 0);
+    EXPECT_EQ(s.host, "0.0.0.0");
+    EXPECT_EQ(s.port, 7777);
+    EXPECT_EQ(s.serviceCount, 1);
+    EXPECT_EQ(s.projectTotal, 1);
+    EXPECT_EQ(s.projectValid, 1);
+    EXPECT_EQ(s.projectInvalid, 0);
+    EXPECT_EQ(s.projectEnabled, 1);
+    EXPECT_EQ(s.projectDisabled, 0);
+    EXPECT_EQ(s.instanceTotal, 0);
+    EXPECT_EQ(s.instanceRunning, 0);
+    EXPECT_GT(s.cpuCores, 0);
+    EXPECT_FALSE(s.platform.isEmpty());
+}
+
+TEST(ServerManagerTest, ServerStatusUptimeIncreases) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+
+    const qint64 uptime1 = manager.serverStatus().uptimeMs;
+    // Small busy-wait to ensure measurable difference
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < 5) {}
+    const qint64 uptime2 = manager.serverStatus().uptimeMs;
+    EXPECT_GT(uptime2, uptime1);
+}
+
+TEST(ServerManagerTest, CreateServiceMinimalRequest) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+    ASSERT_EQ(manager.services().size(), 0);
+
+    ServerManager::ServiceCreateRequest req;
+    req.id = "new-svc";
+    req.name = "New Service";
+    req.version = "1.0.0";
+
+    auto result = manager.createService(req);
+    ASSERT_TRUE(result.success) << qPrintable(result.error);
+    EXPECT_EQ(result.serviceInfo.id, "new-svc");
+    EXPECT_EQ(result.serviceInfo.name, "New Service");
+    EXPECT_TRUE(result.serviceInfo.valid);
+
+    // Verify in-memory
+    ASSERT_TRUE(manager.services().contains("new-svc"));
+
+    // Verify files on disk
+    EXPECT_TRUE(QFile::exists(root + "/services/new-svc/manifest.json"));
+    EXPECT_TRUE(QFile::exists(root + "/services/new-svc/index.js"));
+    EXPECT_TRUE(QFile::exists(root + "/services/new-svc/config.schema.json"));
+}
+
+TEST(ServerManagerTest, CreateServiceDuplicateIdFails) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+
+    ServerManager::ServiceCreateRequest req;
+    req.id = "demo";
+    req.name = "Duplicate";
+    req.version = "1.0.0";
+
+    auto result = manager.createService(req);
+    EXPECT_FALSE(result.success);
+    EXPECT_TRUE(result.error.contains("already exists"));
+}
+
+TEST(ServerManagerTest, CreateServiceInvalidIdFails) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+
+    ServerManager::ServiceCreateRequest req;
+    req.id = "bad id!";
+    req.name = "Bad";
+    req.version = "1.0.0";
+
+    auto result = manager.createService(req);
+    EXPECT_FALSE(result.success);
+    EXPECT_TRUE(result.error.contains("invalid"));
+}
+
+TEST(ServerManagerTest, DeleteServiceNoProjects) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+    ASSERT_TRUE(manager.services().contains("demo"));
+
+    ASSERT_TRUE(manager.deleteService("demo", false, error)) << qPrintable(error);
+    EXPECT_FALSE(manager.services().contains("demo"));
+    EXPECT_FALSE(QDir(root + "/services/demo").exists());
+}
+
+TEST(ServerManagerTest, DeleteServiceWithProjectsNonForce) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+
+    EXPECT_FALSE(manager.deleteService("demo", false, error));
+    EXPECT_TRUE(error.contains("associated"));
+    EXPECT_TRUE(manager.services().contains("demo"));
+}
+
+TEST(ServerManagerTest, DeleteServiceWithProjectsForce) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+    ASSERT_TRUE(manager.projects().value("p1").valid);
+
+    ASSERT_TRUE(manager.deleteService("demo", true, error)) << qPrintable(error);
+    EXPECT_FALSE(manager.services().contains("demo"));
+    EXPECT_TRUE(manager.projects().contains("p1"));
+    EXPECT_FALSE(manager.projects().value("p1").valid);
+    EXPECT_TRUE(manager.projects().value("p1").error.contains("deleted"));
+}
+
+TEST(ServerManagerTest, DeleteServiceNotFound) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString error;
+    ASSERT_TRUE(manager.initialize(error));
+
+    EXPECT_FALSE(manager.deleteService("nonexistent", false, error));
+    EXPECT_TRUE(error.contains("not found"));
 }

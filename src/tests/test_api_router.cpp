@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMap>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -81,6 +82,8 @@ bool sendRequest(const QString& method,
         reply = manager.put(req, body);
     } else if (method == "DELETE") {
         reply = manager.sendCustomRequest(req, "DELETE", body);
+    } else if (method == "PATCH") {
+        reply = manager.sendCustomRequest(req, "PATCH", body);
     } else {
         error = "unsupported method";
         return false;
@@ -111,6 +114,47 @@ bool sendRequest(const QString& method,
         return false;
     }
 
+    reply->deleteLater();
+    error.clear();
+    return true;
+}
+
+bool openStreamAndReadHeaders(const QUrl& url,
+                              int& statusCode,
+                              QMap<QByteArray, QByteArray>& headers,
+                              QString& error) {
+    QNetworkAccessManager manager;
+    QNetworkRequest req(url);
+
+    QNetworkReply* reply = manager.get(req);
+    if (!reply) {
+        error = "failed to create request";
+        return false;
+    }
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    QObject::connect(reply, &QNetworkReply::metaDataChanged, &loop, &QEventLoop::quit);
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+    timeout.start(3000);
+    loop.exec();
+    if (!timeout.isActive()) {
+        reply->abort();
+        error = "request timeout";
+        reply->deleteLater();
+        return false;
+    }
+    timeout.stop();
+
+    statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    for (const auto& pair : reply->rawHeaderPairs()) {
+        headers.insert(pair.first.toLower(), pair.second);
+    }
+
+    reply->abort();
     reply->deleteLater();
     error.clear();
     return true;
@@ -400,4 +444,1645 @@ TEST(ApiRouterTest, ProjectRuntimeShowsScheduleAndInstanceState) {
     ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/missing/runtime"), QByteArray(), status, body, error))
         << qPrintable(error);
     EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServerStatusReturnsCorrectFields) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    cfg.host = "127.0.0.1";
+    cfg.port = 9999;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/server/status"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    QJsonObject obj;
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("status").toString(), "ok");
+    EXPECT_EQ(obj.value("version").toString(), "0.1.0");
+    EXPECT_GE(obj.value("uptimeMs").toInteger(), 0);
+    EXPECT_FALSE(obj.value("startedAt").toString().isEmpty());
+    EXPECT_EQ(obj.value("host").toString(), "127.0.0.1");
+    EXPECT_EQ(obj.value("port").toInt(), 9999);
+    EXPECT_FALSE(obj.value("dataRoot").toString().isEmpty());
+
+    const QJsonObject counts = obj.value("counts").toObject();
+    EXPECT_EQ(counts.value("services").toInt(), 1);
+    EXPECT_EQ(counts.value("drivers").toInt(), 0);
+
+    const QJsonObject projects = counts.value("projects").toObject();
+    EXPECT_EQ(projects.value("total").toInt(), 1);
+    EXPECT_EQ(projects.value("valid").toInt(), 1);
+    EXPECT_EQ(projects.value("enabled").toInt(), 1);
+
+    const QJsonObject instances = counts.value("instances").toObject();
+    EXPECT_EQ(instances.value("total").toInt(), 0);
+
+    const QJsonObject system = obj.value("system").toObject();
+    EXPECT_FALSE(system.value("platform").toString().isEmpty());
+    EXPECT_GT(system.value("cpuCores").toInt(), 0);
+}
+
+TEST(ApiRouterTest, EventStreamContainsCorsHeaders) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    cfg.corsOrigin = "http://localhost:3000";
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QMap<QByteArray, QByteArray> headers;
+    QString error;
+    ASSERT_TRUE(openStreamAndReadHeaders(QUrl(base + "/api/events/stream"),
+                                         status,
+                                         headers,
+                                         error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    EXPECT_EQ(headers.value("access-control-allow-origin"), "http://localhost:3000");
+    EXPECT_EQ(headers.value("content-type"), "text/event-stream");
+}
+
+TEST(ApiRouterTest, InstanceDetailReturns404ForMissing) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/instances/nonexistent"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, DriverDetailReturns404ForMissing) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/drivers/nonexistent"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ProjectListPaginationAndFiltering) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeService(root, "other");
+    writeProject(root, "p1", "demo");
+    writeProject(root, "p2", "demo");
+    writeProject(root, "p3", "other");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // No filters — returns all with pagination metadata
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 3);
+    EXPECT_EQ(obj.value("page").toInt(), 1);
+    EXPECT_EQ(obj.value("pageSize").toInt(), 20);
+    EXPECT_EQ(obj.value("projects").toArray().size(), 3);
+
+    // Filter by serviceId
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?serviceId=demo"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 2);
+
+    // Filter by serviceId with no match
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?serviceId=nonexistent"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 0);
+
+    // Pagination: page=1, pageSize=2
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?page=1&pageSize=2"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 3);
+    EXPECT_EQ(obj.value("projects").toArray().size(), 2);
+    EXPECT_EQ(obj.value("page").toInt(), 1);
+    EXPECT_EQ(obj.value("pageSize").toInt(), 2);
+
+    // Pagination: page=2, pageSize=2
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?page=2&pageSize=2"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 3);
+    EXPECT_EQ(obj.value("projects").toArray().size(), 1);
+
+    // Pagination: page out of range
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?page=999&pageSize=2"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 3);
+    EXPECT_EQ(obj.value("projects").toArray().size(), 0);
+
+    // pageSize clamped to 100
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?pageSize=200"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("pageSize").toInt(), 100);
+
+    // pageSize=0 clamped to 1
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?pageSize=0"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("pageSize").toInt(), 1);
+}
+
+TEST(ApiRouterTest, ProjectEnabledToggle) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+    ASSERT_TRUE(manager.projects().value("p1").enabled);
+    manager.projects()["p1"].schedule.type = ScheduleType::FixedRate;
+    manager.projects()["p1"].schedule.intervalMs = 1000;
+    manager.projects()["p1"].schedule.maxConcurrent = 1;
+    manager.startScheduling();
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/projects/p1/runtime"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    ASSERT_TRUE(obj.value("schedule").toObject().value("timerActive").toBool());
+
+    // Disable project
+    ASSERT_TRUE(sendRequest("PATCH",
+                            QUrl(base + "/api/projects/p1/enabled"),
+                            QJsonDocument(QJsonObject{{"enabled", false}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_FALSE(obj.value("enabled").toBool());
+    EXPECT_EQ(obj.value("status").toString(), "disabled");
+    EXPECT_FALSE(manager.projects().value("p1").enabled);
+
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/projects/p1/runtime"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    ASSERT_FALSE(obj.value("schedule").toObject().value("timerActive").toBool());
+
+    // Re-enable project
+    ASSERT_TRUE(sendRequest("PATCH",
+                            QUrl(base + "/api/projects/p1/enabled"),
+                            QJsonDocument(QJsonObject{{"enabled", true}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.value("enabled").toBool());
+    EXPECT_TRUE(manager.projects().value("p1").enabled);
+
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/projects/p1/runtime"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    ASSERT_TRUE(obj.value("schedule").toObject().value("timerActive").toBool());
+
+    // Missing enabled field
+    ASSERT_TRUE(sendRequest("PATCH",
+                            QUrl(base + "/api/projects/p1/enabled"),
+                            QJsonDocument(QJsonObject{}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Non-bool enabled field
+    ASSERT_TRUE(sendRequest("PATCH",
+                            QUrl(base + "/api/projects/p1/enabled"),
+                            QJsonDocument(QJsonObject{{"enabled", "yes"}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Project not found
+    ASSERT_TRUE(sendRequest("PATCH",
+                            QUrl(base + "/api/projects/nonexistent/enabled"),
+                            QJsonDocument(QJsonObject{{"enabled", true}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ProjectLogsEndpoint) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    // Write a fake log file
+    {
+        QFile logFile(root + "/logs/p1.log");
+        ASSERT_TRUE(logFile.open(QIODevice::WriteOnly));
+        for (int i = 1; i <= 10; ++i) {
+            logFile.write(QString("line %1\n").arg(i).toUtf8());
+        }
+    }
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Read logs with default lines
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/p1/logs"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("projectId").toString(), "p1");
+    EXPECT_FALSE(obj.value("logPath").toString().isEmpty());
+    EXPECT_GE(obj.value("lines").toArray().size(), 1);
+
+    // Read logs with lines=3
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/p1/logs?lines=3"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_LE(obj.value("lines").toArray().size(), 3);
+
+    // Log file doesn't exist — returns empty array, not 404
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/p1/logs"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    // p1 has a log file, so let's test with a project that has no log
+    writeProject(root, "p-nolog", "demo");
+    // Reload projects
+    manager.projects().insert("p-nolog", manager.projects().value("p1"));
+    manager.projects()["p-nolog"].id = "p-nolog";
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/p-nolog/logs"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("lines").toArray().size(), 0);
+
+    // Project not found
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/nonexistent/logs"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ProjectRuntimeBatch) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+    writeProject(root, "p2", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // All runtimes
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/runtime"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    const QJsonArray runtimes = obj.value("runtimes").toArray();
+    EXPECT_EQ(runtimes.size(), 2);
+
+    // Check runtime structure
+    const QJsonObject rt = runtimes[0].toObject();
+    EXPECT_FALSE(rt.value("id").toString().isEmpty());
+    EXPECT_TRUE(rt.contains("enabled"));
+    EXPECT_TRUE(rt.contains("valid"));
+    EXPECT_TRUE(rt.contains("status"));
+    EXPECT_TRUE(rt.contains("runningInstances"));
+    EXPECT_TRUE(rt.contains("schedule"));
+
+    // Filter by ids
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/runtime?ids=p1"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("runtimes").toArray().size(), 1);
+    EXPECT_EQ(obj.value("runtimes").toArray()[0].toObject().value("id").toString(), "p1");
+
+    // Filter with nonexistent id — skipped
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects/runtime?ids=p1,nonexistent"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("runtimes").toArray().size(), 1);
+}
+
+TEST(ApiRouterTest, ProjectListFilterByEnabled) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+    writeProject(root, "p2", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    // Disable p2
+    manager.projects()["p2"].enabled = false;
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Filter enabled=true
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?enabled=true"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 1);
+
+    // Filter enabled=false
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?enabled=false"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 1);
+
+    // Filter status=disabled
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/projects?status=disabled"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("total").toInt(), 1);
+    EXPECT_EQ(obj.value("projects").toArray()[0].toObject().value("id").toString(), "p2");
+}
+
+TEST(ApiRouterTest, ServiceCreateAndListViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Create with empty template (default)
+    const QJsonObject createReq{
+        {"id", "test-svc"},
+        {"name", "Test Service"},
+        {"version", "1.0.0"},
+        {"description", "A test"},
+        {"author", "tester"}
+    };
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(createReq).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 201);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("id").toString(), "test-svc");
+    EXPECT_EQ(obj.value("name").toString(), "Test Service");
+    EXPECT_TRUE(obj.value("created").toBool());
+
+    // Verify via GET /api/services
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("services").toArray().size(), 1);
+
+    // Verify files exist
+    EXPECT_TRUE(QFile::exists(root + "/services/test-svc/manifest.json"));
+    EXPECT_TRUE(QFile::exists(root + "/services/test-svc/index.js"));
+    EXPECT_TRUE(QFile::exists(root + "/services/test-svc/config.schema.json"));
+}
+
+TEST(ApiRouterTest, ServiceCreateTemplates) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    // Create with basic template
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "basic-svc"},
+                                {"name", "Basic"},
+                                {"version", "1.0.0"},
+                                {"template", "basic"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 201);
+
+    // Verify basic template index.js contains log.info
+    QFile basicIndex(root + "/services/basic-svc/index.js");
+    ASSERT_TRUE(basicIndex.open(QIODevice::ReadOnly));
+    const QString basicContent = basicIndex.readAll();
+    EXPECT_TRUE(basicContent.contains("log.info"));
+
+    // Create with driver_demo template
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "driver-svc"},
+                                {"name", "Driver"},
+                                {"version", "1.0.0"},
+                                {"template", "driver_demo"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 201);
+
+    // Verify driver_demo template index.js contains openDriver
+    QFile driverIndex(root + "/services/driver-svc/index.js");
+    ASSERT_TRUE(driverIndex.open(QIODevice::ReadOnly));
+    const QString driverContent = driverIndex.readAll();
+    EXPECT_TRUE(driverContent.contains("openDriver"));
+}
+
+TEST(ApiRouterTest, ServiceCreateWithCustomContent) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    // Create with custom indexJs and configSchema overriding template
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "custom-svc"},
+                                {"name", "Custom"},
+                                {"version", "2.0.0"},
+                                {"template", "basic"},
+                                {"indexJs", "// custom code\n"},
+                                {"configSchema", QJsonObject{{"port", QJsonObject{{"type", "int"}}}}}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 201);
+
+    // Verify custom index.js
+    QFile indexFile(root + "/services/custom-svc/index.js");
+    ASSERT_TRUE(indexFile.open(QIODevice::ReadOnly));
+    EXPECT_EQ(QString(indexFile.readAll()), "// custom code\n");
+
+    // Verify custom schema
+    QFile schemaFile(root + "/services/custom-svc/config.schema.json");
+    ASSERT_TRUE(schemaFile.open(QIODevice::ReadOnly));
+    const QJsonDocument schemaDoc = QJsonDocument::fromJson(schemaFile.readAll());
+    EXPECT_TRUE(schemaDoc.object().contains("port"));
+}
+
+TEST(ApiRouterTest, ServiceCreateValidationErrors) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "existing");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    // Missing id
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"name", "X"}, {"version", "1.0.0"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Missing name
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "x"}, {"version", "1.0.0"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Missing version
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "x"}, {"name", "X"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Invalid id (contains space)
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "bad id"}, {"name", "X"}, {"version", "1.0.0"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Duplicate id
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "existing"}, {"name", "X"}, {"version", "1.0.0"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 409);
+
+    // Invalid template
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "x"}, {"name", "X"}, {"version", "1.0.0"},
+                                {"template", "unknown"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // indexJs must be string
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "x2"}, {"name", "X"}, {"version", "1.0.0"},
+                                {"indexJs", QJsonObject{{"bad", true}}}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // configSchema must be object
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "x3"}, {"name", "X"}, {"version", "1.0.0"},
+                                {"configSchema", "bad"}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // invalid configSchema should be treated as client error instead of 500
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            QJsonDocument(QJsonObject{
+                                {"id", "x4"}, {"name", "X"}, {"version", "1.0.0"},
+                                {"configSchema", QJsonObject{{"port", QJsonObject{{"type", "invalid"}}}}}
+                            }).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+}
+
+TEST(ApiRouterTest, ServiceDeleteViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    // Delete existing service with no projects
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 204);
+    EXPECT_FALSE(manager.services().contains("demo"));
+
+    // Delete nonexistent
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/nonexistent"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServiceFileListViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    // Add a subdirectory file
+    ASSERT_TRUE(QDir().mkpath(root + "/services/demo/lib"));
+    ASSERT_TRUE(writeText(root + "/services/demo/lib/utils.js", "// utils\n"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // List files
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo/files"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("serviceId").toString(), "demo");
+
+    const QJsonArray files = obj.value("files").toArray();
+    EXPECT_GE(files.size(), 4); // manifest.json, index.js, config.schema.json, lib/utils.js
+
+    bool foundManifest = false, foundIndex = false, foundSchema = false, foundUtils = false;
+    for (const auto& v : files) {
+        const QJsonObject f = v.toObject();
+        if (f.value("path").toString() == "manifest.json") foundManifest = true;
+        if (f.value("path").toString() == "index.js") foundIndex = true;
+        if (f.value("path").toString() == "config.schema.json") foundSchema = true;
+        if (f.value("path").toString() == "lib/utils.js") {
+            foundUtils = true;
+            EXPECT_EQ(f.value("type").toString(), "javascript");
+        }
+    }
+    EXPECT_TRUE(foundManifest);
+    EXPECT_TRUE(foundIndex);
+    EXPECT_TRUE(foundSchema);
+    EXPECT_TRUE(foundUtils);
+
+    // Service not found
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/nonexistent/files"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServiceFileReadViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Read existing file
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo/files/content?path=index.js"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("path").toString(), "index.js");
+    EXPECT_FALSE(obj.value("content").toString().isEmpty());
+    EXPECT_GT(obj.value("size").toInteger(), 0);
+
+    // Path traversal → 400
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo/files/content?path=../etc/passwd"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Nonexistent file → 404
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo/files/content?path=nonexist.js"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+
+    // Missing path parameter → 400
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo/files/content"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Service not found
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/nonexistent/files/content?path=index.js"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServiceFileWriteViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Update index.js
+    const QString newContent = "// updated code\nconsole.log('hello');\n";
+    ASSERT_TRUE(sendRequest("PUT",
+                            QUrl(base + "/api/services/demo/files/content?path=index.js"),
+                            QJsonDocument(QJsonObject{{"content", newContent}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.value("updated").toBool());
+
+    // Verify content was written
+    QFile indexFile(root + "/services/demo/index.js");
+    ASSERT_TRUE(indexFile.open(QIODevice::ReadOnly));
+    EXPECT_EQ(QString(indexFile.readAll()), newContent);
+
+    // Update manifest.json with valid content → 200 + memory updated
+    const QString validManifest = QJsonDocument(QJsonObject{
+        {"manifestVersion", "1"},
+        {"id", "demo"},
+        {"name", "Updated Demo"},
+        {"version", "2.0.0"}
+    }).toJson(QJsonDocument::Compact);
+    ASSERT_TRUE(sendRequest("PUT",
+                            QUrl(base + "/api/services/demo/files/content?path=manifest.json"),
+                            QJsonDocument(QJsonObject{{"content", validManifest}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    // Verify memory was updated
+    EXPECT_EQ(manager.services().value("demo").name, "Updated Demo");
+
+    // Update manifest.json with invalid JSON → 400
+    ASSERT_TRUE(sendRequest("PUT",
+                            QUrl(base + "/api/services/demo/files/content?path=manifest.json"),
+                            QJsonDocument(QJsonObject{{"content", "not json"}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Update config.schema.json with invalid JSON → 400
+    ASSERT_TRUE(sendRequest("PUT",
+                            QUrl(base + "/api/services/demo/files/content?path=config.schema.json"),
+                            QJsonDocument(QJsonObject{{"content", "{broken"}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Missing content field → 400
+    ASSERT_TRUE(sendRequest("PUT",
+                            QUrl(base + "/api/services/demo/files/content?path=index.js"),
+                            QJsonDocument(QJsonObject{}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+}
+
+TEST(ApiRouterTest, ServiceFileCreateAndDeleteViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Create new file in subdirectory (auto-creates dir)
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/files/content?path=lib/helper.js"),
+                            QJsonDocument(QJsonObject{{"content", "// helper\n"}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 201);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.value("created").toBool());
+    EXPECT_TRUE(QFile::exists(root + "/services/demo/lib/helper.js"));
+
+    // Create file that already exists → 409
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/files/content?path=index.js"),
+                            QJsonDocument(QJsonObject{{"content", "// dup"}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 409);
+
+    // Delete the created file
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo/files/content?path=lib/helper.js"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 204);
+    EXPECT_FALSE(QFile::exists(root + "/services/demo/lib/helper.js"));
+
+    // Delete core file manifest.json → 400
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo/files/content?path=manifest.json"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Delete core file index.js → 400
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo/files/content?path=index.js"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Delete nonexistent file → 404
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo/files/content?path=nonexist.js"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServiceDeleteWithProjectsForceViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Non-force delete with associated projects → 409
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 409);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.contains("associatedProjects"));
+    EXPECT_TRUE(manager.services().contains("demo"));
+
+    // Force delete
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/services/demo?force=true"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 204);
+    EXPECT_FALSE(manager.services().contains("demo"));
+    EXPECT_FALSE(manager.projects().value("p1").valid);
+    EXPECT_TRUE(manager.projects().value("p1").error.contains("deleted"));
+}
+
+// --- M54: Schema Validation & Config Utils API Tests ---
+
+TEST(ApiRouterTest, ValidateSchemaViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Valid schema
+    QJsonObject validSchema{
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"name", QJsonObject{{"type", "string"}}}
+    };
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/validate-schema"),
+                            QJsonDocument(QJsonObject{{"schema", validSchema}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.value("valid").toBool());
+    EXPECT_TRUE(obj.contains("fields"));
+    EXPECT_EQ(obj.value("fields").toArray().size(), 2);
+
+    // Invalid schema (unknown type)
+    QJsonObject invalidSchema{
+        {"ts", QJsonObject{{"type", "datetime"}}}
+    };
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/validate-schema"),
+                            QJsonDocument(QJsonObject{{"schema", invalidSchema}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_FALSE(obj.value("valid").toBool());
+    EXPECT_FALSE(obj.value("error").toString().isEmpty());
+
+    // Missing schema field → 400
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/validate-schema"),
+                            QJsonDocument(QJsonObject{}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Service not found → 404
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/nonexistent/validate-schema"),
+                            QJsonDocument(QJsonObject{{"schema", validSchema}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, GenerateDefaultsViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/generate-defaults"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("serviceId").toString(), "demo");
+    EXPECT_TRUE(obj.contains("config"));
+    EXPECT_TRUE(obj.contains("requiredFields"));
+    EXPECT_TRUE(obj.contains("optionalFields"));
+
+    // Service not found → 404
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/nonexistent/generate-defaults"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ValidateConfigViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Valid config (empty config against demo schema which has no required fields)
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/validate-config"),
+                            QJsonDocument(QJsonObject{{"config", QJsonObject{}}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.value("valid").toBool());
+
+    // Missing config field → 400
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/demo/validate-config"),
+                            QJsonDocument(QJsonObject{}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 400);
+
+    // Service not found → 404
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/nonexistent/validate-config"),
+                            QJsonDocument(QJsonObject{{"config", QJsonObject{}}}).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServiceDetailIncludesConfigSchemaFieldsViaHttp) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/services/demo"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.contains("configSchemaFields"));
+    EXPECT_TRUE(obj.value("configSchemaFields").isArray());
 }

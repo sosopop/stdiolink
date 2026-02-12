@@ -106,4 +106,15 @@ ServiceInfo ServiceScanner::loadService(const QString& serviceDir) const {
     return info;
 }
 
+std::optional<ServiceInfo> ServiceScanner::loadSingle(const QString& serviceDir,
+                                                       QString& error) const {
+    ServiceInfo info = loadService(serviceDir);
+    if (!info.valid) {
+        error = info.error;
+        return std::nullopt;
+    }
+    error.clear();
+    return info;
+}
+
 } // namespace stdiolink_server

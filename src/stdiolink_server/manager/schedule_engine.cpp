@@ -45,6 +45,43 @@ void ScheduleEngine::startAll(const QMap<QString, Project>& projects,
     }
 }
 
+void ScheduleEngine::startProject(const Project& project,
+                                  const QMap<QString, ServiceInfo>& services) {
+    m_projects.insert(project.id, project);
+    m_services = services;
+
+    auto timerIt = m_timers.find(project.id);
+    if (timerIt != m_timers.end()) {
+        timerIt.value()->stop();
+        timerIt.value()->deleteLater();
+        m_timers.erase(timerIt);
+    }
+
+    m_restartSuppressed.remove(project.id);
+    m_consecutiveFailures.remove(project.id);
+
+    if (m_shuttingDown || !project.enabled || !project.valid) {
+        return;
+    }
+
+    const auto svcIt = m_services.find(project.serviceId);
+    if (svcIt == m_services.end()) {
+        return;
+    }
+    const QString serviceDir = svcIt.value().serviceDir;
+
+    switch (project.schedule.type) {
+    case ScheduleType::Manual:
+        break;
+    case ScheduleType::FixedRate:
+        startFixedRate(project, serviceDir);
+        break;
+    case ScheduleType::Daemon:
+        startDaemon(project, serviceDir);
+        break;
+    }
+}
+
 void ScheduleEngine::startDaemon(const Project& project,
                                  const QString& serviceDir) {
     if (m_shuttingDown || m_restartSuppressed.contains(project.id)) {
@@ -54,6 +91,8 @@ void ScheduleEngine::startDaemon(const Project& project,
     if (m_instanceMgr->instanceCount(project.id) > 0) {
         return;
     }
+
+    emit scheduleTriggered(project.id, QStringLiteral("daemon"));
 
     QString error;
     (void)m_instanceMgr->startInstance(project, serviceDir, error);
@@ -87,6 +126,8 @@ void ScheduleEngine::startFixedRate(const Project& project,
         if (m_instanceMgr->instanceCount(projectId) >= project.schedule.maxConcurrent) {
             return;
         }
+
+        emit scheduleTriggered(projectId, QStringLiteral("fixed_rate"));
 
         QString error;
         (void)m_instanceMgr->startInstance(project, serviceDir, error);
@@ -167,6 +208,7 @@ void ScheduleEngine::onInstanceFinished(const QString& instanceId,
 
     if (failures >= project.schedule.maxConsecutiveFailures) {
         m_restartSuppressed.insert(projectId);
+        emit scheduleSuppressed(projectId, QStringLiteral("crash_loop"), failures);
         qWarning("ScheduleEngine: daemon project %s entered crash loop (%d)",
                  qUtf8Printable(projectId),
                  failures);

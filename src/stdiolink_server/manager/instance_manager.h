@@ -33,6 +33,8 @@ public:
     const Instance* getInstance(const QString& instanceId) const;
     int instanceCount(const QString& projectId = QString()) const;
 
+    QString findServiceProgram() const;
+
 signals:
     void instanceStarted(const QString& instanceId,
                          const QString& projectId);
@@ -42,7 +44,6 @@ signals:
                           QProcess::ExitStatus exitStatus);
 
 private:
-    QString findServiceProgram() const;
     QString generateInstanceId() const;
     void onProcessFinished(const QString& instanceId,
                            int exitCode,

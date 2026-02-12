@@ -43,7 +43,7 @@ ServerConfig ServerConfig::loadFromFile(const QString& filePath, QString& error)
     }
 
     const QJsonObject obj = doc.object();
-    static const QSet<QString> known = {"port", "host", "logLevel", "serviceProgram"};
+    static const QSet<QString> known = {"port", "host", "logLevel", "serviceProgram", "corsOrigin"};
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (!known.contains(it.key())) {
             error = "unknown field in config.json: " + it.key();
@@ -93,6 +93,18 @@ ServerConfig ServerConfig::loadFromFile(const QString& filePath, QString& error)
             return cfg;
         }
         cfg.serviceProgram = obj.value("serviceProgram").toString();
+    }
+
+    if (obj.contains("corsOrigin")) {
+        if (!obj.value("corsOrigin").isString()) {
+            error = "config field 'corsOrigin' must be a string";
+            return cfg;
+        }
+        cfg.corsOrigin = obj.value("corsOrigin").toString();
+        if (cfg.corsOrigin.isEmpty()) {
+            error = "config field 'corsOrigin' cannot be empty";
+            return cfg;
+        }
     }
 
     error.clear();

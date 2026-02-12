@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QHttpServer>
+#include <QHttpServerResponder>
 #include <QObject>
 
 namespace stdiolink_server {
@@ -17,9 +18,28 @@ public:
 
 private:
     QHttpServerResponse handleServiceList(const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceCreate(const QHttpServerRequest& req);
     QHttpServerResponse handleServiceDetail(const QString& id,
                                             const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceDelete(const QString& id,
+                                            const QHttpServerRequest& req);
     QHttpServerResponse handleServiceScan(const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceFiles(const QString& id,
+                                           const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceFileRead(const QString& id,
+                                              const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceFileWrite(const QString& id,
+                                               const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceFileCreate(const QString& id,
+                                                const QHttpServerRequest& req);
+    QHttpServerResponse handleServiceFileDelete(const QString& id,
+                                                const QHttpServerRequest& req);
+    QHttpServerResponse handleValidateSchema(const QString& id,
+                                             const QHttpServerRequest& req);
+    QHttpServerResponse handleGenerateDefaults(const QString& id,
+                                               const QHttpServerRequest& req);
+    QHttpServerResponse handleValidateConfig(const QString& id,
+                                             const QHttpServerRequest& req);
 
     QHttpServerResponse handleProjectList(const QHttpServerRequest& req);
     QHttpServerResponse handleProjectDetail(const QString& id,
@@ -39,15 +59,33 @@ private:
                                             const QHttpServerRequest& req);
     QHttpServerResponse handleProjectRuntime(const QString& id,
                                              const QHttpServerRequest& req);
+    QHttpServerResponse handleProjectEnabled(const QString& id,
+                                             const QHttpServerRequest& req);
+    QHttpServerResponse handleProjectLogs(const QString& id,
+                                          const QHttpServerRequest& req);
+    QHttpServerResponse handleProjectRuntimeBatch(const QHttpServerRequest& req);
 
     QHttpServerResponse handleInstanceList(const QHttpServerRequest& req);
     QHttpServerResponse handleInstanceTerminate(const QString& id,
                                                 const QHttpServerRequest& req);
     QHttpServerResponse handleInstanceLogs(const QString& id,
                                            const QHttpServerRequest& req);
+    QHttpServerResponse handleInstanceProcessTree(const QString& id,
+                                                   const QHttpServerRequest& req);
+    QHttpServerResponse handleInstanceResources(const QString& id,
+                                                 const QHttpServerRequest& req);
+
+    QHttpServerResponse handleServerStatus(const QHttpServerRequest& req);
+    QHttpServerResponse handleInstanceDetail(const QString& id,
+                                             const QHttpServerRequest& req);
 
     QHttpServerResponse handleDriverList(const QHttpServerRequest& req);
+    QHttpServerResponse handleDriverDetail(const QString& id,
+                                           const QHttpServerRequest& req);
     QHttpServerResponse handleDriverScan(const QHttpServerRequest& req);
+
+    void handleEventStream(const QHttpServerRequest& req,
+                           QHttpServerResponder& responder);
 
     ServerManager* m_manager = nullptr;
 };

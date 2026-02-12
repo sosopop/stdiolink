@@ -11,6 +11,7 @@
 #include "config/server_args.h"
 #include "config/server_config.h"
 #include "http/api_router.h"
+#include "http/cors_middleware.h"
 #include "server_manager.h"
 #include "stdiolink/platform/platform_utils.h"
 
@@ -94,8 +95,14 @@ int main(int argc, char* argv[]) {
 
     QHttpServer httpServer;
     QTcpServer tcpServer;
+
+    CorsMiddleware cors(config.corsOrigin);
+    cors.install(httpServer);
+
     ApiRouter router(&manager);
     router.registerRoutes(httpServer);
+
+    manager.registerWebSocket(httpServer);
 
     if (!tcpServer.listen(QHostAddress(config.host), static_cast<quint16>(config.port))) {
         std::fprintf(stderr,

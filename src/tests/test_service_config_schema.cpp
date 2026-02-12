@@ -323,3 +323,117 @@ TEST(ServiceConfigSchema, FromJsonFileEmptyObject) {
     EXPECT_TRUE(err.isEmpty()) << err.toStdString();
     EXPECT_TRUE(schema.fields.isEmpty());
 }
+
+// --- M54: fromJsonObject / toFieldMetaArray / generateDefaults ---
+
+TEST(ServiceConfigSchema, FromJsonObjectValidSchema) {
+    QJsonObject input{
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"name", QJsonObject{{"type", "string"}, {"required", true}}},
+        {"debug", QJsonObject{{"type", "bool"}, {"default", false}}}
+    };
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(input, error);
+    EXPECT_TRUE(error.isEmpty()) << error.toStdString();
+    EXPECT_EQ(schema.fields.size(), 3);
+    EXPECT_NE(schema.findField("port"), nullptr);
+    EXPECT_NE(schema.findField("name"), nullptr);
+    EXPECT_NE(schema.findField("debug"), nullptr);
+}
+
+TEST(ServiceConfigSchema, FromJsonObjectTypeAliases) {
+    QJsonObject input{
+        {"a", QJsonObject{{"type", "integer"}}},
+        {"b", QJsonObject{{"type", "number"}}},
+        {"c", QJsonObject{{"type", "boolean"}}}
+    };
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(input, error);
+    EXPECT_TRUE(error.isEmpty()) << error.toStdString();
+    EXPECT_EQ(schema.fields.size(), 3);
+}
+
+TEST(ServiceConfigSchema, FromJsonObjectUnknownType) {
+    QJsonObject input{
+        {"createdAt", QJsonObject{{"type", "datetime"}}}
+    };
+
+    QString error;
+    ServiceConfigSchema::fromJsonObject(input, error);
+    EXPECT_FALSE(error.isEmpty());
+    EXPECT_TRUE(error.contains("datetime"));
+    EXPECT_TRUE(error.contains("createdAt"));
+}
+
+TEST(ServiceConfigSchema, FromJsonObjectEmptySchema) {
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(QJsonObject{}, error);
+    EXPECT_TRUE(error.isEmpty());
+    EXPECT_TRUE(schema.fields.isEmpty());
+}
+
+TEST(ServiceConfigSchema, ToFieldMetaArray) {
+    QJsonObject input{
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"name", QJsonObject{{"type", "string"}, {"required", true}}}
+    };
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(input, error);
+    ASSERT_TRUE(error.isEmpty());
+
+    QJsonArray arr = schema.toFieldMetaArray();
+    EXPECT_EQ(arr.size(), 2);
+
+    // Each element should have name and type
+    for (const auto& v : arr) {
+        EXPECT_TRUE(v.toObject().contains("name"));
+        EXPECT_TRUE(v.toObject().contains("type"));
+    }
+}
+
+TEST(ServiceConfigSchema, GenerateDefaults) {
+    QJsonObject input{
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"name", QJsonObject{{"type", "string"}, {"required", true}}},
+        {"debug", QJsonObject{{"type", "bool"}, {"default", false}}},
+        {"ratio", QJsonObject{{"type", "double"}, {"default", 0.5}}}
+    };
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(input, error);
+    ASSERT_TRUE(error.isEmpty());
+
+    QJsonObject defaults = schema.generateDefaults();
+    EXPECT_EQ(defaults.value("port").toInt(), 8080);
+    EXPECT_EQ(defaults.value("debug").toBool(), false);
+    EXPECT_DOUBLE_EQ(defaults.value("ratio").toDouble(), 0.5);
+    // name has no default, should not appear
+    EXPECT_FALSE(defaults.contains("name"));
+}
+
+TEST(ServiceConfigSchema, RequiredAndOptionalFieldNames) {
+    QJsonObject input{
+        {"port", QJsonObject{{"type", "int"}, {"required", true}}},
+        {"name", QJsonObject{{"type", "string"}, {"required", true}}},
+        {"debug", QJsonObject{{"type", "bool"}}},
+        {"ratio", QJsonObject{{"type", "double"}}}
+    };
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(input, error);
+    ASSERT_TRUE(error.isEmpty());
+
+    QStringList required = schema.requiredFieldNames();
+    QStringList optional = schema.optionalFieldNames();
+
+    EXPECT_EQ(required.size(), 2);
+    EXPECT_TRUE(required.contains("port"));
+    EXPECT_TRUE(required.contains("name"));
+
+    EXPECT_EQ(optional.size(), 2);
+    EXPECT_TRUE(optional.contains("debug"));
+    EXPECT_TRUE(optional.contains("ratio"));
+}

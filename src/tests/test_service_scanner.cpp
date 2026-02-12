@@ -154,3 +154,59 @@ TEST(ServiceScannerTest, DuplicateServiceIdKeepsFirstAndSkipsSecond) {
     EXPECT_EQ(stats.loadedServices, 1);
     EXPECT_EQ(stats.failedServices, 1);
 }
+
+TEST(ServiceScannerTest, LoadSingleValidService) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString servicesDir = tmp.path() + "/services";
+    ASSERT_TRUE(QDir().mkpath(servicesDir));
+
+    createService(
+        servicesDir,
+        "single",
+        R"({"manifestVersion":"1","id":"single","name":"Single","version":"2.0.0"})",
+        R"({"port":{"type":"int"}})");
+
+    ServiceScanner scanner;
+    QString error;
+    auto result = scanner.loadSingle(servicesDir + "/single", error);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(error.isEmpty());
+    EXPECT_EQ(result->id, "single");
+    EXPECT_EQ(result->name, "Single");
+    EXPECT_EQ(result->version, "2.0.0");
+    EXPECT_TRUE(result->valid);
+    EXPECT_TRUE(result->rawConfigSchema.contains("port"));
+}
+
+TEST(ServiceScannerTest, LoadSingleMissingManifest) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString serviceDir = tmp.path() + "/no-manifest";
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+    ASSERT_TRUE(writeTextFile(serviceDir + "/index.js", "console.log('ok');\n"));
+
+    ServiceScanner scanner;
+    QString error;
+    auto result = scanner.loadSingle(serviceDir, error);
+
+    EXPECT_FALSE(result.has_value());
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServiceScannerTest, LoadSingleBadManifest) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString servicesDir = tmp.path() + "/services";
+    ASSERT_TRUE(QDir().mkpath(servicesDir));
+
+    createService(servicesDir, "bad", "not-json", "{}");
+
+    ServiceScanner scanner;
+    QString error;
+    auto result = scanner.loadSingle(servicesDir + "/bad", error);
+
+    EXPECT_FALSE(result.has_value());
+    EXPECT_FALSE(error.isEmpty());
+}

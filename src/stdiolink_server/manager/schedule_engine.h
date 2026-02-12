@@ -29,6 +29,8 @@ public:
 
     void startAll(const QMap<QString, Project>& projects,
                   const QMap<QString, ServiceInfo>& services);
+    void startProject(const Project& project,
+                      const QMap<QString, ServiceInfo>& services);
 
     void stopAll();
     void stopProject(const QString& projectId);
@@ -37,6 +39,11 @@ public:
 
     void setShuttingDown(bool value) { m_shuttingDown = value; }
     bool isShuttingDown() const { return m_shuttingDown; }
+
+signals:
+    void scheduleTriggered(const QString& projectId, const QString& scheduleType);
+    void scheduleSuppressed(const QString& projectId, const QString& reason,
+                            int consecutiveFailures);
 
 private slots:
     void onInstanceFinished(const QString& instanceId,
