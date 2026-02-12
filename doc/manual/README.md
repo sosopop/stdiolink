@@ -43,10 +43,17 @@ stdiolink 是一个基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过
 - [快速入门](10-js-service/getting-started.md) - 第一个 JS Service 脚本
 - [模块系统](10-js-service/module-system.md) - ES Module 加载与内置模块
 - [Driver/Task 绑定](10-js-service/driver-binding.md) - 底层 Driver 和 Task API
-- [进程调用](10-js-service/process-binding.md) - exec() 外部进程执行
+- [进程调用](10-js-service/process-binding.md) - exec() 同步外部进程执行
 - [Proxy 代理与并发调度](10-js-service/proxy-and-scheduler.md) - openDriver() 与异步调用
 - [多路事件监听](10-js-service/wait-any-binding.md) - waitAny() 异步多 Task 监听
 - [配置系统](10-js-service/config-schema.md) - config.schema.json 与 getConfig 配置管理
+- [常量模块](10-js-service/constants-binding.md) - SYSTEM 系统信息与 APP_PATHS 路径常量
+- [路径操作](10-js-service/path-binding.md) - join/resolve/dirname/basename 等路径函数
+- [文件系统](10-js-service/fs-binding.md) - 文件读写、目录操作、JSON 读写
+- [时间模块](10-js-service/time-binding.md) - 时间获取与非阻塞 sleep
+- [HTTP 客户端](10-js-service/http-binding.md) - 异步 HTTP request/get/post
+- [结构化日志](10-js-service/log-binding.md) - createLogger 与 Logger API
+- [异步进程](10-js-service/process-async-binding.md) - execAsync/spawn 异步进程执行
 
 ### Server 管理器（stdiolink_server）
 

@@ -70,6 +70,42 @@ curl http://127.0.0.1:8080/api/services/data-collector
 
 `configSchema` 返回的是 `config.schema.json` 的原始内容。
 
+### POST /api/services/scan
+
+手动触发 Service 目录重扫。重新扫描 `services/` 目录，发现新增/移除/更新的 Service，并可选地重新验证关联的 Project。
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/services/scan
+```
+
+**请求体（可选）：**
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `revalidateProjects` | `boolean` | `true` | 重扫后重新验证关联 Project |
+| `restartScheduling` | `boolean` | `true` | 重扫后重启调度引擎 |
+| `stopInvalidProjects` | `boolean` | `false` | 停止变为无效的 Project 的运行实例 |
+
+**响应示例：**
+
+```json
+{
+  "scannedDirs": 5,
+  "loadedServices": 3,
+  "failedServices": 1,
+  "added": 1,
+  "removed": 0,
+  "updated": 1,
+  "unchanged": 1,
+  "revalidatedProjects": 4,
+  "becameValid": 0,
+  "becameInvalid": 1,
+  "remainedInvalid": 0,
+  "schedulingRestarted": true,
+  "invalidProjects": ["legacy-project"]
+}
+```
+
 ---
 
 ## Project API
@@ -237,6 +273,55 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/stop
 curl -X POST http://127.0.0.1:8080/api/projects/silo-a/reload
 ```
 
+### GET /api/projects/{id}/runtime
+
+获取 Project 的运行态信息，包含实例列表和调度引擎状态。
+
+```bash
+curl http://127.0.0.1:8080/api/projects/silo-a/runtime
+```
+
+**响应示例：**
+
+```json
+{
+  "id": "silo-a",
+  "enabled": true,
+  "valid": true,
+  "status": "running",
+  "runningInstances": 1,
+  "instances": [
+    {
+      "id": "inst_a1b2c3d4",
+      "projectId": "silo-a",
+      "serviceId": "data-collector",
+      "pid": 12345,
+      "startedAt": "2025-01-15T08:30:00Z",
+      "status": "running"
+    }
+  ],
+  "schedule": {
+    "type": "daemon",
+    "timerActive": false,
+    "restartSuppressed": false,
+    "consecutiveFailures": 0,
+    "shuttingDown": false,
+    "autoRestarting": true
+  }
+}
+```
+
+**schedule 字段说明：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `type` | `string` | 调度类型 |
+| `timerActive` | `boolean` | 定时器是否活跃（fixed_rate） |
+| `restartSuppressed` | `boolean` | 重启是否被抑制（连续失败过多） |
+| `consecutiveFailures` | `number` | 连续失败次数 |
+| `shuttingDown` | `boolean` | 是否正在关闭 |
+| `autoRestarting` | `boolean` | 是否处于自动重启状态（daemon 模式） |
+
 ---
 
 ## Instance API
@@ -346,6 +431,7 @@ curl -X POST http://127.0.0.1:8080/api/drivers/scan
 |------|------|------|
 | GET | `/api/services` | 列出所有 Service |
 | GET | `/api/services/{id}` | Service 详情（含 Schema） |
+| POST | `/api/services/scan` | 触发 Service 重扫 |
 | GET | `/api/projects` | 列出所有 Project |
 | POST | `/api/projects` | 创建 Project |
 | GET | `/api/projects/{id}` | Project 详情 |
@@ -355,6 +441,7 @@ curl -X POST http://127.0.0.1:8080/api/drivers/scan
 | POST | `/api/projects/{id}/start` | 启动 Project |
 | POST | `/api/projects/{id}/stop` | 停止 Project |
 | POST | `/api/projects/{id}/reload` | 重载配置 |
+| GET | `/api/projects/{id}/runtime` | 运行态信息 |
 | GET | `/api/instances` | 列出运行中 Instance |
 | POST | `/api/instances/{id}/terminate` | 终止 Instance |
 | GET | `/api/instances/{id}/logs` | 查看日志 |

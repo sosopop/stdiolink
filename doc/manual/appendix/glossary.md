@@ -5,6 +5,9 @@
 **AnyItem**
 `waitAnyNext` 返回的结果结构，包含任务索引和消息。
 
+**APP_PATHS**
+`stdiolink/constants` 模块导出的只读常量对象，包含应用路径信息（appPath、serviceDir、tempDir 等）。
+
 ## C
 
 **CommandMeta**
@@ -18,6 +21,9 @@ Driver 的命令行交互模式，用于调试和独立使用。
 
 **ConsoleBridge**
 JS 引擎的 console 对象桥接，将 `console.log` 等调用映射到 Qt 日志系统。
+
+**createLogger**
+`stdiolink/log` 模块的工厂函数，创建结构化日志 Logger 实例。
 
 ## D
 
@@ -35,6 +41,11 @@ Manager 层的 Driver 扫描器，在核心库 `DriverScanner` 基础上补充 `
 
 **config.schema.json**
 服务目录中的配置 schema 文件，声明配置字段的类型和约束，复用 FieldMeta 类型系统。
+
+## E
+
+**execAsync**
+`stdiolink/process` 模块的异步进程执行函数，等待完成后返回 stdout/stderr/exitCode。
 
 ## F
 
@@ -77,6 +88,11 @@ QuickJS-NG 引擎的 RAII 封装，管理 JS 运行时和上下文的生命周�
 **JsTaskScheduler**
 JS Service 的并发调度器，基于 `waitAnyNext` 实现单线程多任务调度。
 
+## L
+
+**Logger**
+`stdiolink/log` 模块中 `createLogger()` 返回的日志实例，支持 debug/info/warn/error 级别和 child 继承链。
+
 ## M
 
 **Message**
@@ -91,9 +107,12 @@ ES Module 加载器，处理内置模块拦截和文件模块的路径解析与�
 ## O
 
 **openDriver**
-JS Service 的 Driver 工厂函数，启动进程、获取元数据并返回 Proxy 代理对象。
+JS Service 的 Driver 工厂函数，启动进程、获取元数据并返回 Proxy 代理对象。支持 `profilePolicy` 和 `metaTimeoutMs` 选项。
 
 ## P
+
+**ProcessHandle**
+`stdiolink/process` 模块中 `spawn()` 返回的进程句柄，支持 onStdout/onStderr/onExit 回调和 write/kill 操作。
 
 **Project**
 对某个 Service 的一次实例化配置，包含业务参数（config）和调度策略（schedule）。存储为 `projects/{id}.json` 文件。
@@ -123,6 +142,9 @@ Project 的调度策略配置，支持 manual（手动）、fixed_rate（定时�
 
 **ServiceConfigSchema**
 JS Service 的配置 schema 结构，复用 FieldMeta 描述配置字段。
+
+**SYSTEM**
+`stdiolink/constants` 模块导出的只读常量对象，包含操作系统类型（os/isWindows/isMac/isLinux）和 CPU 架构（arch）。
 
 **Stdio 模式**
 标准 IPC 模式，通过 stdin/stdout 通信。

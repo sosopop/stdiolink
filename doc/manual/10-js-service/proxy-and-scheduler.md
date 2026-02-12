@@ -18,14 +18,38 @@ calc.$close();
 ### 函数签名
 
 ```js
-await openDriver(program, args?) → Proxy
+await openDriver(program, args?, options?) → Proxy
 ```
+
+**参数：**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `program` | `string` | 可执行文件路径（必填） |
+| `args` | `string[]` | 启动参数（可选） |
+| `options` | `object` | 选项（可选） |
+
+**options 字段：**
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `profilePolicy` | `string` | `"auto"` | Profile 注入策略 |
+| `metaTimeoutMs` | `number` | `5000` | 元数据查询超时（正整数） |
+
+**profilePolicy 取值：**
+
+| 值 | 行为 |
+|----|------|
+| `"auto"` | 如果 args 中没有 `--profile=` 参数，自动追加 `--profile=keepalive` |
+| `"force-keepalive"` | 移除 args 中已有的 `--profile=` 参数，强制追加 `--profile=keepalive` |
+| `"preserve"` | 不修改 args，保持原样 |
 
 `openDriver()` 内部执行以下步骤：
 
-1. 创建 `Driver` 实例并调用 `start()`
-2. 调用 `queryMeta()` 获取元数据
-3. 返回 Proxy 对象，将命令名映射为异步方法
+1. 根据 `profilePolicy` 处理启动参数
+2. 创建 `Driver` 实例并调用 `start()`
+3. 调用 `queryMeta(metaTimeoutMs)` 获取元数据
+4. 返回 Proxy 对象，将命令名映射为异步方法
 
 ### 保留字段
 
