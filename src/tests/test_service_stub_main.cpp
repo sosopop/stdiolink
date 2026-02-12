@@ -2,7 +2,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QThread>
+#include <QTimer>
 
 #include <cstdlib>
 #include <csignal>
@@ -68,14 +68,23 @@ int main(int argc, char* argv[]) {
 
     writeMarker(test.value("markerFile").toString(), config);
 
+    const int exitCode = test.value("exitCode").toInt(0);
     const int sleepMs = test.value("sleepMs").toInt(0);
+    const bool crash = test.value("crash").toBool(false);
+
     if (sleepMs > 0) {
-        QThread::msleep(static_cast<unsigned long>(sleepMs));
+        QTimer::singleShot(sleepMs, &app, [&]() {
+            if (crash) {
+                std::abort();
+            }
+            app.exit(exitCode);
+        });
+        return app.exec();
     }
 
-    if (test.value("crash").toBool(false)) {
+    if (crash) {
         std::abort();
     }
 
-    return test.value("exitCode").toInt(0);
+    return exitCode;
 }

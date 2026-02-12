@@ -164,20 +164,33 @@ void InstanceManager::terminateInstance(const QString& instanceId) {
     }
 
     proc->closeWriteChannel();
-    proc->terminate();
-}
-
-void InstanceManager::terminateByProject(const QString& projectId) {
-    for (auto it = m_instances.begin(); it != m_instances.end(); ++it) {
-        if (it->second->projectId == projectId) {
-            terminateInstance(it->first);
+    if (!proc->waitForFinished(200)) {
+        proc->terminate();
+        if (!proc->waitForFinished(200)) {
+            proc->kill();
         }
     }
 }
 
-void InstanceManager::terminateAll() {
+void InstanceManager::terminateByProject(const QString& projectId) {
+    QStringList ids;
     for (auto it = m_instances.begin(); it != m_instances.end(); ++it) {
-        terminateInstance(it->first);
+        if (it->second->projectId == projectId) {
+            ids.append(it->first);
+        }
+    }
+    for (const QString& id : ids) {
+        terminateInstance(id);
+    }
+}
+
+void InstanceManager::terminateAll() {
+    QStringList ids;
+    for (auto it = m_instances.begin(); it != m_instances.end(); ++it) {
+        ids.append(it->first);
+    }
+    for (const QString& id : ids) {
+        terminateInstance(id);
     }
 }
 
