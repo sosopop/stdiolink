@@ -39,10 +39,17 @@ Instance 是一个正在运行的 `stdiolink_service` 子进程，由 `InstanceM
 
 每个 Instance 的 stdout 和 stderr 都会重定向到 `logs/{projectId}.log`（追加模式）。同一个 Project 的多次运行共享同一个日志文件。
 
-可通过 API 查看日志：
+可通过 API 查看日志。路径参数支持 Instance ID 或 Project ID（Instance 退出后仍可通过 Project ID 查看历史日志）：
 
 ```bash
+# 通过 Instance ID 查看
 curl http://127.0.0.1:8080/api/instances/{instanceId}/logs
+
+# 通过 Project ID 查看（Instance 退出后仍可查看历史日志）
+curl http://127.0.0.1:8080/api/instances/silo-a/logs
+
+# 指定返回行数（默认 100，最大 5000）
+curl "http://127.0.0.1:8080/api/instances/silo-a/logs?lines=50"
 ```
 
 ## 调度引擎

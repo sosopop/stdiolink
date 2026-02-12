@@ -44,28 +44,26 @@ Service 的描述文件，定义基本信息：
 
 定义该 Service 接受的配置参数及其类型约束。Server 使用此 Schema 对 Project 的 `config` 字段进行验证。
 
+Schema 文件为 JSON 对象，每个键是字段名，值是字段的类型定义：
+
 ```json
 {
-  "fields": [
-    {
-      "name": "device",
-      "type": "object",
-      "required": true,
-      "description": "设备连接参数",
-      "fields": [
-        { "name": "host", "type": "string", "required": true },
-        { "name": "port", "type": "int", "default": 502 }
-      ]
-    },
-    {
-      "name": "polling",
-      "type": "object",
-      "fields": [
-        { "name": "intervalMs", "type": "int", "default": 1000 },
-        { "name": "registers", "type": "array", "default": [] }
-      ]
+  "device": {
+    "type": "object",
+    "required": true,
+    "description": "设备连接参数",
+    "fields": {
+      "host": { "type": "string", "required": true },
+      "port": { "type": "int", "default": 502 }
     }
-  ]
+  },
+  "polling": {
+    "type": "object",
+    "fields": {
+      "intervalMs": { "type": "int", "default": 1000 },
+      "registers": { "type": "array", "default": [] }
+    }
+  }
 }
 ```
 

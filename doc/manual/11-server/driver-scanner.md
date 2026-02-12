@@ -92,10 +92,15 @@ Drivers: 2 updated, 1 failed, 0 skipped
 # 列出已发现的 Driver
 curl http://127.0.0.1:8080/api/drivers
 
-# 手动触发重扫
+# 手动触发重扫（含 meta 刷新）
 curl -X POST http://127.0.0.1:8080/api/drivers/scan
+
+# 仅扫描目录，跳过 meta 重新导出
+curl -X POST http://127.0.0.1:8080/api/drivers/scan \
+  -H "Content-Type: application/json" \
+  -d '{"refreshMeta": false}'
 ```
 
-手动重扫会重新执行完整的扫描流程（含 refreshMeta），适用于新增 Driver 或恢复 `.failed` 目录后的场景。
+手动重扫默认执行完整流程（含 refreshMeta），适用于新增 Driver 或恢复 `.failed` 目录后的场景。设置 `refreshMeta: false` 可跳过 meta 重新导出，仅扫描目录变更。
 
 详见 [HTTP API 参考](http-api.md)。

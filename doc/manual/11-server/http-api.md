@@ -45,7 +45,7 @@
 
 ### GET /api/services/{id}
 
-获取单个 Service 的详情，包含完整的配置 Schema。
+获取单个 Service 的详情，包含完整的 Manifest、配置 Schema 和关联的 Project ID 列表。
 
 ```bash
 curl http://127.0.0.1:8080/api/services/data-collector
@@ -59,16 +59,35 @@ curl http://127.0.0.1:8080/api/services/data-collector
   "name": "数据采集服务",
   "version": "1.0.0",
   "serviceDir": "/opt/data/services/data-collector",
-  "hasSchema": true,
+  "manifest": {
+    "manifestVersion": 1,
+    "id": "data-collector",
+    "name": "数据采集服务",
+    "version": "1.0.0",
+    "description": "工业数据采集",
+    "author": "dev"
+  },
   "configSchema": {
-    "fields": [
-      { "name": "device", "type": "object", "required": true, "fields": [...] }
-    ]
-  }
+    "device": {
+      "type": "object",
+      "required": true,
+      "fields": {
+        "host": { "type": "string", "required": true },
+        "port": { "type": "int", "default": 502 }
+      }
+    }
+  },
+  "projects": ["silo-a", "silo-b"]
 }
 ```
 
-`configSchema` 返回的是 `config.schema.json` 的原始内容。
+**字段说明：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `manifest` | `object` | 完整的 `manifest.json` 内容 |
+| `configSchema` | `object` | `config.schema.json` 原始内容 |
+| `projects` | `string[]` | 关联此 Service 的 Project ID 列表 |
 
 ### POST /api/services/scan
 
@@ -130,19 +149,72 @@ curl http://127.0.0.1:8080/api/projects
       "enabled": true,
       "valid": true,
       "schedule": { "type": "fixed_rate", "intervalMs": 5000, "maxConcurrent": 1 },
-      "runningInstances": 1
+      "config": { "device": { "host": "192.168.1.100", "port": 502 } },
+      "instanceCount": 1,
+      "status": "running"
     }
   ]
 }
 ```
 
+**字段说明：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `instanceCount` | `number` | 当前运行中的 Instance 数量 |
+| `status` | `string` | 状态：`running` / `stopped` / `invalid` |
+| `error` | `string` | 验证失败时的错误信息（仅在无效时出现） |
+
 ### GET /api/projects/{id}
 
-获取单个 Project 的详情，包含完整配置和关联的 Instance 列表。
+获取单个 Project 的详情，包含完整配置、关联的 Instance 列表和 Service 的配置 Schema。
 
 ```bash
 curl http://127.0.0.1:8080/api/projects/silo-a
 ```
+
+**响应示例：**
+
+```json
+{
+  "id": "silo-a",
+  "name": "料仓A数据采集",
+  "serviceId": "data-collector",
+  "enabled": true,
+  "valid": true,
+  "schedule": { "type": "fixed_rate", "intervalMs": 5000, "maxConcurrent": 1 },
+  "config": { "device": { "host": "192.168.1.100", "port": 502 } },
+  "instanceCount": 1,
+  "status": "running",
+  "instances": [
+    {
+      "id": "inst_a1b2c3d4",
+      "projectId": "silo-a",
+      "serviceId": "data-collector",
+      "pid": 12345,
+      "startedAt": "2025-01-15T08:30:00Z",
+      "status": "running"
+    }
+  ],
+  "configSchema": {
+    "device": {
+      "type": "object",
+      "required": true,
+      "fields": {
+        "host": { "type": "string", "required": true },
+        "port": { "type": "int", "default": 502 }
+      }
+    }
+  }
+}
+```
+
+与列表响应相比，详情响应额外包含：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `instances` | `Instance[]` | 关联的运行中 Instance 列表 |
+| `configSchema` | `object` | 关联 Service 的 `config.schema.json` 内容 |
 
 ### POST /api/projects
 
@@ -230,7 +302,7 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/validate
 
 ### POST /api/projects/{id}/start
 
-启动 Project，创建新的 Instance。
+启动 Project，创建新的 Instance。启动前会自动恢复该 Project 的调度状态。
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/projects/silo-a/start
@@ -259,19 +331,35 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/start
 
 ### POST /api/projects/{id}/stop
 
-停止 Project 的所有运行中 Instance。
+停止 Project 的所有运行中 Instance，并暂停该 Project 的调度。
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/projects/silo-a/stop
 ```
 
+**响应示例：**
+
+```json
+{ "stopped": true }
+```
+
 ### POST /api/projects/{id}/reload
 
-重新从文件加载 Project 配置并重新验证。适用于直接修改了 `projects/{id}.json` 文件后的场景。
+重新从文件加载 Project 配置并重新验证。适用于直接修改了 `projects/{id}.json` 文件后的场景。reload 会先停止当前运行的 Instance 和调度，然后重新加载配置并验证，最后重启调度引擎。
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/projects/silo-a/reload
 ```
+
+**响应：**
+
+返回重载后的 Project 完整信息（与 `GET /api/projects` 列表项格式相同）。
+
+| 状态码 | 说明 |
+|--------|------|
+| `200 OK` | 重载成功 |
+| `400 Bad Request` | 文件解析失败或验证失败 |
+| `404 Not Found` | Project 文件不存在 |
 
 ### GET /api/projects/{id}/runtime
 
@@ -363,6 +451,12 @@ curl "http://127.0.0.1:8080/api/instances?projectId=silo-a"
 curl -X POST http://127.0.0.1:8080/api/instances/inst_a1b2c3d4/terminate
 ```
 
+**响应示例：**
+
+```json
+{ "terminated": true }
+```
+
 | 状态码 | 说明 |
 |--------|------|
 | `200 OK` | 终止信号已发送 |
@@ -370,10 +464,32 @@ curl -X POST http://127.0.0.1:8080/api/instances/inst_a1b2c3d4/terminate
 
 ### GET /api/instances/{id}/logs
 
-获取 Instance 所属 Project 的日志内容。日志文件位于 `logs/{projectId}.log`。
+获取日志内容。路径参数支持 Instance ID 或 Project ID；当传入 Instance ID 时自动解析为对应的 Project ID。日志文件位于 `logs/{projectId}.log`。
 
 ```bash
+# 通过 Instance ID 查看
 curl http://127.0.0.1:8080/api/instances/inst_a1b2c3d4/logs
+
+# 通过 Project ID 查看（Instance 退出后仍可查看历史日志）
+curl http://127.0.0.1:8080/api/instances/silo-a/logs
+
+# 指定返回行数
+curl "http://127.0.0.1:8080/api/instances/silo-a/logs?lines=50"
+```
+
+**查询参数：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `lines` | `int` | `100` | 返回最后 N 行日志（范围 1–5000） |
+
+**响应示例：**
+
+```json
+{
+  "projectId": "silo-a",
+  "lines": ["2025-01-15 08:30:00 [INFO] Service started", "..."]
+}
 ```
 
 ---
@@ -395,22 +511,38 @@ curl http://127.0.0.1:8080/api/drivers
   "drivers": [
     {
       "id": "driver_modbusrtu",
-      "name": "Modbus RTU Driver",
-      "version": "1.0.0",
       "program": "/opt/data/drivers/driver_modbusrtu/driver_modbusrtu",
-      "commands": ["read_registers", "write_register"]
+      "metaHash": "a3f2b1...",
+      "name": "Modbus RTU Driver",
+      "version": "1.0.0"
     }
   ]
 }
 ```
 
+**字段说明：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | `string` | Driver 标识（通常为目录名） |
+| `program` | `string` | 可执行文件完整路径 |
+| `metaHash` | `string` | 元数据 SHA256 哈希（用于变更检测） |
+| `name` | `string` | Driver 名称（来自元数据，无 meta 时不返回） |
+| `version` | `string` | Driver 版本（来自元数据，无 meta 时不返回） |
+
 ### POST /api/drivers/scan
 
-手动触发 Driver 目录重扫。会重新执行完整的扫描流程（含 meta 刷新）。
+手动触发 Driver 目录重扫。会重新执行完整的扫描流程。
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/drivers/scan
 ```
+
+**请求体（可选）：**
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `refreshMeta` | `boolean` | `true` | 是否刷新 Driver 元数据。设为 `false` 时仅扫描目录，跳过 meta 查询 |
 
 **响应示例：**
 
@@ -430,11 +562,11 @@ curl -X POST http://127.0.0.1:8080/api/drivers/scan
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/services` | 列出所有 Service |
-| GET | `/api/services/{id}` | Service 详情（含 Schema） |
+| GET | `/api/services/{id}` | Service 详情（含 Manifest、Schema、Project 列表） |
 | POST | `/api/services/scan` | 触发 Service 重扫 |
 | GET | `/api/projects` | 列出所有 Project |
 | POST | `/api/projects` | 创建 Project |
-| GET | `/api/projects/{id}` | Project 详情 |
+| GET | `/api/projects/{id}` | Project 详情（含 Instance 列表、Schema） |
 | PUT | `/api/projects/{id}` | 更新 Project |
 | DELETE | `/api/projects/{id}` | 删除 Project |
 | POST | `/api/projects/{id}/validate` | 验证配置 |
@@ -444,6 +576,6 @@ curl -X POST http://127.0.0.1:8080/api/drivers/scan
 | GET | `/api/projects/{id}/runtime` | 运行态信息 |
 | GET | `/api/instances` | 列出运行中 Instance |
 | POST | `/api/instances/{id}/terminate` | 终止 Instance |
-| GET | `/api/instances/{id}/logs` | 查看日志 |
+| GET | `/api/instances/{id}/logs` | 查看日志（支持 Instance ID 或 Project ID） |
 | GET | `/api/drivers` | 列出已发现 Driver |
 | POST | `/api/drivers/scan` | 触发 Driver 重扫 |
