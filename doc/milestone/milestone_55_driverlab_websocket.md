@@ -46,7 +46,7 @@ Qt 6.8+ 的 `QAbstractHttpServer::addWebSocketUpgradeVerifier()` 原生支持 We
 | WebSocket 断开 | kill Driver | kill Driver |
 | Driver 正常退出 | 推送 `driver.exited`，关闭 WebSocket | 推送 `driver.exited`，**不关闭 WebSocket**（保留会话） |
 | Driver 崩溃 | 推送 `driver.exited`，关闭 WebSocket | 推送 `driver.exited`，**不关闭 WebSocket**（等待下一条命令） |
-| 新命令（Driver 已退出） | 不支持（连接已关闭） | 自动重启 Driver + 推送 `driver.restarted` |
+| 新命令（Driver 已退出） | 不支持（连接已关闭） | 自动重启 Driver + 推送 `driver.restarted`（受退避策略约束） |
 | 服务端 shutdown | kill 所有 Driver，关闭所有 WebSocket | 同左 |
 
 ### 3.3 下行消息协议（服务端 → 客户端）
@@ -140,17 +140,16 @@ private:
     QHttpServer* m_server = nullptr;
     QVector<DriverLabWsConnection*> m_connections;
 
-    // verifier 回调中暂存参数，onNewWebSocketConnection 中取用
-    // 注意：依赖 verifier 回调和 newWebSocketConnection 信号的 1:1 顺序对应。
-    // Qt 文档未明确保证此顺序，实现时需验证。如不可靠，
-    // 可改用 QMap<QWebSocket*, PendingInfo> 在 onNewWebSocketConnection 中
-    // 通过 socket 的 requestUrl() 重新解析参数（更健壮但有少量重复解析）。
-    struct PendingInfo {
+    // onNewWebSocketConnection 中通过 socket->requestUrl() 重新解析参数。
+    // 不使用 QQueue 暂存 verifier 中的参数，因为 Qt 未保证 verifier 回调
+    // 与 newWebSocketConnection 信号之间的 1:1 顺序对应关系。
+    // requestUrl() 解析代价仅为一次轻量级 URL 解析，可靠性远高于队列方案。
+    struct ConnectionParams {
         QString driverId;
         QString runMode;
         QStringList extraArgs;
     };
-    QQueue<PendingInfo> m_pendingQueue;
+    static ConnectionParams parseConnectionParams(const QUrl& url);
 };
 
 } // namespace stdiolink_server
@@ -208,6 +207,13 @@ private:
     QStringList m_extraArgs;
     QByteArray m_stdoutBuffer;  // readyRead 可能不是完整行
     bool m_metaSent = false;
+
+    // OneShot 崩溃退避：连续 3 次在 2 秒内退出则暂停自动重启
+    static constexpr int kMaxRapidCrashes = 3;
+    static constexpr int kRapidCrashWindowMs = 2000;
+    int m_consecutiveFastExits = 0;
+    QDateTime m_lastDriverStart;
+    bool m_restartSuppressed = false;  // true 时不再自动重启，需用户发 restart 命令
 };
 
 } // namespace stdiolink_server
@@ -251,7 +257,8 @@ DriverLabWsHandler::verifyUpgrade(const QHttpServerRequest& request) {
     if (!argsStr.isEmpty())
         info.extraArgs = argsStr.split(",", Qt::SkipEmptyParts);
 
-    m_pendingQueue.enqueue(info);
+    // verifier 仅做校验和拒绝，不暂存参数
+    // onNewWebSocketConnection 中通过 socket->requestUrl() 重新解析
     return QHttpServerWebSocketUpgradeResponse::accept();
 }
 ```
@@ -373,10 +380,12 @@ void DriverLabWsConnection::forwardStdoutLine(const QByteArray& line) {
 - **风险 1**：`QHttpServer::addWebSocketUpgradeVerifier` API 行为与预期不符
   - 控制：Qt 6.10.0 文档已确认此 API；编写最小 demo 先行验证 verifier + `nextPendingWebSocketConnection` 流程
 - **风险 2**：verifier 回调中无法传递 driverId 到 `onNewWebSocketConnection`
-  - 控制：使用 `m_pendingQueue` 暂存 verifier 中解析的参数；`newWebSocketConnection` 信号触发时从队列取出
+  - 控制：不使用队列暂存参数。`onNewWebSocketConnection` 中通过 `socket->requestUrl().path()` 和 `QUrlQuery` 重新解析 `driverId`/`runMode`/`args`，彻底消除对 verifier 与信号顺序对应的假设依赖
 - **风险 3**：Driver 进程退出信号和 WebSocket 断开信号的竞态
   - 控制：在 `onSocketDisconnected` 中检查进程是否已退出再决定是否 terminate；在 `onDriverFinished` 中检查 socket 是否已断开再决定是否发送消息。OneShot 模式下自动重启时，需加 `m_restarting` 标志位防止 `onDriverFinished` 和 `handleExecMessage` 中的重启逻辑重入
-- **风险 4**：Meta 查询超时阻塞事件循环
+- **风险 4**：OneShot 模式下 Driver 因配置错误秒退导致无限重启循环
+  - 控制：连续 3 次在 2 秒内崩溃则推送 `error` 消息通知用户"Driver 频繁崩溃，请检查配置"，暂停自动重启直到用户显式发送 `restart` 命令
+- **风险 5**：Meta 查询超时阻塞事件循环
   - 控制：使用异步等待（QTimer + 信号槽），不阻塞 Qt 事件循环
 
 ---

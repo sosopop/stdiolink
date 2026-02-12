@@ -31,7 +31,7 @@
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `serviceId` | string | 按 Service ID 过滤 |
-| `status` | string | 按状态过滤：`running`/`stopped`/`invalid` |
+| `status` | string | 按状态过滤：`running`/`stopped`/`disabled`/`invalid` |
 | `enabled` | bool | 按启用状态过滤 |
 | `page` | int | 页码（从 1 开始，默认 1） |
 | `pageSize` | int | 每页数量（默认 20，最大 100） |
@@ -53,6 +53,7 @@
 
 - `running`：`project.valid && project.enabled` 且有运行中 Instance
 - `stopped`：`project.valid && project.enabled` 且无运行中 Instance
+- `disabled`：`project.valid && !project.enabled`
 - `invalid`：`!project.valid`
 
 ### 3.2 `PATCH /api/projects/{id}/enabled`
@@ -231,11 +232,9 @@ QHttpServerResponse ApiRouter::handleProjectEnabled(const QString& id,
         m_manager->scheduleEngine()->stopProject(id);
         m_manager->instanceManager()->terminateByProject(id);
     } else {
-        // 注意：startScheduling() 会重建所有 Project 的调度状态，
-        // 不是仅恢复单个 Project。如果性能敏感，后续可新增
-        // scheduleEngine()->resumeProject(id) 做单 Project 恢复。
-        // 当前阶段复用 startScheduling() 即可。
-        m_manager->startScheduling();
+        // ScheduleEngine 已有 resumeProject() 方法（见 schedule_engine.h），
+        // 仅恢复单个 Project 的调度状态，无需调用重量级的 startScheduling()
+        m_manager->scheduleEngine()->resumeProject(id);
     }
 
     return jsonResponse(projectToJson(*it));

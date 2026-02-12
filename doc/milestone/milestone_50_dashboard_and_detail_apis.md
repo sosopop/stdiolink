@@ -96,7 +96,7 @@ WebUI Dashboard 需要展示系统状态汇总（Service/Project/Instance/Driver
 | `logPath` | Instance 的日志文件路径 |
 | `commandLine` | `QProcess::program()` + `QProcess::arguments()` |
 
-需在 `Instance` 模型中补充这些字段的存储。
+需在 `Instance` 模型中补充这些字段的存储。应在 `InstanceManager::startInstance()` 中立即将 `QProcess::workingDirectory()`、`program()` + `arguments()` 复制到 Instance 结构体，而非运行时动态查询 QProcess（QProcess 存活期结束后这些 API 不可用）。
 
 ### 3.3 `GET /api/drivers/{id}`
 

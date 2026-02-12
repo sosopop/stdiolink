@@ -41,7 +41,7 @@ WebUI 作为 SPA 与 API 服务器必然跨域（即使同机器也是不同端�
 OPTIONS /api/* → 204 No Content + CORS 头
 ```
 
-QHttpServer 不支持真正的通配路由（`/api/*`），需按路径段数分别注册 `<arg>` 占位符。当前 API 最深路径为 4 段（如 `/api/services/{id}/files/content`），因此注册 1-4 段即可覆盖。后续新增更深层 API 路径时需同步补充 OPTIONS 路由。
+QHttpServer 不支持真正的通配路由（`/api/*`），需按路径段数分别注册 `<arg>` 占位符。M49–M57 最深 API 路径为 5 段（如 `/api/services/{id}/files/content`），因此注册 1-5 段即可覆盖。此外，已有的 `setMissingHandler()` 可作为兜底：对未匹配的 OPTIONS 请求返回 204 + CORS 头，避免遗漏新增路径。
 
 ### 3.3 实现方式
 
@@ -159,6 +159,15 @@ void CorsMiddleware::install(QHttpServer& server) {
                      return QHttpServerResponse(
                          QHttpServerResponse::StatusCode::NoContent);
                  });
+
+    // 5 段路径（如 /api/services/{id}/files/content 的子路径）
+    server.route("/api/<arg>/<arg>/<arg>/<arg>/<arg>",
+                 QHttpServerRequest::Method::Options,
+                 [](const QString&, const QString&, const QString&,
+                    const QString&, const QString&) {
+                     return QHttpServerResponse(
+                         QHttpServerResponse::StatusCode::NoContent);
+                 });
 }
 
 } // namespace stdiolink_server
@@ -247,7 +256,9 @@ config.corsOrigin = obj.value("corsOrigin").toString("*");
 - **风险 1**：误用 Qt API 名称/签名（`afterRequest`、`addHeader`）导致编译失败
   - 控制：统一使用 `addAfterRequestHandler()` + `QHttpHeaders`（`replaceOrAppend` + `setHeaders`）
 - **风险 2**：OPTIONS 路由覆盖不全或与已有路由冲突
-  - 控制：OPTIONS 与 GET/POST/PUT/DELETE 按方法分发互不冲突；当新增更深层 API 路径时同步补充 OPTIONS 规则并加回归测试
+  - 控制：OPTIONS 与 GET/POST/PUT/DELETE 按方法分发互不冲突；已预注册到 5 段深度覆盖 M49–M57 所有 API 路径。新增超过 5 段的 API 路径时需同步补充 OPTIONS 规则
+- **风险 4**：M49–M57 累计 25+ 条路由，注册顺序越来越脆弱
+  - 控制：在 `api_router.cpp` 中按模块分段注册（services / projects / instances / drivers / events），每段加注释标注顺序依赖关系。静态路由（如 `/runtime`、`/scan`）必须先于同级动态路由（`/<arg>`）注册
 - **风险 3**：after-request 处理器对 WebSocket 升级请求的影响
   - 控制：WebSocket 升级走独立握手流程；CORS 处理仅针对常规 HTTP 响应
 

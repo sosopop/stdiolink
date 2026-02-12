@@ -75,6 +75,14 @@ SSE 连接断开时，服务端可能无法立即感知（TCP 半开连接问题
 
 每 30 秒发送一次。如果 `writeChunk()` 返回写入失败，则认为连接已断开，触发清理。
 
+### 3.3.2 连接数限制
+
+SSE 连接数上限 `kMaxSseConnections = 32`。超出时返回 `429 Too Many Requests`。每次新连接建立前检查 `activeConnectionCount() >= kMaxSseConnections`。
+
+### 3.3.3 已知局限：无事件 ID
+
+SSE 标准支持 `id:` 字段用于断线重连（客户端通过 `Last-Event-Id` 请求头恢复丢失事件）。首版不实现事件 ID 机制——断线重连不保证不丢事件。客户端断线重连后应主动调用 REST API 刷新完整状态。后续可引入自增事件 ID + 有限环形缓冲区实现断线恢复。
+
 ### 3.4 过滤机制
 
 ```
@@ -161,6 +169,7 @@ public:
     explicit EventStreamHandler(EventBus* bus, QObject* parent = nullptr);
 
     int activeConnectionCount() const;
+    static constexpr int kMaxSseConnections = 32;
 
 private slots:
     void onEventPublished(const ServerEvent& event);
@@ -301,6 +310,7 @@ connect(m_instanceManager, &InstanceManager::instanceFinished,
 
 - **风险 1**：SSE chunked 写入 API 名称/签名与实际不符
   - 控制：实现前先编写最小 demo 验证 `QHttpServerResponder` 的 chunked 写入流程；确认 responder 的所有权语义（move-only 还是可拷贝）
+  - **降级方案**：如 `QHttpServerResponder` 不支持 chunked streaming，改用 M55 已验证的 WebSocket 通道推送事件（复用 `addWebSocketUpgradeVerifier` 基础设施），或退回到客户端短轮询（`GET /api/events/poll?since=<timestamp>`）
 - **风险 2**：SSE 连接断开后服务端无法及时感知（TCP 半开连接）
   - 控制：每 30 秒发送心跳注释行（`: heartbeat\n\n`），写入失败即触发清理
 - **风险 3**：Manager 信号补充影响已有逻辑

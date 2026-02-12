@@ -98,6 +98,8 @@ driver.close();
 
 如果用户同时提供了 `indexJs` 和/或 `configSchema`，则忽略模板默认内容，以用户提供的为准。
 
+> **后续优化**：当前模板 JS 代码硬编码在 C++ 源码中，修改需重新编译。后续可将模板文件迁移到 `data_root/templates/` 或 Qt 资源系统（`qrc`）中运行时读取，便于维护和用户自定义。首版硬编码方案可接受，模板内容稳定后再迁移。
+
 响应（201 Created）：
 
 ```json
@@ -314,6 +316,8 @@ bool deleteService(const QString& id, bool force, QString& error);
   - 控制：Qt 主事件循环串行处理请求，无并发问题；目录创建时 `QDir::mkpath()` + 存在性检查已防护
 - **风险 3**：`loadSingle()` 与 `loadService()` 逻辑不一致
   - 控制：`loadSingle()` 内部直接调用 `loadService()`，共享同一实现
+- **风险 4**：`ServerManager` 职责持续膨胀（M50 新增 `m_startedAt`，M52 新增 `createService`/`deleteService`，后续 M53–M57 继续新增成员）
+  - 控制：当前阶段 `ServerManager` 作为编排层持有各子系统引用是合理的。如后续成员超过 10 个，可考虑将 API 相关子系统（CORS、WebSocket handler、EventBus）封装到 `ApiServer` 类，`ServerManager` 只持有 `ApiServer*`
 
 ---
 

@@ -75,6 +75,7 @@ bool ServiceFileHandler::isPathSafe(const QString& serviceDir,
 - 使用 `QDir::cleanPath()` + `absoluteFilePath()`，**不使用** `canonicalFilePath()`
 - 原因：`canonicalFilePath()` 对不存在的文件返回空字符串，导致新文件创建场景误判
 - 对符号链接：除 `cleanPath` 前缀检查外，额外校验路径上的中间目录和目标文件（如存在）不得为符号链接；命中符号链接直接拒绝（400）
+- **已知局限（TOCTOU）**：`isPathSafe()` 返回 true 后、实际读写文件前存在竞态窗口，攻击者理论上可在此间隙将合法路径替换为符号链接。当前场景下 stdiolink_server 运行在受控环境中，风险可接受。如需进一步加固，可在写入时使用 `O_NOFOLLOW`（Linux）或等效机制
 
 ### 3.2 原子写入（QSaveFile）
 
@@ -146,7 +147,8 @@ bool ServiceFileHandler::atomicWrite(const QString& filePath,
 **特殊处理**：
 
 - 写入 `manifest.json` 时：先校验 JSON 格式和 manifest 字段合法性，校验通过后原子写入，然后更新内存中 `ServiceInfo.manifest`
-- 写入 `config.schema.json` 时：先校验 JSON 格式和 schema 合法性（使用 `ServiceConfigSchema::fromJsonObject()`），校验通过后原子写入，然后更新内存中 `ServiceInfo.configSchema`
+- 写入 `config.schema.json` 时：先校验 JSON 格式和 schema 合法性（使用 `ServiceConfigSchema::fromJsonObject()`，该方法在 M54 中新增），校验通过后原子写入，然后更新内存中 `ServiceInfo.configSchema`
+- **依赖说明**：`fromJsonObject()` 在 M54 中实现。M53 的 schema 写入校验功能依赖 M54 先完成。如需并行开发，M53 可先使用简单的 JSON 格式校验（`QJsonDocument::fromJson()` 验证合法 JSON），M54 完成后再增强为完整 schema 校验
 - 校验失败直接返回 400，不触发文件 I/O
 
 ### 3.6 创建文件 `POST /api/services/{id}/files/content?path=`
@@ -331,34 +333,34 @@ if (relativePath == "manifest.json") {
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 13 | 写入新文件 | 文件内容正确 |
-| 14 | 覆盖已有文件 | 旧内容被替换 |
-| 15 | 写入后无 .tmp 残留 | 临时文件已清理 |
-| 16 | 路径不存在目录 | 返回失败（不自动创建） |
+| 14 | 写入新文件 | 文件内容正确 |
+| 15 | 覆盖已有文件 | 旧内容被替换 |
+| 16 | 写入后无 .tmp 残留 | 临时文件已清理 |
+| 17 | 路径不存在目录 | 返回失败（不自动创建） |
 
 **文件操作 API（test_api_router.cpp）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 17 | `GET /files` 列出三个核心文件 | files 数组含 manifest.json / index.js / config.schema.json |
-| 18 | `GET /files` 含子目录文件 | path 为相对路径如 `lib/utils.js` |
-| 19 | `GET /files/content?path=index.js` | 返回文件内容 |
-| 20 | `GET /files/content?path=../etc/passwd` | 返回 400 |
-| 21 | `GET /files/content?path=nonexist.js` | 返回 404 |
-| 22 | `GET /files/content` 无 path 参数 | 返回 400 |
-| 23 | `PUT /files/content?path=index.js` 更新 | 返回 200 + 内容已更新 |
-| 24 | `PUT /files/content?path=manifest.json` 合法内容 | 返回 200 + 内存已更新 |
-| 25 | `PUT /files/content?path=manifest.json` 非法 JSON | 返回 400 + 文件未变 |
-| 26 | `PUT /files/content?path=config.schema.json` 合法 schema | 返回 200 + 内存更新 |
-| 27 | `PUT /files/content?path=config.schema.json` 非法类型 | 返回 400 |
-| 28 | `PUT` 内容超 1MB | 返回 413 |
-| 29 | `POST /files/content?path=lib/helper.js` 创建新文件 | 返回 201 + 自动创建子目录 |
-| 30 | `POST /files/content?path=index.js` 文件已存在 | 返回 409 |
-| 31 | `DELETE /files/content?path=lib/helper.js` 删除 | 返回 204 |
-| 32 | `DELETE /files/content?path=manifest.json` 核心文件 | 返回 400 |
-| 33 | `DELETE /files/content?path=index.js` 核心文件 | 返回 400 |
-| 34 | `DELETE /files/content?path=nonexist.js` | 返回 404 |
-| 35 | Service 不存在时所有文件操作 | 返回 404 |
+| 18 | `GET /files` 列出三个核心文件 | files 数组含 manifest.json / index.js / config.schema.json |
+| 19 | `GET /files` 含子目录文件 | path 为相对路径如 `lib/utils.js` |
+| 20 | `GET /files/content?path=index.js` | 返回文件内容 |
+| 21 | `GET /files/content?path=../etc/passwd` | 返回 400 |
+| 22 | `GET /files/content?path=nonexist.js` | 返回 404 |
+| 23 | `GET /files/content` 无 path 参数 | 返回 400 |
+| 24 | `PUT /files/content?path=index.js` 更新 | 返回 200 + 内容已更新 |
+| 25 | `PUT /files/content?path=manifest.json` 合法内容 | 返回 200 + 内存已更新 |
+| 26 | `PUT /files/content?path=manifest.json` 非法 JSON | 返回 400 + 文件未变 |
+| 27 | `PUT /files/content?path=config.schema.json` 合法 schema | 返回 200 + 内存更新 |
+| 28 | `PUT /files/content?path=config.schema.json` 非法类型 | 返回 400 |
+| 29 | `PUT` 内容超 1MB | 返回 413 |
+| 30 | `POST /files/content?path=lib/helper.js` 创建新文件 | 返回 201 + 自动创建子目录 |
+| 31 | `POST /files/content?path=index.js` 文件已存在 | 返回 409 |
+| 32 | `DELETE /files/content?path=lib/helper.js` 删除 | 返回 204 |
+| 33 | `DELETE /files/content?path=manifest.json` 核心文件 | 返回 400 |
+| 34 | `DELETE /files/content?path=index.js` 核心文件 | 返回 400 |
+| 35 | `DELETE /files/content?path=nonexist.js` | 返回 404 |
+| 36 | Service 不存在时所有文件操作 | 返回 404 |
 
 ### 6.2 验收标准
 

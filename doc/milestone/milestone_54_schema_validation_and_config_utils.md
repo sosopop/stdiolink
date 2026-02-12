@@ -27,6 +27,8 @@ WebUI 需要在 Schema 编辑器中实时校验 schema 格式、在 Project 创�
 
 校验一份 config schema JSON 是否合法（不写入文件）。
 
+> **语义说明**：此 API 校验的是请求体中的 `schema` 对象，而非该 Service 当前已有的 schema。`{id}` 仅用于验证 Service 存在性，确保调用方在有效的 Service 上下文中操作。保留 `{id}` 是为了与 `generate-defaults`、`validate-config` 等同级 API 保持 URL 模式一致。
+
 请求体：
 
 ```json

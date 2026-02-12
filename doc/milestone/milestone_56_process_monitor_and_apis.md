@@ -247,7 +247,11 @@ ProcessInfo ProcessMonitor::readProcessInfo(qint64 pid) {
     QFile statFile(QString("/proc/%1/stat").arg(pid));
     if (!statFile.open(QIODevice::ReadOnly)) return info;
     QByteArray statData = statFile.readAll();
-    // 解析字段...
+    // 解析字段时注意：第 2 字段 comm 被括号包围（如 "(my process)"），
+    // 且进程名可包含空格、括号、换行符。必须先定位最后一个 ')' 的位置，
+    // 以此为分界点解析后续字段。字段 2（comm）由第一个 '(' 到最后一个 ')'
+    // 之间的内容确定。简单的空格分割会导致后续字段全部偏移。
+    // ...
 
     // 读取 /proc/{pid}/comm
     QFile commFile(QString("/proc/%1/comm").arg(pid));
