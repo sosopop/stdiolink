@@ -11,6 +11,7 @@
 #include "config/server_args.h"
 #include "config/server_config.h"
 #include "http/api_router.h"
+#include "http/cors_middleware.h"
 #include "server_manager.h"
 #include "stdiolink/platform/platform_utils.h"
 
@@ -43,10 +44,7 @@ bool ensureDirectories(const QString& dataRoot) {
 }
 
 void requestQuitSignalHandler(int) {
-    QMetaObject::invokeMethod(
-        qApp,
-        []() { QCoreApplication::quit(); },
-        Qt::QueuedConnection);
+    QMetaObject::invokeMethod(qApp, []() { QCoreApplication::quit(); }, Qt::QueuedConnection);
 }
 
 } // namespace
@@ -94,13 +92,19 @@ int main(int argc, char* argv[]) {
 
     QHttpServer httpServer;
     QTcpServer tcpServer;
+
+    CorsMiddleware cors(config.corsOrigin);
+    cors.install(httpServer);
+
+    // Register WebSocket verifier before HTTP routes
+    manager.driverLabWsHandler()->registerVerifier(httpServer);
+
     ApiRouter router(&manager);
+    router.setCorsHeaders(cors.corsHeaders());
     router.registerRoutes(httpServer);
 
     if (!tcpServer.listen(QHostAddress(config.host), static_cast<quint16>(config.port))) {
-        std::fprintf(stderr,
-                     "Error: failed to listen on %s:%d\n",
-                     qUtf8Printable(config.host),
+        std::fprintf(stderr, "Error: failed to listen on %s:%d\n", qUtf8Printable(config.host),
                      config.port);
         return 1;
     }
@@ -117,9 +121,7 @@ int main(int argc, char* argv[]) {
     std::signal(SIGTERM, requestQuitSignalHandler);
 #endif
 
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&]() {
-        manager.shutdown();
-    });
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&]() { manager.shutdown(); });
 
     return app.exec();
 }

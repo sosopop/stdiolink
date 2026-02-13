@@ -16,10 +16,8 @@ namespace {
 
 /// 已知的合法类型字符串集合
 bool isKnownFieldType(const QString& typeStr) {
-    static const QSet<QString> known = {
-        "string", "int", "integer", "int64", "double", "number",
-        "bool", "boolean", "object", "array", "enum", "any"
-    };
+    static const QSet<QString> known = {"string", "int",     "integer", "int64", "double", "number",
+                                        "bool",   "boolean", "object",  "array", "enum",   "any"};
     return known.contains(typeStr);
 }
 
@@ -69,12 +67,14 @@ ServiceConfigSchema parseObject(const QJsonObject& obj, const QString& pathPrefi
             const QJsonObject itemObj = desc.value("items").toObject();
             const QString itemTypeStr = itemObj.value("type").toString("any");
             if (!isKnownFieldType(itemTypeStr)) {
-                error = QString("unknown item type \"%1\" for field \"%2\"").arg(itemTypeStr, fieldPath);
+                error = QString("unknown item type \"%1\" for field \"%2\"")
+                            .arg(itemTypeStr, fieldPath);
                 return {};
             }
             itemMeta->type = fieldTypeFromString(itemTypeStr);
             if (itemObj.contains("constraints")) {
-                itemMeta->constraints = Constraints::fromJson(itemObj.value("constraints").toObject());
+                itemMeta->constraints =
+                    Constraints::fromJson(itemObj.value("constraints").toObject());
             }
             field.items = itemMeta;
         }
@@ -129,7 +129,8 @@ ServiceConfigSchema ServiceConfigSchema::fromJsObject(const QJsonObject& obj) {
             const QJsonObject itemObj = desc.value("items").toObject();
             itemMeta->type = fieldTypeFromString(itemObj.value("type").toString("any"));
             if (itemObj.contains("constraints")) {
-                itemMeta->constraints = Constraints::fromJson(itemObj.value("constraints").toObject());
+                itemMeta->constraints =
+                    Constraints::fromJson(itemObj.value("constraints").toObject());
             }
             field.items = itemMeta;
         }
@@ -143,6 +144,11 @@ ServiceConfigSchema ServiceConfigSchema::fromJsObject(const QJsonObject& obj) {
         schema.fields.append(field);
     }
     return schema;
+}
+
+ServiceConfigSchema ServiceConfigSchema::fromJsonObject(const QJsonObject& obj, QString& error) {
+    error.clear();
+    return parseObject(obj, QString(), error);
 }
 
 ServiceConfigSchema ServiceConfigSchema::fromJsonFile(const QString& filePath, QString& error) {
@@ -186,6 +192,44 @@ const FieldMeta* ServiceConfigSchema::findField(const QString& name) const {
         }
     }
     return nullptr;
+}
+
+QJsonArray ServiceConfigSchema::toFieldMetaArray() const {
+    QJsonArray arr;
+    for (const auto& field : fields) {
+        arr.append(field.toJson());
+    }
+    return arr;
+}
+
+QJsonObject ServiceConfigSchema::generateDefaults() const {
+    QJsonObject config;
+    for (const auto& field : fields) {
+        if (!field.defaultValue.isNull() && !field.defaultValue.isUndefined()) {
+            config[field.name] = field.defaultValue;
+        }
+    }
+    return config;
+}
+
+QStringList ServiceConfigSchema::requiredFieldNames() const {
+    QStringList names;
+    for (const auto& field : fields) {
+        if (field.required) {
+            names.append(field.name);
+        }
+    }
+    return names;
+}
+
+QStringList ServiceConfigSchema::optionalFieldNames() const {
+    QStringList names;
+    for (const auto& field : fields) {
+        if (!field.required) {
+            names.append(field.name);
+        }
+    }
+    return names;
 }
 
 } // namespace stdiolink_service

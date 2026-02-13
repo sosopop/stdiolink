@@ -21,12 +21,8 @@ bool writeTextFile(const QString& path, const QString& content) {
     return file.error() == QFile::NoError;
 }
 
-void createService(const QString& root,
-                   const QString& dirName,
-                   const QString& manifest,
-                   const QString& schema,
-                   bool withEntry = true,
-                   bool withSchema = true) {
+void createService(const QString& root, const QString& dirName, const QString& manifest,
+                   const QString& schema, bool withEntry = true, bool withSchema = true) {
     const QString dir = root + "/" + dirName;
     QDir().mkpath(dir);
     ASSERT_TRUE(writeTextFile(dir + "/manifest.json", manifest));
@@ -63,8 +59,7 @@ TEST(ServiceScannerTest, ValidServiceLoadedWithRawSchema) {
     ASSERT_TRUE(QDir().mkpath(servicesDir));
 
     createService(
-        servicesDir,
-        "collector",
+        servicesDir, "collector",
         R"({"manifestVersion":"1","id":"collector","name":"Collector","version":"1.0.0"})",
         R"({"device":{"type":"object","fields":{"host":{"type":"string","required":true}}}})");
 
@@ -89,11 +84,7 @@ TEST(ServiceScannerTest, InvalidManifestIsSkipped) {
     const QString servicesDir = tmp.path() + "/services";
     ASSERT_TRUE(QDir().mkpath(servicesDir));
 
-    createService(
-        servicesDir,
-        "bad",
-        "not-json",
-        "{}");
+    createService(servicesDir, "bad", "not-json", "{}");
 
     ServiceScanner scanner;
     ServiceScanner::ScanStats stats;
@@ -111,13 +102,9 @@ TEST(ServiceScannerTest, MissingSchemaIsSkipped) {
     const QString servicesDir = tmp.path() + "/services";
     ASSERT_TRUE(QDir().mkpath(servicesDir));
 
-    createService(
-        servicesDir,
-        "no-schema",
-        R"({"manifestVersion":"1","id":"svc","name":"Svc","version":"1.0.0"})",
-        "{}",
-        true,
-        false);
+    createService(servicesDir, "no-schema",
+                  R"({"manifestVersion":"1","id":"svc","name":"Svc","version":"1.0.0"})", "{}",
+                  true, false);
 
     ServiceScanner scanner;
     ServiceScanner::ScanStats stats;
@@ -133,16 +120,12 @@ TEST(ServiceScannerTest, DuplicateServiceIdKeepsFirstAndSkipsSecond) {
     const QString servicesDir = tmp.path() + "/services";
     ASSERT_TRUE(QDir().mkpath(servicesDir));
 
-    createService(
-        servicesDir,
-        "svc-a",
-        R"({"manifestVersion":"1","id":"dup","name":"SvcA","version":"1.0.0"})",
-        R"({"k":{"type":"string"}})");
-    createService(
-        servicesDir,
-        "svc-b",
-        R"({"manifestVersion":"1","id":"dup","name":"SvcB","version":"1.0.0"})",
-        R"({"k":{"type":"string"}})");
+    createService(servicesDir, "svc-a",
+                  R"({"manifestVersion":"1","id":"dup","name":"SvcA","version":"1.0.0"})",
+                  R"({"k":{"type":"string"}})");
+    createService(servicesDir, "svc-b",
+                  R"({"manifestVersion":"1","id":"dup","name":"SvcB","version":"1.0.0"})",
+                  R"({"k":{"type":"string"}})");
 
     ServiceScanner scanner;
     ServiceScanner::ScanStats stats;
@@ -153,4 +136,57 @@ TEST(ServiceScannerTest, DuplicateServiceIdKeepsFirstAndSkipsSecond) {
     EXPECT_EQ(stats.scannedDirs, 2);
     EXPECT_EQ(stats.loadedServices, 1);
     EXPECT_EQ(stats.failedServices, 1);
+}
+
+TEST(ServiceScannerTest, LoadSingleValidService) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString servicesDir = tmp.path() + "/services";
+    ASSERT_TRUE(QDir().mkpath(servicesDir));
+
+    createService(servicesDir, "good",
+                  R"({"manifestVersion":"1","id":"good","name":"Good","version":"2.0.0"})",
+                  R"({"port":{"type":"int"}})");
+
+    ServiceScanner scanner;
+    QString error;
+    auto info = scanner.loadSingle(servicesDir + "/good", error);
+
+    ASSERT_TRUE(info.has_value());
+    EXPECT_TRUE(error.isEmpty());
+    EXPECT_EQ(info->id, "good");
+    EXPECT_EQ(info->name, "Good");
+    EXPECT_EQ(info->version, "2.0.0");
+    EXPECT_TRUE(info->valid);
+    EXPECT_TRUE(info->rawConfigSchema.contains("port"));
+}
+
+TEST(ServiceScannerTest, LoadSingleMissingManifest) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString dir = tmp.path() + "/empty-svc";
+    ASSERT_TRUE(QDir().mkpath(dir));
+
+    ServiceScanner scanner;
+    QString error;
+    auto info = scanner.loadSingle(dir, error);
+
+    EXPECT_FALSE(info.has_value());
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServiceScannerTest, LoadSingleBadManifest) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString servicesDir = tmp.path() + "/services";
+    ASSERT_TRUE(QDir().mkpath(servicesDir));
+
+    createService(servicesDir, "bad", "not-json", "{}");
+
+    ServiceScanner scanner;
+    QString error;
+    auto info = scanner.loadSingle(servicesDir + "/bad", error);
+
+    EXPECT_FALSE(info.has_value());
+    EXPECT_FALSE(error.isEmpty());
 }

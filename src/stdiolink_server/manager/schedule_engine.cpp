@@ -4,13 +4,9 @@
 
 namespace stdiolink_server {
 
-ScheduleEngine::ScheduleEngine(InstanceManager* instanceMgr,
-                               QObject* parent)
-    : QObject(parent)
-    , m_instanceMgr(instanceMgr) {
-    connect(m_instanceMgr,
-            &InstanceManager::instanceFinished,
-            this,
+ScheduleEngine::ScheduleEngine(InstanceManager* instanceMgr, QObject* parent)
+    : QObject(parent), m_instanceMgr(instanceMgr) {
+    connect(m_instanceMgr, &InstanceManager::instanceFinished, this,
             &ScheduleEngine::onInstanceFinished);
 }
 
@@ -45,8 +41,7 @@ void ScheduleEngine::startAll(const QMap<QString, Project>& projects,
     }
 }
 
-void ScheduleEngine::startDaemon(const Project& project,
-                                 const QString& serviceDir) {
+void ScheduleEngine::startDaemon(const Project& project, const QString& serviceDir) {
     if (m_shuttingDown || m_restartSuppressed.contains(project.id)) {
         return;
     }
@@ -58,14 +53,14 @@ void ScheduleEngine::startDaemon(const Project& project,
     QString error;
     (void)m_instanceMgr->startInstance(project, serviceDir, error);
     if (!error.isEmpty()) {
-        qWarning("ScheduleEngine: daemon start failed for %s: %s",
-                 qUtf8Printable(project.id),
+        qWarning("ScheduleEngine: daemon start failed for %s: %s", qUtf8Printable(project.id),
                  qUtf8Printable(error));
+    } else {
+        emit scheduleTriggered(project.id, QStringLiteral("daemon"));
     }
 }
 
-void ScheduleEngine::startFixedRate(const Project& project,
-                                    const QString& serviceDir) {
+void ScheduleEngine::startFixedRate(const Project& project, const QString& serviceDir) {
     auto* timer = new QTimer(this);
     timer->setInterval(project.schedule.intervalMs);
 
@@ -80,7 +75,8 @@ void ScheduleEngine::startFixedRate(const Project& project,
         }
 
         const Project& project = projectIt.value();
-        if (!project.enabled || !project.valid || project.schedule.type != ScheduleType::FixedRate) {
+        if (!project.enabled || !project.valid ||
+            project.schedule.type != ScheduleType::FixedRate) {
             return;
         }
 
@@ -92,8 +88,9 @@ void ScheduleEngine::startFixedRate(const Project& project,
         (void)m_instanceMgr->startInstance(project, serviceDir, error);
         if (!error.isEmpty()) {
             qWarning("ScheduleEngine: fixed_rate trigger failed for %s: %s",
-                     qUtf8Printable(projectId),
-                     qUtf8Printable(error));
+                     qUtf8Printable(projectId), qUtf8Printable(error));
+        } else {
+            emit scheduleTriggered(projectId, QStringLiteral("fixed_rate"));
         }
     });
 
@@ -128,7 +125,8 @@ void ScheduleEngine::resumeProject(const QString& projectId) {
     m_consecutiveFailures.remove(projectId);
 }
 
-ScheduleEngine::ProjectRuntimeState ScheduleEngine::projectRuntimeState(const QString& projectId) const {
+ScheduleEngine::ProjectRuntimeState ScheduleEngine::projectRuntimeState(
+    const QString& projectId) const {
     ProjectRuntimeState state;
     state.shuttingDown = m_shuttingDown;
     state.restartSuppressed = m_restartSuppressed.contains(projectId);
@@ -137,10 +135,8 @@ ScheduleEngine::ProjectRuntimeState ScheduleEngine::projectRuntimeState(const QS
     return state;
 }
 
-void ScheduleEngine::onInstanceFinished(const QString& instanceId,
-                                        const QString& projectId,
-                                        int exitCode,
-                                        QProcess::ExitStatus exitStatus) {
+void ScheduleEngine::onInstanceFinished(const QString& instanceId, const QString& projectId,
+                                        int exitCode, QProcess::ExitStatus exitStatus) {
     Q_UNUSED(instanceId);
 
     if (m_shuttingDown || m_restartSuppressed.contains(projectId)) {
@@ -168,8 +164,8 @@ void ScheduleEngine::onInstanceFinished(const QString& instanceId,
     if (failures >= project.schedule.maxConsecutiveFailures) {
         m_restartSuppressed.insert(projectId);
         qWarning("ScheduleEngine: daemon project %s entered crash loop (%d)",
-                 qUtf8Printable(projectId),
-                 failures);
+                 qUtf8Printable(projectId), failures);
+        emit scheduleSuppressed(projectId, QStringLiteral("crash loop"), failures);
         return;
     }
 
@@ -179,18 +175,16 @@ void ScheduleEngine::onInstanceFinished(const QString& instanceId,
     }
 
     const QString serviceDir = serviceIt.value().serviceDir;
-    QTimer::singleShot(project.schedule.restartDelayMs,
-                       this,
-                       [this, projectId, serviceDir]() {
-                           if (m_shuttingDown || m_restartSuppressed.contains(projectId)) {
-                               return;
-                           }
-                           auto pIt = m_projects.find(projectId);
-                           if (pIt == m_projects.end()) {
-                               return;
-                           }
-                           startDaemon(pIt.value(), serviceDir);
-                       });
+    QTimer::singleShot(project.schedule.restartDelayMs, this, [this, projectId, serviceDir]() {
+        if (m_shuttingDown || m_restartSuppressed.contains(projectId)) {
+            return;
+        }
+        auto pIt = m_projects.find(projectId);
+        if (pIt == m_projects.end()) {
+            return;
+        }
+        startDaemon(pIt.value(), serviceDir);
+    });
 }
 
 } // namespace stdiolink_server

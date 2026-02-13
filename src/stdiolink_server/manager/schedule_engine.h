@@ -24,8 +24,7 @@ public:
         int consecutiveFailures = 0;
     };
 
-    explicit ScheduleEngine(InstanceManager* instanceMgr,
-                            QObject* parent = nullptr);
+    explicit ScheduleEngine(InstanceManager* instanceMgr, QObject* parent = nullptr);
 
     void startAll(const QMap<QString, Project>& projects,
                   const QMap<QString, ServiceInfo>& services);
@@ -38,17 +37,18 @@ public:
     void setShuttingDown(bool value) { m_shuttingDown = value; }
     bool isShuttingDown() const { return m_shuttingDown; }
 
+signals:
+    void scheduleTriggered(const QString& projectId, const QString& scheduleType);
+    void scheduleSuppressed(const QString& projectId, const QString& reason,
+                            int consecutiveFailures);
+
 private slots:
-    void onInstanceFinished(const QString& instanceId,
-                            const QString& projectId,
-                            int exitCode,
+    void onInstanceFinished(const QString& instanceId, const QString& projectId, int exitCode,
                             QProcess::ExitStatus exitStatus);
 
 private:
-    void startDaemon(const Project& project,
-                     const QString& serviceDir);
-    void startFixedRate(const Project& project,
-                        const QString& serviceDir);
+    void startDaemon(const Project& project, const QString& serviceDir);
+    void startFixedRate(const Project& project, const QString& serviceDir);
 
     InstanceManager* m_instanceMgr = nullptr;
     QMap<QString, ServiceInfo> m_services;

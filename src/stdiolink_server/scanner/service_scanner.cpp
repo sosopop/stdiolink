@@ -12,7 +12,7 @@ using namespace stdiolink_service;
 namespace stdiolink_server {
 
 QMap<QString, ServiceInfo> ServiceScanner::scan(const QString& servicesDir,
-                                                 ScanStats* stats) const {
+                                                ScanStats* stats) const {
     QMap<QString, ServiceInfo> result;
     QDir dir(servicesDir);
     if (!dir.exists()) {
@@ -30,8 +30,7 @@ QMap<QString, ServiceInfo> ServiceScanner::scan(const QString& servicesDir,
             if (stats) {
                 stats->failedServices++;
             }
-            qWarning("ServiceScanner: skip %s: %s",
-                     qUtf8Printable(entry),
+            qWarning("ServiceScanner: skip %s: %s", qUtf8Printable(entry),
                      qUtf8Printable(info.error));
             continue;
         }
@@ -40,8 +39,7 @@ QMap<QString, ServiceInfo> ServiceScanner::scan(const QString& servicesDir,
             if (stats) {
                 stats->failedServices++;
             }
-            qWarning("ServiceScanner: duplicate service id '%s' at %s",
-                     qUtf8Printable(info.id),
+            qWarning("ServiceScanner: duplicate service id '%s' at %s", qUtf8Printable(info.id),
                      qUtf8Printable(info.serviceDir));
             continue;
         }
@@ -53,6 +51,17 @@ QMap<QString, ServiceInfo> ServiceScanner::scan(const QString& servicesDir,
     }
 
     return result;
+}
+
+std::optional<ServiceInfo> ServiceScanner::loadSingle(const QString& serviceDir,
+                                                      QString& error) const {
+    ServiceInfo info = loadService(serviceDir);
+    if (!info.valid) {
+        error = info.error;
+        return std::nullopt;
+    }
+    error.clear();
+    return info;
 }
 
 ServiceInfo ServiceScanner::loadService(const QString& serviceDir) const {

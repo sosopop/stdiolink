@@ -7,9 +7,16 @@ set(STDIOLINK_SERVER_SOURCES
     manager/project_manager.cpp
     manager/instance_manager.cpp
     manager/schedule_engine.cpp
+    manager/process_monitor.cpp
     scanner/service_scanner.cpp
     scanner/driver_manager_scanner.cpp
     http/api_router.cpp
+    http/cors_middleware.cpp
+    http/service_file_handler.cpp
+    http/driverlab_ws_handler.cpp
+    http/driverlab_ws_connection.cpp
+    http/event_bus.cpp
+    http/event_stream_handler.cpp
     server_manager.cpp
 )
 
@@ -19,13 +26,21 @@ set(STDIOLINK_SERVER_HEADERS
     model/instance.h
     model/schedule.h
     model/project.h
+    model/process_info.h
     manager/project_manager.h
     manager/instance_manager.h
     manager/schedule_engine.h
+    manager/process_monitor.h
     scanner/service_scanner.h
     scanner/driver_manager_scanner.h
     http/http_helpers.h
     http/api_router.h
+    http/cors_middleware.h
+    http/service_file_handler.h
+    http/driverlab_ws_handler.h
+    http/driverlab_ws_connection.h
+    http/event_bus.h
+    http/event_stream_handler.h
     server_manager.h
 )
 

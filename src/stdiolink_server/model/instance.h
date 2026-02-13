@@ -19,6 +19,11 @@ struct Instance {
     qint64 pid = 0;
     QString status;
 
+    // Extended fields (M50)
+    QString workingDirectory;
+    QString logPath;
+    QStringList commandLine;
+
     std::unique_ptr<QTemporaryFile> tempConfigFile;
 };
 

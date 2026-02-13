@@ -63,11 +63,8 @@ TEST(ServerConfigTest, ApplyArgsOverridesOnlyExplicitFlags) {
     EXPECT_EQ(cfg.host, "0.0.0.0");
     EXPECT_EQ(cfg.logLevel, "warn");
 
-    const auto partialOverride = ServerArgs::parse({
-        "stdiolink_server",
-        "--port=7777",
-        "--log-level=error"
-    });
+    const auto partialOverride =
+        ServerArgs::parse({"stdiolink_server", "--port=7777", "--log-level=error"});
     cfg.applyArgs(partialOverride);
     EXPECT_EQ(cfg.port, 7777);
     EXPECT_EQ(cfg.host, "0.0.0.0");
@@ -98,4 +95,25 @@ TEST(ServerConfigTest, InvalidServiceProgramTypeRejected) {
     QString error;
     (void)ServerConfig::loadFromFile(filePath, error);
     EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerConfigTest, CorsOriginParsedFromConfig) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"corsOrigin", "http://localhost:3000"}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    const auto cfg = ServerConfig::loadFromFile(filePath, error);
+    ASSERT_TRUE(error.isEmpty()) << qPrintable(error);
+    EXPECT_EQ(cfg.corsOrigin, "http://localhost:3000");
+}
+
+TEST(ServerConfigTest, CorsOriginDefaultIsStar) {
+    QString error;
+    const auto cfg = ServerConfig::loadFromFile("/tmp/stdiolink_nonexistent_config.json", error);
+    EXPECT_TRUE(error.isEmpty());
+    EXPECT_EQ(cfg.corsOrigin, "*");
 }

@@ -23,13 +23,9 @@ QString appendExeSuffix(const QString& path) {
 
 } // namespace
 
-InstanceManager::InstanceManager(const QString& dataRoot,
-                                 const ServerConfig& config,
+InstanceManager::InstanceManager(const QString& dataRoot, const ServerConfig& config,
                                  QObject* parent)
-    : QObject(parent)
-    , m_dataRoot(dataRoot)
-    , m_config(config) {
-}
+    : QObject(parent), m_dataRoot(dataRoot), m_config(config) {}
 
 QString InstanceManager::findServiceProgram() const {
     if (!m_config.serviceProgram.isEmpty()) {
@@ -39,7 +35,8 @@ QString InstanceManager::findServiceProgram() const {
         }
 
         if (explicitPath.isRelative()) {
-            const QString underDataRoot = appendExeSuffix(m_dataRoot + "/" + m_config.serviceProgram);
+            const QString underDataRoot =
+                appendExeSuffix(m_dataRoot + "/" + m_config.serviceProgram);
             if (QFileInfo(underDataRoot).isExecutable()) {
                 return underDataRoot;
             }
@@ -48,8 +45,8 @@ QString InstanceManager::findServiceProgram() const {
         return {};
     }
 
-    const QString sameDir = appendExeSuffix(
-        QCoreApplication::applicationDirPath() + "/stdiolink_service");
+    const QString sameDir =
+        appendExeSuffix(QCoreApplication::applicationDirPath() + "/stdiolink_service");
     if (QFileInfo(sameDir).isExecutable()) {
         return sameDir;
     }
@@ -61,8 +58,7 @@ QString InstanceManager::generateInstanceId() const {
     return "inst_" + QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
 }
 
-QString InstanceManager::startInstance(const Project& project,
-                                       const QString& serviceDir,
+QString InstanceManager::startInstance(const Project& project, const QString& serviceDir,
                                        QString& error) {
     error.clear();
 
@@ -130,9 +126,7 @@ QString InstanceManager::startInstance(const Project& project,
 
     inst->process = proc;
 
-    connect(proc,
-            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this,
+    connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
             [this, instanceId](int exitCode, QProcess::ExitStatus status) {
                 onProcessFinished(instanceId, exitCode, status);
             });
@@ -146,6 +140,9 @@ QString InstanceManager::startInstance(const Project& project,
 
     inst->pid = proc->processId();
     inst->status = "running";
+    inst->workingDirectory = workspaceDir;
+    inst->logPath = logPath;
+    inst->commandLine = QStringList{program} + proc->arguments();
 
     m_instances.emplace(instanceId, std::move(inst));
     emit instanceStarted(instanceId, project.id);
@@ -262,8 +259,7 @@ int InstanceManager::instanceCount(const QString& projectId) const {
     return count;
 }
 
-void InstanceManager::onProcessFinished(const QString& instanceId,
-                                        int exitCode,
+void InstanceManager::onProcessFinished(const QString& instanceId, int exitCode,
                                         QProcess::ExitStatus status) {
     auto it = m_instances.find(instanceId);
     if (it == m_instances.end()) {

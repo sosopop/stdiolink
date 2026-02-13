@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QJsonObject>
+#include <cstdlib>
 #include "stdiolink/driver/driver_core.h"
 #include "stdiolink/driver/icommand_handler.h"
 
@@ -18,7 +19,9 @@ public:
             r.done(0, QJsonObject{{"total", steps}});
         } else if (cmd == "exit_now") {
             // Simulate a driver that exits before sending terminal response.
-            QCoreApplication::exit(0);
+            // Use std::exit() so the process actually terminates even in keepalive
+            // (blocking read loop) mode where QCoreApplication::exit() has no effect.
+            std::exit(0);
         } else {
             r.error(404, QJsonObject{{"message", "unknown command"}});
         }

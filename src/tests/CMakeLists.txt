@@ -52,6 +52,11 @@ set(TEST_SOURCES
     test_schedule_engine.cpp
     test_server_manager.cpp
     test_api_router.cpp
+    test_cors_middleware.cpp
+    test_service_file_handler.cpp
+    test_driverlab_ws_handler.cpp
+    test_process_monitor.cpp
+    test_event_bus.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -90,9 +95,16 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/project_manager.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/instance_manager.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/schedule_engine.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/process_monitor.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/scanner/service_scanner.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/scanner/driver_manager_scanner.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/api_router.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/cors_middleware.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/service_file_handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_connection.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_bus.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_stream_handler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/server_manager.cpp
 )
 
@@ -107,6 +119,7 @@ target_link_libraries(stdiolink_tests PRIVATE
     GTest::gtest
     Qt6::Network
     Qt6::HttpServer
+    Qt6::WebSockets
 )
 
 if(TARGET qjs)
