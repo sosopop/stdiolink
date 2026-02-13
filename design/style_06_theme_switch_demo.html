@@ -1,237 +1,513 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Style 06: Theme Switch Demo</title>
+    <title>Style 06: Premium Theme Switch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Default Dark Mode */
-            --surface-base: #0F1117;
-            --surface-layer1: #1E222D;
-            --surface-layer2: #2A2F3E;
-            --primary: #6366F1;
-            --primary-hover: #818CF8;
-            --success: #10B981;
-            --text-main: #F9FAFB;
-            --text-muted: #9CA3AF;
-            --border: rgba(255, 255, 255, 0.06);
-            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            
-            /* Spacing & Radius */
-            --radius: 12px;
-            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            /* Spacing & Layout */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --font-ui: 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
+            
+            /* Transitions */
+            --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+            --duration: 0.4s;
         }
 
-        /* Light Mode Overrides */
-        [data-theme='light'] {
-            --surface-base: #F3F4F6;
-            --surface-layer1: #FFFFFF;
-            --surface-layer2: #F9FAFB;
-            --primary: #6366F1;
-            --primary-hover: #4F46E5;
-            --success: #10B981;
-            --text-main: #1F2937;
-            --text-muted: #6B7280;
-            --border: #E5E7EB;
-            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        /* Dark Theme (Default) */
+        [data-theme='dark'] {
+            --bg-body: #0B0C15;
+            --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                           radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+            --surface-card: rgba(30, 34, 45, 0.6);
+            --surface-hover: rgba(255, 255, 255, 0.03);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --surface-glass: blur(20px) saturate(180%);
+            
+            --text-primary: #FFFFFF;
+            --text-secondary: #94A3B8;
+            --text-tertiary: #64748B;
+            
+            --brand-primary: #6366F1;
+            --brand-glow: rgba(99, 102, 241, 0.4);
+            --brand-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --shadow-elevation: 0 20px 40px rgba(0, 0, 0, 0.4);
+            
+            --toggle-bg: rgba(255, 255, 255, 0.1);
+            --toggle-handle: #FFFFFF;
         }
+
+        /* Light Theme */
+        [data-theme='light'] {
+            --bg-body: #F8F9FA;
+            --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                           radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+            --surface-card: #FFFFFF;
+            --surface-hover: #F1F5F9;
+            --surface-border: rgba(0, 0, 0, 0.06);
+            --surface-glass: blur(0px); /* Less blur needed for light mode solid cards */
+            
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --text-tertiary: #94A3B8;
+            
+            --brand-primary: #6366F1;
+            --brand-glow: rgba(99, 102, 241, 0.2);
+            --brand-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-elevation: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            
+            --toggle-bg: #E2E8F0;
+            --toggle-handle: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; }
 
         body {
-            background-color: var(--surface-base);
-            color: var(--text-main);
-            font-family: var(--font-ui);
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 0;
+            background-color: var(--bg-body);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: var(--font-ui);
             min-height: 100vh;
-            padding: 20px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .header-bar {
-            width: 100%;
-            max-width: 800px;
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            transition: background-color var(--duration) var(--ease-out), color var(--duration) var(--ease-out);
         }
 
-        .container {
+        .app-wrapper {
             width: 100%;
-            max-width: 800px;
-            display: grid;
-            gap: 24px;
-        }
-
-        /* Card Component */
-        .card {
-            background: var(--surface-layer1);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            max-width: 900px;
             padding: 24px;
-            box-shadow: var(--shadow-card);
-            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+            display: grid;
+            gap: 32px;
         }
 
-        .card-header {
+        /* --- Header --- */
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 8px;
         }
 
-        h2 { margin: 0; font-size: 18px; font-weight: 600; }
-        p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin: 0 0 16px 0; }
-
-        /* Typography */
-        .mono { font-family: var(--font-mono); font-size: 13px; color: var(--primary); }
-
-        /* Form Elements */
-        .input-group { margin-bottom: 16px; }
-        label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
         
-        input {
-            width: 100%;
-            background: var(--surface-base);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 10px 12px;
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--brand-gradient);
             border-radius: 8px;
-            font-family: var(--font-ui);
-            box-sizing: border-box;
-            transition: all 0.2s;
-        }
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        /* Buttons */
-        .btn-group { display: flex; gap: 12px; }
-        
-        button {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-        }
-
-        .btn-primary {
-            background: var(--primary);
+            display: grid;
+            place-items: center;
             color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-
-        .btn-secondary {
-            background: var(--surface-layer2);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-        }
-        .btn-secondary:hover { 
-            filter: brightness(0.95); /* Universal hover for both modes */
+            font-size: 18px;
+            box-shadow: 0 4px 12px var(--brand-glow);
         }
 
-        /* Toggle Switch */
-        .theme-switch {
-            background: var(--surface-layer1);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 8px 16px;
-            border-radius: 20px;
+        /* --- Theme Toggle Switch --- */
+        .theme-toggle {
+            background: var(--toggle-bg);
+            border: none;
+            width: 64px;
+            height: 32px;
+            border-radius: 100px;
+            position: relative;
             cursor: pointer;
+            transition: background var(--duration) var(--ease-out);
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-icon {
             font-size: 14px;
+            width: 24px;
+            text-align: center;
+            z-index: 1;
+            opacity: 0.8;
+        }
+
+        .toggle-handle {
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 24px;
+            height: 24px;
+            background: var(--toggle-handle);
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform var(--duration) cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        [data-theme='light'] .toggle-handle {
+            transform: translateX(32px);
+        }
+
+        /* --- Card Styles --- */
+        .card {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            backdrop-filter: var(--surface-glass);
+            -webkit-backdrop-filter: var(--surface-glass);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-card);
+            transition: all var(--duration) var(--ease-out);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-elevation);
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Project Card Specifics */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+        }
+
+        .project-meta h2 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .pid-badge {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-tertiary);
+            background: var(--surface-hover);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--surface-border);
+        }
+
+        .status-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.3s;
-        }
-        .theme-switch:hover {
-            border-color: var(--primary);
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 13px;
         }
 
-        /* Status Indicator */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border-radius: 100px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .dot {
-            width: 6px;
-            height: 6px;
-            background: currentColor;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10B981;
             border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            animation: pulse 3s infinite;
         }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .metric-item {
+            background: var(--surface-hover);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--surface-border);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+        }
+
+        /* Input Group */
+        .form-group { margin-bottom: 24px; }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .text-input {
+            width: 100%;
+            background: var(--bg-body);
+            border: 1px solid var(--surface-border);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: var(--font-mono);
+            transition: all 0.2s;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px var(--brand-glow);
+        }
+
+        /* Action Buttons */
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--brand-gradient);
+            color: white;
+            box-shadow: 0 4px 12px var(--brand-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--surface-border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-hover);
+            border-color: var(--text-tertiary);
+        }
+
+        /* List Items (Drivers) */
+        .list-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .driver-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: var(--surface-hover);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+
+        .driver-item:hover {
+            background: var(--bg-body);
+            border-color: var(--surface-border);
+            transform: translateX(4px);
+        }
+
+        .driver-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+        }
+        
+        .driver-icon.warn {
+            background: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+        }
+
+        .driver-info {
+            flex: 1;
+            margin-left: 16px;
+        }
+
+        .driver-name {
+            font-weight: 500;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .driver-meta {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+        }
+
+        /* Utilities */
+        .blur-decoration {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--brand-primary);
+            filter: blur(100px);
+            opacity: 0.15;
+            z-index: -1;
+            border-radius: 50%;
+            top: -100px;
+            left: -100px;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="header-bar">
-        <button class="theme-switch" onclick="toggleTheme()">
-            <span id="theme-icon">🌙</span> 
-            <span id="theme-text">Dark Mode</span>
-        </button>
-    </div>
+    <div class="blur-decoration"></div>
 
-    <div class="container">
-        <!-- Dashboard Card -->
+    <div class="app-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div class="brand">
+                <div class="brand-icon">⚡</div>
+                <span>stdiolink</span>
+            </div>
+            
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle Theme">
+                <span class="toggle-icon">🌙</span>
+                <span class="toggle-icon">☀️</span>
+                <div class="toggle-handle"></div>
+            </button>
+        </header>
+
+        <!-- Main Project Card -->
         <div class="card">
             <div class="card-header">
-                <div>
-                    <h2>Project Settings</h2>
-                    <span class="mono">ID: proj-api-worker-01</span>
+                <div class="project-meta">
+                    <h2>API-Worker-Cluster</h2>
+                    <span class="pid-badge">ID: proj-prod-01</span>
                 </div>
-                <div class="status-badge">
-                    <span class="dot"></span> Running
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    Running
                 </div>
             </div>
 
-            <div class="input-group">
-                <label>Service Endpoint</label>
-                <input type="text" value="https://api.stdiolink.io/v1/cluster" readonly>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-label">Uptime</div>
+                    <div class="metric-value">14d 2h</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">Avg Latency</div>
+                    <div class="metric-value">42ms</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">Throughput</div>
+                    <div class="metric-value">2.4k/s</div>
+                </div>
             </div>
 
-            <div class="input-group">
-                <label>Description</label>
-                <p>This project handles the primary data ingestion pipeline. Configured for high-availability mode with auto-scaling enabled.</p>
+            <div class="form-group">
+                <label class="form-label">Service Endpoint</label>
+                <div class="input-wrapper">
+                    <input type="text" class="text-input" value="https://api.stdiolink.io/v1/ingest" readonly>
+                </div>
             </div>
 
-            <div class="btn-group">
-                <button class="btn-primary">Deploy Changes</button>
-                <button class="btn-secondary">View Logs</button>
+            <div class="action-bar">
+                <button class="btn btn-primary">
+                    <span>Deploy Changes</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+                <button class="btn btn-secondary">View Logs</button>
+                <button class="btn btn-secondary">Config</button>
             </div>
         </div>
 
-        <!-- Driver Card -->
+        <!-- Drivers Section -->
         <div class="card">
-            <div class="card-header">
-                <h2>Active Drivers</h2>
+            <div class="list-header">
+                <span>Active Drivers</span>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">+ Add New</button>
             </div>
-            <div style="display: grid; gap: 12px;">
-                <div style="display: flex; justify-content: space-between; padding: 12px; background: var(--surface-base); border-radius: 8px; border: 1px solid var(--border); transition: background-color 0.3s, border-color 0.3s;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 32px; height: 32px; background: var(--surface-layer2); border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s;">🔌</div>
-                        <div>
-                            <div style="font-size: 14px; font-weight: 500;">modbus-tcp</div>
-                            <div style="font-size: 12px; color: var(--text-muted);">v2.1.0</div>
-                        </div>
-                    </div>
-                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">Config</button>
+            
+            <div class="driver-item">
+                <div class="driver-icon">🔌</div>
+                <div class="driver-info">
+                    <div class="driver-name">modbus-tcp-driver</div>
+                    <div class="driver-meta">v2.1.0 • Running • PID: 4421</div>
                 </div>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button>
+            </div>
+
+            <div class="driver-item">
+                <div class="driver-icon warn">📡</div>
+                <div class="driver-info">
+                    <div class="driver-name">mqtt-broker-bridge</div>
+                    <div class="driver-meta">v1.0.4 • Reconnecting • PID: 8902</div>
+                </div>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Logs</button>
             </div>
         </div>
     </div>
@@ -240,18 +516,8 @@
         function toggleTheme() {
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
-            const icon = document.getElementById('theme-icon');
-            const text = document.getElementById('theme-text');
-
-            if (currentTheme === 'light') {
-                html.setAttribute('data-theme', 'dark');
-                icon.textContent = '🌙';
-                text.textContent = 'Dark Mode';
-            } else {
-                html.setAttribute('data-theme', 'light');
-                icon.textContent = '☀️';
-                text.textContent = 'Light Mode';
-            }
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
         }
     </script>
 

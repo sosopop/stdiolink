@@ -69,9 +69,9 @@ Dashboard 是用户进入 WebUI 后的首页，需要提供系统的"上帝视�
 
 每个卡片显示：
 - 标题（如 "Services"）
-- 数值（大号等宽字体）
+- 数值（大号等宽字体，`JetBrains Mono`）
 - 状态指示（颜色编码）
-- 数值变化动画
+- **视觉风格**：采用 `glass-panel` 样式，背景使用极淡的 `var(--surface-layer1)`。激活状态或鼠标悬停时，叠加 `var(--brand-glow)` 渐变光晕效果，提升层级感。
 
 ```typescript
 interface KpiCardProps {
@@ -87,8 +87,8 @@ interface KpiCardProps {
 
 ### 3.3 活跃实例列表
 
-显示所有运行中的 Instance，每行包含：
-- 状态指示灯（呼吸灯效果）
+容器采用 `card` 样式（玻璃态 + 边框）。显示所有运行中的 Instance，每行包含：
+- 状态指示灯（呼吸灯效果，复用全局 `.status-dot`）
 - Project 名称
 - Service 名称
 - CPU / 内存使用率
@@ -344,7 +344,22 @@ export function usePolling(callback: () => void, intervalMs: number) {
 
 ---
 
-## 7. 里程碑完成定义（DoD）
+## 7. UI/UX 设计师建议 (针对 Style 06)
+
+1.  **高级质感 (Premium Feel)**：
+    *   **KPI 卡片**：不要使用纯色背景。利用 `backdrop-filter: blur(20px)` 配合极淡的边框 (`var(--surface-border)`) 打造磨砂玻璃质感。悬停时，可以让背景色略微加深或叠加一层 `var(--brand-glow)`，营造"浮起"的交互感。
+    *   **背景融合**：Dashboard 作为首页，大面积的留白（或留黑）应透出全局背景的径向渐变（Aurora Gradients），不要让卡片完全遮挡住背景的通透感。
+
+2.  **资源图表 (Charts)**：
+    *   **无框设计**：完全移除图表的网格线 (`CartesianGrid stroke="none"`) 和坐标轴线，仅保留文字标签，使图表仿佛悬浮在卡片上。
+    *   **渐变填充**：面积图 (Area Chart) 必须使用 `def` 定义的线性渐变填充 (`<stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>`)，而非单色填充，以呼应整体的 Glow 风格。
+
+3.  **状态呼吸灯 (Status Pulse)**：
+    *   **动画同步**：确保所有呼吸灯使用 M60 定义的 `pulse` 关键帧动画（0% -> 70% 扩散 -> 100% 消失），这种类似雷达扫描的效果比单纯的透明度闪烁更具科技感。
+
+---
+
+## 8. 里程碑完成定义（DoD）
 
 - Dashboard 页面实现（KPI + 实例列表 + 事件流）
 - SSE 实时事件集成

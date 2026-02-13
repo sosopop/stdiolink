@@ -399,18 +399,17 @@ function onReconnected(): void {
 
 ---
 
-## 8. UI/UX 设计师建议
+## 8. UI/UX 设计师建议 (针对 Style 06)
 
-实时系统的 UX 核心在于“感知但不打扰”：
+实时系统的 UX 核心在于“感知但不打扰”，视觉上应与整体的玻璃态风格融合：
 
-1.  **连接状态指示器 (Connection Indicator)**：
-    *   **位置与样式**：置于 Header 右侧的全局区域。连接正常时，显示一个极小的绿色呼吸点（无需文字）；断开或重连中时，展开显示文字提示（"Offline" / "Reconnecting..."）并使用醒目的颜色（红/黄），确保用户知情。
-    *   **通知抑制**：连接断开/重连的 Toast 通知应避免频繁弹出。如果能在 Header 指示器中清晰表达状态，就尽量不要使用全局 Toast 打断用户。
+1.  **连接状态指示器 (Pulse Indicator)**：
+    *   **雷达动画**：Header 中的 "Live" 状态点必须使用 M60 定义的 `pulse` 动画（光圈扩散效果）。这种动态效果比静态圆点更能直观传达“实时连接中”的信号。
+    *   **颜色语义**：Live (Success/Emerald), Reconnecting (Warning/Amber), Offline (Error/Red)。
 
-2.  **防止界面抖动 (Prevent UI Jitter)**：
-    *   **列表更新**：当列表数据因 SSE 事件刷新时，应使用 React 的 `key` 属性确保 DOM 复用，避免整个列表闪烁。
-    *   **过渡动画**：新插入的列表项（如新启动的 Instance）应有淡入 (`fade-in`) 或滑入 (`slide-down`) 动画；移除的项应有淡出动画。
-    *   **骨架屏禁用**：实时更新触发的数据刷新（re-fetch）**不应**触发展示骨架屏 Loading，而应在后台静默更新数据，或仅在右上角显示一个微小的 loading spinner，保持用户当前的阅读上下文不被破坏。
+2.  **玻璃态通知 (Glass Toasts)**：
+    *   **悬浮质感**：全局 Toast 通知应设计为小型的 `glass-panel` 条。为了在复杂背景上清晰可见，建议给 Toast 增加一个微弱的渐变边框 (`border-image` 或 `box-shadow`)，使其从背景中“跳”出来。
+    *   **去噪**：避免频繁弹出 Toast。对于连接断开/重连，优先依赖 Header 指示器的状态变化，仅在长时间断开时才弹出 Toast 警告。
 
 ---
 

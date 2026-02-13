@@ -246,32 +246,35 @@ stdiolink_server WebUI 是一个**以项目为中心的服务编排与管理平�
 采用现代化的调色板，支持 Dark/Light 双模式，降低对比度刺激，提升长时间使用的舒适度。
 
 #### 基础色 (Neutral / Surface) - Dark Mode (默认)
-- `Surface-Base`: `#0F1117` (深岩灰，用于背景)
-- `Surface-Layer1`: `#1E222D` (卡片背景)
-- `Surface-Layer2`: `#2A2F3E` (悬停/浮层)
+- `Surface-Base`: `#0B0C15` (深空黑，带微弱蓝紫倾向)
+- `Background-Gradient`: `radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%), radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 50%)`
+- `Surface-Layer1`: `rgba(30, 34, 45, 0.6)` (玻璃态卡片背景)
+- `Surface-Layer2`: `rgba(255, 255, 255, 0.03)` (悬停/浮层)
 - `Surface-Overlay`: `rgba(15, 17, 23, 0.8)` (磨砂遮罩)
-- `Border-Subtle`: `rgba(255, 255, 255, 0.06)`
+- `Border-Subtle`: `rgba(255, 255, 255, 0.08)`
 - `Border-Focus`: `rgba(99, 102, 241, 0.4)`
 
 #### 基础色 (Neutral / Surface) - Light Mode
-- `Surface-Base`: `#F3F4F6` (Cool Gray 100)
-- `Surface-Layer1`: `#FFFFFF` (纯白卡片)
-- `Surface-Layer2`: `#F9FAFB` (悬停/浮层)
+- `Surface-Base`: `#F8F9FA` (极简灰白)
+- `Background-Gradient`: `radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%), radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%)`
+- `Surface-Layer1`: `#FFFFFF` (纯白实色卡片)
+- `Surface-Layer2`: `#F1F5F9` (悬停/浮层)
 - `Surface-Overlay`: `rgba(255, 255, 255, 0.8)`
-- `Border-Subtle`: `#E5E7EB` (Gray 200)
+- `Border-Subtle`: `rgba(0, 0, 0, 0.06)`
 - `Border-Focus`: `rgba(99, 102, 241, 0.4)`
 
 #### 品牌色 (Brand / Accent)
-- `Primary`: `#6366F1` (Indigo 500 - 沉稳的高级蓝紫)
+- `Primary`: `#6366F1` (Indigo 500)
+- `Primary-Gradient`: `linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)` (Indigo -> Violet)
 - `Primary-Hover`: `#818CF8` (Indigo 400)
 - `Primary-Dim`: `rgba(99, 102, 241, 0.15)` (主色微光背景)
-- `Secondary`: `#EC4899` (Pink 500 - 辅助强调)
+- `Secondary`: `#EC4899` (Pink 500)
 
 #### 语义色 (Semantic / Signal)
-- `Success`: `#10B981` (Emerald 500 - 自然绿)
-- `Warning`: `#F59E0B` (Amber 500 - 温暖黄)
-- `Error`: `#EF4444` (Red 500 - 警示红)
-- `Info`: `#3B82F6` (Blue 500 - 信息蓝)
+- `Success`: `#10B981` (Emerald 500)
+- `Warning`: `#F59E0B` (Amber 500)
+- `Error`: `#EF4444` (Red 500)
+- `Info`: `#3B82F6` (Blue 500)
 
 ### 4.3 排版系统 (Typography)
 
@@ -289,27 +292,28 @@ stdiolink_server WebUI 是一个**以项目为中心的服务编排与管理平�
 ### 4.4 质感与特效 (Texture & Effects)
 
 #### 容器风格 (Container Style)
-所有卡片和容器采用圆角与微边框设计：
+所有卡片和容器采用圆角与微边框设计，支持玻璃态：
 ```css
 .card {
   background: var(--surface-layer1);
-  border-radius: 12px;
+  border-radius: 16px; /* 增加圆角至 16px (radius-lg) */
   border: 1px solid var(--border-subtle);
-  /* 阴影根据模式自动切换 */
+  backdrop-filter: var(--surface-glass);
   box-shadow: var(--shadow-card);
 }
 ```
 
-#### 弥散投影 (Diffused Shadows)
-用于浮层或强调状态，代替发光效果：
+#### 弥散投影 (Diffused Shadows) & 玻璃态
 
 **Dark Mode**:
-- `--shadow-card`: `0 4px 6px -1px rgba(0, 0, 0, 0.3)`
-- `--shadow-elevated`: `0 20px 25px -5px rgba(0, 0, 0, 0.5)`
+- `--surface-glass`: `blur(20px) saturate(180%)`
+- `--shadow-card`: `0 8px 32px rgba(0, 0, 0, 0.2)`
+- `--shadow-elevated`: `0 20px 40px rgba(0, 0, 0, 0.4)`
 
 **Light Mode**:
+- `--surface-glass`: `blur(0px)` (Light 模式下保持实色以获得更好对比度)
 - `--shadow-card`: `0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)`
-- `--shadow-elevated`: `0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)`
+- `--shadow-elevated`: `0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)`
 
 ### 4.5 动效规范 (Motion)
 

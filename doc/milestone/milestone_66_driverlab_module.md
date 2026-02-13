@@ -556,22 +556,22 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 
 ---
 
-## 8. UI/UX 设计师建议
+## 8. UI/UX 设计师建议 (针对 Style 06)
 
 DriverLab 是类聊天（Chat-like）的交互界面，设计重点在于信息流的清晰度与实时反馈：
 
 1.  **消息流 (Message Stream)**：
-    *   **气泡布局**：采用类似 IM 的气泡布局，发送的消息（exec/cancel）靠右，接收的消息（stdout/meta）靠左，系统消息（started/exited）居中。
-    *   **视觉区分**：发送气泡背景使用 `Surface-Layer2`，接收气泡背景使用 Primary-Dim（极淡的 Indigo），错误消息使用 Error-Dim（极淡的 Red）。
-    *   **时间戳**：时间戳字体应极小 (`10px`) 且颜色淡化，置于气泡外侧或底部，不干扰正文阅读。
+    *   **玻璃态气泡**：消息气泡不应是死板的色块。发送气泡 (Exec) 建议使用极淡的 `var(--brand-glow)` 背景配合 `1px` 品牌色边框；接收气泡 (Stdout) 使用 `var(--surface-layer2)` 配合模糊背景。
+    *   **布局**：保持 IM 式的左右布局。
+    *   **时间戳**：时间戳字体应极小 (`10px`) 且颜色使用 `var(--text-tertiary)`，置于气泡底部外侧。
 
 2.  **连接状态反馈 (Connection Feedback)**：
-    *   **全屏遮罩**：当 WebSocket 断开连接时，并在消息流区域上方覆盖一层半透明遮罩 (`backdrop-filter: blur(2px)`)，并显示“已断开”提示与重连按钮，明确告知用户当前不可交互。
-    *   **动态标题**：页面标题栏或状态栏应实时显示当前的连接状态（Connected 🟢 / Disconnected 🔴），并带有脉冲动画。
+    *   **磨砂遮罩**：当 WebSocket 断开连接时，在消息流区域上方覆盖一层 `backdrop-filter: blur(4px)` 的遮罩，并显示带光晕效果的重连按钮。
+    *   **动态标题**：标题栏状态指示器应使用 `pulse` 动画，绿色代表连接中，红色代表断开。
 
 3.  **JSON 渲染 (JSON Rendering)**：
-    *   **折叠策略**：默认折叠超过 5 行的 JSON 对象，提供“展开”按钮。
-    *   **语法高亮**：即使在折叠状态下，关键字段（如 `status: "ok"`）也应保持高亮显示，方便快速扫视。
+    *   **主题适配**：JSON 语法高亮颜色需适配当前主题。建议 Key 使用 `var(--text-secondary)`，String 值使用 `var(--brand-primary)` (Indigo)，Number 值使用 `var(--secondary-pink)`。
+    *   **折叠策略**：默认折叠超过 5 行的对象，保持信息流紧凑。
 
 ---
 

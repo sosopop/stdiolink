@@ -184,18 +184,25 @@ export const lightTheme: ThemeConfig = {
 ```css
 /* src/styles/variables.css */
 :root {
+  /* Spacing & Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
   /* Default (Dark) */
-  --surface-base: #0F1117;
-  --surface-layer1: #1E222D;
-  --surface-layer2: #2A2F3E;
+  --surface-base: #0B0C15;
+  --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%), radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+  --surface-layer1: rgba(30, 34, 45, 0.6); /* 玻璃态背景 */
+  --surface-layer2: rgba(255, 255, 255, 0.03);
   --surface-overlay: rgba(15, 17, 23, 0.8);
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(99, 102, 241, 0.4);
 
   /* Brand */
   --primary-base: #6366F1;
   --primary-hover: #818CF8;
   --primary-dim: rgba(99, 102, 241, 0.15);
+  --brand-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
   --secondary-pink: #EC4899;
 
   /* Semantic */
@@ -209,29 +216,29 @@ export const lightTheme: ThemeConfig = {
   --font-code: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Glass & Shadows (Dark) */
-  --glass-bg: rgba(30, 34, 45, 0.7);
-  --glass-blur: blur(16px) saturate(180%);
+  --surface-glass: blur(20px) saturate(180%);
   --glass-border: 1px solid rgba(255, 255, 255, 0.05);
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme='light'] {
   /* Surface (Light) */
-  --surface-base: #F3F4F6;
+  --surface-base: #F8F9FA;
+  --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%), radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
   --surface-layer1: #FFFFFF;
-  --surface-layer2: #F9FAFB;
+  --surface-layer2: #F1F5F9;
   --surface-overlay: rgba(255, 255, 255, 0.8);
-  --border-subtle: #E5E7EB;
+  --border-subtle: rgba(0, 0, 0, 0.06);
   
   /* Brand Dim (Light) */
   --primary-dim: rgba(99, 102, 241, 0.1);
 
   /* Glass & Shadows (Light) */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: 1px solid rgba(229, 231, 235, 0.5);
+  --surface-glass: blur(0px); /* 亮色模式使用实色卡片 */
+  --glass-border: 1px solid rgba(0, 0, 0, 0.06);
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
 ```
 
@@ -240,9 +247,11 @@ export const lightTheme: ThemeConfig = {
 ```css
 /* src/styles/effects.css */
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border-bottom: var(--glass-border);
+  background: var(--surface-layer1);
+  backdrop-filter: var(--surface-glass);
+  border: var(--glass-border);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
 }
 
 .status-dot {
@@ -256,6 +265,13 @@ export const lightTheme: ThemeConfig = {
 .status-dot--running {
   background: var(--color-success);
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); /* 柔和光晕 */
+  animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 .status-dot--stopped {
@@ -269,13 +285,13 @@ export const lightTheme: ThemeConfig = {
 
 /* 呼吸感卡片悬停效果 */
 .hover-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .hover-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-elevated);
   /* 仅深色模式下变亮边框，亮色模式下无需 */
-  border-color: var(--primary-base); 
+  border-color: rgba(99, 102, 241, 0.3);
 }
 ```
 
