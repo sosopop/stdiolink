@@ -236,49 +236,38 @@ QString webuiDir;  // --webui-dir 参数
 QString webuiDir;  // config.json 中的 "webuiDir" 字段
 ```
 
-### 4.5 ApiRouter 路由注册
+### 4.5 ApiRouter 路由注册（missingHandler 方案）
 
-在所有 API 路由注册完成后，追加静态文件路由：
+当前 `api_router.cpp` 已在 `registerRoutes()` 末尾通过 `server.setMissingHandler()` 处理未匹配请求（返回 404 JSON）。静态文件服务应直接扩展此 missingHandler，而非注册通配路由（通配路由 `/<arg>` 会与已有 `/api/<arg>` 路由冲突）。
 
 ```cpp
 // api_router.cpp — registerRoutes() 末尾
-
-if (m_staticFileServer && m_staticFileServer->isValid()) {
-    // 捕获所有未匹配的 GET 请求
-    server.route("/<arg>", QHttpServerRequest::Method::Get,
-                 [this](const QString& path, const QHttpServerRequest& req) {
-        Q_UNUSED(req);
-        return m_staticFileServer->serve("/" + path);
-    });
-
-    // 根路径
-    server.route("/", QHttpServerRequest::Method::Get,
-                 [this](const QHttpServerRequest& req) {
-        Q_UNUSED(req);
-        return m_staticFileServer->serveIndex();
-    });
-}
-```
-
-> **注意**：QHttpServer 按注册顺序匹配路由。静态文件路由必须在所有 `/api/*` 路由之后注册，否则会拦截 API 请求。需验证 `/<arg>` 通配路由不会与已注册的 `/api/...` 路由冲突。如果冲突，改用 `missingHandler` 回退方案。
-
-### 4.6 missingHandler 回退方案
-
-如果通配路由与 API 路由冲突，改用 QHttpServer 的 missing handler：
-
-```cpp
-// 在 missingHandler 中增加静态文件回退
-server.setMissingHandler([this](const QHttpServerRequest& req,
-                                 QHttpServerResponder&& responder) {
-    if (req.method() == QHttpServerRequest::Method::Get && m_staticFileServer) {
-        auto response = m_staticFileServer->serve(req.url().path());
-        // 写入 response...
-        return;
+// 替换现有的 setMissingHandler，增加静态文件回退
+server.setMissingHandler(this,
+    [this, corsOrigin = m_manager->config().corsOrigin](
+        const QHttpServerRequest& req, QHttpServerResponder& responder) {
+    // 静态文件回退：仅处理 GET/HEAD 请求
+    if (m_staticFileServer && m_staticFileServer->isValid()
+        && (req.method() == QHttpServerRequest::Method::Get
+            || req.method() == QHttpServerRequest::Method::Head)) {
+        const QString path = req.url().path();
+        // 跳过 /api 前缀的请求（理论上不会到达这里，但做防御）
+        if (!path.startsWith("/api/")) {
+            auto response = m_staticFileServer->serve(path);
+            // 写入 response（含 CORS headers）...
+            return;
+        }
     }
-    // 原有 404 处理
-    // ...
+    // 原有 404 JSON 处理
+    const QByteArray body = QJsonDocument(QJsonObject{{"error", "not found"}})
+                                .toJson(QJsonDocument::Compact);
+    QHttpHeaders headers = CorsMiddleware::buildCorsHeaders(corsOrigin);
+    headers.append(QHttpHeaders::WellKnownHeader::ContentType, "application/json");
+    responder.write(body, headers, QHttpServerResponder::StatusCode::NotFound);
 });
 ```
+
+> **说明**：不使用通配路由方案。QHttpServer 的 `/<arg>` 通配路由会与已注册的 `/api/services/<arg>` 等路由产生匹配歧义。missingHandler 仅在所有已注册路由均未匹配时触发，天然避免冲突。
 
 ---
 
@@ -355,8 +344,8 @@ server.setMissingHandler([this](const QHttpServerRequest& req,
 
 ## 7. 风险与控制
 
-- **风险 1**：通配路由 `/<arg>` 与已有 API 路由冲突
-  - 控制：静态文件路由在所有 API 路由之后注册；如冲突则改用 missingHandler 方案
+- **风险 1**：静态文件路由与 API 路由冲突
+  - 控制：使用 missingHandler 方案（非通配路由），仅在所有 API 路由均未匹配时触发
   - 验证：增加回归测试确认所有 API 端点仍可正常访问
 - **风险 2**：大文件读取阻塞事件循环
   - 控制：10MB 文件大小上限；Vite 构建产物通常远小于此限制

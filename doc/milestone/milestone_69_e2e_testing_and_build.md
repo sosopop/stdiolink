@@ -33,10 +33,13 @@ M58-M68 完成了全部 WebUI 功能开发，但缺少端到端测试验证和�
 ```json
 {
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "terser": "^5.x"
   }
 }
 ```
+
+> **说明**：Vite 5 默认使用 esbuild 压缩。本里程碑配置 `minify: 'terser'` 以支持 `drop_console` 等高级压缩选项，需显式安装 `terser` 作为 devDependency。
 
 Playwright 配置：
 
@@ -431,7 +434,7 @@ echo "=== Build verification passed ==="
 ### 5.2 修改文件
 
 - `src/webui/vite.config.ts` — 添加生产构建优化配置（manualChunks、terser、chunkSizeWarningLimit）
-- `src/webui/package.json` — 添加 Playwright 依赖和脚本
+- `src/webui/package.json` — 添加 Playwright、terser 依赖和脚本
 - `tools/publish_release.sh` — 添加 WebUI 构建步骤
 
 ---

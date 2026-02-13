@@ -13,6 +13,7 @@ class ApiRouter : public QObject {
 public:
     explicit ApiRouter(ServerManager* manager,
                        QObject* parent = nullptr);
+    ~ApiRouter() override;
 
     void registerRoutes(QHttpServer& server);
 

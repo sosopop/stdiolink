@@ -42,9 +42,11 @@ public:
     explicit EventStreamHandler(EventBus* bus,
                                 const QString& allowedOrigin = QStringLiteral("*"),
                                 QObject* parent = nullptr);
+    ~EventStreamHandler() override;
 
     void addConnection(QHttpServerResponder&& responder,
                        const QSet<QString>& filters);
+    void closeAllConnections();
 
     int activeConnectionCount() const;
 

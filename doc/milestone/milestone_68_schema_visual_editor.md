@@ -24,6 +24,8 @@ M62 中 Schema Tab 仅以只读表格展示字段列表和 JSON 原文。开发�
 
 **范围**：Schema 可视化编辑器（双模式）+ 字段 CRUD + 约束编辑 + UI Hint 编辑。
 
+**与 M62 的关系**：本里程碑的 `SchemaEditor` 组件将替换 M62 中 Service 详情页的 Schema Tab（只读表格 + JSON 预览）。M62 的 Schema Tab 作为初始实现保留到 M68 完成后被替换，无需在 M62 中预留扩展点。修改文件清单中的 `Services/Detail.tsx` 即为此替换操作。
+
 **非目标**：Schema 版本管理、Schema 导入导出模板。
 
 ---

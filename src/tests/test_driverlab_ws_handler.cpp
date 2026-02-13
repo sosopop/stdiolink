@@ -92,6 +92,18 @@ TEST(DriverLabWsHandlerTest, CloseAllOnEmptyIsNoOp) {
 
 namespace {
 
+QString exeSuffix() {
+#ifdef Q_OS_WIN
+    return ".exe";
+#else
+    return QString();
+#endif
+}
+
+QString testBinaryPath(const QString& baseName) {
+    return QCoreApplication::applicationDirPath() + "/" + baseName + exeSuffix();
+}
+
 struct WsTestFixture {
     stdiolink::DriverCatalog catalog;
     QHttpServer httpServer;
@@ -99,11 +111,11 @@ struct WsTestFixture {
     DriverLabWsHandler* handler = nullptr;
     quint16 port = 0;
 
-    bool setup(const QString& program = "/bin/cat") {
+    bool setup(const QString& program = QString()) {
         QHash<QString, stdiolink::DriverConfig> drivers;
         stdiolink::DriverConfig cfg;
         cfg.id = "test_driver";
-        cfg.program = program;
+        cfg.program = program.isEmpty() ? testBinaryPath("test_driver") : program;
         drivers.insert(cfg.id, cfg);
         catalog.replaceAll(drivers);
 

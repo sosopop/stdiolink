@@ -85,6 +85,10 @@ EventStreamHandler::EventStreamHandler(EventBus* bus,
     m_heartbeatTimer.start();
 }
 
+EventStreamHandler::~EventStreamHandler() {
+    closeAllConnections();
+}
+
 void EventStreamHandler::addConnection(QHttpServerResponder&& responder,
                                         const QSet<QString>& filters) {
     if (m_connections.size() >= kMaxSseConnections) {
@@ -97,6 +101,18 @@ void EventStreamHandler::addConnection(QHttpServerResponder&& responder,
                                            this);
     m_connections.append(conn);
     conn->beginStream();
+}
+
+void EventStreamHandler::closeAllConnections() {
+    m_heartbeatTimer.stop();
+    const QVector<EventStreamConnection*> connections = m_connections;
+    m_connections.clear();
+    for (auto* conn : connections) {
+        if (!conn) {
+            continue;
+        }
+        delete conn;
+    }
 }
 
 int EventStreamHandler::activeConnectionCount() const {

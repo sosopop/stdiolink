@@ -78,6 +78,28 @@ interface FileEditorProps {
 - 文件修改标记（未保存时 Tab 标题显示 `*`）
 - 文件大小限制提示（>1MB 禁止编辑）
 
+Monaco Worker 配置（嵌入式部署必须本地加载，不能依赖 CDN）：
+
+```typescript
+// vite.config.ts 中配置 Monaco Worker 本地打包
+// 方案 A：使用 vite-plugin-monaco-editor
+import monacoEditorPlugin from 'vite-plugin-monaco-editor';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    monacoEditorPlugin({
+      languageWorkers: ['editorWorkerService', 'json', 'typescript'],
+    }),
+  ],
+});
+
+// 方案 B：手动配置 Worker（如插件不可用）
+// 在入口文件中设置 MonacoEnvironment.getWorkerUrl
+```
+
+> **说明**：M58 的嵌入式部署场景下，前端构建产物与后端同目录部署，无法依赖外部 CDN。Monaco Editor 的 Web Worker 必须本地打包。推荐使用 `vite-plugin-monaco-editor` 插件自动处理 Worker 文件的构建和加载。
+
 ### 3.4 文件管理器
 
 ```typescript
@@ -145,7 +167,7 @@ interface ServicesState {
 
 ### 4.2 修改文件
 
-- `src/webui/package.json` — 新增 `@monaco-editor/react` 依赖
+- `src/webui/package.json` — 新增 `@monaco-editor/react`、`monaco-editor`、`vite-plugin-monaco-editor` 依赖
 
 ### 4.3 测试文件
 
@@ -258,7 +280,7 @@ interface ServicesState {
 ## 6. 风险与控制
 
 - **风险 1**：Monaco Editor 包体积过大
-  - 控制：使用 `@monaco-editor/react` 的 CDN 加载模式或 Vite 的 `manualChunks` 分包
+  - 控制：使用 `vite-plugin-monaco-editor` 本地打包 Worker，配合 Vite `manualChunks` 将 Monaco 拆分为独立 chunk 按需加载；不使用 CDN 加载模式（嵌入式部署不可用）
 - **风险 2**：大文件编辑导致浏览器卡顿
   - 控制：>1MB 文件禁止在编辑器中打开，显示提示
 - **风险 3**：文件保存与后端 reload 失败

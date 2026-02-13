@@ -25,6 +25,38 @@ DriverLab 是面向 Driver 开发者的协议调试器，提供 Driver 运行时
 
 **非目标**：多 Driver 并发会话（本里程碑仅支持单 Driver 会话）。
 
+### 2.1 后端 WebSocket 端点（需新增）
+
+当前后端 `stdiolink_server` 尚未实现 DriverLab 所需的 WebSocket 端点。本里程碑的前端实现依赖以下后端接口，需在本里程碑或前置里程碑中实现：
+
+**端点**：`GET /api/driverlab/{driverId}` （WebSocket Upgrade）
+
+**查询参数**：
+- `runMode`：`oneshot` | `keepalive`（必填）
+- `args`：启动参数，逗号分隔（可选）
+
+**WebSocket 消息协议**：
+
+客户端 → 服务端（JSON）：
+
+| type | 说明 | 附加字段 |
+|------|------|---------|
+| `exec` | 执行命令 | `cmd`: string, `data`: object |
+| `cancel` | 取消当前执行 | 无 |
+
+服务端 → 客户端（JSON）：
+
+| type | 说明 | 附加字段 |
+|------|------|---------|
+| `driver.started` | Driver 进程已启动 | `pid`: number |
+| `driver.restarted` | Driver 进程已重启（oneshot 模式） | `pid`: number |
+| `meta` | Driver 元数据 | 完整 DriverMeta 对象 |
+| `stdout` | 命令响应（ok/event/error） | JSONL 消息内容 |
+| `driver.exited` | Driver 进程已退出 | `exitCode`: number, `exitStatus`: string |
+| `error` | 服务端错误 | `message`: string |
+
+> **实现建议**：在 `api_router.cpp` 中注册 WebSocket 路由，使用 `QWebSocket` 管理连接。服务端收到 `exec` 后通过 `QProcess` 向 Driver stdin 写入 JSONL 命令，将 Driver stdout 输出作为 `stdout` 消息转发给客户端。
+
 ---
 
 ## 3. 技术要点
@@ -71,6 +103,15 @@ DriverLab 是面向 Driver 开发者的协议调试器，提供 Driver 运行时
 │  │[取消]    ││                                          │
 │  └──────────┘│                                          │
 │              │                                          │
+│  命令行示例  │                                          │
+│  ┌──────────┐│                                          │
+│  │> calc    ││                                          │
+│  │ --cmd=add││                                          │
+│  │ --a=1    ││                                          │
+│  │ --b=2    ││                                          │
+│  │   [复制] ││                                          │
+│  └──────────┘│                                          │
+│              │                                          │
 ├──────────────┴──────────────────────────────────────────┤
 │  状态栏: PID: 1234 | 运行模式: keepalive | 已连接 2m30s │
 └─────────────────────────────────────────────────────────┘
@@ -103,17 +144,51 @@ interface CommandPanelProps {
 - 执行按钮：发送 `{ type: 'exec', cmd, data }`
 - 取消按钮：发送 `{ type: 'cancel' }`，仅在执行中可用
 
-参数类型到控件映射（简化版，不需要完整 SchemaForm）：
+参数类型到控件映射（复用 M63 SchemaForm 的字段渲染组件）：
 
-| 参数类型 | 控件 |
-|---------|------|
-| String | Input |
-| Int / Int64 / Double | InputNumber |
-| Bool | Switch |
-| Enum | Select |
-| Object / Array / Any | JSON textarea |
+| 参数类型 | 控件 | 来源 |
+|---------|------|------|
+| String | Input | 复用 SchemaForm/fields/StringField |
+| Int / Int64 / Double | InputNumber | 复用 SchemaForm/fields/NumberField |
+| Bool | Switch | 复用 SchemaForm/fields/BoolField |
+| Enum | Select | 复用 SchemaForm/fields/EnumField |
+| Object / Array / Any | JSON textarea | 复用 SchemaForm/fields/AnyField |
 
-### 3.5 消息流面板
+> **说明**：不单独实现 ParamForm 的字段渲染逻辑。M63 的 SchemaForm 字段组件（StringField、NumberField 等）已实现 FieldMeta → UI 控件的映射，DriverLab 的 ParamForm 应直接复用这些组件，仅在布局层面做简化（不需要 group/advanced 等 UI Hint）。
+
+### 3.5 命令行调用示例
+
+对齐桌面版 DriverLab 的 `ParameterForm` 功能，在命令面板下方显示当前命令的命令行调用示例，方便开发者在终端中复现调用。
+
+```typescript
+// src/components/DriverLab/CommandLineExample.tsx
+interface CommandLineExampleProps {
+  driverId: string | null;       // 当前连接的 Driver ID
+  command: string | null;        // 当前选中的命令名
+  params: Record<string, unknown>; // 当前参数值
+}
+```
+
+生成规则（与桌面版 `ParameterForm::updateCommandLineExample()` 一致）：
+
+```
+{driverProgram} --cmd={commandName} --{key1}={value1} --{key2}={value2} ...
+```
+
+- Driver 程序名：使用 `driverId` 作为程序名（实际路径由用户自行替换）
+- 跳过值为空字符串或 null 的参数
+- 字符串值含空格/特殊字符时用双引号包裹
+- Object/Array 值序列化为紧凑 JSON 并用双引号包裹
+- Bool 值输出 `true` / `false`
+- 数值直接输出，整数不带小数点
+
+显示要求：
+- 等宽字体，深色背景代码块样式（与消息流面板的 JSON 展示风格一致）
+- 右上角「复制」按钮，点击复制到剪贴板并显示 "已复制" 提示
+- 未选择命令时显示占位文字 "选择命令后显示调用示例"
+- 参数值变化时实时更新
+
+### 3.6 消息流面板
 
 所有 WebSocket 消息按时间线展示：
 
@@ -136,7 +211,7 @@ interface MessageEntry {
 - 自动滚动到最新消息（可关闭）
 - 最多保留 500 条消息，超出后移除旧消息
 
-### 3.6 连接状态管理
+### 3.7 连接状态管理
 
 ```typescript
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -159,7 +234,7 @@ interface ConnectionState {
 - `connected` → 用户断开 → `disconnected`
 - 任意状态 → WS error → `error`
 
-### 3.7 Zustand Store
+### 3.8 Zustand Store
 
 ```typescript
 // src/stores/useDriverLabStore.ts
@@ -211,6 +286,7 @@ DriverLabPage
 │   │   └── CommandPanel
 │   │       ├── CommandSelect
 │   │       ├── ParamForm (简化版参数表单)
+│   │       ├── CommandLineExample (命令行调用示例)
 │   │       ├── ExecButton
 │   │       └── CancelButton
 │   └── RightPanel
@@ -276,7 +352,7 @@ interface ParamFormProps {
 }
 ```
 
-简化版参数表单，根据 `FieldMeta.type` 渲染对应控件。不需要完整的 SchemaForm 功能（无 ui.group / ui.advanced 等），仅处理基本类型映射。
+简化版参数表单，根据 `FieldMeta.type` 渲染对应控件。复用 M63 SchemaForm 的字段组件（StringField/NumberField/BoolField/EnumField/AnyField），不需要完整的 SchemaForm 功能（无 ui.group / ui.advanced 等），仅处理基本类型映射和平铺布局。
 
 ### 4.6 会话导出
 
@@ -312,6 +388,7 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 - `src/webui/src/components/DriverLab/ConnectionPanel.tsx` — 连接配置面板
 - `src/webui/src/components/DriverLab/CommandPanel.tsx` — 命令面板
 - `src/webui/src/components/DriverLab/ParamForm.tsx` — 简化版参数表单
+- `src/webui/src/components/DriverLab/CommandLineExample.tsx` — 命令行调用示例
 - `src/webui/src/components/DriverLab/MessageStream.tsx` — 消息流面板
 - `src/webui/src/components/DriverLab/MessageEntry.tsx` — 单条消息组件
 - `src/webui/src/components/DriverLab/MessageToolbar.tsx` — 消息工具栏（清空/导出）
@@ -325,6 +402,7 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 - `src/webui/src/__tests__/components/ConnectionPanel.test.tsx`
 - `src/webui/src/__tests__/components/CommandPanel.test.tsx`
 - `src/webui/src/__tests__/components/ParamForm.test.tsx`
+- `src/webui/src/__tests__/components/CommandLineExample.test.tsx`
 - `src/webui/src/__tests__/components/MessageStream.test.tsx`
 - `src/webui/src/__tests__/components/MessageEntry.test.tsx`
 - `src/webui/src/__tests__/components/MessageToolbar.test.tsx`
@@ -372,54 +450,67 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 | 20 | 无参数命令 | 显示"该命令无参数" |
 | 21 | 值变更 | 触发 onChange 回调 |
 
+**CommandLineExample（CommandLineExample.test.tsx）**：
+
+| # | 场景 | 验证点 |
+|---|------|--------|
+| 22 | 未选择命令 | 显示占位文字 "选择命令后显示调用示例" |
+| 23 | 基本生成 | 显示 `{driverId} --cmd={command}` 格式 |
+| 24 | 带参数生成 | 参数以 `--key=value` 格式追加 |
+| 25 | 特殊字符转义 | 含空格的字符串值用双引号包裹 |
+| 26 | Object/Array 参数 | 序列化为紧凑 JSON 并用双引号包裹 |
+| 27 | 空值参数跳过 | null 和空字符串参数不出现在命令行中 |
+| 28 | 复制按钮 | 点击后内容写入剪贴板 |
+| 29 | 参数变化实时更新 | 修改参数值后命令行示例同步更新 |
+
 **MessageStream（MessageStream.test.tsx）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 22 | 渲染消息列表 | 显示所有消息条目 |
-| 23 | 发送消息样式 | ▲ 蓝色标记 |
-| 24 | 接收消息样式 | ▼ 绿色标记 |
-| 25 | 错误消息样式 | 红色标记 |
-| 26 | 系统事件样式 | driver.started / driver.exited 灰色 |
-| 27 | 空消息列表 | 显示"暂无消息" |
-| 28 | 自动滚动 | 新消息追加后滚动到底部 |
-| 29 | 关闭自动滚动 | 新消息追加后不滚动 |
+| 30 | 渲染消息列表 | 显示所有消息条目 |
+| 31 | 发送消息样式 | ▲ 蓝色标记 |
+| 32 | 接收消息样式 | ▼ 绿色标记 |
+| 33 | 错误消息样式 | 红色标记 |
+| 34 | 系统事件样式 | driver.started / driver.exited 灰色 |
+| 35 | 空消息列表 | 显示"暂无消息" |
+| 36 | 自动滚动 | 新消息追加后滚动到底部 |
+| 37 | 关闭自动滚动 | 新消息追加后不滚动 |
 
 **MessageEntry（MessageEntry.test.tsx）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 30 | 折叠状态 | 显示 payload 预览（单行截断） |
-| 31 | 展开状态 | 显示完整格式化 JSON |
-| 32 | 点击切换 | 折叠/展开状态切换 |
-| 33 | 时间戳格式 | 显示 HH:mm:ss.SSS |
+| 38 | 折叠状态 | 显示 payload 预览（单行截断） |
+| 39 | 展开状态 | 显示完整格式化 JSON |
+| 40 | 点击切换 | 折叠/展开状态切换 |
+| 41 | 时间戳格式 | 显示 HH:mm:ss.SSS |
 
 **MessageToolbar（MessageToolbar.test.tsx）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 34 | 点击清空 | 触发清空回调 |
-| 35 | 点击导出 | 触发文件下载 |
-| 36 | 导出文件名 | `driverlab_{driverId}_{timestamp}.json` |
-| 37 | 无消息时 | 导出按钮禁用 |
+| 42 | 点击清空 | 触发清空回调 |
+| 43 | 点击导出 | 触发文件下载 |
+| 44 | 导出文件名 | `driverlab_{driverId}_{timestamp}.json` |
+| 45 | 无消息时 | 导出按钮禁用 |
 
 **useDriverLabStore（useDriverLabStore.test.ts）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 38 | `connect()` | 创建 WS 连接，状态变为 connecting |
-| 39 | WS open | 状态变为 connected |
-| 40 | `handleWsMessage(driver.started)` | 更新 pid，追加系统消息 |
-| 41 | `handleWsMessage(meta)` | 更新 meta 和 commands 列表 |
-| 42 | `handleWsMessage(stdout)` | 追加接收消息 |
-| 43 | `handleWsMessage(driver.exited)` | 追加系统消息，keepalive 模式下断开 |
-| 44 | `handleWsMessage(error)` | 追加错误消息 |
-| 45 | `execCommand()` | 发送 exec 消息，executing 设为 true |
-| 46 | `cancelCommand()` | 发送 cancel 消息 |
-| 47 | `disconnect()` | 关闭 WS，状态变为 disconnected |
-| 48 | `clearMessages()` | 消息列表清空 |
-| 49 | `appendMessage()` 超过 500 条 | 旧消息被移除 |
-| 50 | `selectCommand()` | selectedCommand 更新，commandParams 重置 |
+| 46 | `connect()` | 创建 WS 连接，状态变为 connecting |
+| 47 | WS open | 状态变为 connected |
+| 48 | `handleWsMessage(driver.started)` | 更新 pid，追加系统消息 |
+| 49 | `handleWsMessage(meta)` | 更新 meta 和 commands 列表 |
+| 50 | `handleWsMessage(stdout)` | 追加接收消息 |
+| 51 | `handleWsMessage(driver.exited)` | 追加系统消息，keepalive 模式下断开 |
+| 52 | `handleWsMessage(error)` | 追加错误消息 |
+| 53 | `execCommand()` | 发送 exec 消息，executing 设为 true |
+| 54 | `cancelCommand()` | 发送 cancel 消息 |
+| 55 | `disconnect()` | 关闭 WS，状态变为 disconnected |
+| 56 | `clearMessages()` | 消息列表清空 |
+| 57 | `appendMessage()` 超过 500 条 | 旧消息被移除 |
+| 58 | `selectCommand()` | selectedCommand 更新，commandParams 重置 |
 
 ### 6.2 验收标准
 
@@ -427,6 +518,7 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 - Driver 选择和连接配置正常
 - WebSocket 连接/断开/重连正常
 - 收到 meta 后命令面板自动生成
+- 命令行调用示例根据当前命令和参数实时生成，复制功能正常
 - 命令执行和取消正常
 - 消息流实时展示，方向/类型样式正确
 - 消息折叠/展开正常

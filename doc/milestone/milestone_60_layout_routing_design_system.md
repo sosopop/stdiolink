@@ -125,7 +125,7 @@ export const darkTheme: ThemeConfig = {
   components: {
     Layout: {
       siderBg: '#0B0C15',
-      headerBg: 'rgba(26, 29, 38, 0.65)',
+      headerBg: 'rgba(26, 29, 38, 0.65)',  // 玻璃态半透明深色，非设计文档 §4.1 表格中的 #ffffff
       bodyBg: '#0B0C15',
     },
     Menu: {

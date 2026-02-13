@@ -96,16 +96,45 @@ export default defineConfig({
 ### 3.3 TypeScript 类型定义
 
 ```typescript
+// src/webui/src/types/api.ts
+// 通用响应包装类型（与后端 API 响应结构对齐）
+export interface PaginatedResponse<T> {
+  [key: string]: T[] | number;  // 动态 key（如 projects/services）
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ListResponse<T> {
+  [key: string]: T[];  // 动态 key（如 services/instances/drivers）
+}
+```
+
+```typescript
 // src/webui/src/types/service.ts
 export interface ServiceInfo {
   id: string;
   name: string;
   version: string;
-  description: string;
-  entryScript: string;
-  hasConfigSchema: boolean;
+  serviceDir: string;       // 后端字段名为 serviceDir（非 directory）
+  hasSchema: boolean;        // 后端字段名为 hasSchema（非 hasConfigSchema）
   projectCount: number;
-  directory: string;
+}
+
+export interface ServiceDetail extends ServiceInfo {
+  manifest: ServiceManifest;
+  configSchema: Record<string, unknown>;
+  configSchemaFields: FieldMeta[];
+  projects: string[];        // 关联的 project ID 列表
+}
+
+export interface ServiceManifest {
+  manifestVersion: string;
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
 }
 
 export interface ServiceFile {
@@ -114,12 +143,17 @@ export interface ServiceFile {
   size: number;
   type: string;
   modifiedAt: string;
-  isDirectory: boolean;
 }
 
 export interface CreateServiceRequest {
   id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
   template?: 'empty' | 'basic' | 'driver_demo';
+  indexJs?: string;
+  configSchema?: Record<string, unknown>;
 }
 ```
 
@@ -147,13 +181,21 @@ export interface Schedule {
 }
 
 export interface ProjectRuntime {
-  projectId: string;
-  status: 'running' | 'stopped' | 'starting' | 'error';
-  instanceId?: string;
-  pid?: number;
-  startedAt?: string;
-  uptimeMs?: number;
-  consecutiveFailures?: number;
+  id: string;
+  enabled: boolean;
+  valid: boolean;
+  error?: string;
+  status: 'running' | 'stopped' | 'disabled' | 'invalid';
+  runningInstances: number;
+  instances: Instance[];
+  schedule: {
+    type: string;
+    timerActive: boolean;
+    restartSuppressed: boolean;
+    consecutiveFailures: number;
+    shuttingDown: boolean;
+    autoRestarting: boolean;
+  };
 }
 
 export interface CreateProjectRequest {
@@ -453,11 +495,13 @@ export class EventStream {
     this.es.onopen = () => this.emit('connected', { type: 'connected', data: {} });
     this.es.onerror = () => this.emit('error', { type: 'error', data: {} });
 
+    // 当前后端已实现的事件类型（见 server_manager.cpp EventBus::publish 调用）
     const eventTypes = [
       'instance.started', 'instance.finished',
-      'project.status_changed', 'service.scanned', 'driver.scanned',
       'schedule.triggered', 'schedule.suppressed'
     ];
+    // 注意：project.status_changed / service.scanned / driver.scanned
+    // 尚未在后端实现，待后续里程碑按需添加（见 M67 说明）
 
     for (const type of eventTypes) {
       this.es.addEventListener(type, (e: Event) => {
@@ -514,7 +558,8 @@ src/webui/
     │   ├── project.ts
     │   ├── instance.ts
     │   ├── driver.ts
-    │   └── server.ts
+    │   ├── server.ts
+    │   └── api.ts
     ├── test-setup.ts
     ├── App.tsx          (最小占位)
     ├── main.tsx
@@ -550,6 +595,7 @@ src/webui/
 - `src/webui/src/types/instance.ts` — Instance 类型
 - `src/webui/src/types/driver.ts` — Driver 类型
 - `src/webui/src/types/server.ts` — Server 类型
+- `src/webui/src/types/api.ts` — 通用响应包装类型
 
 ### 4.2 测试文件
 

@@ -125,10 +125,11 @@ copy_dir_clean() {
 
 should_skip_binary() {
     local name="$1"
+    local stem="${name%.*}"
 
     if [[ "${WITH_TESTS}" -eq 0 ]]; then
-        case "${name}" in
-            stdiolink_tests|test_driver|test_meta_driver|test_service_stub)
+        case "${stem}" in
+            stdiolink_tests|test_*|gtest)
                 return 0
                 ;;
         esac
@@ -176,6 +177,8 @@ fi
 
 echo "Copying docs..."
 copy_file_if_exists "${ROOT_DIR}/doc/stdiolink_server.md" "${PACKAGE_DIR}/doc/"
+copy_file_if_exists "${ROOT_DIR}/doc/http_api.md" "${PACKAGE_DIR}/doc/"
+copy_file_if_exists "${ROOT_DIR}/doc/stdiolink-server-api-requirements.md" "${PACKAGE_DIR}/doc/"
 copy_file_if_exists "${ROOT_DIR}/doc/milestone/milestone_39_server_manager_demo_and_release.md" "${PACKAGE_DIR}/doc/"
 
 MANIFEST="${PACKAGE_DIR}/RELEASE_MANIFEST.txt"

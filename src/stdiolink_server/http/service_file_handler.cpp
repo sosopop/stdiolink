@@ -8,6 +8,18 @@
 
 namespace stdiolink_server {
 
+namespace {
+
+QString normalizePathForCompare(const QString& path) {
+    QString normalized = QDir::cleanPath(QDir::fromNativeSeparators(path));
+#ifdef Q_OS_WIN
+    normalized = normalized.toLower();
+#endif
+    return normalized;
+}
+
+} // namespace
+
 bool ServiceFileHandler::isPathSafe(const QString& serviceDir,
                                      const QString& relativePath) {
     if (relativePath.isEmpty()) {
@@ -25,15 +37,21 @@ bool ServiceFileHandler::isPathSafe(const QString& serviceDir,
         }
     }
 
-    const QString basePath = QDir::cleanPath(QDir(serviceDir).absolutePath());
-    const QString resolved = QDir::cleanPath(
+    const QString basePath = normalizePathForCompare(QDir(serviceDir).absolutePath());
+    const QString resolved = normalizePathForCompare(
         QDir(serviceDir).absoluteFilePath(relativePath));
     if (!resolved.startsWith(basePath + "/")) {
         return false;
     }
 
+    QString canonicalBasePath = normalizePathForCompare(
+        QFileInfo(QDir(serviceDir).absolutePath()).canonicalFilePath());
+    if (canonicalBasePath.isEmpty()) {
+        canonicalBasePath = basePath;
+    }
+
     QFileInfo resolvedInfo(resolved);
-    if (resolvedInfo.exists() && resolvedInfo.isSymLink()) {
+    if (resolvedInfo.isSymLink()) {
         return false;
     }
 
@@ -44,7 +62,23 @@ bool ServiceFileHandler::isPathSafe(const QString& serviceDir,
         }
         const QString stepPath = dir.absoluteFilePath(seg);
         QFileInfo stepInfo(stepPath);
-        if (stepInfo.exists() && stepInfo.isSymLink()) {
+        if (stepInfo.isSymLink()) {
+            return false;
+        }
+        if (stepInfo.exists()) {
+            const QString canonicalStepPath =
+                normalizePathForCompare(stepInfo.canonicalFilePath());
+            if (!canonicalStepPath.isEmpty()
+                && canonicalStepPath != canonicalBasePath
+                && !canonicalStepPath.startsWith(canonicalBasePath + "/")) {
+                return false;
+            }
+        }
+        if (!stepInfo.exists()) {
+            dir.setPath(stepPath);
+            continue;
+        }
+        if (!stepInfo.isDir() && seg != segments.back()) {
             return false;
         }
         dir.setPath(stepPath);

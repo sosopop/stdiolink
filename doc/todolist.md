@@ -105,3 +105,7 @@
 - 通过 HTTP API 直接创建/删除 Service 目录
   - 与文件系统作为配置源的当前模型冲突
   - 易引入权限、安全与一致性复杂度
+
+- 移除 `DocGenerator::toOpenAPI()` 对 Driver 的导出支持
+  - Driver 是 stdin/stdout JSONL 程序，OpenAPI 的 HTTP 路径映射无实际意义
+  - 当前代码保留但 Web 端不暴露此格式；后续清理时可移除 `toOpenAPI()` 实现

@@ -175,6 +175,17 @@ ApiRouter::ApiRouter(ServerManager* manager, QObject* parent)
     , m_manager(manager) {
 }
 
+ApiRouter::~ApiRouter() {
+    if (!m_manager) {
+        return;
+    }
+    auto* handler = m_manager->eventStreamHandler();
+    if (!handler) {
+        return;
+    }
+    handler->closeAllConnections();
+}
+
 void ApiRouter::registerRoutes(QHttpServer& server) {
     server.route("/api/server/status", Method::Get, [this](const QHttpServerRequest& req) {
         return handleServerStatus(req);

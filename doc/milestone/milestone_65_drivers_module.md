@@ -21,7 +21,26 @@
 
 Drivers 是 stdiolink 的底层通信驱动，每个 Driver 通过 DriverMeta 自描述其能力（支持的命令、参数类型、配置项等）。WebUI 需要以结构化方式展示这些元数据，帮助开发者理解 Driver 的接口规范。
 
-**范围**：Drivers 列表 + 详情展示。Driver 是只读资源（通过文件系统扫描发现），不支持在线创建/编辑。
+**范围**：Drivers 列表 + 详情展示 + 文档生成与导出。Driver 是只读资源（通过文件系统扫描发现），不支持在线创建/编辑。
+
+### 2.1 后端文档生成 API（需新增）
+
+核心库 `src/stdiolink/doc/doc_generator.h` 已实现完整的文档生成器（`DocGenerator` 类），支持 Markdown、HTML、OpenAPI 3.0、TypeScript 四种输出格式。本里程碑需新增 API 端点将其暴露给 Web 端。
+
+**端点**：`GET /api/drivers/{id}/docs`
+
+**查询参数**：
+- `format`：`markdown` | `html` | `typescript`（必填）
+
+**响应**：
+
+| format | Content-Type | 响应体 |
+|--------|-------------|--------|
+| `markdown` | `text/markdown; charset=utf-8` | Markdown 文本 |
+| `html` | `text/html; charset=utf-8` | 自包含 HTML（含内嵌 CSS/JS） |
+| `typescript` | `text/plain; charset=utf-8` | TypeScript 声明文件 |
+
+**实现建议**：在 `api_router.cpp` 中注册路由，从 `DriverManagerScanner` 获取 `DriverMeta`，调用 `DocGenerator::toMarkdown()` / `toHtml()` / `toTypeScript()` 生成内容并返回。不暴露 `toOpenAPI()`（Driver 是 stdin/stdout JSONL 程序，OpenAPI 的 HTTP 路径映射无实际意义）。
 
 ---
 
@@ -43,9 +62,22 @@ Drivers 是 stdiolink 的底层通信驱动，每个 Driver 通过 DriverMeta �
 |-----|------|----------|
 | 元数据 | 基本信息（ID/名称/版本/描述/厂商/入口/Capabilities/Profiles）| `meta.info` |
 | 命令 | 命令列表 + 每个命令的参数详情表格 | `meta.commands` |
-| 文档 | 自动生成的 API 文档（基于 meta 结构化渲染）| `meta` 全量 |
+| 文档 | 后端生成的 Markdown 文档渲染展示 | `GET /api/drivers/{id}/docs?format=markdown` |
 
-### 3.3 命令详情展示
+### 3.3 新增依赖
+
+```json
+{
+  "dependencies": {
+    "react-markdown": "^9.x",
+    "remark-gfm": "^4.x"
+  }
+}
+```
+
+> **说明**：`react-markdown` 用于将后端返回的 Markdown 文档渲染为 React 组件。`remark-gfm` 插件支持 GFM 扩展语法（表格、删除线、任务列表等），后端 `DocGenerator::toMarkdown()` 生成的文档包含 GFM 表格。
+
+### 3.4 命令详情展示
 
 每个命令展示为可展开的卡片：
 
@@ -67,22 +99,25 @@ Drivers 是 stdiolink 的底层通信驱动，每个 Driver 通过 DriverMeta �
 └─────────────────────────────────────────────────────┘
 ```
 
-### 3.4 元数据 JSON 导出
+### 3.5 元数据 JSON 导出
 
 详情页提供"导出元数据 JSON"按钮，将完整 `meta` 对象格式化为 JSON 并触发浏览器下载。
 
-### 3.5 Zustand Store
+### 3.6 Zustand Store
 
 ```typescript
 // src/stores/useDriversStore.ts
 interface DriversState {
   drivers: DriverInfo[];
   currentDriver: DriverInfo | null;
+  docsMarkdown: string | null;   // 文档 Tab 的 Markdown 内容
+  docsLoading: boolean;
   loading: boolean;
   error: string | null;
 
   fetchDrivers: () => Promise<void>;
   fetchDriverDetail: (id: string) => Promise<void>;
+  fetchDriverDocs: (id: string, format?: string) => Promise<string>;  // 返回文档内容
   scanDrivers: () => Promise<void>;
 }
 ```
@@ -110,7 +145,8 @@ DriverDetailPage (详情)
 │   │       ├── ParamsTable (参数表格)
 │   │       └── ReturnType (返回值)
 │   └── DocsTab
-│       └── DriverDocs (结构化文档)
+│       └── DriverDocs (Markdown 文档渲染)
+├── DocExportButton (多格式文档导出)
 └── ExportMetaButton
 ```
 
@@ -140,14 +176,49 @@ interface ParamsTableProps {
 
 ### 4.4 DriverDocs 组件
 
-基于 DriverMeta 自动生成结构化文档：
+调用后端 `GET /api/drivers/{id}/docs?format=markdown` 获取 Markdown 文档，前端渲染展示。
 
-- 概述（info.description）
+```typescript
+// src/components/Drivers/DriverDocs.tsx
+interface DriverDocsProps {
+  driverId: string;
+}
+```
+
+实现要点：
+- 组件挂载时调用 `GET /api/drivers/{id}/docs?format=markdown` 获取文档内容
+- 使用 `react-markdown`（或 `marked` + `DOMPurify`）将 Markdown 渲染为 HTML
+- 代码块使用等宽字体 + 深色背景样式（与全局暗色主题一致）
+- 表格使用 Ant Design 风格样式覆盖
+- 加载中显示骨架屏，加载失败显示错误提示和重试按钮
+
+后端 `DocGenerator::toMarkdown()` 生成的文档结构：
+- Driver 基本信息（名称/版本/描述/厂商）
+- 命令参考（每个命令的签名、参数表格含嵌套字段和约束、返回值）
 - 配置项（config 字段列表）
-- 命令参考（每个命令的签名、参数、返回值）
 - 类型定义（types）
 - 错误码（errors）
-- 使用示例（examples）
+
+### 4.5 DocExportButton 组件
+
+提供多格式文档导出，复用后端 `DocGenerator` 的三种输出格式：
+
+```typescript
+// src/components/Drivers/DocExportButton.tsx
+interface DocExportButtonProps {
+  driverId: string;
+}
+```
+
+下拉菜单提供三种导出选项：
+
+| 选项 | API 调用 | 下载文件名 |
+|------|---------|-----------|
+| Markdown | `?format=markdown` | `{driverId}.md` |
+| HTML | `?format=html` | `{driverId}.html` |
+| TypeScript | `?format=typescript` | `{driverId}.d.ts` |
+
+实现：调用 API 获取内容，构造 Blob 触发浏览器下载。
 
 ---
 
@@ -165,6 +236,7 @@ interface ParamsTableProps {
 - `src/webui/src/components/Drivers/CommandCard.tsx`
 - `src/webui/src/components/Drivers/ParamsTable.tsx`
 - `src/webui/src/components/Drivers/DriverDocs.tsx`
+- `src/webui/src/components/Drivers/DocExportButton.tsx`
 - `src/webui/src/components/Drivers/ExportMetaButton.tsx`
 
 **Store**：
@@ -177,8 +249,15 @@ interface ParamsTableProps {
 - `src/webui/src/__tests__/components/CommandCard.test.tsx`
 - `src/webui/src/__tests__/components/ParamsTable.test.tsx`
 - `src/webui/src/__tests__/components/DriverDocs.test.tsx`
+- `src/webui/src/__tests__/components/DocExportButton.test.tsx`
 - `src/webui/src/__tests__/components/ExportMetaButton.test.tsx`
 - `src/webui/src/__tests__/stores/useDriversStore.test.ts`
+
+### 5.2 修改文件
+
+- `src/stdiolink_server/http/api_router.cpp` — 注册 `GET /api/drivers/{id}/docs` 路由
+- `src/stdiolink_server/http/api_router.h` — 添加 `handleDriverDocs` 处理方法声明
+- `src/webui/package.json` — 添加 `react-markdown`、`remark-gfm` 依赖
 
 ---
 
@@ -220,27 +299,43 @@ interface ParamsTableProps {
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 16 | 渲染概述 | 显示 description |
-| 17 | 渲染命令参考 | 每个命令有签名和参数说明 |
-| 18 | 渲染配置项 | config 字段列表 |
-| 19 | 无 meta 数据 | 显示"元数据不可用" |
+| 16 | 加载文档 | 调用 `GET /api/drivers/{id}/docs?format=markdown` |
+| 17 | 渲染 Markdown | 标题、表格、代码块正确渲染 |
+| 18 | GFM 表格支持 | 参数表格正确渲染为 HTML table |
+| 19 | 加载中状态 | 显示骨架屏 |
+| 20 | 加载失败 | 显示错误提示和重试按钮 |
+| 21 | 点击重试 | 重新调用 API |
+| 22 | 无 meta 数据 | 显示"元数据不可用" |
+
+**DocExportButton（DocExportButton.test.tsx）**：
+
+| # | 场景 | 验证点 |
+|---|------|--------|
+| 23 | 渲染下拉菜单 | 显示 Markdown/HTML/TypeScript 三个选项 |
+| 24 | 导出 Markdown | 调用 `?format=markdown`，下载 `{driverId}.md` |
+| 25 | 导出 HTML | 调用 `?format=html`，下载 `{driverId}.html` |
+| 26 | 导出 TypeScript | 调用 `?format=typescript`，下载 `{driverId}.d.ts` |
+| 27 | 导出失败 | 显示错误提示 |
 
 **ExportMetaButton（ExportMetaButton.test.tsx）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 20 | 点击导出 | 触发文件下载 |
-| 21 | 文件名格式 | `{driverId}_meta.json` |
-| 22 | JSON 格式化 | 内容为格式化的 JSON |
+| 28 | 点击导出 | 触发文件下载 |
+| 29 | 文件名格式 | `{driverId}_meta.json` |
+| 30 | JSON 格式化 | 内容为格式化的 JSON |
 
 **useDriversStore（useDriversStore.test.ts）**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 23 | `fetchDrivers()` 成功 | drivers 列表更新 |
-| 24 | `fetchDrivers()` 失败 | error 被设置 |
-| 25 | `fetchDriverDetail(id)` | currentDriver 更新，含完整 meta |
-| 26 | `scanDrivers()` | 调用扫描 API 并刷新列表 |
+| 31 | `fetchDrivers()` 成功 | drivers 列表更新 |
+| 32 | `fetchDrivers()` 失败 | error 被设置 |
+| 33 | `fetchDriverDetail(id)` | currentDriver 更新，含完整 meta |
+| 34 | `fetchDriverDocs(id)` 成功 | docsMarkdown 更新 |
+| 35 | `fetchDriverDocs(id)` 失败 | error 被设置，docsMarkdown 为 null |
+| 36 | `fetchDriverDocs(id, 'html')` | 返回 HTML 内容 |
+| 37 | `scanDrivers()` | 调用扫描 API 并刷新列表 |
 
 ### 6.2 验收标准
 
@@ -248,6 +343,8 @@ interface ParamsTableProps {
 - Driver 详情页三个 Tab 正常工作
 - 命令列表正确展示参数详情
 - 嵌套参数正确渲染
+- 文档 Tab 正确调用后端 API 并渲染 Markdown（标题/表格/代码块）
+- 多格式文档导出正常（Markdown/HTML/TypeScript）
 - 元数据 JSON 导出正常
 - "在 DriverLab 中测试"跳转正常
 - 全部单元测试通过
@@ -265,8 +362,11 @@ interface ParamsTableProps {
 
 ## 8. 里程碑完成定义（DoD）
 
+- 后端 `GET /api/drivers/{id}/docs` 端点实现，支持四种格式
 - Drivers 列表页完整实现
 - Driver 详情页（元数据/命令/文档）完整实现
+- 文档 Tab 调用后端 API 渲染 Markdown 文档
+- 多格式文档导出功能正常（Markdown/HTML/OpenAPI/TypeScript）
 - 命令参数详情正确展示
 - 元数据导出功能正常
 - 对应单元测试完成并通过

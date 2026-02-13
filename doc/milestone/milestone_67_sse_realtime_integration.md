@@ -35,15 +35,24 @@
 
 ### 3.1 SSE 事件类型与响应
 
-| 事件类型 | 触发场景 | 前端响应 |
-|---------|---------|---------|
-| `instance.started` | Instance 启动成功 | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
-| `instance.finished` | Instance 退出 | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
-| `project.status_changed` | Project 状态变更（valid/invalid/enabled） | 刷新 Projects 列表中对应项的状态 |
-| `service.scanned` | Service 目录扫描完成 | 刷新 Services 列表 |
-| `driver.scanned` | Driver 目录扫描完成 | 刷新 Drivers 列表 |
-| `schedule.triggered` | 调度引擎触发执行 | 追加到 Dashboard 事件流面板 |
-| `schedule.suppressed` | 调度被抑制（并发上限等） | 追加到 Dashboard 事件流面板 |
+当前后端已实现的事件类型（见 `server_manager.cpp` 中 `EventBus::publish` 调用）：
+
+| 事件类型 | 触发场景 | data 字段 | 前端响应 |
+|---------|---------|----------|---------|
+| `instance.started` | Instance 启动成功 | `{instanceId, projectId, pid}` | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
+| `instance.finished` | Instance 退出 | `{instanceId, projectId, exitCode, exitStatus}` | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
+| `schedule.triggered` | 调度引擎触发执行 | `{projectId, scheduleType}` | 追加到 Dashboard 事件流面板 |
+| `schedule.suppressed` | 调度被抑制（连续失败等） | `{projectId, reason, consecutiveFailures}` | 追加到 Dashboard 事件流面板 |
+
+**后端待补充的事件类型**（本里程碑前端预留处理逻辑，但需后端配合添加 `EventBus::publish` 调用）：
+
+| 事件类型 | 触发场景 | 建议 data 字段 | 前端响应 |
+|---------|---------|---------------|---------|
+| `project.status_changed` | Project valid/invalid/enabled 状态变更 | `{projectId, status, enabled, valid}` | 刷新 Projects 列表中对应项的状态 |
+| `service.scanned` | Service 目录扫描完成 | `{added, removed, updated}` | 刷新 Services 列表 |
+| `driver.scanned` | Driver 目录扫描完成 | `{scanned, updated}` | 刷新 Drivers 列表 |
+
+> **说明**：`project.status_changed`、`service.scanned`、`driver.scanned` 三个事件类型当前后端未发布。前端代码中预留这三个事件的处理分支，但在后端补充 `EventBus::publish` 调用之前，这些分支不会被触发。对应的列表刷新在 SSE 不可用时仍通过轮询保障。后端补充这些事件的工作量较小（在 `ServerManager::rescanServices`、`ServerManager::rescanDrivers` 和项目状态变更处各加一行 `publish` 调用即可），建议在本里程碑实施时一并完成。
 
 ### 3.2 全局连接管理
 
@@ -103,7 +112,7 @@ function dispatchEvent(event: ServerEvent): void {
       // 通知 Instances Store 刷新
       useInstancesStore.getState().fetchInstances();
       // 通知 Dashboard Store 更新计数
-      useDashboardStore.getState().fetchStats();
+      useDashboardStore.getState().fetchServerStatus();
       // 通知 Projects Store 更新运行时
       if (event.data.projectId) {
         useProjectsStore.getState().fetchProjectRuntime(event.data.projectId as string);
@@ -111,20 +120,23 @@ function dispatchEvent(event: ServerEvent): void {
       break;
 
     case 'project.status_changed':
+      // 后端待补充此事件类型（见 §3.1 说明）
       useProjectsStore.getState().fetchProjects();
       break;
 
     case 'service.scanned':
+      // 后端待补充此事件类型（见 §3.1 说明）
       useServicesStore.getState().fetchServices();
       break;
 
     case 'driver.scanned':
+      // 后端待补充此事件类型（见 §3.1 说明）
       useDriversStore.getState().fetchDrivers();
       break;
 
     case 'schedule.triggered':
     case 'schedule.suppressed':
-      useDashboardStore.getState().appendEvent(event);
+      useDashboardStore.getState().addEvent(event);
       break;
   }
 }
@@ -235,12 +247,33 @@ function useSmartPolling(options: UseSmartPollingOptions): void {
 
 各模块 Store 无需修改接口，事件分发直接调用已有的 fetch 方法。仅需确保 fetch 方法支持被外部调用（已满足）。
 
-Dashboard Store 需新增 `appendEvent` 方法（如 M61 未包含）：
+Dashboard Store 需新增 `addEvent` 方法（如 M61 未包含）：
 
 ```typescript
-// usesDashboardStore 补充
-appendEvent: (event: ServerEvent) => void;
+// useDashboardStore 补充
+addEvent: (event: ServerEvent) => void;
 ```
+
+### 3.8 重连后数据同步策略
+
+SSE 断开期间可能错过事件，重连成功后需要主动同步数据以保证一致性：
+
+```typescript
+// 重连成功后的数据同步
+function onReconnected(): void {
+  // 重新拉取所有关键数据，弥补断开期间可能错过的事件
+  useDashboardStore.getState().fetchServerStatus();
+  useDashboardStore.getState().fetchInstances();
+  useInstancesStore.getState().fetchInstances();
+  useProjectsStore.getState().fetchProjects();
+}
+```
+
+同步规则：
+- 重连成功（`reconnecting` → `connected`）后，立即触发一次全量数据拉取
+- 仅拉取当前活跃页面相关的数据（通过检查路由或 Store 的 loading 状态判断）
+- Dashboard 数据始终拉取（因为 KPI 卡片需要全局准确）
+- 使用防抖避免重连抖动导致的重复请求
 
 ---
 
@@ -285,12 +318,12 @@ appendEvent: (event: ServerEvent) => void;
 |---|------|--------|
 | 1 | `connect()` | 创建 EventSource，状态变为 connecting |
 | 2 | SSE open | 状态变为 connected，reconnectAttempts 重置为 0 |
-| 3 | 收到 `instance.started` 事件 | 调用 instancesStore.fetchInstances() 和 dashboardStore.fetchStats() |
+| 3 | 收到 `instance.started` 事件 | 调用 instancesStore.fetchInstances() 和 dashboardStore.fetchServerStatus() |
 | 4 | 收到 `instance.finished` 事件 | 调用 instancesStore.fetchInstances() 和 projectsStore.fetchProjectRuntime() |
 | 5 | 收到 `project.status_changed` 事件 | 调用 projectsStore.fetchProjects() |
 | 6 | 收到 `service.scanned` 事件 | 调用 servicesStore.fetchServices() |
 | 7 | 收到 `driver.scanned` 事件 | 调用 driversStore.fetchDrivers() |
-| 8 | 收到 `schedule.triggered` 事件 | 调用 dashboardStore.appendEvent() |
+| 8 | 收到 `schedule.triggered` 事件 | 调用 dashboardStore.addEvent() |
 | 9 | SSE error | 状态变为 reconnecting |
 | 10 | 自动重连成功 | 状态恢复为 connected |
 | 11 | 重连退避 | 第 1 次 1s、第 2 次 2s、第 3 次 4s |

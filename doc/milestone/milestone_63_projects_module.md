@@ -109,6 +109,8 @@ UI Hint 支持：
 - `unit`：单位标签
 - `step`：数值步进
 
+> **注意**：设计文档 §5.3 中提到的 `visibleIf` 条件显示功能（根据其他字段值动态显示/隐藏字段）复杂度较高，本里程碑暂不实现。首版 SchemaForm 支持上述基础 UI Hint，`visibleIf` 作为后续增强项按需补充。
+
 ### 3.4 详情页 Tab 结构
 
 | Tab | 内容 | API |
@@ -125,7 +127,7 @@ UI Hint 支持：
 // 操作按钮状态逻辑
 const canStart = project.enabled && project.valid && runtime?.status !== 'running';
 const canStop = runtime?.status === 'running';
-const canReload = true;  // 始终可用
+const canReload = true;  // 前端始终允许点击；后端会检查项目文件是否存在，不存在时返回 404
 ```
 
 操作确认：
