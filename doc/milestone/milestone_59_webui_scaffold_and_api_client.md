@@ -284,51 +284,121 @@ export interface ProcessInfo {
 
 ```typescript
 // src/webui/src/types/driver.ts
-export interface DriverInfo {
+export interface DriverListItem {
   id: string;
   program: string;
   metaHash: string;
-  meta?: DriverMeta;
+  name?: string;        // 后端在 meta 可用时返回
+  version?: string;     // 后端在 meta 可用时返回
+}
+
+export interface DriverDetail {
+  id: string;
+  program: string;
+  metaHash: string;
+  meta: DriverMeta | null;
+}
+
+// 兼容后续页面文档中使用的命名
+export type DriverInfo = DriverListItem;
+
+export interface DriverMetaInfo {
+  id?: string;
+  name: string;
+  version: string;
+  description?: string;
+  vendor?: string;
+  entry?: Record<string, unknown>;
+  capabilities?: string[];
+  profiles?: string[];
 }
 
 export interface DriverMeta {
   schemaVersion: string;
   info: DriverMetaInfo;
-  config?: FieldMeta;
+  config?: ConfigSchema;
   commands: CommandMeta[];
-  types?: Record<string, unknown>;
-  errors?: unknown[];
-  examples?: unknown[];
+  types?: Record<string, FieldMeta>;
+  errors?: Record<string, unknown>[];
+  examples?: Record<string, unknown>[];
 }
 
-export interface DriverMetaInfo {
-  name: string;
-  version: string;
-  description?: string;
-  vendor?: string;
-  capabilities?: string[];
-  profiles?: string[];
+export interface ConfigSchema {
+  fields: FieldMeta[];
+  apply?: ConfigApply;
+}
+
+export interface ConfigApply {
+  method?: 'startupArgs' | 'env' | 'command' | 'file';
+  envPrefix?: string;
+  command?: string;
+  fileName?: string;
 }
 
 export interface CommandMeta {
   name: string;
   description?: string;
+  title?: string;
+  summary?: string;
   params: FieldMeta[];
-  result?: FieldMeta;
-  events?: FieldMeta[];
+  returns: ReturnMeta;
+  events?: EventMeta[];
+  errors?: Record<string, unknown>[];
+  examples?: Record<string, unknown>[];
+  ui?: UIHint;
+}
+
+export interface ReturnMeta {
+  type: FieldType;
+  description?: string;
+  fields?: FieldMeta[];
+}
+
+export interface EventMeta {
+  name: string;
+  description?: string;
+  fields?: FieldMeta[];
 }
 
 export interface FieldMeta {
   name: string;
-  type: string;
+  type: FieldType;
   description?: string;
   required?: boolean;
-  defaultValue?: unknown;
-  constraints?: Record<string, unknown>;
-  ui?: Record<string, unknown>;
+  default?: unknown;   // 后端键名是 default
+
+  // 约束字段在 JSON 中为平铺结构（非 constraints 子对象）
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  enum?: unknown[];
+  format?: string;
+  minItems?: number;
+  maxItems?: number;
+
+  ui?: UIHint;
   fields?: FieldMeta[];
   items?: FieldMeta;
-  enumValues?: string[];
+  requiredKeys?: string[];
+  additionalProperties?: boolean;
+}
+
+export type FieldType =
+  | 'string' | 'int' | 'int64' | 'double'
+  | 'bool' | 'object' | 'array' | 'enum' | 'any';
+
+export interface UIHint {
+  widget?: string;
+  group?: string;
+  order?: number;
+  placeholder?: string;
+  advanced?: boolean;
+  readonly?: boolean;
+  visibleIf?: string;
+  unit?: string;
+  step?: number;
 }
 ```
 

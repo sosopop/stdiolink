@@ -80,7 +80,7 @@ API 依赖（均已实现）：
 
 ```typescript
 interface SchemaFormProps {
-  schema: FieldMeta;          // Service 的 config schema
+  schema: FieldMeta[];        // ServiceDetail.configSchemaFields
   value: Record<string, unknown>;
   onChange: (value: Record<string, unknown>) => void;
   errors?: Record<string, string>;
@@ -95,7 +95,7 @@ Schema 类型到 UI 组件的映射规则（对齐设计文档 §5.3）：
 | Int / Int64 | InputNumber | 支持 min/max；ui.step 映射步进 |
 | Double | InputNumber | 支持小数与 min/max/step |
 | Bool | Switch | 布尔开关 |
-| Enum | Select / Radio | 选项来自 constraints.enumValues |
+| Enum | Select / Radio | 选项来自字段的 `enum`（兼容旧写法 `constraints.enumValues`） |
 | Object | Collapse + FieldSet | 递归渲染 fields |
 | Array | Dynamic List | 递归渲染 items；支持 minItems/maxItems |
 | Any | JSON Editor | 高级字段，JSON 输入框 |
@@ -110,6 +110,8 @@ UI Hint 支持：
 - `step`：数值步进
 
 > **注意**：设计文档 §5.3 中提到的 `visibleIf` 条件显示功能（根据其他字段值动态显示/隐藏字段）复杂度较高，本里程碑暂不实现。首版 SchemaForm 支持上述基础 UI Hint，`visibleIf` 作为后续增强项按需补充。
+
+> **日志字段说明**：`/api/projects/{id}/logs` 返回结构为 `lines: string[]`，不包含结构化 `level` 字段。日志筛选按文本规则实现（例如前缀或关键字匹配），不应假定后端已提供严格日志级别。
 
 ### 3.4 详情页 Tab 结构
 
@@ -252,7 +254,7 @@ interface ProjectsState {
 | 23 | Object 字段 | 递归渲染子字段 |
 | 24 | Array 字段 | 渲染动态列表，支持增删 |
 | 25 | 必填标记 | required 字段显示红色星号 |
-| 26 | 默认值 | 字段初始值为 defaultValue |
+| 26 | 默认值 | 字段初始值读取 `default` 键 |
 | 27 | min/max 约束 | InputNumber 设置 min/max |
 | 28 | group 分组 | 同 group 字段在同一 Collapse 面板 |
 | 29 | advanced 折叠 | advanced=true 的字段默认隐藏 |
@@ -266,7 +268,7 @@ interface ProjectsState {
 |---|------|--------|
 | 33 | StringField pattern 校验 | 不匹配 pattern 时显示错误 |
 | 34 | NumberField step | 步进按钮按 step 增减 |
-| 35 | EnumField 多选项 | 所有 enumValues 显示为选项 |
+| 35 | EnumField 多选项 | 所有 `enum` 值显示为选项 |
 | 36 | ObjectField 嵌套 | 子字段正确渲染 |
 | 37 | ArrayField 添加项 | 点击添加按钮增加一项 |
 | 38 | ArrayField 删除项 | 点击删除按钮移除一项 |

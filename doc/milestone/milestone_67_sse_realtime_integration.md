@@ -1,7 +1,7 @@
 # 里程碑 67：SSE 事件流集成与全局实时更新
 
 > **前置条件**: 里程碑 61-66 已完成（各模块页面已就绪），里程碑 59 已完成（EventStream SSE 客户端已实现）
-> **目标**: 将 SSE 事件流集成到全局状态管理中，实现跨页面实时数据更新：Instance 启停事件驱动列表刷新、Project 状态变更实时反映、Service/Driver 扫描事件触发列表更新、Dashboard 实时指标更新，并提供连接状态指示器
+> **目标**: 将 SSE 事件流集成到全局状态管理中，实现跨页面实时数据更新：Instance 启停事件驱动列表刷新、调度事件驱动 Dashboard 更新，并提供连接状态指示器；对后端暂未发布的事件类型保留扩展处理分支
 
 ---
 
@@ -13,9 +13,10 @@
 - 实现自动重连：断开后指数退避重连（1s → 2s → 4s → 8s → 16s → 30s 上限）
 - 实现各模块的事件响应：
   - `instance.started` / `instance.finished` → 刷新 Instances 列表、更新 Dashboard 计数
-  - `project.status_changed` → 刷新 Projects 运行时状态
-  - `service.scanned` / `driver.scanned` → 刷新对应列表
   - `schedule.triggered` / `schedule.suppressed` → 更新 Dashboard 事件流
+- 预留可选扩展分支（后端补充事件后启用）：
+  - `project.status_changed` → 刷新 Projects 状态
+  - `service.scanned` / `driver.scanned` → 刷新对应列表
 - 实现 Zustand Store：`useEventStreamStore`
 - 降低各页面轮询频率（SSE 可用时减少主动轮询）
 
@@ -40,7 +41,7 @@
 | 事件类型 | 触发场景 | data 字段 | 前端响应 |
 |---------|---------|----------|---------|
 | `instance.started` | Instance 启动成功 | `{instanceId, projectId, pid}` | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
-| `instance.finished` | Instance 退出 | `{instanceId, projectId, exitCode, exitStatus}` | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
+| `instance.finished` | Instance 退出 | `{instanceId, projectId, exitCode, status}` | 刷新 Instances 列表；更新 Dashboard 计数；更新对应 Project 运行时状态 |
 | `schedule.triggered` | 调度引擎触发执行 | `{projectId, scheduleType}` | 追加到 Dashboard 事件流面板 |
 | `schedule.suppressed` | 调度被抑制（连续失败等） | `{projectId, reason, consecutiveFailures}` | 追加到 Dashboard 事件流面板 |
 
@@ -115,7 +116,7 @@ function dispatchEvent(event: ServerEvent): void {
       useDashboardStore.getState().fetchServerStatus();
       // 通知 Projects Store 更新运行时
       if (event.data.projectId) {
-        useProjectsStore.getState().fetchProjectRuntime(event.data.projectId as string);
+        useProjectsStore.getState().fetchRuntimes();
       }
       break;
 
@@ -254,7 +255,7 @@ Dashboard Store 需新增 `addEvent` 方法（如 M61 未包含）：
 addEvent: (event: ServerEvent) => void;
 ```
 
-### 3.8 重连后数据同步策略
+### 4.5 重连后数据同步策略
 
 SSE 断开期间可能错过事件，重连成功后需要主动同步数据以保证一致性：
 
@@ -300,11 +301,11 @@ function onReconnected(): void {
 ### 5.2 修改文件
 
 - `src/webui/src/App.tsx` — 添加 `useGlobalEventStream()` 调用
-- `src/webui/src/components/Layout/Header.tsx` — 添加 `SseStatusIndicator`
+- `src/webui/src/components/Layout/AppHeader.tsx` — 添加 `SseStatusIndicator`
 - `src/webui/src/pages/Dashboard/index.tsx` — 使用 `useSmartPolling` 替换固定轮询
 - `src/webui/src/pages/Instances/index.tsx` — 使用 `useSmartPolling` 替换固定轮询
 - `src/webui/src/pages/Projects/index.tsx` — 使用 `useSmartPolling` 替换固定轮询
-- `src/webui/src/stores/useDashboardStore.ts` — 添加 `appendEvent` 方法（如未包含）
+- `src/webui/src/stores/useDashboardStore.ts` — 添加 `addEvent` 方法（如未包含）
 
 ---
 
@@ -319,10 +320,10 @@ function onReconnected(): void {
 | 1 | `connect()` | 创建 EventSource，状态变为 connecting |
 | 2 | SSE open | 状态变为 connected，reconnectAttempts 重置为 0 |
 | 3 | 收到 `instance.started` 事件 | 调用 instancesStore.fetchInstances() 和 dashboardStore.fetchServerStatus() |
-| 4 | 收到 `instance.finished` 事件 | 调用 instancesStore.fetchInstances() 和 projectsStore.fetchProjectRuntime() |
-| 5 | 收到 `project.status_changed` 事件 | 调用 projectsStore.fetchProjects() |
-| 6 | 收到 `service.scanned` 事件 | 调用 servicesStore.fetchServices() |
-| 7 | 收到 `driver.scanned` 事件 | 调用 driversStore.fetchDrivers() |
+| 4 | 收到 `instance.finished` 事件 | 调用 instancesStore.fetchInstances() 和 projectsStore.fetchRuntimes() |
+| 5 | 收到 `project.status_changed` 事件（可选扩展） | 调用 projectsStore.fetchProjects() |
+| 6 | 收到 `service.scanned` 事件（可选扩展） | 调用 servicesStore.fetchServices() |
+| 7 | 收到 `driver.scanned` 事件（可选扩展） | 调用 driversStore.fetchDrivers() |
 | 8 | 收到 `schedule.triggered` 事件 | 调用 dashboardStore.addEvent() |
 | 9 | SSE error | 状态变为 reconnecting |
 | 10 | 自动重连成功 | 状态恢复为 connected |
@@ -368,7 +369,7 @@ function onReconnected(): void {
 - Header 区域正确显示连接状态
 - SSE 事件正确分发到对应 Store
 - Instance 启停事件触发列表和 Dashboard 刷新
-- Service/Driver 扫描事件触发列表刷新
+- Service/Driver 扫描事件分支可用（后端补充事件后可触发列表刷新）
 - 断开后自动重连，退避策略正确
 - 页面不可见时断开，可见时重连
 - SSE 可用时轮询频率降低

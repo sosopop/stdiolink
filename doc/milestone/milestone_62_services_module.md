@@ -120,7 +120,7 @@ interface FileTreeProps {
 ### 3.5 创建流程
 
 步骤 1：选择模板（empty / basic / driver_demo）
-步骤 2：填写 Service ID（正则校验 `^[a-z0-9][a-z0-9_-]*$`）和名称
+步骤 2：填写 Service ID（正则校验 `^[A-Za-z0-9_-]+$`）和名称
 步骤 3：确认创建
 
 使用 Ant Design `Steps` + `Modal` 实现向导式创建。

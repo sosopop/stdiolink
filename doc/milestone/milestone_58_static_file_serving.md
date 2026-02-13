@@ -9,7 +9,7 @@
 
 - 实现 `StaticFileServer` 工具类，安全地从指定目录提供静态文件服务
 - 在 `ApiRouter` 中注册静态文件路由，将非 `/api` 请求映射到 WebUI 构建产物目录
-- 支持 SPA 路由回退（所有未匹配路径返回 `index.html`）
+- 支持 SPA 路由回退（仅前端路由路径回退 `index.html`，静态资源缺失保持 404）
 - 支持常见 MIME 类型自动检测
 - 支持 `Cache-Control` 响应头（带 hash 的资源文件长缓存，`index.html` 不缓存）
 - 通过 `--webui-dir` 命令行参数或 `config.json` 中的 `webuiDir` 字段配置静态文件目录
@@ -34,7 +34,8 @@
 ```
 1. /api/*          → ApiRouter handlers（已有）
 2. /assets/*       → 静态文件（带 hash 的资源，长缓存）
-3. /*              → SPA 回退（返回 index.html）
+3. 静态资源缺失     → 返回 404（不回退 index.html）
+4. SPA 前端路由     → 返回 index.html
 ```
 
 ### 3.2 MIME 类型映射
@@ -177,7 +178,7 @@ QString StaticFileServer::resolveSafePath(const QString& urlPath) const {
         return {};
 
     if (!fi.exists() || !fi.isFile())
-        return ;
+        return {};
 
     // 文件大小上限 10MB
     if (fi.size() > 10 * 1024 * 1024)
@@ -191,10 +192,8 @@ QHttpServerResponse StaticFileServer::serve(const QString& path) const {
         return QHttpServerResponse(QHttpServerResponder::StatusCode::NotFound);
 
     QString filePath = resolveSafePath(path);
-    if (filePath.isEmpty()) {
-        // SPA 回退：非 API、非静态资源的路径返回 index.html
-        return serveIndex();
-    }
+    if (filePath.isEmpty())
+        return QHttpServerResponse(QHttpServerResponder::StatusCode::NotFound);
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly))
@@ -253,9 +252,19 @@ server.setMissingHandler(this,
         const QString path = req.url().path();
         // 跳过 /api 前缀的请求（理论上不会到达这里，但做防御）
         if (!path.startsWith("/api/")) {
+            // 先按静态资源尝试
             auto response = m_staticFileServer->serve(path);
-            // 写入 response（含 CORS headers）...
-            return;
+            if (response.statusCode() != QHttpServerResponder::StatusCode::NotFound) {
+                // 写入静态资源响应（含 CORS headers）...
+                return;
+            }
+            // 仅无扩展名路径视为 SPA 路由回退，避免 assets/*.js 缺失时错误返回 index.html
+            const bool hasExtension = path.contains('.', Qt::CaseSensitive);
+            if (!hasExtension) {
+                auto indexResp = m_staticFileServer->serveIndex();
+                // 写入 index.html 响应（含 CORS headers）...
+                return;
+            }
         }
     }
     // 原有 404 JSON 处理
@@ -311,30 +320,32 @@ server.setMissingHandler(this,
 | 5 | 请求 `/assets/index-abc123.js` | 返回 200 + `application/javascript` + `immutable` |
 | 6 | 请求 `/assets/style-def456.css` | 返回 200 + `text/css` + `immutable` |
 | 7 | 请求 `/favicon.ico` | 返回 200 + `image/x-icon` |
-| 8 | 请求不存在的文件 `/nonexistent.txt` | SPA 回退，返回 index.html |
-| 9 | 路径遍历 `/../../../etc/passwd` | 返回 index.html（安全回退），不泄露文件 |
+| 8 | 请求不存在的文件 `/nonexistent.txt` | 返回 404，不回退 index.html |
+| 9 | 路径遍历 `/../../../etc/passwd` | 返回 404，不泄露文件 |
 | 10 | 路径遍历 `/..%2F..%2Fetc/passwd` | URL 解码后仍被拦截 |
-| 11 | 符号链接文件 | 不跟随，返回 index.html |
-| 12 | 超大文件（>10MB） | 不提供服务，返回 index.html |
+| 11 | 符号链接文件 | 不跟随，返回 404 |
+| 12 | 超大文件（>10MB） | 不提供服务，返回 404 |
 | 13 | `serveIndex()` 返回正确内容 | 内容与 index.html 文件一致 |
 | 14 | MIME 类型检测：`.woff2` | 返回 `font/woff2` |
 | 15 | MIME 类型检测：未知扩展名 | 返回 `application/octet-stream` |
 | 16 | 根路径 `/` | 返回 index.html |
+| 17 | 前端路由 `/projects/demo` | 回退 index.html |
 
 **配置测试**：
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 17 | `--webui-dir` 命令行参数 | 正确解析到 `ServerArgs::webuiDir` |
-| 18 | `config.json` 中 `webuiDir` 字段 | 正确读取 |
-| 19 | 命令行参数覆盖配置文件 | 命令行优先 |
-| 20 | 目录不存在时 | 静态文件路由不注册，API 正常工作 |
+| 18 | `--webui-dir` 命令行参数 | 正确解析到 `ServerArgs::webuiDir` |
+| 19 | `config.json` 中 `webuiDir` 字段 | 正确读取 |
+| 20 | 命令行参数覆盖配置文件 | 命令行优先 |
+| 21 | 目录不存在时 | 静态文件路由不注册，API 正常工作 |
 
 ### 6.2 验收标准
 
 - StaticFileServer 正确提供静态文件
 - 路径遍历攻击被有效防御
-- SPA 路由回退正常工作
+- SPA 路由回退正常工作（仅无扩展名前端路由）
+- 静态资源 404 语义正确（不误回退 index.html）
 - 缓存策略正确应用
 - 目录不存在时不影响 API 服务
 - MIME 类型正确检测

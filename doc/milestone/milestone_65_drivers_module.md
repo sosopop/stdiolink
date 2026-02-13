@@ -25,7 +25,7 @@ Drivers 是 stdiolink 的底层通信驱动，每个 Driver 通过 DriverMeta �
 
 ### 2.1 后端文档生成 API（需新增）
 
-核心库 `src/stdiolink/doc/doc_generator.h` 已实现完整的文档生成器（`DocGenerator` 类），支持 Markdown、HTML、OpenAPI 3.0、TypeScript 四种输出格式。本里程碑需新增 API 端点将其暴露给 Web 端。
+核心库 `src/stdiolink/doc/doc_generator.h` 已实现完整的文档生成器（`DocGenerator` 类），支持 Markdown、HTML、OpenAPI 3.0、TypeScript 四种输出格式。本里程碑对 WebUI 仅暴露 Markdown/HTML/TypeScript 三种（不暴露 OpenAPI）。
 
 **端点**：`GET /api/drivers/{id}/docs`
 
@@ -362,11 +362,11 @@ interface DocExportButtonProps {
 
 ## 8. 里程碑完成定义（DoD）
 
-- 后端 `GET /api/drivers/{id}/docs` 端点实现，支持四种格式
+- 后端 `GET /api/drivers/{id}/docs` 端点实现，支持三种格式（Markdown/HTML/TypeScript）
 - Drivers 列表页完整实现
 - Driver 详情页（元数据/命令/文档）完整实现
 - 文档 Tab 调用后端 API 渲染 Markdown 文档
-- 多格式文档导出功能正常（Markdown/HTML/OpenAPI/TypeScript）
+- 多格式文档导出功能正常（Markdown/HTML/TypeScript）
 - 命令参数详情正确展示
 - 元数据导出功能正常
 - 对应单元测试完成并通过

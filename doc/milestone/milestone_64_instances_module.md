@@ -11,7 +11,7 @@
 - 实现 Instance 详情页：概览 Tab、进程树 Tab、资源监控 Tab、日志 Tab
 - 实现进程树可视化组件：递归树形渲染、CPU 颜色编码、可折叠节点、汇总统计
 - 实现资源监控图表：CPU/内存趋势图（前端本地聚合，Recharts）、实时指标卡片
-- 实现日志查看器：级别过滤、搜索高亮、自动滚动、导出
+- 实现日志查看器：文本规则过滤（级别关键字）、搜索高亮、自动滚动、导出
 - 实现 Zustand Store：`useInstancesStore`
 - 资源数据 5s 轮询刷新
 - 新增依赖：`recharts`（趋势图渲染）
@@ -124,12 +124,14 @@ interface ResourceSample {
 
 | 功能 | 实现 |
 |------|------|
-| 级别过滤 | INFO / DEBUG / WARN / ERROR 多选 |
+| 级别过滤 | 文本规则过滤（按前缀/关键字匹配 INFO/DEBUG/WARN/ERROR） |
 | 搜索 | 全文搜索，匹配行高亮 |
 | 自动滚动 | 默认开启，可关闭 |
-| 颜色编码 | ERROR 红色、WARN 橙色、INFO 默认、DEBUG 灰色 |
+| 颜色编码 | 基于文本规则：匹配 ERROR 红色、WARN 橙色、INFO 默认、DEBUG 灰色 |
 | 导出 | 导出为 TXT 文件 |
 | 行数限制 | 前端最多显示 1000 行，超出后截断旧行 |
+
+> **数据契约说明**：`GET /api/instances/{id}/logs` 返回 `lines: string[]`，无结构化日志级别字段。级别筛选和颜色编码必须基于文本匹配实现。
 
 ### 3.6 Zustand Store
 
@@ -141,7 +143,7 @@ interface InstancesState {
   processTree: { tree: ProcessTreeNode; summary: ProcessTreeSummary } | null;
   resources: ProcessInfo[];
   resourceHistory: ResourceSample[];
-  logs: string;
+  logs: string[];
   loading: boolean;
   error: string | null;
 
@@ -308,9 +310,9 @@ const ProcessTreeNode: React.FC<{ node: ProcessTreeNode; level: number }> = ({
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 18 | 级别过滤 | 选择 ERROR 后仅显示 ERROR 行 |
+| 18 | 级别过滤 | 选择 ERROR 后仅显示匹配 ERROR 关键字的行 |
 | 19 | 搜索高亮 | 匹配文本高亮显示 |
-| 20 | 颜色编码 | ERROR 行红色、WARN 行橙色 |
+| 20 | 颜色编码 | 匹配 ERROR 的行红色、匹配 WARN 的行橙色 |
 | 21 | 导出 | 触发文件下载 |
 | 22 | 行数限制 | 超过 1000 行后旧行被截断 |
 
@@ -333,7 +335,7 @@ const ProcessTreeNode: React.FC<{ node: ProcessTreeNode; level: number }> = ({
 - 进程树递归渲染正确，折叠/展开正常
 - CPU 颜色编码正确
 - 资源趋势图正常渲染和更新
-- 日志查看器功能完整（过滤/搜索/导出）
+- 日志查看器功能完整（文本规则过滤/搜索/导出）
 - 终止操作正常
 - 5s 轮询刷新正常
 - 全部单元测试通过
@@ -357,6 +359,6 @@ const ProcessTreeNode: React.FC<{ node: ProcessTreeNode; level: number }> = ({
 - Instance 详情页（概览/进程树/资源/日志）完整实现
 - 进程树可视化组件完整实现
 - 资源监控图表完整实现
-- 日志查看器增强功能完整实现
+- 日志查看器增强功能完整实现（基于文本规则）
 - 对应单元测试完成并通过
 - 本里程碑文档入库

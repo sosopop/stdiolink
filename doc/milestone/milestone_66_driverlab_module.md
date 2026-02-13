@@ -25,14 +25,14 @@ DriverLab 是面向 Driver 开发者的协议调试器，提供 Driver 运行时
 
 **非目标**：多 Driver 并发会话（本里程碑仅支持单 Driver 会话）。
 
-### 2.1 后端 WebSocket 端点（需新增）
+### 2.1 后端 WebSocket 端点（已实现，前端按现有契约接入）
 
-当前后端 `stdiolink_server` 尚未实现 DriverLab 所需的 WebSocket 端点。本里程碑的前端实现依赖以下后端接口，需在本里程碑或前置里程碑中实现：
+当前后端 `stdiolink_server` 已实现 DriverLab WebSocket 端点（`/api/driverlab/{driverId}`），本里程碑以现有协议为准完成前端集成，不重复设计后端协议。
 
 **端点**：`GET /api/driverlab/{driverId}` （WebSocket Upgrade）
 
 **查询参数**：
-- `runMode`：`oneshot` | `keepalive`（必填）
+- `runMode`：`oneshot` | `keepalive`（可选，默认 `oneshot`）
 - `args`：启动参数，逗号分隔（可选）
 
 **WebSocket 消息协议**：
@@ -50,12 +50,12 @@ DriverLab 是面向 Driver 开发者的协议调试器，提供 Driver 运行时
 |------|------|---------|
 | `driver.started` | Driver 进程已启动 | `pid`: number |
 | `driver.restarted` | Driver 进程已重启（oneshot 模式） | `pid`: number |
-| `meta` | Driver 元数据 | 完整 DriverMeta 对象 |
-| `stdout` | 命令响应（ok/event/error） | JSONL 消息内容 |
-| `driver.exited` | Driver 进程已退出 | `exitCode`: number, `exitStatus`: string |
+| `meta` | Driver 元数据 | `driverId`, `pid`, `runMode`, `meta` |
+| `stdout` | 命令响应（ok/event/error） | `message`: object \| string |
+| `driver.exited` | Driver 进程已退出 | `exitCode`: number, `exitStatus`: string, `reason`: string |
 | `error` | 服务端错误 | `message`: string |
 
-> **实现建议**：在 `api_router.cpp` 中注册 WebSocket 路由，使用 `QWebSocket` 管理连接。服务端收到 `exec` 后通过 `QProcess` 向 Driver stdin 写入 JSONL 命令，将 Driver stdout 输出作为 `stdout` 消息转发给客户端。
+> **字段约定**：`stdout` 与 `error` 的文本/对象内容统一放在 `message` 字段，前端不应假设存在 `payload` 字段。
 
 ---
 
@@ -198,7 +198,8 @@ interface MessageEntry {
   timestamp: number;
   direction: 'send' | 'recv';
   type: string;           // exec / cancel / driver.started / meta / stdout / driver.exited / error
-  payload: unknown;
+  raw: WsMessage;         // 原始 WebSocket 消息
+  payload: unknown;       // UI 展示用归一化内容（见下方映射规则）
   expanded: boolean;
 }
 ```
@@ -210,6 +211,11 @@ interface MessageEntry {
 - JSON payload 默认折叠，点击展开格式化显示
 - 自动滚动到最新消息（可关闭）
 - 最多保留 500 条消息，超出后移除旧消息
+
+payload 归一化规则：
+- `stdout` / `error`：`payload = msg.message`
+- `meta`：`payload = msg.meta`
+- 其他类型：`payload = msg`
 
 ### 3.7 连接状态管理
 
@@ -533,7 +539,7 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 - **风险 1**：WebSocket 连接不稳定导致消息丢失
   - 控制：连接断开时显示明确提示；不自动重连（用户手动重连）；断开前的消息保留在历史中
 - **风险 2**：大量消息导致前端性能问题
-  - 控制：消息上限 500 条，超出后移除旧消息；JSON payload 默认折叠减少 DOM 节点
+  - 控制：消息上限 500 条，超出后移除旧消息；JSON 消息默认折叠减少 DOM 节点
 - **风险 3**：Driver 快速崩溃重启导致消息风暴
   - 控制：服务端已有重启抑制机制；前端对 `error` 类型消息做去重（相同错误 1s 内仅显示一次）
 

@@ -122,8 +122,8 @@ M62 中 Schema Tab 仅以只读表格展示字段列表和 JSON 原文。开发�
 ### 3.4 双向同步机制
 
 ```
-可视化编辑 ──→ 更新内部 FieldMeta[] ──→ 序列化为 JSON ──→ 同步到 JSON 编辑器
-JSON 编辑器 ──→ 解析 JSON ──→ 反序列化为 FieldMeta[] ──→ 同步到可视化视图
+可视化编辑 ──→ 更新内部 SchemaNode[] ──→ 序列化为 config.schema.json 对象 ──→ 同步到 JSON 编辑器
+JSON 编辑器 ──→ 解析 config.schema.json 对象 ──→ 反序列化为 SchemaNode[] ──→ 同步到可视化视图
 ```
 
 同步规则：
@@ -135,19 +135,39 @@ JSON 编辑器 ──→ 解析 JSON ──→ 反序列化为 FieldMeta[] ─�
 ### 3.5 Schema JSON 结构
 
 ```typescript
-// config.schema.json 的结构（FieldMeta 数组）
-// 与 M59 中定义的 FieldMeta 类型一致
-interface FieldMeta {
-  name: string;
-  type: string;          // String | Int | Int64 | Double | Bool | Enum | Object | Array | Any
-  description?: string;
+// config.schema.json 文件结构（后端 ServiceConfigSchema::fromJsonObject 的输入）
+// 注意：根是对象映射，不是 FieldMeta 数组
+export type ServiceConfigSchema = Record<string, SchemaFieldDescriptor>;
+
+export interface SchemaFieldDescriptor {
+  type?: 'string' | 'int' | 'int64' | 'double' | 'bool' | 'object' | 'array' | 'enum' | 'any';
   required?: boolean;
-  defaultValue?: unknown;
-  constraints?: Record<string, unknown>;
-  ui?: Record<string, unknown>;
-  fields?: FieldMeta[];  // Object 类型的子字段
-  items?: FieldMeta;     // Array 类型的元素定义
-  enumValues?: string[]; // Enum 类型的可选值
+  description?: string;
+  default?: unknown;
+
+  // constraints 是嵌套对象（与 config.schema.json 一致）
+  constraints?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    enumValues?: unknown[]; // 后端会兼容转换为 enum
+    format?: string;
+    minItems?: number;
+    maxItems?: number;
+  };
+
+  // object / array 描述
+  fields?: Record<string, SchemaFieldDescriptor>;
+  items?: SchemaFieldDescriptor;
+}
+
+// 可视化编辑内部模型（便于排序、路径编辑）
+export interface SchemaNode {
+  name: string;
+  descriptor: SchemaFieldDescriptor;
+  children?: SchemaNode[];
 }
 ```
 
@@ -161,8 +181,8 @@ interface FieldMeta {
 // src/stores/useSchemaEditorStore.ts
 interface SchemaEditorState {
   // Schema 数据
-  fields: FieldMeta[];
-  originalFields: FieldMeta[];  // 用于重置
+  nodes: SchemaNode[];
+  originalNodes: SchemaNode[];  // 用于重置
   // 编辑状态
   activeMode: 'visual' | 'json' | 'preview';
   jsonText: string;
@@ -172,9 +192,9 @@ interface SchemaEditorState {
   validationErrors: string[];
   validating: boolean;
   // 操作
-  setFields: (fields: FieldMeta[]) => void;
-  addField: (field: FieldMeta, parentPath?: string) => void;
-  updateField: (path: string, field: FieldMeta) => void;
+  setNodes: (nodes: SchemaNode[]) => void;
+  addField: (field: SchemaNode, parentPath?: string) => void;
+  updateField: (path: string, field: SchemaNode) => void;
   removeField: (path: string) => void;
   moveField: (path: string, direction: 'up' | 'down') => void;
   setJsonText: (text: string) => void;
@@ -220,7 +240,7 @@ SchemaEditor (替换 M62 的 SchemaTab)
 ```typescript
 // src/components/SchemaEditor/FieldCard.tsx
 interface FieldCardProps {
-  field: FieldMeta;
+  field: SchemaNode;
   path: string;           // 字段路径，如 "database.host"
   level: number;          // 嵌套层级
   onEdit: (path: string) => void;
@@ -241,10 +261,10 @@ interface FieldCardProps {
 // src/components/SchemaEditor/FieldEditModal.tsx
 interface FieldEditModalProps {
   visible: boolean;
-  field: FieldMeta | null;     // null 表示新建
+  field: SchemaNode | null;    // null 表示新建
   parentType?: string;         // 父字段类型（用于限制子字段类型）
   existingNames: string[];     // 同级已有字段名（用于名称唯一性校验）
-  onSave: (field: FieldMeta) => void;
+  onSave: (field: SchemaNode) => void;
   onCancel: () => void;
 }
 ```
@@ -284,25 +304,27 @@ interface EnumValuesEditorProps {
 // src/utils/schemaPath.ts
 
 // 根据路径获取字段
-function getFieldByPath(fields: FieldMeta[], path: string): FieldMeta | null;
+function getFieldByPath(nodes: SchemaNode[], path: string): SchemaNode | null;
 
 // 根据路径更新字段
-function updateFieldByPath(fields: FieldMeta[], path: string, updater: (f: FieldMeta) => FieldMeta): FieldMeta[];
+function updateFieldByPath(nodes: SchemaNode[], path: string, updater: (f: SchemaNode) => SchemaNode): SchemaNode[];
 
 // 根据路径删除字段
-function removeFieldByPath(fields: FieldMeta[], path: string): FieldMeta[];
+function removeFieldByPath(nodes: SchemaNode[], path: string): SchemaNode[];
 
 // 根据路径添加子字段
-function addFieldToPath(fields: FieldMeta[], parentPath: string, field: FieldMeta): FieldMeta[];
+function addFieldToPath(nodes: SchemaNode[], parentPath: string, field: SchemaNode): SchemaNode[];
 
 // 移动字段（上/下）
-function moveFieldInPath(fields: FieldMeta[], path: string, direction: 'up' | 'down'): FieldMeta[];
+function moveFieldInPath(nodes: SchemaNode[], path: string, direction: 'up' | 'down'): SchemaNode[];
 
-// FieldMeta[] 序列化为 JSON
-function fieldsToJson(fields: FieldMeta[]): string;
+// config.schema.json 对象与内部节点模型互转
+function schemaToNodes(schema: ServiceConfigSchema): SchemaNode[];
+function nodesToSchema(nodes: SchemaNode[]): ServiceConfigSchema;
 
-// JSON 反序列化为 FieldMeta[]
-function jsonToFields(json: string): FieldMeta[];
+// JSON 文本与 schema 对象互转
+function schemaToJson(schema: ServiceConfigSchema): string;
+function jsonToSchema(json: string): ServiceConfigSchema;
 ```
 
 ---
@@ -378,7 +400,7 @@ function jsonToFields(json: string): FieldMeta[];
 | 18 | Int 约束 | 显示 min/max/step 输入 |
 | 19 | Enum 值编辑 | 显示 EnumValuesEditor |
 | 20 | UI Hint 编辑 | 显示 group/order/advanced/readonly/placeholder/unit |
-| 21 | 保存 | 触发 onSave 回调，传递完整 FieldMeta |
+| 21 | 保存 | 触发 onSave 回调，传递完整 SchemaNode |
 | 22 | 取消 | 触发 onCancel 回调，不保存 |
 
 **ConstraintsSection（ConstraintsSection.test.tsx）**：
@@ -425,19 +447,19 @@ function jsonToFields(json: string): FieldMeta[];
 
 | # | 场景 | 验证点 |
 |---|------|--------|
-| 43 | `loadSchema()` | 从 API 加载 Schema，fields 更新 |
+| 43 | `loadSchema()` | 从 API 加载 Schema，nodes 更新 |
 | 44 | `addField()` | 顶层添加字段 |
 | 45 | `addField()` 嵌套 | Object 下添加子字段 |
 | 46 | `updateField()` | 更新指定路径的字段 |
 | 47 | `removeField()` | 删除指定路径的字段 |
 | 48 | `moveField()` 上移 | 字段顺序变更 |
 | 49 | `moveField()` 下移 | 字段顺序变更 |
-| 50 | `syncFromJson()` 成功 | JSON 解析为 fields |
-| 51 | `syncFromJson()` 失败 | jsonError 被设置，fields 不变 |
-| 52 | `syncToJson()` | fields 序列化为 jsonText |
+| 50 | `syncFromJson()` 成功 | JSON 解析为 schema 对象并同步为 nodes |
+| 51 | `syncFromJson()` 失败 | jsonError 被设置，nodes 保持不变 |
+| 52 | `syncToJson()` | nodes 序列化为 config.schema.json JSON |
 | 53 | `validate()` | 调用验证 API，更新 validationErrors |
 | 54 | `save()` | 调用文件写入 API |
-| 55 | `reset()` | fields 恢复为 originalFields |
+| 55 | `reset()` | nodes 恢复为 originalNodes |
 | 56 | `dirty` 标记 | 修改后 dirty=true，保存/重置后 dirty=false |
 
 **schemaPath 工具（schemaPath.test.ts）**：
@@ -452,9 +474,9 @@ function jsonToFields(json: string): FieldMeta[];
 | 62 | `addFieldToPath()` | 添加到指定父路径 |
 | 63 | `moveFieldInPath()` 上移 | 顺序正确 |
 | 64 | `moveFieldInPath()` 下移 | 顺序正确 |
-| 65 | `fieldsToJson()` | 序列化格式正确 |
-| 66 | `jsonToFields()` | 反序列化结构正确 |
-| 67 | `jsonToFields()` 非法 JSON | 抛出异常 |
+| 65 | `schemaToJson()` | 序列化格式正确（根对象映射） |
+| 66 | `jsonToSchema()` | 反序列化结构正确 |
+| 67 | `jsonToSchema()` 非法 JSON | 抛出异常 |
 
 ### 6.2 验收标准
 
