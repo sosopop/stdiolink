@@ -215,15 +215,15 @@ stdiolink_server WebUI 是一个**企业级服务编排与管理平台**，为 s
 
 ### 3.3 后端对接
 
-后端已实现，无需修改。前端需对接以下 API：
+后端已实现，无需修改。前端需对接以下 API（当前代码基线）；增强能力见附录“候选增强 API”。
 
 - Services API：`/api/services/*`
 - Projects API：`/api/projects/*`
 - Instances API：`/api/instances/*`
 - Drivers API：`/api/drivers/*`
 - Server API：`/api/server/*`
-- Event Stream：`/api/events`
-- DriverLab WebSocket：`/ws/driverlab`
+- Event Stream：`/api/events/stream`
+- DriverLab WebSocket：`/api/driverlab/{driverId}`
 
 ---
 
@@ -414,11 +414,10 @@ $easing-out: cubic-bezier(0, 0, 0.2, 1);
 
 ```
 GET /api/server/status
-GET /api/server/stats         # 需要新增
 GET /api/instances
 GET /api/projects
 GET /api/services
-GET /api/events (SSE)
+GET /api/events/stream (SSE)
 ```
 
 ### 5.2 Services（服务管理）
@@ -644,8 +643,9 @@ GET /api/events (SSE)
 ├─────────────────────────────────────────────┤
 │                                             │
 │  📁 api-service/                            │
+│    📄 manifest.json       ✅ 核心文件       │
 │    📄 index.js            ✅ 核心文件       │
-│    📄 schema.json         ✅ 核心文件       │
+│    📄 config.schema.json  ✅ 核心文件       │
 │    📄 package.json                          │
 │    📁 lib/                                  │
 │      📄 database.js                         │
@@ -662,6 +662,13 @@ GET /api/events (SSE)
 - 语法高亮
 - 自动保存
 - 版本对比（可选）
+
+**编辑与保存约束（与后端一致）**
+- 文件读取/写入/创建内容上限为 `1MB`，超限返回 `413`（前端需提前提示并禁止提交）
+- 文件路径仅允许 service 目录内相对路径，`..`、绝对路径、符号链接路径将被拒绝（`400`）
+- 核心文件 `manifest.json`、`index.js`、`config.schema.json` 禁止删除
+- 保存 `manifest.json` 时必须是合法 manifest；保存 `config.schema.json` 时必须是合法 JSON 对象
+- 更新 `manifest.json` 或 `config.schema.json` 后端会尝试 reload；若返回 `file written but reload failed`，前端需提示“已写入但热加载失败”，并提供一键回滚到上一个本地版本
 
 ### 5.3 Projects（项目管理）
 
@@ -802,15 +809,16 @@ GET /api/events (SSE)
 
 #### Schema 到 UI 的映射规则
 
-| Schema 字段类型 | UI 组件 | 说明 |
-|----------------|---------|------|
-| String | Input | 单行文本框 |
-| Int / Int64 | InputNumber | 数字输入，带范围限制 |
-| Double | InputNumber | 浮点数输入，带步进值 |
-| Bool | Checkbox / Switch | 开关 |
-| Enum | Radio / Select | 枚举选择 |
-| Object | Collapse Panel | 嵌套对象展开 |
-| Array | Dynamic List | 动态添加/删除 |
+| Schema 字段类型 | 默认 UI 组件 | 规则（对齐 FieldMeta） |
+|----------------|--------------|------------------------|
+| String | Input | 支持 `minLength/maxLength/pattern/format`；`ui.placeholder` 映射占位符 |
+| Int / Int64 | InputNumber | 支持 `min/max`；`ui.step` 映射步进 |
+| Double | InputNumber | 支持小数与 `min/max/step` |
+| Bool | Switch | 布尔开关；可用 `ui.readonly` 禁用 |
+| Enum | Select / Radio | 选项来自 `constraints.enumValues` |
+| Object | Collapse + FieldSet | 递归渲染 `fields`；支持 `requiredKeys` |
+| Array | Dynamic List | 递归渲染 `items`；支持 `minItems/maxItems` |
+| Any | JSON Editor | 高级字段，默认收敛到 JSON 输入框 |
 
 **UI Hint 增强**
 - `widget`: 指定组件类型（覆盖默认映射）
@@ -818,8 +826,10 @@ GET /api/events (SSE)
 - `order`: 字段排序
 - `placeholder`: 占位符文本
 - `advanced`: 高级选项折叠
+- `readonly`: 只读展示
 - `visibleIf`: 条件显示（表达式）
 - `unit`: 单位标签
+- `step`: 数值步进
 
 **步骤4：调度策略**
 ```
@@ -1510,7 +1520,7 @@ driver.$close();`,
 ```
 
 #### JSON 编辑器同步
-- 切换到 JSON 标签时，显示完整 schema.json
+- 切换到 JSON 标签时，显示完整 `config.schema.json`
 - 支持直接编辑 JSON
 - 保存时自动验证并同步到可视化视图
 - 错误提示（行号 + 错误信息）
@@ -1570,7 +1580,7 @@ driver.$close();`,
 │                                                          │
 │  ┌─ 执行结果 ─────────────────────────────────────────┐ │
 │  │                                                     │ │
-│  │  状态: done  耗时: 15ms                            │ │
+│  │  状态: driver.exited  耗时: 15ms                   │ │
 │  │                                                     │ │
 │  │  ┌───────────────────────────────────────────────┐ │ │
 │  │  │ {                                             │ │ │
@@ -1591,9 +1601,11 @@ driver.$close();`,
 #### 核心功能
 
 **1. WebSocket 会话管理**
-- 建立 WebSocket 连接：`ws://server/ws/driverlab?driverId=xxx&runMode=xxx`
+- 建立 WebSocket 连接：`ws://server/api/driverlab/{driverId}?runMode=oneshot|keepalive&args=...`
 - 断开时自动终止 Driver 进程
-- 会话超时自动清理（可配置）
+- 连接后服务端会自动启动 driver，并发送 `driver.started` 后立即下发一次 `meta.describe`
+- `keepalive` 模式下 driver 退出会关闭 WS；`oneshot` 模式下 WS 保持连接、下次 `exec` 自动重启 driver
+- 连续快速崩溃会触发重启抑制（服务端返回 `type=error`）
 - 支持手动重连
 
 **2. 元数据驱动 UI 生成**
@@ -1626,33 +1638,50 @@ function generateCommandForm(command: CommandMeta) {
 **3. 实时消息流**
 ```typescript
 // WebSocket 消息格式
-interface WsMessage {
-  type: 'meta' | 'event' | 'done' | 'error';
-  data: any;
-}
+type WsMessage =
+  | { type: 'driver.started' | 'driver.restarted'; pid: number; reason?: string }
+  | { type: 'meta'; driverId: string; pid: number; runMode: 'oneshot' | 'keepalive'; meta: any }
+  | { type: 'stdout'; message: string | Record<string, any> }
+  | { type: 'driver.exited'; exitCode: number; exitStatus: 'normal' | 'crash'; reason: string }
+  | { type: 'error'; message: string };
 
 // 消息处理
 wsClient.on('message', (msg: WsMessage) => {
   switch (msg.type) {
+    case 'driver.started':
+      setDriverPid(msg.pid);
+      break;
     case 'meta':
       // 接收 Driver 元数据
-      setDriverMeta(msg.data);
+      setDriverMeta(msg.meta);
       break;
-    case 'event':
-      // 接收中间事件
-      appendEvent(msg.data);
+    case 'stdout':
+      // 接收 Driver stdout 输出（JSON 或文本）
+      appendEvent(msg.message);
+      // 兼容兜底：meta 未到达时，尝试从 stdout 抽取
+      if (!hasMeta && typeof msg.message === 'object') {
+        const s = (msg.message as any).status;
+        const payload = (msg.message as any).payload ?? (msg.message as any).data;
+        if ((s === 'ok' || s === 'done') && payload?.commands) {
+          setDriverMeta(payload);
+        }
+      }
       break;
-    case 'done':
-      // 接收最终结果
-      setResult(msg.data);
+    case 'driver.exited':
+      setExitInfo({ code: msg.exitCode, status: msg.exitStatus });
       break;
     case 'error':
       // 接收错误
-      setError(msg.data);
+      setError(msg.message);
       break;
   }
 });
 ```
+
+**协议兼容风险提示（必须在 UI 设计中落地）**
+- 当前后端 `meta` 判定依赖首条 stdout JSON 为 `status=="ok"` 且使用 `payload` 字段；而协议/host 侧常见完成态为 `status=="done"` 且数据字段为 `data`
+- WebUI 必须同时兼容 `ok/payload` 与 `done/data` 两种形态，避免“已连接但无命令表单”的假故障
+- 连接后若 `5s` 仍未拿到可用 meta，显示“切换终端模式手动发送命令”的降级入口
 
 **4. 历史记录**
 - 保存每次执行的请求和响应
@@ -1660,12 +1689,10 @@ wsClient.on('message', (msg: WsMessage) => {
 - 按时间倒序展示
 - 可导出为 JSON
 
-**5. cURL 导出**
-```bash
-# 示例导出
-curl -X POST http://localhost:8080/api/drivers/calc-driver/exec \
-  -H "Content-Type: application/json" \
-  -d '{"command":"add","params":{"a":10,"b":20}}'
+**5. 消息导出**
+```json
+# 当前后端无 Driver HTTP exec 端点，建议导出为 WebSocket 消息
+{"type":"exec","cmd":"add","data":{"a":10,"b":20}}
 ```
 
 ### 7.4 进程树可视化
@@ -1675,18 +1702,16 @@ curl -X POST http://localhost:8080/api/drivers/calc-driver/exec \
 **数据结构**
 ```typescript
 interface ProcessTreeNode {
-  info: ProcessInfo;
-  children: ProcessTreeNode[];
-}
-
-interface ProcessInfo {
   pid: number;
   name: string;
   commandLine: string;
-  cpuPercent: number;
-  memoryRssBytes: number;
-  threadCount: number;
-  // ...
+  status: string;
+  resources: {
+    cpuPercent: number;
+    memoryRssBytes: number;
+    threadCount: number;
+  };
+  children: ProcessTreeNode[];
 }
 ```
 
@@ -1706,8 +1731,8 @@ interface ProcessTreeNodeProps {
 const ProcessTreeNode: React.FC<ProcessTreeNodeProps> = ({ node, level }) => {
   const [collapsed, setCollapsed] = useState(false);
   
-  const cpuColor = node.info.cpuPercent > 80 ? 'red' : 
-                   node.info.cpuPercent > 50 ? 'orange' : 'green';
+  const cpuColor = node.resources.cpuPercent > 80 ? 'red' : 
+                   node.resources.cpuPercent > 50 ? 'orange' : 'green';
   
   return (
     <div style={{ marginLeft: level * 20 }}>
@@ -1717,19 +1742,19 @@ const ProcessTreeNode: React.FC<ProcessTreeNodeProps> = ({ node, level }) => {
             {collapsed ? '▶' : '▼'}
           </button>
         )}
-        <span className="pid">PID {node.info.pid}</span>
-        <span className="name">{node.info.name}</span>
+        <span className="pid">PID {node.pid}</span>
+        <span className="name">{node.name}</span>
         <span className="cpu" style={{ color: cpuColor }}>
-          CPU: {node.info.cpuPercent}%
+          CPU: {node.resources.cpuPercent}%
         </span>
         <span className="memory">
-          内存: {formatBytes(node.info.memoryRssBytes)}
+          内存: {formatBytes(node.resources.memoryRssBytes)}
         </span>
       </div>
       
       {!collapsed && node.children.map(child => (
         <ProcessTreeNode 
-          key={child.info.pid} 
+          key={child.pid} 
           node={child} 
           level={level + 1} 
         />
@@ -1743,11 +1768,13 @@ const ProcessTreeNode: React.FC<ProcessTreeNodeProps> = ({ node, level }) => {
 
 #### 数据源
 - HTTP 轮询：`GET /api/server/status` (30s 间隔)
-- Server-Sent Events：`GET /api/events` (实时推送)
+- Server-Sent Events：`GET /api/events/stream` (实时推送)
 
 #### 图表库选择
 - **Recharts**：用于趋势图（CPU/内存）
 - **统计卡片**：自定义组件
+
+说明：当前后端未提供 `/api/server/stats` 历史曲线接口，全局趋势图需由前端通过轮询已有接口做本地聚合，或后续补充增强 API。
 
 #### 示例代码
 ```tsx
@@ -1769,20 +1796,30 @@ const Dashboard: React.FC = () => {
   
   // SSE 事件流
   useEffect(() => {
-    const eventSource = new EventSource('/api/events');
+    const eventSource = new EventSource('/api/events/stream?filter=instance,schedule');
     
-    eventSource.onmessage = (e) => {
-      const event = JSON.parse(e.data);
-      setEvents(prev => [event, ...prev].slice(0, 10));
+    const onInstanceStarted = (e: MessageEvent) =>
+      setEvents(prev => [{ type: 'instance.started', data: JSON.parse(e.data) }, ...prev].slice(0, 10));
+    const onInstanceFinished = (e: MessageEvent) =>
+      setEvents(prev => [{ type: 'instance.finished', data: JSON.parse(e.data) }, ...prev].slice(0, 10));
+    const onScheduleTriggered = (e: MessageEvent) =>
+      setEvents(prev => [{ type: 'schedule.triggered', data: JSON.parse(e.data) }, ...prev].slice(0, 10));
+
+    eventSource.addEventListener('instance.started', onInstanceStarted as EventListener);
+    eventSource.addEventListener('instance.finished', onInstanceFinished as EventListener);
+    eventSource.addEventListener('schedule.triggered', onScheduleTriggered as EventListener);
+    
+    return () => {
+      eventSource.removeEventListener('instance.started', onInstanceStarted as EventListener);
+      eventSource.removeEventListener('instance.finished', onInstanceFinished as EventListener);
+      eventSource.removeEventListener('schedule.triggered', onScheduleTriggered as EventListener);
+      eventSource.close();
     };
-    
-    return () => eventSource.close();
   }, []);
   
   return (
     <div>
       <StatCards stats={stats} />
-      <ResourceChart data={stats?.history} />
       <ActiveInstances />
       <RecentEvents events={events} />
     </div>
@@ -1793,6 +1830,19 @@ const Dashboard: React.FC = () => {
 ---
 
 ## 8. API 对接方案
+
+### 8.0 UI 功能与现有 API 对照矩阵（关键路径）
+
+| UI 功能 | API / WS | 关键请求 | 成功信号 | 典型失败与处理 |
+|--------|----------|----------|----------|----------------|
+| Dashboard 状态卡片 | `GET /api/server/status` | 无 | 返回 `counts/system` | 失败时降级显示“状态未知”，支持手动重试 |
+| 实时事件流 | `GET /api/events/stream?filter=instance,schedule` (SSE) | `filter` 可选 | 持续收到 `event + data` | 断连自动重连，重连期间显示“离线缓存”标记 |
+| Service 文件编辑 | `/api/services/{id}/files*` | `path` + `content` | 读取/保存/创建/删除成功 | `400/404/413` 显示可操作提示；核心文件删除禁用 |
+| Project 创建 | `GET /api/services/{id}` + `POST /generate-defaults` + `POST /validate-config` + `POST /api/projects` | `serviceId/config/schedule` | `201` 且项目可在列表中查询 | 校验失败时按字段定位错误，不直接丢失输入 |
+| Project 运行控制 | `POST /start|stop|reload` + `GET /runtime` | `projectId` | 状态切换为 running/stopped | `409`（already running / max concurrent）按业务文案提示 |
+| Instance 监控 | `GET /api/instances/{id}/process-tree|resources|logs` | `id` + 查询参数 | 进程树/资源快照返回 | `404 instance not running` 时切换到“已停止”视图 |
+| DriverLab 会话 | `WS /api/driverlab/{driverId}?runMode=&args=` | `runMode=oneshot|keepalive` | 收到 `driver.started`，随后 `meta/stdout` | 握手失败 `400/404/429`；连接后 `type=error` 需可见 |
+| DriverLab 执行命令 | WS 上行 `{"type":"exec","cmd":"...","data":{...}}` | `cmd/data` | 下行 `stdout` 或 `driver.exited` | 支持 `cancel`；异常时保留最近上下文便于复现 |
 
 ### 8.1 API 客户端封装
 
@@ -1863,21 +1913,41 @@ export const servicesApi = {
   // GET /api/services/:id/files
   files: (id: string) => client.get(`/services/${id}/files`),
   
-  // GET /api/services/:id/files/read?path=...
+  // GET /api/services/:id/files/content?path=...
   fileRead: (id: string, path: string) => 
-    client.get(`/services/${id}/files/read`, { params: { path } }),
+    client.get(`/services/${id}/files/content`, { params: { path } }),
   
-  // POST /api/services/:id/files/write
-  fileWrite: (id: string, data: FileWriteRequest) => 
-    client.post(`/services/${id}/files/write`, data),
+  // PUT /api/services/:id/files/content?path=...
+  fileWrite: (id: string, path: string, content: string) => 
+    client.put(
+      `/services/${id}/files/content`,
+      { content },
+      { params: { path } }
+    ),
+
+  // POST /api/services/:id/files/content?path=...
+  fileCreate: (id: string, path: string, content: string) =>
+    client.post(
+      `/services/${id}/files/content`,
+      { content },
+      { params: { path } }
+    ),
+
+  // DELETE /api/services/:id/files/content?path=...
+  fileDelete: (id: string, path: string) =>
+    client.delete(`/services/${id}/files/content`, { params: { path } }),
   
-  // POST /api/services/:id/schema/validate
+  // POST /api/services/:id/validate-schema
   validateSchema: (id: string, schema: any) => 
-    client.post(`/services/${id}/schema/validate`, schema),
+    client.post(`/services/${id}/validate-schema`, { schema }),
+
+  // POST /api/services/:id/generate-defaults
+  generateDefaults: (id: string) =>
+    client.post(`/services/${id}/generate-defaults`),
   
-  // POST /api/services/:id/config/validate
+  // POST /api/services/:id/validate-config
   validateConfig: (id: string, config: any) => 
-    client.post(`/services/${id}/config/validate`, config)
+    client.post(`/services/${id}/validate-config`, { config })
 };
 ```
 
@@ -1899,6 +1969,14 @@ export const projectsApi = {
   
   // 运行时状态
   runtime: (id: string) => client.get(`/projects/${id}/runtime`),
+  runtimeBatch: (ids?: string[]) =>
+    client.get('/projects/runtime', {
+      params: ids && ids.length > 0 ? { ids: ids.join(',') } : undefined
+    }),
+
+  // 启用开关
+  setEnabled: (id: string, enabled: boolean) =>
+    client.patch(`/projects/${id}/enabled`, { enabled }),
   
   // 日志
   logs: (id: string, params?: LogsQueryParams) => 
@@ -1941,11 +2019,7 @@ export const driversApi = {
 ```typescript
 // src/webui/src/api/server.ts
 export const serverApi = {
-  status: () => client.get('/server/status'),
-  
-  // 需要新增的 API
-  stats: () => client.get('/server/stats'),
-  metrics: () => client.get('/server/metrics')
+  status: () => client.get('/server/status')
 };
 ```
 
@@ -1958,14 +2032,18 @@ export class DriverLabWsClient {
   private ws: WebSocket | null = null;
   private listeners: Map<string, Function[]> = new Map();
   
-  connect(driverId: string, runMode: string, extraArgs: string[]) {
-    const params = new URLSearchParams({
-      driverId,
-      runMode,
-      extraArgs: extraArgs.join(',')
-    });
+  connect(driverId: string, runMode: 'oneshot' | 'keepalive', args: string[]) {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    const params = new URLSearchParams();
+    params.set('runMode', runMode);
+    if (args.length > 0) {
+      params.set('args', args.join(','));
+    }
     
-    this.ws = new WebSocket(`ws://localhost:8080/ws/driverlab?${params}`);
+    this.ws = new WebSocket(
+      `${proto}://${host}/api/driverlab/${encodeURIComponent(driverId)}?${params.toString()}`
+    );
     
     this.ws.onopen = () => {
       this.emit('connected');
@@ -1995,8 +2073,8 @@ export class DriverLabWsClient {
   exec(command: string, params: any) {
     this.send({
       type: 'exec',
-      command,
-      params
+      cmd: command,
+      data: params
     });
   }
   
@@ -2040,11 +2118,11 @@ export class DriverLabWsClient {
 const DriverLab: React.FC = () => {
   const [client] = useState(() => new DriverLabWsClient());
   const [meta, setMeta] = useState(null);
-  const [result, setResult] = useState(null);
+  const [stdout, setStdout] = useState<any[]>([]);
   
   useEffect(() => {
-    client.on('meta', (msg) => setMeta(msg.data));
-    client.on('done', (msg) => setResult(msg.data));
+    client.on('meta', (msg) => setMeta(msg.meta));
+    client.on('stdout', (msg) => setStdout((prev) => [...prev, msg.message]));
     
     return () => {
       client.disconnect();
@@ -2072,23 +2150,31 @@ export class EventStream {
   private es: EventSource | null = null;
   private listeners: Map<string, Function[]> = new Map();
   
-  connect(filters: string[] = []) {
+  connect(filters: string[] = ['instance', 'schedule']) {
     const params = new URLSearchParams();
     if (filters.length > 0) {
       params.set('filter', filters.join(','));
     }
     
-    this.es = new EventSource(`/api/events?${params}`);
+    this.es = new EventSource(`/api/events/stream?${params}`);
     
     this.es.onopen = () => {
       this.emit('connected');
     };
     
-    this.es.onmessage = (e) => {
-      const event = JSON.parse(e.data);
-      this.emit('event', event);
-      this.emit(event.type, event);
+    const bind = (type: string) => {
+      this.es!.addEventListener(type, (e: MessageEvent) => {
+        const data = JSON.parse(e.data);
+        const event = { type, data };
+        this.emit('event', event);
+        this.emit(type, event);
+      });
     };
+
+    bind('instance.started');
+    bind('instance.finished');
+    bind('schedule.triggered');
+    bind('schedule.suppressed');
     
     this.es.onerror = () => {
       this.emit('error');
@@ -2131,7 +2217,7 @@ const Dashboard: React.FC = () => {
       setEvents(prev => [event, ...prev].slice(0, 50));
     });
     
-    stream.connect(['project.*', 'instance.*']);
+    stream.connect(['instance', 'schedule']);
     
     return () => stream.close();
   }, []);
@@ -2403,10 +2489,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/ws': {
-        target: 'ws://localhost:8080',
+        changeOrigin: true,
         ws: true
       }
     }
@@ -2444,7 +2527,7 @@ VITE_WS_BASE_URL=ws://example.com
 
 ### 10.3 部署架构
 
-**方案1：嵌入式部署（推荐）**
+**方案1：嵌入式部署（需后端增强，当前未实现）**
 ```
 stdiolink_server
 ├── server (C++ 二进制)
@@ -2453,19 +2536,19 @@ stdiolink_server
 │   ├── index.html
 │   ├── assets/
 │   └── ...
-└── 通过 /webui 路径访问
+└── 通过 /webui 路径访问（需后端提供静态文件路由）
 ```
 
 **实现方式**
 - WebUI 源码目录放在 `src/webui/`
 - 前端构建产物放入部署目录 `webui/`
-- 后端添加静态文件服务路由
-- 访问 `http://localhost:8080/` 自动跳转到 `/webui/`
+- 后端新增静态文件服务路由（当前代码基线未实现）
+- 可选：访问 `http://localhost:8080/` 自动跳转到 `/webui/`
 
-**方案2：独立部署**
+**方案2：独立部署（当前代码基线推荐）**
 ```
 [Nginx] ──┬──> /api/* ──> stdiolink_server:8080
-          ├──> /ws/* ──> stdiolink_server:8080
+          ├──> /api/driverlab/* ──> stdiolink_server:8080
           └──> /* ──> WebUI (静态文件)
 ```
 
@@ -2488,8 +2571,8 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
     
-    # WebSocket 代理
-    location /ws/ {
+    # DriverLab WebSocket 代理
+    location /api/driverlab/ {
         proxy_pass http://localhost:8080;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -2497,7 +2580,7 @@ server {
     }
     
     # SSE 代理
-    location /api/events {
+    location /api/events/stream {
         proxy_pass http://localhost:8080;
         proxy_set_header Connection '';
         proxy_http_version 1.1;
@@ -2621,13 +2704,13 @@ jobs:
 - `DELETE /api/services/:id` - 删除
 - `POST /api/services/scan` - 扫描目录
 - `GET /api/services/:id/files` - 文件列表
-- `GET /api/services/:id/files/read?path=xxx` - 读取文件
-- `POST /api/services/:id/files/write` - 写入文件
-- `POST /api/services/:id/files/create` - 创建文件
-- `DELETE /api/services/:id/files/delete?path=xxx` - 删除文件
-- `POST /api/services/:id/schema/validate` - 验证 Schema
-- `POST /api/services/:id/schema/defaults` - 生成默认配置
-- `POST /api/services/:id/config/validate` - 验证配置
+- `GET /api/services/:id/files/content?path=xxx` - 读取文件
+- `PUT /api/services/:id/files/content?path=xxx` - 写入文件
+- `POST /api/services/:id/files/content?path=xxx` - 创建文件
+- `DELETE /api/services/:id/files/content?path=xxx` - 删除文件
+- `POST /api/services/:id/validate-schema` - 验证 Schema
+- `POST /api/services/:id/generate-defaults` - 生成默认配置
+- `POST /api/services/:id/validate-config` - 验证配置
 
 **Projects**
 - `GET /api/projects` - 列表
@@ -2640,9 +2723,9 @@ jobs:
 - `POST /api/projects/:id/stop` - 停止
 - `POST /api/projects/:id/reload` - 重载
 - `GET /api/projects/:id/runtime` - 运行时状态
-- `PUT /api/projects/:id/enabled` - 启用/禁用
+- `PATCH /api/projects/:id/enabled` - 启用/禁用
 - `GET /api/projects/:id/logs` - 日志
-- `POST /api/projects/runtime/batch` - 批量运行时状态
+- `GET /api/projects/runtime?ids=p1,p2` - 批量运行时状态
 
 **Instances**
 - `GET /api/instances` - 列表
@@ -2661,12 +2744,12 @@ jobs:
 - `GET /api/server/status` - 服务器状态
 
 **Event Stream**
-- `GET /api/events?filter=xxx,yyy` - SSE 事件流
+- `GET /api/events/stream?filter=instance,schedule` - SSE 事件流
 
 **DriverLab WebSocket**
-- `GET /ws/driverlab?driverId=xxx&runMode=xxx&extraArgs=xxx` - WebSocket 连接
+- `WS /api/driverlab/:driverId?runMode=oneshot|keepalive&args=a,b` - WebSocket 连接
 
-#### 需要新增的 API
+#### 候选增强 API（当前未实现）
 
 **Server Stats**（用于 Dashboard）
 ```typescript
@@ -2729,18 +2812,22 @@ Response:
 
 ### 11.2 数据模型定义
 
-**ServiceInfo**
+**ServiceListItem / ServiceDetail**
 ```typescript
-interface ServiceInfo {
-  id: string;                // 服务ID
-  name: string;              // 名称
-  version: string;           // 版本
-  description?: string;      // 描述
-  entryScript: string;       // 入口脚本
-  schema: ConfigSchema;      // 配置Schema
-  createdAt: string;         // 创建时间（ISO 8601）
-  updatedAt: string;         // 更新时间（ISO 8601）
-  projectCount: number;      // 引用项目数
+interface ServiceListItem {
+  id: string;
+  name: string;
+  version: string;
+  serviceDir: string;
+  hasSchema: boolean;
+  projectCount: number;
+}
+
+interface ServiceDetail extends ServiceListItem {
+  manifest: Record<string, any>;
+  configSchema: Record<string, any>;
+  configSchemaFields: any[];
+  projects: string[];
 }
 ```
 
@@ -2755,16 +2842,16 @@ interface Project {
   config: Record<string, any>;
   valid: boolean;
   error?: string;
-  createdAt: string;
-  updatedAt: string;
+  instanceCount?: number;
+  status?: 'running' | 'stopped' | 'invalid' | 'disabled';
 }
 
 interface Schedule {
-  type: 'Manual' | 'FixedRate' | 'Daemon';
-  intervalMs?: number;       // FixedRate 专用
-  maxConcurrent?: number;    // FixedRate 专用
-  restartDelayMs?: number;   // Daemon 专用
-  maxConsecutiveFailures?: number; // Daemon 专用
+  type: 'manual' | 'fixed_rate' | 'daemon';
+  intervalMs?: number;              // fixed_rate 专用
+  maxConcurrent?: number;           // fixed_rate 专用
+  restartDelayMs?: number;          // daemon 专用
+  maxConsecutiveFailures?: number;  // daemon 专用
 }
 ```
 
@@ -2775,27 +2862,29 @@ interface Instance {
   projectId: string;
   serviceId: string;
   pid: number;
-  status: 'running' | 'stopped' | 'starting' | 'restarting';
+  status: string;
   startedAt: string;
-  workingDirectory: string;
-  logPath: string;
-  commandLine: string[];
+  workingDirectory?: string;
+  logPath?: string;
+  commandLine?: string[];
 }
 ```
 
-**DriverInfo**
+**DriverSummary / DriverDetail**
 ```typescript
-interface DriverInfo {
+interface DriverSummary {
   id: string;
-  name: string;
-  version: string;
-  description?: string;
-  vendor?: string;
-  entryPoint: string;        // 如 "./calc --stdio"
-  capabilities: string[];
-  profiles: string[];
-  commands: CommandMeta[];
-  configSchema?: ConfigSchema;
+  program: string;
+  metaHash: string;
+  name?: string;      // meta 存在时返回
+  version?: string;   // meta 存在时返回
+}
+
+interface DriverDetail {
+  id: string;
+  program: string;
+  metaHash: string;
+  meta: Record<string, any> | null;
 }
 ```
 
@@ -2807,7 +2896,7 @@ interface ProcessInfo {
   name: string;
   commandLine: string;
   status: 'running' | 'sleeping' | 'zombie' | 'stopped' | 'unknown';
-  startedAt: string;
+  startedAt?: string;
   cpuPercent: number;
   memoryRssBytes: number;
   memoryVmsBytes: number;
@@ -2818,7 +2907,18 @@ interface ProcessInfo {
 }
 
 interface ProcessTreeNode {
-  info: ProcessInfo;
+  pid: number;
+  name: string;
+  commandLine: string;
+  status: string;
+  startedAt?: string;
+  resources: {
+    cpuPercent: number;
+    memoryRssBytes: number;
+    memoryVmsBytes: number;
+    threadCount: number;
+    uptimeSeconds: number;
+  };
   children: ProcessTreeNode[];
 }
 
@@ -2887,6 +2987,18 @@ interface ProcessTreeSummary {
 6. **移动端适配**
 7. **插件系统**
 8. **集成第三方监控**（Prometheus、Grafana）
+
+### 11.7 分阶段落地建议（目标态）
+
+> 本节为后续演进建议，不代表当前代码已实现。
+
+| 阶段 | 可交付物 | 重点内容 | 验收标准 |
+|------|----------|----------|----------|
+| 阶段1 | WebUI 基础壳与只读页 | 路由、API Client、Services/Projects/Instances/Drivers 列表与详情只读 | 关键列表与详情可稳定加载 |
+| 阶段2 | Service 编辑器 | 文件树 + Monaco + `validate-schema` + 保存回滚 | 可完成 service 编辑并处理 1MB/路径/核心文件约束 |
+| 阶段3 | Project 全流程 | 创建向导、`generate-defaults`、`validate-config`、启停重载与 runtime/logs | 项目从创建到运行监控全链路可用 |
+| 阶段4 | DriverLab 稳定化 | WS 会话、meta 驱动表单、协议兼容兜底、历史导出 | keepalive/oneshot 两模式均可稳定执行命令 |
+| 阶段5 | 安全与运维 | 鉴权占位、RBAC、审计、限流、E2E 回归 | 通过安全基线检查与核心 E2E 用例 |
 
 ---
 
