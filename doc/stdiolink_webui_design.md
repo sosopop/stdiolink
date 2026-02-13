@@ -27,20 +27,23 @@
 
 ### 1.1 产品定位
 
-stdiolink_server WebUI 是一个**企业级服务编排与管理平台**，为 stdiolink 生态系统提供可视化的管理界面。它通过统一的 Web 界面管理 Services、Projects、Instances 和 Drivers，实现服务的全生命周期管理。
+stdiolink_server WebUI 是一个**以项目为中心的服务编排与管理平台**，为 stdiolink 生态系统提供可视化的管理界面。用户通过创建和管理 **Projects**（项目）来实例化 Services（服务模板），启动 Instances（运行实例），并监控整个生命周期。
+
+**核心工作流程**：选择 Service 模板 → 创建 Project 配置 → 启动 Instance 运行 → 监控与管理
 
 ### 1.2 核心价值
 
-- **可视化管理**：将复杂的服务配置、项目编排转化为直观的图形界面
+- **项目驱动**：以 Projects 为核心工作对象，用户通过项目来组织和管理所有服务实例
+- **可视化配置**：将复杂的服务配置、调度策略转化为直观的表单和编辑器
 - **实时监控**：提供实时的实例运行状态、资源占用、进程树可视化
 - **开发友好**：集成 JavaScript 编辑器、Schema 自动生成、Driver 在线测试
-- **生产就绪**：支持服务调度、健康检查、日志管理、事件流
+- **生产就绪**：支持多种调度策略（手动/定时/守护）、健康检查、日志管理
 
 ### 1.3 目标用户
 
-- **开发者**：创建和调试 Services 与 Drivers
-- **运维人员**：管理 Projects、监控 Instances
-- **架构师**：设计服务编排、查看系统状态
+- **运维人员**：创建和管理 Projects，监控 Instances 运行状态（主要用户）
+- **开发者**：开发和调试 Services 与 Drivers，使用 DriverLab 测试
+- **架构师**：设计服务编排策略，查看系统整体状态
 
 ### 1.4 设计原则 (Design Principles)
 
@@ -1185,18 +1188,6 @@ GET /api/events/stream (SSE)
 ```typescript
 const navigation = [
   {
-    key: 'dashboard',
-    icon: <DashboardOutlined />,
-    label: '仪表盘',
-    path: '/dashboard'
-  },
-  {
-    key: 'services',
-    icon: <AppstoreOutlined />,
-    label: '服务',
-    path: '/services'
-  },
-  {
     key: 'projects',
     icon: <FolderOutlined />,
     label: '项目',
@@ -1204,11 +1195,23 @@ const navigation = [
     badge: 3 // 运行中数量
   },
   {
+    key: 'dashboard',
+    icon: <DashboardOutlined />,
+    label: '仪表盘',
+    path: '/dashboard'
+  },
+  {
     key: 'instances',
     icon: <RocketOutlined />,
     label: '实例',
     path: '/instances',
     badge: 5
+  },
+  {
+    key: 'services',
+    icon: <AppstoreOutlined />,
+    label: '服务',
+    path: '/services'
   },
   {
     key: 'drivers',
