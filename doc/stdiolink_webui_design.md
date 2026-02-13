@@ -42,12 +42,12 @@ stdiolink_server WebUI 是一个**企业级服务编排与管理平台**，为 s
 - **运维人员**：管理 Projects、监控 Instances
 - **架构师**：设计服务编排、查看系统状态
 
-### 1.4 设计原则
+### 1.4 设计原则 (Design Principles)
 
-1. **专业性**：界面设计遵循企业级应用标准，色彩克制、布局清晰
-2. **一致性**：统一的设计语言、交互模式、视觉风格
-3. **高效性**：减少点击次数，支持键盘快捷键，智能表单验证
-4. **可靠性**：实时状态同步、错误处理、操作确认机制
+1.  **专业精密 (Precision)**：汲取工业控制台的设计灵感，强调信息的高密度与高对比度，摒弃无意义的装饰。
+2.  **视觉层级 (Hierarchy)**：通过字体大小、字重、颜色和间距的微妙变化，构建清晰的信息扫描路径。
+3.  **即时响应 (Responsiveness)**：所有的操作都应有即时的视觉反馈，数据更新应当平滑流动，给予用户掌控感。
+4.  **极客美学 (Geek Aesthetics)**：融合 Dark Mode、等宽字体、代码高亮等元素，打造符合开发者审美的沉浸式工作台。
 
 ---
 
@@ -227,188 +227,141 @@ stdiolink_server WebUI 是一个**企业级服务编排与管理平台**，为 s
 
 ---
 
-## 4. 设计系统
+## 4. 设计系统 (Design System)
 
-### 4.1 视觉风格定位
+### 4.1 视觉语言：未来工业 (Future Industrial)
 
-**现代专业**：干净、清晰、高效
+**核心理念**：将精密的工业控制台与现代科幻美学相结合。界面应当传达出**精准**、**实时**、**掌控**的感觉，同时保持极高的视觉愉悦度。
 
-- 扁平化设计，避免过度装饰
-- 适度的阴影与圆角
-- 流畅的动画过渡
-- 响应式布局
+- **沉浸感 (Immersion)**：利用深色模式作为默认基调，通过光影和模糊（Blur）创造空间深度。
+- **秩序感 (Order)**：严格的栅格对齐，高对比度的关键信息，弱化装饰性元素。
+- **流动性 (Fluidity)**：所有状态切换必须带有符合物理直觉的过渡动画，拒绝生硬的跳变。
 
-### 4.2 色彩方案
+### 4.2 色彩体系 (Color Palette)
 
-#### 主色调（Primary）
-```scss
-$primary-color: #1890ff;      // 蓝色 - 主要操作
-$primary-hover: #40a9ff;      // 悬停态
-$primary-active: #096dd9;     // 激活态
-$primary-light: #e6f7ff;      // 浅色背景
+采用 HSL 色彩空间构建，支持动态主题。
+
+#### 基础色 (Neutral / Surface)
+- `Surface-Base`: `#0B0C15` (深空黑，用于背景)
+- `Surface-Layer1`: `#1A1D26` (卡片背景)
+- `Surface-Layer2`: `#252936` (悬停态)
+- `Surface-Overlay`: `rgba(20, 22, 30, 0.7)` (玻璃态遮罩)
+- `Border-Subtle`: `rgba(255, 255, 255, 0.08)`
+- `Border-Focus`: `rgba(255, 255, 255, 0.2)`
+
+#### 品牌色 (Brand / Accent)
+- `Primary-Neon`: `#00F0FF` (赛博蓝 - 核心操作/高亮)
+- `Primary-Dim`: `rgba(0, 240, 255, 0.1)` (主色微光背景)
+- `Secondary-Purple`: `#BD00FF` (辅助色 - 特殊状态)
+
+#### 语义色 (Semantic / Signal)
+- `Success`: `#00E676` (荧光绿 - 正常运行)
+- `Warning`: `#FFC400` (琥珀黄 - 亚健康/注意)
+- `Error`: `#FF2E54` (赤红 - 故障/阻断)
+- `Info`: `#2979FF` (天蓝 - 信息)
+
+*设计注：关键状态指示灯应带有“呼吸”或“光晕”效果 (Box-shadow glow)。*
+
+### 4.3 排版系统 (Typography)
+
+#### 字体栈
+- **UI**: `Inter`, `-apple-system`, `BlinkMacSystemFont`, `sans-serif` (强调易读性与数字化质感)
+- **Code / Data**: `JetBrains Mono`, `Fira Code`, `monospace` (强调等宽对齐与连字特性)
+
+#### 字阶与层级
+- **Display**: 24px/32px, Weight 700 (页面标题)
+- **Heading**: 18px/24px, Weight 600 (模块标题)
+- **Body**: 14px/22px, Weight 400 (正文)
+- **Label**: 12px/16px, Weight 500 (辅助标签，大写字母间距 `letter-spacing: 0.05em`)
+- **Mono**: 13px/1.5 (代码块，稍微调小以适应密度)
+
+### 4.4 质感与特效 (Texture & Effects)
+
+#### 玻璃态 (Glassmorphism)
+用于浮层、导航栏及模态框，增加层次感而不遮挡背景动态。
+```css
+.glass-panel {
+  background: rgba(26, 29, 38, 0.65);
+  backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
 ```
 
-**用途**：按钮、链接、图标、强调元素
-
-#### 辅助色（Secondary）
-```scss
-$secondary-color: #722ed1;    // 紫色 - 次要操作
-$secondary-hover: #9254de;
-$secondary-active: #531dab;
+#### 光晕 (Glow)
+用于强调激活状态或警报。
+```css
+.status-dot.active {
+  background: #00E676;
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+}
 ```
 
-**用途**：次要按钮、标签、特殊状态
+### 4.5 动效规范 (Motion)
 
-#### 中性色（Neutral）
-```scss
-$text-primary: #262626;       // 主文本
-$text-secondary: #595959;     // 次要文本
-$text-tertiary: #8c8c8c;      // 辅助文本
-$text-disabled: #bfbfbf;      // 禁用文本
-
-$border-color: #d9d9d9;       // 边框
-$divider-color: #f0f0f0;      // 分割线
-$background: #ffffff;         // 背景
-$background-light: #fafafa;   // 浅背景
-$background-dark: #f5f5f5;    // 深背景
-```
-
-#### 状态色（Semantic）
-```scss
-$success-color: #52c41a;      // 成功 - 运行中
-$warning-color: #faad14;      // 警告 - 需要注意
-$error-color: #f5222d;        // 错误 - 失败
-$info-color: #1890ff;         // 信息 - 提示
-```
-
-#### 功能色
-```scss
-$code-bg: #f6f7f9;            // 代码背景
-$code-border: #e1e4e8;        // 代码边框
-$highlight-bg: #fff3cd;       // 高亮背景
-$highlight-border: #ffc107;   // 高亮边框
-```
-
-### 4.3 字体规范
-
-#### 字体族
-```scss
-$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-                   Roboto, 'Helvetica Neue', Arial, sans-serif;
-$font-family-code: 'Monaco', 'Menlo', 'Ubuntu Mono', 
-                   'Consolas', 'Courier New', monospace;
-```
-
-#### 字体大小
-```scss
-$font-size-xs: 12px;          // 辅助文本
-$font-size-sm: 13px;          // 小文本
-$font-size-base: 14px;        // 正文
-$font-size-lg: 16px;          // 大标题
-$font-size-xl: 20px;          // 特大标题
-$font-size-xxl: 24px;         // 页面主标题
-```
-
-#### 字重
-```scss
-$font-weight-normal: 400;     // 正常
-$font-weight-medium: 500;     // 中等（标题）
-$font-weight-semibold: 600;   // 半粗（重要信息）
-$font-weight-bold: 700;       // 粗体（强调）
-```
-
-### 4.4 间距系统
-
-基于 8px 栅格系统：
-
-```scss
-$spacing-xs: 4px;
-$spacing-sm: 8px;
-$spacing-md: 16px;
-$spacing-lg: 24px;
-$spacing-xl: 32px;
-$spacing-xxl: 48px;
-```
-
-### 4.5 圆角与阴影
-
-#### 圆角
-```scss
-$border-radius-sm: 2px;       // 小组件
-$border-radius-base: 4px;     // 标准
-$border-radius-lg: 8px;       // 卡片
-```
-
-#### 阴影
-```scss
-$box-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
-$box-shadow-base: 0 4px 12px rgba(0, 0, 0, 0.08);
-$box-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-```
-
-### 4.6 动画规范
-
-```scss
-$animation-duration-fast: 150ms;
-$animation-duration-base: 250ms;
-$animation-duration-slow: 400ms;
-
-$easing-base: cubic-bezier(0.4, 0, 0.2, 1);
-$easing-in: cubic-bezier(0.4, 0, 1, 1);
-$easing-out: cubic-bezier(0, 0, 0.2, 1);
-```
+- **微交互**：按钮悬停时的缩放 (`scale(1.02)`) 与亮度提升。
+- **数据流**：图表数据的实时更新应采用平滑插值 (Lerp)，避免瞬跳。
+- **转场**：页面切换采用 `Fade + SlideY` (向上浮出)，时长 `300ms`，缓动 `cubic-bezier(0.2, 0.8, 0.2, 1)`。
+- **骨架屏**：加载状态使用流光 (Shimmer) 效果的骨架屏，而非简单的 Loading 转圈。
 
 ---
 
 ## 5. 核心功能模块
 
-### 5.1 Dashboard（仪表盘）
+### 5.1 Dashboard (指挥中心 / Mission Control)
 
-#### 功能概述
-提供系统全局概览，快速了解服务运行状态。
+#### 设计愿景
+这不是一个简单的报表页面，而是系统的**实时心跳视图**。用户应当能够在这里通过“上帝视角”感知整个 stdiolink 集群的脉动。
 
-#### 核心指标卡片（Grid 布局）
+#### 布局架构 (Bento Grid)
+采用高自由度的网格布局 (Bento Style)，每个卡片都是一个独立的“视窗”，仿佛太空飞船的仪表盘。
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  📊 Dashboard                              [刷新] [设置] │
+│  📊 Mission Control                     [⏱ 实时: 30ms] │
 ├─────────────────────────────────────────────────────────┤
 │                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │
-│  │ Services │  │ Projects │  │ Instances│  │ Drivers │ │
-│  │   12     │  │    8     │  │    5     │  │   18    │ │
-│  │ ▲ +2     │  │ ⚡ 3 启用 │  │ ✓ 运行中 │  │ 📦 活跃 │ │
-│  └──────────┘  └──────────┘  └──────────┘  └─────────┘ │
+│  ┌─ 核心指标 (KPI HUD) ───────────────────────────────┐ │
+│  │                                                     │ │
+│  │  Services    Projects    Instances    Drivers       │ │
+│  │  ┌──────┐    ┌──────┐    ┌──────┐     ┌──────┐      │ │
+│  │  │  12  │    │  08  │    │  05  │     │  18  │      │ │
+│  │  │  ▲2  │    │  ⚡3  │    │  🟢  │     │  📦  │      │ │
+│  │  └──────┘    └──────┘    └──────┘     └──────┘      │ │
+│  │                                                     │ │
+│  └─────────────────────────────────────────────────────┘ │
 │                                                          │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ 📈 资源使用情况 (近1小时)                        │   │
-│  │                                                  │   │
-│  │  CPU: ████████░░  78%                           │   │
-│  │  内存: ██████░░░░  62%                           │   │
-│  │  进程: 23 个                                     │   │
-│  │                                                  │   │
-│  │  [折线图：CPU/内存趋势]                         │   │
-│  └─────────────────────────────────────────────────┘   │
+│  ┌─ 实时遥测 (Telemetry) ──────────┐  ┌─ 拓扑透视 ─────┐ │
+│  │                                 │  │                │ │
+│  │  CPU Load   [ ▂▃▅▇ 78% ]        │  │   (S)──(P)     │ │
+│  │  RAM Usage  [ ▃▅ 62%   ]        │  │    │    │      │ │
+│  │                                 │  │   (I)──(I)     │ │
+│  │  [Arecharts 动态波形图]          │  │                │ │
+│  │  (带渐变填充与辉光线条)            │  │  [力导向图]    │ │
+│  │                                 │  │  (实时节点状态)  │ │
+│  └─────────────────────────────────┘  └────────────────┘ │
 │                                                          │
-│  ┌──────────────────┐  ┌──────────────────────────┐   │
-│  │ 🔥 活跃实例      │  │ 📝 最近事件              │   │
-│  │                  │  │                          │   │
-│  │ • proj-api (5m) │  │ 10:23 Instance Started  │   │
-│  │ • proj-worker   │  │ 10:15 Project Updated   │   │
-│  │ • proj-scheduler│  │ 09:58 Service Deployed  │   │
-│  │                  │  │ 09:42 Health Check OK   │   │
-│  │ [查看全部]       │  │ [查看全部]              │   │
-│  └──────────────────┘  └──────────────────────────┘   │
+│  ┌─ 活跃实例 (Active Flights) ─────┐  ┌─ 事件流 (Log) ─┐ │
+│  │                                 │  │                │ │
+│  │  ● proj-api       CPU: 12%      │  │  10:23 Start   │ │
+│  │  ● proj-worker    CPU: 45%      │  │  10:15 Update  │ │
+│  │  ○ proj-sched     Stop          │  │  09:58 Deploy  │ │
+│  │                                 │  │                │ │
+│  └─────────────────────────────────┘  └────────────────┘ │
 │                                                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### 实现要点
+#### 视觉细节升级
+1.  **HUD 风格数字**：关键指标使用等宽数字字体，数字变化时有类似老虎机的滚动动画 (Ticker Animation)。
+2.  **动态背景**：图表卡片背景可增加极淡的网格线或噪点纹理，提升专业仪器感。
+3.  **状态呼吸灯**：运行中的实例前的小圆点应有呼吸光效。
+4.  **Glass Panel**：所有卡片采用微透明的玻璃态背景，让下面的背景模糊可见。
 
-1. **实时数据**：通过 SSE 接收事件更新
-2. **趋势图表**：使用 Recharts 绘制资源趋势
-3. **卡片交互**：点击跳转到对应模块
-4. **自动刷新**：30s 自动刷新数据（可配置）
+#### 数据可视化 (Recharts 定制)
+- **LineChart**: 线条粗细 2px，颜色使用 `Primary-Neon`，下方填充线性渐变 (`opacity: 0.2` -> `0`)。
+- **Tooltip**: 自定义黑色半透明浮层，跟随鼠标移动，显示精确数值。
+- **自动刷新**: 30s 自动刷新数据（可配置），或通过 SSE 实时更新时显示 "Live" 标记。
 
 #### API 需求
 
@@ -420,10 +373,11 @@ GET /api/services
 GET /api/events/stream (SSE)
 ```
 
-### 5.2 Services（服务管理）
+### 5.2 Services (服务工厂 / Code Foundry)
 
-#### 功能概述
-管理 Service 的完整生命周期：创建、编辑、删除、扫描。
+#### 核心体验
+打造沉浸式的 **Web IDE** 体验。用户在此定义服务的“基因” (Schema & Script)。编辑器应提供桌面级的响应速度与代码智能提示。
+
 
 #### 界面结构
 
@@ -670,10 +624,11 @@ GET /api/events/stream (SSE)
 - 保存 `manifest.json` 时必须是合法 manifest；保存 `config.schema.json` 时必须是合法 JSON 对象
 - 更新 `manifest.json` 或 `config.schema.json` 后端会尝试 reload；若返回 `file written but reload failed`，前端需提示“已写入但热加载失败”，并提供一键回滚到上一个本地版本
 
-### 5.3 Projects（项目管理）
+### 5.3 Projects (项目编排 / Orchestration)
 
-#### 功能概述
-项目是服务的实例配置，定义了服务如何运行（配置参数、调度策略）。
+#### 核心体验
+将复杂的 JSON 配置转化为直观的**智能表单 (Smart Forms)**。通过实时校验与动态联动，确保配置的正确性。
+
 
 #### 列表视图
 ```
@@ -919,10 +874,11 @@ GET /api/events/stream (SSE)
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 5.4 Instances（实例管理）
+### 5.4 Instances (实时监控 / Live Monitor)
 
-#### 功能概述
-实例是 Project 的运行进程，提供实时监控、日志查看、进程树可视化。
+#### 核心体验
+物理世界的透视窗。通过**高频遥测 (Telemetry)** 与**可视化拓扑**，让不可见的后台进程显形。
+
 
 #### 列表视图
 ```
@@ -943,7 +899,7 @@ GET /api/events/stream (SSE)
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### 实例详情 - 进程树可视化
+#### 实例详情 - 进程全息图 (Holographic Process Tree)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -1302,17 +1258,20 @@ const navigation = [
 .content-wrapper {
   padding: 24px;
   min-height: calc(100vh - 64px);
-  background: #f5f5f5;
+  background: #0B0C15; /* Surface-Base */
   
   .page-header {
     margin-bottom: 24px;
-    background: #ffffff;
+    background: rgba(26, 29, 38, 0.65); /* Glass Panel */
+    backdrop-filter: blur(12px);
     padding: 16px 24px;
     border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     
     h1 {
       font-size: 24px;
       font-weight: 600;
+      color: #fff;
       margin: 0;
     }
     
@@ -1322,10 +1281,11 @@ const navigation = [
   }
   
   .content-body {
-    background: #ffffff;
+    background: #1A1D26; /* Surface-Layer1 */
     padding: 24px;
     border-radius: 4px;
     min-height: 400px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 }
 ```
@@ -1525,10 +1485,11 @@ driver.$close();`,
 - 保存时自动验证并同步到可视化视图
 - 错误提示（行号 + 错误信息）
 
-### 7.3 DriverLab（在线测试工具）
+### 7.3 DriverLab (虚拟试验台 / Virtual Bench)
 
-#### 功能概述
-类似于 Postman，但专门用于测试 stdiolink Drivers。
+#### 核心体验
+一个为 Driver 开发者量身定制的**协议调试器**。它不仅是 API 客户端，更是 Driver 的运行沙箱，支持对 stdio 协议流的精细控制与观测。
+
 
 #### 界面布局
 ```
@@ -1715,11 +1676,11 @@ interface ProcessTreeNode {
 }
 ```
 
-**渲染策略**
-- 使用递归组件
-- 可折叠/展开节点
-- 颜色编码（CPU/内存使用率）
-- 实时更新（轮询或 WebSocket）
+**渲染策略 (Holo-Render)**
+- **拓扑重构**：使用 D3.js 或 React Flow 渲染力导向图，而非简单的嵌套列表。
+- **状态映射**：节点大小映射内存占用，颜色映射 CPU 负载 (Green -> Red)。
+- **信号流动**：进程间通信 (IPC) 时连接线有粒子流动动画，直观展示数据流向。
+
 
 **组件示例**
 ```tsx
@@ -1829,9 +1790,21 @@ const Dashboard: React.FC = () => {
 
 ---
 
-## 8. API 对接方案
+## 8. 开发与对接规范
 
-### 8.0 UI 功能与现有 API 对照矩阵（关键路径）
+### 8.0 代码质量规范 (Code Quality)
+
+#### 架构原则
+- **原子化设计**：组件分为 Atoms (基础), Molecules (组合), Organisms (板块), Templates (页面)。
+- **逻辑抽离**：UI 组件只负责渲染 (Presentational)，业务逻辑全部下沉至 Custom Hooks。
+- **类型安全**：所有 Props 和 API 响应必须定义严格的 TypeScript Interface，拒绝 `any`。
+
+#### 性能军规
+- **渲染控制**：高频更新组件（如日志流、仪表盘）必须使用 `React.memo` 和 `useMemo` 优化。
+- **虚拟滚动**：超过 100 条数据的列表/表格必须使用 Virtual List (react-window)。
+
+### 8.1 API 对接方案
+
 
 | UI 功能 | API / WS | 关键请求 | 成功信号 | 典型失败与处理 |
 |--------|----------|----------|----------|----------------|
