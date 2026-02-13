@@ -538,7 +538,36 @@ echo "=== Build verification passed ==="
 
 ---
 
-## 8. 里程碑完成定义（DoD）
+## 7. 风险与控制
+
+- **风险 1**：E2E 测试不稳定（flaky tests）
+  - 控制：使用 Playwright 的 `waitFor` 和 `expect` 自动等待机制；配置 1 次重试；失败时保存截图和 trace
+- **风险 2**：Monaco Editor chunk 体积过大
+  - 控制：使用 `manualChunks` 将 Monaco 拆分为独立 chunk，按需加载；仅在 Services 文件编辑和 Schema JSON 编辑页面加载
+- **风险 3**：CI 环境与本地环境差异
+  - 控制：CI 使用固定 Node 18 版本；`npm ci` 确保依赖一致；Playwright 使用固定浏览器版本
+- **风险 4**：发布脚本跨平台兼容性
+  - 控制：WebUI 构建步骤使用 npm 命令（跨平台）；文件复制使用 `cp -r`（Linux/macOS）；Windows 用户使用 Git Bash
+
+---
+
+## 8. UI/UX 设计师建议
+
+虽然本里程碑主要关注测试与构建，但 E2E 测试是验证设计还原度的最后一道防线：
+
+1.  **视觉还原验证 (Visual Verification)**：
+    *   虽然本次主要进行功能测试，但建议在 E2E 测试中包含对关键 UI 元素的截图快照（Playwright Screenshots）。人工复查这些截图，确保 CI 环境渲染出的界面符合“现代极简”风格，特别是字体渲染、圆角大小和阴影效果是否正确。
+    *   **关键检查点**：Dashboard 的 KPI 卡片布局、Monaco 编辑器的暗色主题加载、DriverLab 消息气泡的对齐。
+
+2.  **加载状态体验 (Loading States)**：
+    *   在生产构建版本中，重点关注 FCP (First Contentful Paint)。确保在应用初始化加载（Monaco 等大资源加载前）时，骨架屏或 Loading Spinner 能立即出现，背景色不应有从白到黑的闪烁。
+
+3.  **构建产物检查**：
+    *   检查构建后的 `index.html`，确保 `meta theme-color` 设置为 `#0F1117`（Surface-Base），这样在移动端浏览器或 PWA 模式下，状态栏颜色能与应用背景融为一体。
+
+---
+
+## 9. 里程碑完成定义（DoD）
 
 - E2E 测试覆盖 6 个核心模块的主要用户流程
 - 生产构建配置完成，产物体积达标

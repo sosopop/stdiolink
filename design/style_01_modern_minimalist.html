@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Style 01: Modern Minimalist (Project Standard)</title>
+    <style>
+        :root {
+            /* Palette */
+            --surface-base: #0F1117;
+            --surface-layer1: #1E222D;
+            --surface-layer2: #2A2F3E;
+            --primary: #6366F1;
+            --primary-hover: #818CF8;
+            --success: #10B981;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border: rgba(255, 255, 255, 0.06);
+            
+            /* Spacing & Radius */
+            --radius: 12px;
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            background-color: var(--surface-base);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            gap: 24px;
+        }
+
+        /* Card Component */
+        .card {
+            background: var(--surface-layer1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        h2 { margin: 0; font-size: 18px; font-weight: 600; }
+        p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin: 0 0 16px 0; }
+
+        /* Typography */
+        .mono { font-family: var(--font-mono); font-size: 13px; color: var(--primary-hover); }
+
+        /* Form Elements */
+        .input-group { margin-bottom: 16px; }
+        label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+        
+        input {
+            width: 100%;
+            background: var(--surface-base);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 12px; }
+        
+        button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: var(--surface-layer2);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: #374151; }
+
+        /* Status Indicator */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: currentColor;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Dashboard Card -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2>Project Settings</h2>
+                    <span class="mono">ID: proj-api-worker-01</span>
+                </div>
+                <div class="status-badge">
+                    <span class="dot"></span> Running
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Service Endpoint</label>
+                <input type="text" value="https://api.stdiolink.io/v1/cluster" readonly>
+            </div>
+
+            <div class="input-group">
+                <label>Description</label>
+                <p>This project handles the primary data ingestion pipeline. Configured for high-availability mode with auto-scaling enabled.</p>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-primary">Deploy Changes</button>
+                <button class="btn-secondary">View Logs</button>
+            </div>
+        </div>
+
+        <!-- Driver Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Active Drivers</h2>
+            </div>
+            <div style="display: grid; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; padding: 12px; background: var(--surface-base); border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 32px; height: 32px; background: var(--surface-layer2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">🔌</div>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 500;">modbus-tcp</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">v2.1.0</div>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">Config</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

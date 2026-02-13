@@ -22,7 +22,7 @@
 
 ## 2. 背景与问题
 
-Dashboard 是用户进入 WebUI 后的首页，需要提供系统的"上帝视角"。设计文档 §5.1 定义了 Mission Control 风格的仪表盘，包含 KPI 卡片、实时遥测、活跃实例和事件流四个核心区域。
+Dashboard 是用户进入 WebUI 后的首页，需要提供系统的"上帝视角"。设计文档 §5.1 定义了 **Modern Minimalist** 风格的仪表盘，包含 KPI 卡片、实时遥测、活跃实例和事件流四个核心区域。
 
 数据来源：
 - `GET /api/server/status` — 系统状态总览（30s 轮询）
@@ -196,22 +196,24 @@ export function usePolling(callback: () => void, intervalMs: number) {
 
   &.running {
     background: var(--color-success);
-    animation: breathe 2s ease-in-out infinite;
+    /* 柔和光晕 ring */
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    animation: breathe 3s ease-in-out infinite;
   }
 
   &.stopped {
-    background: rgba(255, 255, 255, 0.3);
+    background: #6B7280; /* Gray 500 */
   }
 
   &.error {
     background: var(--color-error);
-    box-shadow: 0 0 8px rgba(255, 46, 84, 0.6);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
   }
 }
 
 @keyframes breathe {
-  0%, 100% { box-shadow: 0 0 4px rgba(0, 230, 118, 0.4); }
-  50% { box-shadow: 0 0 12px rgba(0, 230, 118, 0.8); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
 }
 ```
 

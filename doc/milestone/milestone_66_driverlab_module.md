@@ -545,7 +545,37 @@ function exportMessages(messages: MessageEntry[], driverId: string): void {
 
 ---
 
-## 8. 里程碑完成定义（DoD）
+## 7. 风险与控制
+
+- **风险 1**：WebSocket 连接不稳定导致消息丢失
+  - 控制：连接断开时显示明确提示；不自动重连（用户手动重连）；断开前的消息保留在历史中
+- **风险 2**：大量消息导致前端性能问题
+  - 控制：消息上限 500 条，超出后移除旧消息；JSON 消息默认折叠减少 DOM 节点
+- **风险 3**：Driver 快速崩溃重启导致消息风暴
+  - 控制：服务端已有重启抑制机制；前端对 `error` 类型消息做去重（相同错误 1s 内仅显示一次）
+
+---
+
+## 8. UI/UX 设计师建议
+
+DriverLab 是类聊天（Chat-like）的交互界面，设计重点在于信息流的清晰度与实时反馈：
+
+1.  **消息流 (Message Stream)**：
+    *   **气泡布局**：采用类似 IM 的气泡布局，发送的消息（exec/cancel）靠右，接收的消息（stdout/meta）靠左，系统消息（started/exited）居中。
+    *   **视觉区分**：发送气泡背景使用 `Surface-Layer2`，接收气泡背景使用 Primary-Dim（极淡的 Indigo），错误消息使用 Error-Dim（极淡的 Red）。
+    *   **时间戳**：时间戳字体应极小 (`10px`) 且颜色淡化，置于气泡外侧或底部，不干扰正文阅读。
+
+2.  **连接状态反馈 (Connection Feedback)**：
+    *   **全屏遮罩**：当 WebSocket 断开连接时，并在消息流区域上方覆盖一层半透明遮罩 (`backdrop-filter: blur(2px)`)，并显示“已断开”提示与重连按钮，明确告知用户当前不可交互。
+    *   **动态标题**：页面标题栏或状态栏应实时显示当前的连接状态（Connected 🟢 / Disconnected 🔴），并带有脉冲动画。
+
+3.  **JSON 渲染 (JSON Rendering)**：
+    *   **折叠策略**：默认折叠超过 5 行的 JSON 对象，提供“展开”按钮。
+    *   **语法高亮**：即使在折叠状态下，关键字段（如 `status: "ok"`）也应保持高亮显示，方便快速扫视。
+
+---
+
+## 9. 里程碑完成定义（DoD）
 
 - DriverLab 页面完整实现
 - WebSocket 连接管理正常

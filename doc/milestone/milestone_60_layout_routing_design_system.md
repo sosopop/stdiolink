@@ -10,16 +10,17 @@
 - 安装并配置 Ant Design 5.x、React Router v6、Zustand 4.x
 - 实现 `AppLayout` 布局组件：顶部栏（Header）+ 可折叠侧边栏（Sidebar）+ 主内容区（Content）
 - 实现 React Router 路由配置（声明式，含嵌套路由和 404 页面）
-- 实现 Ant Design 暗色主题定制（对齐设计文档 4.x 节的色彩体系）
-- 实现全局样式：CSS 变量（设计令牌）、字体栈、玻璃态、光晕效果
+- 实现 Ant Design 主题定制（暗色/亮色双主题，对齐设计文档 4.x 节的色彩体系）
+- 实现全局样式：CSS 变量（设计令牌）、字体栈、玻璃态、光晕效果，支持 `[data-theme]` 切换
 - 实现通知系统（Toast / Message）封装
 - 实现响应式侧边栏（折叠/展开）
+- 实现主题切换功能（持久化存储）
 
 ---
 
 ## 2. 背景与问题
 
-所有 WebUI 页面共享统一的布局框架和导航系统。设计文档定义了"未来工业"视觉风格（深色背景、赛博蓝高亮、玻璃态面板），需要通过 Ant Design 主题定制和 CSS 变量系统落地。本里程碑建立视觉基础，后续页面里程碑只需关注业务逻辑。
+所有 WebUI 页面共享统一的布局框架和导航系统。设计文档定义了"Modern Minimalist"视觉风格，支持深色（默认）和亮色两种模式。需要通过 Ant Design 主题定制和 CSS 变量系统落地，并提供无缝切换体验。本里程碑建立视觉基础，后续页面里程碑只需关注业务逻辑。
 
 **范围**：布局 + 路由 + 主题 + 全局样式。页面内容为空占位组件。
 
@@ -73,7 +74,7 @@ const routes = [
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  [LOGO] stdiolink                    [Server Status]    │ ← Header (48px)
+│  [LOGO] stdiolink             [Server Status] [Theme]   │ ← Header (48px)
 ├────────┬────────────────────────────────────────────────┤
 │        │                                                │
 │  📊    │  <Outlet />                                    │
@@ -99,44 +100,81 @@ const routes = [
   ↑ Sidebar (200px / 64px collapsed)
 ```
 
-### 3.4 Ant Design 暗色主题
+### 3.4 Ant Design 主题配置
 
 ```typescript
 // src/theme/antd-theme.ts
 import type { ThemeConfig } from 'antd';
+import { theme } from 'antd';
+
+const commonToken = {
+  colorPrimary: '#6366F1',       // Indigo 500
+  colorSuccess: '#10B981',       // Emerald 500
+  colorWarning: '#F59E0B',       // Amber 500
+  colorError: '#EF4444',         // Red 500
+  colorInfo: '#3B82F6',          // Blue 500
+  fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  fontFamilyCode: "'JetBrains Mono', 'Fira Code', monospace",
+  borderRadius: 8,
+  fontSize: 14,
+  wireframe: false,
+};
 
 export const darkTheme: ThemeConfig = {
   algorithm: theme.darkAlgorithm,
   token: {
-    colorPrimary: '#00F0FF',       // 赛博蓝
-    colorBgBase: '#0B0C15',        // Surface-Base
-    colorBgContainer: '#1A1D26',   // Surface-Layer1
-    colorBgElevated: '#252936',    // Surface-Layer2
-    colorBorderSecondary: 'rgba(255, 255, 255, 0.08)',
-    colorSuccess: '#00E676',       // 荧光绿
-    colorWarning: '#FFC400',       // 琥珀黄
-    colorError: '#FF2E54',         // 赤红
-    colorInfo: '#2979FF',          // 天蓝
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-    fontFamilyCode: "'JetBrains Mono', 'Fira Code', monospace",
-    borderRadius: 4,
-    fontSize: 14,
+    ...commonToken,
+    colorBgBase: '#0F1117',        // Surface-Base
+    colorBgContainer: '#1E222D',   // Surface-Layer1
+    colorBgElevated: '#2A2F3E',    // Surface-Layer2
+    colorBorderSecondary: 'rgba(255, 255, 255, 0.06)',
   },
   components: {
     Layout: {
-      siderBg: '#0B0C15',
-      headerBg: 'rgba(26, 29, 38, 0.65)',  // 玻璃态半透明深色，非设计文档 §4.1 表格中的 #ffffff
-      bodyBg: '#0B0C15',
+      siderBg: '#0F1117',
+      headerBg: 'rgba(30, 34, 45, 0.7)',
+      bodyBg: '#0F1117',
     },
     Menu: {
       darkItemBg: 'transparent',
-      darkItemSelectedBg: 'rgba(0, 240, 255, 0.1)',
-      darkItemSelectedColor: '#00F0FF',
+      darkItemSelectedBg: 'rgba(99, 102, 241, 0.15)',
+      darkItemSelectedColor: '#6366F1',
     },
     Table: {
-      headerBg: '#1A1D26',
-      rowHoverBg: '#252936',
+      headerBg: '#1E222D',
+      rowHoverBg: '#2A2F3E',
+      borderColor: 'rgba(255, 255, 255, 0.06)',
     },
+    Card: { actionsBg: 'rgba(0, 0, 0, 0.1)' }
+  }
+};
+
+export const lightTheme: ThemeConfig = {
+  algorithm: theme.defaultAlgorithm,
+  token: {
+    ...commonToken,
+    colorBgBase: '#F3F4F6',        // Cool Gray 100
+    colorBgContainer: '#FFFFFF',   // White
+    colorBgElevated: '#F9FAFB',    // Cool Gray 50
+    colorBorderSecondary: '#E5E7EB',
+  },
+  components: {
+    Layout: {
+      siderBg: '#FFFFFF',
+      headerBg: 'rgba(255, 255, 255, 0.7)',
+      bodyBg: '#F3F4F6',
+    },
+    Menu: {
+      itemBg: 'transparent',
+      itemSelectedBg: 'rgba(99, 102, 241, 0.1)',
+      itemSelectedColor: '#6366F1',
+    },
+    Table: {
+      headerBg: '#F9FAFB',
+      rowHoverBg: '#F3F4F6',
+      borderColor: '#E5E7EB',
+    },
+    Card: { actionsBg: '#F9FAFB' }
   }
 };
 ```
@@ -146,34 +184,54 @@ export const darkTheme: ThemeConfig = {
 ```css
 /* src/styles/variables.css */
 :root {
-  /* Surface */
-  --surface-base: #0B0C15;
-  --surface-layer1: #1A1D26;
-  --surface-layer2: #252936;
-  --surface-overlay: rgba(20, 22, 30, 0.7);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(255, 255, 255, 0.2);
+  /* Default (Dark) */
+  --surface-base: #0F1117;
+  --surface-layer1: #1E222D;
+  --surface-layer2: #2A2F3E;
+  --surface-overlay: rgba(15, 17, 23, 0.8);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-focus: rgba(99, 102, 241, 0.4);
 
   /* Brand */
-  --primary-neon: #00F0FF;
-  --primary-dim: rgba(0, 240, 255, 0.1);
-  --secondary-purple: #BD00FF;
+  --primary-base: #6366F1;
+  --primary-hover: #818CF8;
+  --primary-dim: rgba(99, 102, 241, 0.15);
+  --secondary-pink: #EC4899;
 
   /* Semantic */
-  --color-success: #00E676;
-  --color-warning: #FFC400;
-  --color-error: #FF2E54;
-  --color-info: #2979FF;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
 
   /* Typography */
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-code: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Glass Panel */
-  --glass-bg: rgba(26, 29, 38, 0.65);
-  --glass-blur: blur(12px) saturate(180%);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  /* Glass & Shadows (Dark) */
+  --glass-bg: rgba(30, 34, 45, 0.7);
+  --glass-blur: blur(16px) saturate(180%);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='light'] {
+  /* Surface (Light) */
+  --surface-base: #F3F4F6;
+  --surface-layer1: #FFFFFF;
+  --surface-layer2: #F9FAFB;
+  --surface-overlay: rgba(255, 255, 255, 0.8);
+  --border-subtle: #E5E7EB;
+  
+  /* Brand Dim (Light) */
+  --primary-dim: rgba(99, 102, 241, 0.1);
+
+  /* Glass & Shadows (Light) */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: 1px solid rgba(229, 231, 235, 0.5);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 ```
 
@@ -184,8 +242,7 @@ export const darkTheme: ThemeConfig = {
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  border-bottom: var(--glass-border);
 }
 
 .status-dot {
@@ -193,46 +250,70 @@ export const darkTheme: ThemeConfig = {
   height: 8px;
   border-radius: 50%;
   display: inline-block;
+  margin-right: 8px;
 }
 
 .status-dot--running {
   background: var(--color-success);
-  box-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
-  animation: breathe 2s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); /* 柔和光晕 */
 }
 
 .status-dot--stopped {
-  background: rgba(255, 255, 255, 0.3);
+  background: #6B7280; /* Gray 500 */
 }
 
 .status-dot--error {
   background: var(--color-error);
-  box-shadow: 0 0 8px rgba(255, 46, 84, 0.6);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
-@keyframes breathe {
-  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(0, 230, 118, 0.6); }
-  50% { opacity: 0.7; box-shadow: 0 0 4px rgba(0, 230, 118, 0.3); }
+/* 呼吸感卡片悬停效果 */
+.hover-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+  /* 仅深色模式下变亮边框，亮色模式下无需 */
+  border-color: var(--primary-base); 
 }
 ```
 
-### 3.7 侧边栏状态管理
+### 3.7 布局与主题状态管理
 
 ```typescript
 // src/stores/useLayoutStore.ts
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface LayoutState {
   sidebarCollapsed: boolean;
+  themeMode: 'dark' | 'light';
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setThemeMode: (mode: 'dark' | 'light') => void;
+  toggleTheme: () => void;
 }
 
-export const useLayoutStore = create<LayoutState>((set) => ({
-  sidebarCollapsed: false,
-  toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
-  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-}));
+export const useLayoutStore = create<LayoutState>()(
+  persist(
+    (set) => ({
+      sidebarCollapsed: false,
+      themeMode: 'dark', // 默认深色
+      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+      setThemeMode: (mode) => set({ themeMode: mode }),
+      toggleTheme: () => set((s) => ({ themeMode: s.themeMode === 'dark' ? 'light' : 'dark' })),
+    }),
+    {
+      name: 'stdiolink-layout-storage',
+      partialize: (state) => ({ 
+        sidebarCollapsed: state.sidebarCollapsed,
+        themeMode: state.themeMode 
+      }),
+    }
+  )
+);
 ```
 
 ### 3.8 通知封装
