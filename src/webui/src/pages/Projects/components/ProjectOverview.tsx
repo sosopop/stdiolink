@@ -33,14 +33,14 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
           <Button
             type="primary"
             size="large"
-            className="brand-gradient-btn"
-            style={{ 
-              background: 'var(--brand-gradient)', 
-              border: 'none', 
+            style={{
+              background: 'var(--brand-gradient)',
+              border: 'none',
               boxShadow: '0 4px 12px var(--brand-glow)',
               height: 40,
               padding: '0 24px',
-              fontWeight: 600
+              fontWeight: 600,
+              borderRadius: 8
             }}
             icon={<PlayCircleOutlined />}
             disabled={!canStart}
@@ -50,28 +50,42 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
             Start Project
           </Button>
           <Popconfirm title="Stop this project?" onConfirm={onStop} disabled={!canStop} okButtonProps={{ danger: true }}>
-            <Button 
-              danger 
+            <Button
+              danger
               size="large"
-              style={{ height: 40 }}
-              icon={<StopOutlined />} 
-              disabled={!canStop} 
+              style={{
+                height: 40,
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                backdropFilter: 'blur(4px)',
+                borderRadius: 8,
+                fontWeight: 600
+              }}
+              icon={<StopOutlined />}
+              disabled={!canStop}
               data-testid="stop-btn"
             >
               Stop
             </Button>
           </Popconfirm>
-          <Button 
-            icon={<ReloadOutlined />} 
+          <Button
+            icon={<ReloadOutlined />}
             size="large"
-            style={{ height: 40, backgroundColor: 'rgba(255,255,255,0.02)' }}
-            onClick={onReload} 
+            style={{
+              height: 40,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid var(--surface-border)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 8,
+              color: 'var(--text-secondary)'
+            }}
+            onClick={onReload}
             data-testid="reload-btn"
           >
             Reload
           </Button>
         </Space>
-        
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 100, border: '1px solid var(--surface-border)' }}>
           <StatusDot status={dotStatus} />
           <Text strong style={{ fontSize: 14, textTransform: 'capitalize' }}>{status}</Text>
@@ -79,10 +93,10 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
       </div>
 
       <Card className="glass-panel" bordered={false}>
-        <Descriptions 
-          bordered 
-          column={2} 
-          size="small" 
+        <Descriptions
+          bordered
+          column={2}
+          size="small"
           labelStyle={{ background: 'rgba(255,255,255,0.02)', fontWeight: 600, width: 160 }}
           contentStyle={{ background: 'transparent' }}
         >
