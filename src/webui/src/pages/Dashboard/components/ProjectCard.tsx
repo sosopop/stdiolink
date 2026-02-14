@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Tag, Button, Tooltip } from 'antd';
+import { Card, Button, Tooltip } from 'antd';
 import { PlayCircleOutlined, StopOutlined, EyeOutlined, SettingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
@@ -15,31 +15,26 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onStart, onStop }) => {
   const navigate = useNavigate();
-  
+
   const status = runtime?.status || (project.valid ? 'stopped' : 'invalid');
   const dotStatus = status === 'running' ? 'running' : status === 'invalid' ? 'error' : 'stopped';
   const isRunning = status === 'running';
   const canStart = project.enabled && project.valid && !isRunning;
 
   return (
-    <Card 
-      className={`${styles.projectCard} glass-panel hover-card`} 
+    <Card
+      className={`${styles.projectCard} glass-panel hover-card`}
       bordered={false}
       onClick={() => navigate(`/projects/${project.id}`)}
     >
       <div className={styles.projectCardHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div className={styles.statusBadge}>
-            <StatusDot status={dotStatus} size={8} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div className={styles.projectTitle}>{project.name}</div>
-            <div className={styles.projectId}>{project.id}</div>
-          </div>
+        <div className={styles.statusBadge}>
+          <StatusDot status={dotStatus} size={8} />
         </div>
-        <Tag bordered={false} className={styles.serviceTag}>
-          {project.serviceId}
-        </Tag>
+        <div className={styles.headerContent}>
+          <div className={styles.projectTitle} title={project.name}>{project.name}</div>
+          <div className={styles.projectId} title={project.id}>{project.id}</div>
+        </div>
       </div>
 
       <div className={styles.projectCardBody}>
@@ -54,12 +49,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
           </div>
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>STATUS</span>
-            <span className={styles.metaValue} style={{ 
+            <span className={styles.metaValue} style={{
               color: isRunning ? 'var(--color-success)' : 'var(--text-tertiary)',
-              fontWeight: 700 
+              fontWeight: 700
             }}>
               {status}
             </span>
+          </div>
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>SERVICE</span>
+            <div className={styles.serviceTag} title={project.serviceId}>{project.serviceId}</div>
           </div>
         </div>
       </div>
@@ -68,19 +67,19 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
         <div className={styles.actionGroup}>
           {isRunning ? (
             <Tooltip title="Stop Project">
-              <Button 
-                type="text" 
-                danger 
-                icon={<StopOutlined />} 
+              <Button
+                type="text"
+                danger
+                icon={<StopOutlined />}
                 onClick={() => onStop(project.id)}
                 className={styles.actionBtn}
               />
             </Tooltip>
           ) : (
             <Tooltip title="Start Project">
-              <Button 
-                type="text" 
-                icon={<PlayCircleOutlined style={{ color: canStart ? 'var(--color-success)' : 'inherit', opacity: canStart ? 1 : 0.3 }} />} 
+              <Button
+                type="text"
+                icon={<PlayCircleOutlined style={{ color: canStart ? 'var(--color-success)' : 'inherit', opacity: canStart ? 1 : 0.3 }} />}
                 disabled={!canStart}
                 onClick={() => onStart(project.id)}
                 className={styles.actionBtn}
@@ -88,20 +87,20 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
             </Tooltip>
           )}
           <Tooltip title="Configure">
-            <Button 
-              type="text" 
-              icon={<SettingOutlined />} 
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
               onClick={() => navigate(`/projects/${project.id}/edit`)}
               className={styles.actionBtn}
             />
           </Tooltip>
         </div>
-        
-        <Button 
-          type="link" 
-          size="small" 
+
+        <Button
+          type="link"
+          size="small"
           className={styles.detailsBtn}
-          icon={<EyeOutlined />} 
+          icon={<EyeOutlined />}
           onClick={() => navigate(`/projects/${project.id}`)}
         >
           Details
