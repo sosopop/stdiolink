@@ -28,6 +28,7 @@
   --surface-glass: rgba(10, 10, 16, 0.7);
   /* Custom glass base */
   --bg-sidebar: rgba(11, 12, 21, 0.4);
+  --bg-code: rgba(0, 0, 0, 0.2);
 
   --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;
@@ -42,6 +43,12 @@
 
   --logo-gradient: linear-gradient(to right, #fff, #94a3b8);
   /* Default light gradient for dark mode */
+
+  /* Semantic Colors (Matches AntD Token) */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
 
 
   /* Typography */
@@ -60,6 +67,7 @@
   --surface-glass: rgba(255, 255, 255, 0.7);
   /* Fixed: color value instead of blur */
   --bg-sidebar: rgba(255, 255, 255, 0.6);
+  --bg-code: rgba(0, 0, 0, 0.04);
 
   --text-primary: #1E293B;
   --text-secondary: #64748B;
