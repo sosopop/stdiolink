@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Select, Button, Space, Typography } from 'antd';
 import { PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 import type { CommandMeta } from '@/types/driver';
@@ -30,11 +31,13 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
   onExec,
   onCancel,
 }) => {
+  const { t } = useTranslation();
+
   if (!commands || commands.length === 0) {
     return (
       <div data-testid="command-panel">
         <Typography.Text type="secondary" data-testid="waiting-meta">
-          Waiting for driver metadata...
+          {t('driverlab.command.waiting_meta')}
         </Typography.Text>
       </div>
     );
@@ -46,12 +49,12 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
     <div data-testid="command-panel">
       <div style={{ marginBottom: 20 }}>
         <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Select Command
+          {t('driverlab.command.select_command')}
         </Typography.Text>
         <Select
           value={selectedCommand}
           onChange={onSelectCommand}
-          placeholder="Select command"
+          placeholder={t('driverlab.command.select_placeholder')}
           style={{ width: '100%' }}
           data-testid="command-select"
           options={commands.map((c) => ({
@@ -84,7 +87,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
           disabled={!connected || !selectedCommand || executing}
           data-testid="exec-btn"
         >
-          Execute
+          {t('driverlab.command.execute')}
         </Button>
         <Button
           icon={<StopOutlined />}
@@ -92,7 +95,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
           disabled={!executing}
           data-testid="cancel-btn"
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
       </Space>
 

@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "啟動",
+        "stop": "停止",
+        "restart": "重啟",
+        "configure": "設定",
+        "details": "詳情",
+        "terminate": "終止",
+        "view_trace": "檢視追蹤",
+        "cancel": "取消",
+        "confirm": "確認",
+        "status": "狀態",
+        "save": "儲存",
+        "delete": "刪除",
+        "edit": "編輯",
+        "create": "建立",
+        "search": "搜尋",
+        "running": "執行中",
+        "stopped": "已停止",
+        "error": "錯誤",
+        "yes": "是",
+        "no": "否",
+        "retry": "重試",
+        "reload": "重新載入",
+        "actions": "操作",
+        "view_all": "檢視全部",
+        "view_detail": "檢視詳情",
+        "lab": "實驗室",
+        "status_running": "執行中",
+        "status_stopped": "已停止",
+        "status_starting": "啟動中",
+        "status_stopping": "停止中",
+        "status_failed": "失敗",
+        "status_crashed": "崩潰",
+        "status_invalid": "無效"
+    },
+    "layout": {
+        "dashboard": "儀表板",
+        "services": "服務",
+        "projects": "專案",
+        "instances": "實例",
+        "drivers": "驅動",
+        "driver_lab": "驅動實驗室"
+    },
+    "dashboard": {
+        "loading": "載入控制台...",
+        "title": "控制台",
+        "subtitle": "即時系統遙測與專案編排",
+        "active_projects": "活躍專案",
+        "new_project": "新建專案",
+        "empty_projects": "尚無專案設定。建立您的第一個專案以開始使用。",
+        "live_instances": "即時實例",
+        "terminate_confirm": "確認終止程序？",
+        "no_instances": "未偵測到活躍執行緒",
+        "kpi": {
+            "projects": "專案",
+            "instances": "實例",
+            "services": "服務",
+            "drivers": "驅動",
+            "uptime": "執行時間",
+            "enabled": "已啟用",
+            "running": "執行中"
+        },
+        "titles": {
+            "active_projects": "活躍專案",
+            "live_instances": "即時實例",
+            "event_feed": "事件流",
+            "empty_events": "尚無事件記錄"
+        },
+        "table": {
+            "lifecycle": "生命週期",
+            "target_project": "目標專案",
+            "system_pid": "系統 PID",
+            "uptime": "執行時間"
+        },
+        "project_card": {
+            "instances": "實例",
+            "strategy": "策略",
+            "status": "狀態",
+            "service": "服務"
+        }
+    },
+    "projects": {
+        "title": "專案",
+        "new_project": "新建專案",
+        "search_placeholder": "搜尋專案...",
+        "service_filter": "服務",
+        "status_filter": "狀態",
+        "create_wizard": {
+            "title": "建立專案",
+            "step_service": "服務",
+            "step_info": "資訊",
+            "step_config": "設定",
+            "step_schedule": "排程",
+            "project_id": "專案 ID",
+            "name": "名稱",
+            "enabled": "啟用",
+            "next": "下一步",
+            "create": "建立",
+            "success": "專案建立成功",
+            "fail": "專案建立失敗"
+        },
+        "detail": {
+            "overview": "概覽",
+            "config": "設定",
+            "instances": "實例",
+            "logs": "日誌",
+            "schedule": "排程",
+            "not_found": "專案未找到"
+        },
+        "logs": {
+            "refresh": "重新整理"
+        },
+        "schedule": {
+            "save": "儲存排程",
+            "save_success": "排程已儲存",
+            "save_fail": "儲存排程失敗",
+            "type": "排程類型",
+            "manual": "手動",
+            "daemon": "守護程序",
+            "fixed_rate": "定時執行",
+            "restart_delay": "重啟延遲 (ms)",
+            "max_failures": "最大連續失敗次數",
+            "interval": "執行間隔 (ms)",
+            "max_concurrent": "最大並行數"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "狀態",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "專案詳情",
+            "service_template": "服務範本",
+            "runtime_status": "執行狀態",
+            "schedule": "排程",
+            "enabled": "啟用",
+            "actions": "操作",
+            "total_count": "共 {{count}} 個專案",
+            "stop_confirm": "確認停止專案？",
+            "delete_confirm": "確認刪除專案？",
+            "restart_prefix": "重啟"
+        },
+        "overview": {
+            "start_project": "啟動專案",
+            "stop_confirm": "確認停止此專案？",
+            "project_id": "專案 ID",
+            "display_name": "顯示名稱",
+            "service_template": "服務範本",
+            "enabled": "啟用",
+            "validation": "驗證",
+            "pass": "通過",
+            "fail": "失敗",
+            "schedule_strategy": "排程策略",
+            "active_instances": "活躍實例",
+            "consecutive_failures": "連續失敗次數"
+        }
+    },
+    "services": {
+        "title": "服務",
+        "new_service": "新建服務",
+        "search_placeholder": "搜尋服務...",
+        "scan": "掃描",
+        "detail": {
+            "overview": "概覽",
+            "files": "檔案",
+            "schema": "模型",
+            "projects": "專案",
+            "not_found": "服務未找到"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "名稱",
+            "version": "版本",
+            "description": "描述",
+            "author": "作者",
+            "directory": "目錄",
+            "has_schema": "設定模型",
+            "projects": "關聯專案"
+        },
+        "files": {
+            "explorer": "檔案瀏覽器",
+            "unsaved": "未儲存",
+            "reset": "重設",
+            "save_changes": "儲存變更",
+            "no_file": "選擇檔案以開始編輯",
+            "load_fail": "載入檔案失敗",
+            "read_fail": "讀取檔案失敗",
+            "save_success": "檔案已儲存",
+            "save_fail": "儲存檔案失敗",
+            "create_success": "檔案已建立",
+            "create_fail": "建立檔案失敗",
+            "delete_success": "檔案已刪除",
+            "delete_fail": "刪除檔案失敗"
+        },
+        "table": {
+            "service_template": "服務範本",
+            "version": "版本",
+            "active_projects": "活躍專案",
+            "instances": "實例",
+            "actions": "操作",
+            "delete_confirm": "確認刪除服務？",
+            "delete_used": "此範本被 {{count}} 個專案使用。",
+            "delete_unused": "確認刪除此範本？",
+            "total_count": "共 {{count}} 個範本"
+        }
+    },
+    "instances": {
+        "title": "實例",
+        "refresh": "重新整理",
+        "search_placeholder": "透過 ID 或專案搜尋...",
+        "filter_project": "專案篩選",
+        "filter_status": "狀態篩選",
+        "table": {
+            "id": "ID",
+            "project": "專案",
+            "service": "服務",
+            "status": "狀態",
+            "pid": "PID",
+            "uptime": "執行時間",
+            "actions": "操作",
+            "detail": "詳情",
+            "terminate_confirm": "確認終止此實例？"
+        },
+        "detail": {
+            "trace": "實例追蹤",
+            "terminate_btn": "終止程序",
+            "overview": "概覽",
+            "process_tree": "程序樹",
+            "resources": "資源",
+            "logs": "日誌",
+            "refresh_logs": "重新整理日誌",
+            "not_found": "實例未找到",
+            "instance_id": "實例 ID",
+            "project": "專案",
+            "started_at": "啟動時間",
+            "working_dir": "工作目錄",
+            "loading": "追蹤程序生命週期...",
+            "terminate_confirm": "確認終止此實例？"
+        }
+    },
+    "drivers": {
+        "title": "驅動",
+        "scan": "掃描",
+        "refresh": "重新整理",
+        "search_placeholder": "透過 ID 或名稱搜尋...",
+        "empty": "未找到驅動。請嘗試掃描驅動目錄。",
+        "table": {
+            "driver": "驅動",
+            "version": "版本",
+            "executable_path": "可執行路徑",
+            "actions": "操作"
+        },
+        "detail": {
+            "not_found": "驅動未找到",
+            "metadata": "中繼資料",
+            "no_metadata": "無可用中繼資料",
+            "commands": "命令",
+            "no_commands": "未定義命令",
+            "docs": "文件",
+            "test_in_lab": "在驅動實驗室中測試",
+            "no_docs": "無可用文件"
+        },
+        "info": {
+            "id": "ID",
+            "name": "名稱",
+            "version": "版本",
+            "vendor": "廠商",
+            "description": "描述",
+            "capabilities": "能力",
+            "profiles": "設定檔"
+        },
+        "command": {
+            "test": "測試",
+            "returns": "回傳: "
+        },
+        "params": {
+            "empty": "無參數",
+            "name": "名稱",
+            "type": "類型",
+            "required": "必填",
+            "default": "預設值",
+            "description": "描述"
+        }
+    },
+    "driverlab": {
+        "title": "驅動實驗室",
+        "subtitle": "互動式協定除錯器與演練場",
+        "command_palette": "指令面板",
+        "protocol_stream": "協定流",
+        "auto_scroll": "自動捲動",
+        "connection": {
+            "target_driver": "目標驅動",
+            "select_driver": "選擇驅動",
+            "mode": "模式",
+            "oneshot": "單次執行",
+            "keepalive": "保活",
+            "arguments": "參數",
+            "args_placeholder": "參數1, 參數2, ...",
+            "connecting": "連線中...",
+            "connect": "連線",
+            "disconnect": "斷開"
+        },
+        "command": {
+            "waiting_meta": "等待驅動中繼資料...",
+            "select_command": "選擇命令",
+            "select_placeholder": "選擇命令",
+            "execute": "執行",
+            "no_params": "此命令無參數"
+        },
+        "toolbar": {
+            "clear": "清除",
+            "export_json": "匯出 JSON"
+        },
+        "status": {
+            "status": "狀態:",
+            "pid": "PID:",
+            "mode": "模式:",
+            "uptime": "執行時間:",
+            "connected": "已連線",
+            "connecting": "連線中",
+            "disconnected": "已斷開",
+            "error": "錯誤"
+        },
+        "stream": {
+            "no_messages": "尚無訊息"
+        },
+        "cmdline": {
+            "placeholder": "選擇命令以檢視 CLI 範例",
+            "copied": "已複製",
+            "copy_failed": "複製失敗"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "尚無日誌",
+        "search_placeholder": "搜尋日誌...",
+        "pause_scroll": "暫停自動捲動",
+        "resume_scroll": "恢復自動捲動",
+        "level_all": "全部"
+    },
+    "schema": {
+        "visual": "視覺化",
+        "json": "JSON",
+        "preview": "預覽",
+        "validate": "校驗",
+        "save": "儲存",
+        "reset": "重設",
+        "unsaved_changes": "未儲存的變更",
+        "no_fields": "尚無欄位定義",
+        "add_first_field": "新增第一個欄位",
+        "add_field": "新增欄位",
+        "add_child_field": "新增子欄位",
+        "no_preview": "尚無可預覽的欄位",
+        "required": "必填",
+        "default_prefix": "預設值: ",
+        "constraints_prefix": "約束: ",
+        "child_fields": "{{count}} 個子欄位",
+        "edit_field": "編輯欄位",
+        "field_name": "欄位名稱",
+        "field_name_placeholder": "field_name",
+        "field_name_required": "欄位名稱不能為空",
+        "field_name_exists": "欄位名稱已存在",
+        "type": "類型",
+        "required_label": "必填",
+        "description": "描述",
+        "default_value": "預設值",
+        "default_placeholder": "JSON 或純文字",
+        "constraints": "約束條件",
+        "ui_hints": "UI 提示",
+        "min_length": "最小長度",
+        "max_length": "最大長度",
+        "pattern": "正規模式",
+        "pattern_placeholder": "正規表達式",
+        "min": "最小值",
+        "max": "最大值",
+        "min_items": "最少項數",
+        "max_items": "最多項數",
+        "enum_values": "列舉值",
+        "no_constraints": "此類型無可用約束。",
+        "add_option": "新增選項",
+        "option_placeholder": "選項 {{index}}",
+        "group": "分組",
+        "group_placeholder": "欄位分組名稱",
+        "order": "排序",
+        "advanced": "進階",
+        "read_only": "唯讀",
+        "placeholder": "佔位符",
+        "unit": "單位"
+    },
+    "sse": {
+        "live": "即時",
+        "connecting": "連線中",
+        "reconnecting": "重新連線中",
+        "offline": "離線",
+        "error": "錯誤",
+        "no_events": "尚無事件",
+        "last_event": "最近事件: {{time}}"
+    }
+}

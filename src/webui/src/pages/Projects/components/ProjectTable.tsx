@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Tag, Button, Space, Switch, Popconfirm, Typography } from 'antd';
 import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined, ClockCircleOutlined, ThunderboltOutlined, SyncOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,7 @@ const { Text } = Typography;
 export const ProjectTable: React.FC<ProjectTableProps> = ({
   projects, runtimes, loading, onStart, onStop, onDelete, onToggleEnabled,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const getStatus = (project: Project) => {
@@ -29,7 +31,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
 
   const columns = [
     {
-      title: 'Project Details',
+      title: t('projects.table.details'),
       key: 'details',
       render: (_: unknown, record: Project) => (
         <Space direction="vertical" size={0}>
@@ -41,7 +43,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       ),
     },
     {
-      title: 'Service Template',
+      title: t('projects.table.service_template'),
       dataIndex: 'serviceId',
       key: 'serviceId',
       render: (id: string) => (
@@ -51,7 +53,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       ),
     },
     {
-      title: 'Runtime Status',
+      title: t('projects.table.runtime_status'),
       key: 'status',
       width: 160,
       render: (_: unknown, record: Project) => {
@@ -60,24 +62,24 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         return (
           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 10, border: '1px solid var(--surface-border)' }}>
             <StatusDot status={dotStatus} size={10} />
-            <Text style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{status}</Text>
+            <Text style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{t(`common.status_${status}`, status)}</Text>
           </div>
         );
       },
     },
     {
-      title: 'Schedule',
+      title: t('projects.table.schedule'),
       key: 'schedule',
       width: 150,
       render: (_: unknown, record: Project) => {
-        const t = record.schedule?.type;
-        const icon = t === 'daemon' ? <SyncOutlined /> : t === 'fixed_rate' ? <ClockCircleOutlined /> : <ThunderboltOutlined />;
-        const color = t === 'daemon' ? 'var(--color-success)' : t === 'fixed_rate' ? 'var(--brand-primary)' : 'var(--text-tertiary)';
-        const label = t === 'fixed_rate' ? 'fixed_rate' : (t ?? 'manual');
-        const detail = t === 'fixed_rate' && record.schedule?.intervalMs
+        const sType = record.schedule?.type;
+        const icon = sType === 'daemon' ? <SyncOutlined /> : sType === 'fixed_rate' ? <ClockCircleOutlined /> : <ThunderboltOutlined />;
+        const color = sType === 'daemon' ? 'var(--color-success)' : sType === 'fixed_rate' ? 'var(--brand-primary)' : 'var(--text-tertiary)';
+        const label = sType === 'fixed_rate' ? 'fixed_rate' : (sType ?? 'manual');
+        const detail = sType === 'fixed_rate' && record.schedule?.intervalMs
           ? `${(record.schedule.intervalMs / 1000).toFixed(0)}s`
-          : t === 'daemon' && record.schedule?.restartDelayMs
-            ? `restart ${(record.schedule.restartDelayMs / 1000).toFixed(0)}s`
+          : sType === 'daemon' && record.schedule?.restartDelayMs
+            ? `${t('projects.table.restart_prefix')} ${(record.schedule.restartDelayMs / 1000).toFixed(0)}s`
             : null;
         return (
           <Space size={6}>
@@ -91,7 +93,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       },
     },
     {
-      title: 'Enabled',
+      title: t('projects.table.enabled'),
       key: 'enabled',
       width: 100,
       align: 'center' as const,
@@ -105,7 +107,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       ),
     },
     {
-      title: 'Actions',
+      title: t('projects.table.actions'),
       key: 'actions',
       align: 'right' as const,
       width: 200,
@@ -122,7 +124,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
               onClick={(e) => { e.stopPropagation(); onStart(record.id); }}
             />
             <Popconfirm
-              title="Stop project?"
+              title={t('projects.table.stop_confirm')}
               onConfirm={(e) => { e?.stopPropagation(); onStop(record.id); }}
               onCancel={(e) => e?.stopPropagation()}
             >
@@ -141,7 +143,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
               onClick={(e) => { e.stopPropagation(); navigate(`/projects/${record.id}`); }}
             />
             <Popconfirm
-              title="Delete project?"
+              title={t('projects.table.delete_confirm')}
               onConfirm={(e) => { e?.stopPropagation(); onDelete(record.id); }}
               onCancel={(e) => e?.stopPropagation()}
               okButtonProps={{ danger: true }}
@@ -169,7 +171,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         pagination={{
           pageSize: 10,
           style: { marginRight: 24, marginTop: 24 },
-          showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>Total {total} projects</Text>
+          showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>{t('projects.table.total_count', { count: total })}</Text>
         }}
         onRow={(record) => ({
           onClick: () => navigate(`/projects/${record.id}`),

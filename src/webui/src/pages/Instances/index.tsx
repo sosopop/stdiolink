@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select, Space } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useInstancesStore } from '@/stores/useInstancesStore';
@@ -8,6 +9,7 @@ import { InstancesTable } from '@/components/Instances/InstancesTable';
 const { Search } = Input;
 
 export const InstancesPage: React.FC = () => {
+  const { t } = useTranslation();
   const { instances, loading, fetchInstances, terminateInstance } = useInstancesStore();
   const { projects, fetchProjects } = useProjectsStore();
   const [search, setSearch] = useState('');
@@ -34,21 +36,21 @@ export const InstancesPage: React.FC = () => {
   return (
     <div data-testid="page-instances">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>Instances</h2>
+        <h2 style={{ margin: 0 }}>{t('instances.title')}</h2>
         <Button icon={<ReloadOutlined />} onClick={() => fetchInstances()} loading={loading} data-testid="refresh-btn">
-          Refresh
+          {t('instances.refresh')}
         </Button>
       </div>
       <Space style={{ marginBottom: 16 }} wrap>
         <Search
-          placeholder="Search by ID or Project..."
+          placeholder={t('instances.search_placeholder')}
           allowClear
           onChange={(e) => setSearch(e.target.value)}
           style={{ width: 240 }}
           data-testid="instance-search"
         />
         <Select
-          placeholder="Filter by Project"
+          placeholder={t('instances.filter_project')}
           allowClear
           onChange={(v) => setProjectFilter(v)}
           style={{ width: 180 }}
@@ -56,7 +58,7 @@ export const InstancesPage: React.FC = () => {
           data-testid="project-filter"
         />
         <Select
-          placeholder="Filter by Status"
+          placeholder={t('instances.filter_status')}
           allowClear
           onChange={(v) => setStatusFilter(v)}
           style={{ width: 140 }}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Tag, Button, Space, Typography } from 'antd';
 import {
   EditOutlined,
@@ -38,6 +39,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
   onMove,
   onAddChild,
 }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const desc = field.descriptor;
   const hasChildren = desc.type === 'object' && field.children && field.children.length > 0;
@@ -77,19 +79,19 @@ export const FieldCard: React.FC<FieldCardProps> = ({
               )}
               <Text strong>{field.name}</Text>
               <Tag>{desc.type ?? 'any'}</Tag>
-              {desc.required && <Tag color="red">required</Tag>}
+              {desc.required && <Tag color="red">{t('schema.required')}</Tag>}
             </Space>
             {desc.description && (
               <div><Text type="secondary" style={{ fontSize: 12 }}>{desc.description}</Text></div>
             )}
             {desc.default !== undefined && (
-              <div><Text type="secondary" style={{ fontSize: 12 }}>Default: {JSON.stringify(desc.default)}</Text></div>
+              <div><Text type="secondary" style={{ fontSize: 12 }}>{t('schema.default_prefix')}{JSON.stringify(desc.default)}</Text></div>
             )}
             {cs && (
-              <div><Text type="secondary" style={{ fontSize: 12 }}>Constraints: {cs}</Text></div>
+              <div><Text type="secondary" style={{ fontSize: 12 }}>{t('schema.constraints_prefix')}{cs}</Text></div>
             )}
             {hasChildren && !expanded && (
-              <div><Text type="secondary" style={{ fontSize: 12 }}>{field.children!.length} child field(s)</Text></div>
+              <div><Text type="secondary" style={{ fontSize: 12 }}>{t('schema.child_fields', { count: field.children!.length })}</Text></div>
             )}
           </div>
           <Space size={4}>
@@ -153,7 +155,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
               style={{ marginLeft: (level + 1) * 24, marginTop: 4 }}
               data-testid={`field-add-child-${path}`}
             >
-              Add Child Field
+              {t('schema.add_child_field')}
             </Button>
           )}
         </div>

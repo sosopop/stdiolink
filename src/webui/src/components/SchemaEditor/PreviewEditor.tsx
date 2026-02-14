@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Empty } from 'antd';
 import { SchemaForm } from '@/components/SchemaForm/SchemaForm';
 import { useSchemaEditorStore } from '@/stores/useSchemaEditorStore';
@@ -38,12 +39,13 @@ function nodesToFieldMeta(nodes: SchemaNode[]): FieldMeta[] {
 }
 
 export const PreviewEditor: React.FC = () => {
+  const { t } = useTranslation();
   const { nodes } = useSchemaEditorStore();
 
   const fields = useMemo(() => nodesToFieldMeta(nodes), [nodes]);
 
   if (fields.length === 0) {
-    return <Empty description="No fields to preview" data-testid="preview-empty" />;
+    return <Empty description={t('schema.no_preview')} data-testid="preview-empty" />;
   }
 
   return (

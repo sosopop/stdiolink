@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Tag } from 'antd';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import { instancesApi } from '@/api/instances';
@@ -9,6 +10,7 @@ interface ProjectInstancesProps {
 }
 
 export const ProjectInstances: React.FC<ProjectInstancesProps> = ({ projectId }) => {
+  const { t } = useTranslation();
   const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,23 +31,23 @@ export const ProjectInstances: React.FC<ProjectInstancesProps> = ({ projectId })
 
   const columns = [
     {
-      title: 'ID',
+      title: t('projects.instances_tab.id'),
       dataIndex: 'id',
       key: 'id',
     },
     {
-      title: 'Status',
+      title: t('projects.instances_tab.status'),
       dataIndex: 'status',
       key: 'status',
       render: (s: string) => (
         <span>
           <StatusDot status={s === 'running' ? 'running' : s === 'error' ? 'error' : 'stopped'} />
-          {' '}{s}
+          {' '}{t(`common.status_${s}`, s)}
         </span>
       ),
     },
     {
-      title: 'PID',
+      title: t('projects.instances_tab.pid'),
       dataIndex: 'pid',
       key: 'pid',
       render: (v: number) => <Tag>{v}</Tag>,

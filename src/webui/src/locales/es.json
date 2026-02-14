@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "Iniciar",
+        "stop": "Detener",
+        "restart": "Reiniciar",
+        "configure": "Configurar",
+        "details": "Detalles",
+        "terminate": "Terminar",
+        "view_trace": "Ver traza",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "status": "Estado",
+        "save": "Guardar",
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "create": "Crear",
+        "search": "Buscar",
+        "running": "En ejecución",
+        "stopped": "Detenido",
+        "error": "Error",
+        "yes": "Sí",
+        "no": "No",
+        "retry": "Reintentar",
+        "reload": "Recargar",
+        "actions": "Acciones",
+        "view_all": "Ver todo",
+        "view_detail": "Ver detalle",
+        "lab": "Laboratorio",
+        "status_running": "En ejecución",
+        "status_stopped": "Detenido",
+        "status_starting": "Iniciando",
+        "status_stopping": "Deteniendo",
+        "status_failed": "Fallido",
+        "status_crashed": "Caído",
+        "status_invalid": "Inválido"
+    },
+    "layout": {
+        "dashboard": "Panel de control",
+        "services": "Servicios",
+        "projects": "Proyectos",
+        "instances": "Instancias",
+        "drivers": "Drivers",
+        "driver_lab": "Driver Lab"
+    },
+    "dashboard": {
+        "loading": "Cargando centro de control...",
+        "title": "Centro de control",
+        "subtitle": "Telemetría del sistema en tiempo real y orquestación de proyectos",
+        "active_projects": "Proyectos activos",
+        "new_project": "Nuevo proyecto",
+        "empty_projects": "No hay proyectos configurados. Comience creando su primer proyecto.",
+        "live_instances": "Instancias activas",
+        "terminate_confirm": "¿Terminar el proceso?",
+        "no_instances": "No se detectaron hilos de ejecución activos",
+        "kpi": {
+            "projects": "Proyectos",
+            "instances": "Instancias",
+            "services": "Servicios",
+            "drivers": "Drivers",
+            "uptime": "Tiempo activo",
+            "enabled": "habilitados",
+            "running": "en ejecución"
+        },
+        "titles": {
+            "active_projects": "Proyectos activos",
+            "live_instances": "Instancias activas",
+            "event_feed": "Registro de eventos",
+            "empty_events": "No se registraron eventos"
+        },
+        "table": {
+            "lifecycle": "Ciclo de vida",
+            "target_project": "Proyecto destino",
+            "system_pid": "PID del sistema",
+            "uptime": "Tiempo activo"
+        },
+        "project_card": {
+            "instances": "INSTANCIAS",
+            "strategy": "ESTRATEGIA",
+            "status": "ESTADO",
+            "service": "SERVICIO"
+        }
+    },
+    "projects": {
+        "title": "Proyectos",
+        "new_project": "Nuevo proyecto",
+        "search_placeholder": "Buscar proyectos...",
+        "service_filter": "Servicio",
+        "status_filter": "Estado",
+        "create_wizard": {
+            "title": "Crear proyecto",
+            "step_service": "Servicio",
+            "step_info": "Información",
+            "step_config": "Configuración",
+            "step_schedule": "Programación",
+            "project_id": "ID del proyecto",
+            "name": "Nombre",
+            "enabled": "Habilitado",
+            "next": "Siguiente",
+            "create": "Crear",
+            "success": "Proyecto creado correctamente",
+            "fail": "Error al crear el proyecto"
+        },
+        "detail": {
+            "overview": "Resumen",
+            "config": "Configuración",
+            "instances": "Instancias",
+            "logs": "Registros",
+            "schedule": "Programación",
+            "not_found": "Proyecto no encontrado"
+        },
+        "logs": {
+            "refresh": "Actualizar"
+        },
+        "schedule": {
+            "save": "Guardar programación",
+            "save_success": "Programación guardada",
+            "save_fail": "Error al guardar la programación",
+            "type": "Tipo de programación",
+            "manual": "Manual",
+            "daemon": "Demonio",
+            "fixed_rate": "Tasa fija",
+            "restart_delay": "Retardo de reinicio (ms)",
+            "max_failures": "Máximo de fallos consecutivos",
+            "interval": "Intervalo (ms)",
+            "max_concurrent": "Máximo concurrente"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "Estado",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "Detalles del proyecto",
+            "service_template": "Plantilla de servicio",
+            "runtime_status": "Estado en tiempo de ejecución",
+            "schedule": "Programación",
+            "enabled": "Habilitado",
+            "actions": "Acciones",
+            "total_count": "Total {{count}} proyectos",
+            "stop_confirm": "¿Detener el proyecto?",
+            "delete_confirm": "¿Eliminar el proyecto?",
+            "restart_prefix": "reiniciar"
+        },
+        "overview": {
+            "start_project": "Iniciar proyecto",
+            "stop_confirm": "¿Detener este proyecto?",
+            "project_id": "ID del proyecto",
+            "display_name": "Nombre para mostrar",
+            "service_template": "Plantilla de servicio",
+            "enabled": "Habilitado",
+            "validation": "Validación",
+            "pass": "Aprobado",
+            "fail": "Fallido",
+            "schedule_strategy": "Estrategia de programación",
+            "active_instances": "Instancias activas",
+            "consecutive_failures": "Fallos consecutivos"
+        }
+    },
+    "services": {
+        "title": "Servicios",
+        "new_service": "Nuevo servicio",
+        "search_placeholder": "Buscar servicios...",
+        "scan": "Escanear",
+        "detail": {
+            "overview": "Resumen",
+            "files": "Archivos",
+            "schema": "Esquema",
+            "projects": "Proyectos",
+            "not_found": "Servicio no encontrado"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "Nombre",
+            "version": "Versión",
+            "description": "Descripción",
+            "author": "Autor",
+            "directory": "Directorio",
+            "has_schema": "Tiene esquema",
+            "projects": "Proyectos"
+        },
+        "files": {
+            "explorer": "Explorador de archivos",
+            "unsaved": "Sin guardar",
+            "reset": "Restablecer",
+            "save_changes": "Guardar cambios",
+            "no_file": "Seleccione un archivo para comenzar a editar",
+            "load_fail": "Error al cargar los archivos",
+            "read_fail": "Error al leer el archivo",
+            "save_success": "Archivo guardado",
+            "save_fail": "Error al guardar el archivo",
+            "create_success": "Archivo creado",
+            "create_fail": "Error al crear el archivo",
+            "delete_success": "Archivo eliminado",
+            "delete_fail": "Error al eliminar el archivo"
+        },
+        "table": {
+            "service_template": "Plantilla de servicio",
+            "version": "Versión",
+            "active_projects": "Proyectos activos",
+            "instances": "instancias",
+            "actions": "Acciones",
+            "delete_confirm": "¿Eliminar el servicio?",
+            "delete_used": "Esta plantilla es utilizada por {{count}} proyectos.",
+            "delete_unused": "¿Está seguro de que desea eliminar esta plantilla?",
+            "total_count": "{{count}} plantillas disponibles"
+        }
+    },
+    "instances": {
+        "title": "Instancias",
+        "refresh": "Actualizar",
+        "search_placeholder": "Buscar por ID o proyecto...",
+        "filter_project": "Filtrar por proyecto",
+        "filter_status": "Filtrar por estado",
+        "table": {
+            "id": "ID",
+            "project": "Proyecto",
+            "service": "Servicio",
+            "status": "Estado",
+            "pid": "PID",
+            "uptime": "Tiempo activo",
+            "actions": "Acciones",
+            "detail": "Detalle",
+            "terminate_confirm": "¿Terminar esta instancia?"
+        },
+        "detail": {
+            "trace": "Traza de instancia",
+            "terminate_btn": "Terminar proceso",
+            "overview": "Resumen",
+            "process_tree": "Árbol de procesos",
+            "resources": "Recursos",
+            "logs": "Registros",
+            "refresh_logs": "Actualizar registros",
+            "not_found": "Instancia no encontrada",
+            "instance_id": "ID de instancia",
+            "project": "Proyecto",
+            "started_at": "Iniciado en",
+            "working_dir": "Directorio de trabajo",
+            "loading": "Rastreando ciclo de vida del proceso...",
+            "terminate_confirm": "¿Terminar esta instancia?"
+        }
+    },
+    "drivers": {
+        "title": "Drivers",
+        "scan": "Escanear",
+        "refresh": "Actualizar",
+        "search_placeholder": "Buscar por ID o nombre...",
+        "empty": "No se encontraron drivers. Intente escanear el directorio de drivers.",
+        "table": {
+            "driver": "Driver",
+            "version": "Versión",
+            "executable_path": "Ruta del ejecutable",
+            "actions": "Acciones"
+        },
+        "detail": {
+            "not_found": "Driver no encontrado",
+            "metadata": "Metadatos",
+            "no_metadata": "No hay metadatos disponibles",
+            "commands": "Comandos",
+            "no_commands": "No hay comandos definidos",
+            "docs": "Documentación",
+            "test_in_lab": "Probar en DriverLab",
+            "no_docs": "No hay documentación disponible"
+        },
+        "info": {
+            "id": "ID",
+            "name": "Nombre",
+            "version": "Versión",
+            "vendor": "Proveedor",
+            "description": "Descripción",
+            "capabilities": "Capacidades",
+            "profiles": "Perfiles"
+        },
+        "command": {
+            "test": "Probar",
+            "returns": "Retorna: "
+        },
+        "params": {
+            "empty": "Sin parámetros",
+            "name": "Nombre",
+            "type": "Tipo",
+            "required": "Requerido",
+            "default": "Predeterminado",
+            "description": "Descripción"
+        }
+    },
+    "driverlab": {
+        "title": "Driver Lab",
+        "subtitle": "Depurador interactivo de protocolo y entorno de pruebas",
+        "command_palette": "Paleta de comandos",
+        "protocol_stream": "Flujo de protocolo",
+        "auto_scroll": "Desplazamiento automático",
+        "connection": {
+            "target_driver": "Driver destino",
+            "select_driver": "Seleccionar un driver",
+            "mode": "Modo",
+            "oneshot": "OneShot",
+            "keepalive": "KeepAlive",
+            "arguments": "Argumentos",
+            "args_placeholder": "arg1, arg2, ...",
+            "connecting": "Conectando...",
+            "connect": "Conectar",
+            "disconnect": "Desconectar"
+        },
+        "command": {
+            "waiting_meta": "Esperando metadatos del driver...",
+            "select_command": "Seleccionar comando",
+            "select_placeholder": "Seleccionar comando",
+            "execute": "Ejecutar",
+            "no_params": "Sin parámetros para este comando"
+        },
+        "toolbar": {
+            "clear": "Limpiar",
+            "export_json": "Exportar JSON"
+        },
+        "status": {
+            "status": "Estado:",
+            "pid": "PID:",
+            "mode": "Modo:",
+            "uptime": "Tiempo activo:",
+            "connected": "Conectado",
+            "connecting": "Conectando",
+            "disconnected": "Desconectado",
+            "error": "Error"
+        },
+        "stream": {
+            "no_messages": "Aún no hay mensajes"
+        },
+        "cmdline": {
+            "placeholder": "Seleccione un comando para ver el ejemplo de CLI",
+            "copied": "Copiado",
+            "copy_failed": "Error al copiar"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "No hay registros disponibles",
+        "search_placeholder": "Buscar registros...",
+        "pause_scroll": "Pausar desplazamiento automático",
+        "resume_scroll": "Reanudar desplazamiento automático",
+        "level_all": "TODOS"
+    },
+    "schema": {
+        "visual": "Visual",
+        "json": "JSON",
+        "preview": "Vista previa",
+        "validate": "Validar",
+        "save": "Guardar",
+        "reset": "Restablecer",
+        "unsaved_changes": "Cambios sin guardar",
+        "no_fields": "No hay campos definidos",
+        "add_first_field": "Agregar primer campo",
+        "add_field": "Agregar campo",
+        "add_child_field": "Agregar campo hijo",
+        "no_preview": "No hay campos para previsualizar",
+        "required": "requerido",
+        "default_prefix": "Predeterminado: ",
+        "constraints_prefix": "Restricciones: ",
+        "child_fields": "{{count}} campo(s) hijo(s)",
+        "edit_field": "Editar campo",
+        "field_name": "Nombre del campo",
+        "field_name_placeholder": "nombre_campo",
+        "field_name_required": "El nombre del campo es obligatorio",
+        "field_name_exists": "El nombre del campo ya existe",
+        "type": "Tipo",
+        "required_label": "Requerido",
+        "description": "Descripción",
+        "default_value": "Valor predeterminado",
+        "default_placeholder": "JSON o texto plano",
+        "constraints": "Restricciones",
+        "ui_hints": "Indicaciones de interfaz",
+        "min_length": "Longitud mínima",
+        "max_length": "Longitud máxima",
+        "pattern": "Patrón",
+        "pattern_placeholder": "Expresión regular",
+        "min": "Mín",
+        "max": "Máx",
+        "min_items": "Mínimo de elementos",
+        "max_items": "Máximo de elementos",
+        "enum_values": "Valores de enumeración",
+        "no_constraints": "No hay restricciones disponibles para este tipo.",
+        "add_option": "Agregar opción",
+        "option_placeholder": "Opción {{index}}",
+        "group": "Grupo",
+        "group_placeholder": "Nombre del grupo de campos",
+        "order": "Orden",
+        "advanced": "Avanzado",
+        "read_only": "Solo lectura",
+        "placeholder": "Marcador de posición",
+        "unit": "Unidad"
+    },
+    "sse": {
+        "live": "En vivo",
+        "connecting": "Conectando",
+        "reconnecting": "Reconectando",
+        "offline": "Sin conexión",
+        "error": "Error",
+        "no_events": "No se recibieron eventos",
+        "last_event": "Último evento: {{time}}"
+    }
+}

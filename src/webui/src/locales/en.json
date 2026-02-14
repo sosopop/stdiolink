@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "Start",
+        "stop": "Stop",
+        "restart": "Restart",
+        "configure": "Configure",
+        "details": "Details",
+        "terminate": "Terminate",
+        "view_trace": "View Trace",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "status": "Status",
+        "save": "Save",
+        "delete": "Delete",
+        "edit": "Edit",
+        "create": "Create",
+        "search": "Search",
+        "running": "Running",
+        "stopped": "Stopped",
+        "error": "Error",
+        "yes": "Yes",
+        "no": "No",
+        "retry": "Retry",
+        "reload": "Reload",
+        "actions": "Actions",
+        "view_all": "View All",
+        "view_detail": "View Detail",
+        "lab": "Lab",
+        "status_running": "Running",
+        "status_stopped": "Stopped",
+        "status_starting": "Starting",
+        "status_stopping": "Stopping",
+        "status_failed": "Failed",
+        "status_crashed": "Crashed",
+        "status_invalid": "Invalid"
+    },
+    "layout": {
+        "dashboard": "Dashboard",
+        "services": "Services",
+        "projects": "Projects",
+        "instances": "Instances",
+        "drivers": "Drivers",
+        "driver_lab": "Driver Lab"
+    },
+    "dashboard": {
+        "loading": "Loading mission control...",
+        "title": "Mission Control",
+        "subtitle": "Real-time system telemetry and project orchestration",
+        "active_projects": "Active Projects",
+        "new_project": "New Project",
+        "empty_projects": "No projects configured. Get started by creating your first project.",
+        "live_instances": "Live Instances",
+        "terminate_confirm": "Terminate process?",
+        "no_instances": "No active execution threads detected",
+        "kpi": {
+            "projects": "Projects",
+            "instances": "Instances",
+            "services": "Services",
+            "drivers": "Drivers",
+            "uptime": "Uptime",
+            "enabled": "enabled",
+            "running": "running"
+        },
+        "titles": {
+            "active_projects": "Active Projects",
+            "live_instances": "Live Instances",
+            "event_feed": "Event Feed",
+            "empty_events": "No events recorded"
+        },
+        "table": {
+            "lifecycle": "Lifecycle",
+            "target_project": "Target Project",
+            "system_pid": "System PID",
+            "uptime": "Uptime"
+        },
+        "project_card": {
+            "instances": "INSTANCES",
+            "strategy": "STRATEGY",
+            "status": "STATUS",
+            "service": "SERVICE"
+        }
+    },
+    "projects": {
+        "title": "Projects",
+        "new_project": "New Project",
+        "search_placeholder": "Search projects...",
+        "service_filter": "Service",
+        "status_filter": "Status",
+        "create_wizard": {
+            "title": "Create Project",
+            "step_service": "Service",
+            "step_info": "Info",
+            "step_config": "Config",
+            "step_schedule": "Schedule",
+            "project_id": "Project ID",
+            "name": "Name",
+            "enabled": "Enabled",
+            "next": "Next",
+            "create": "Create",
+            "success": "Project created successfully",
+            "fail": "Failed to create project"
+        },
+        "detail": {
+            "overview": "Overview",
+            "config": "Config",
+            "instances": "Instances",
+            "logs": "Logs",
+            "schedule": "Schedule",
+            "not_found": "Project not found"
+        },
+        "logs": {
+            "refresh": "Refresh"
+        },
+        "schedule": {
+            "save": "Save Schedule",
+            "save_success": "Schedule saved",
+            "save_fail": "Failed to save schedule",
+            "type": "Schedule Type",
+            "manual": "Manual",
+            "daemon": "Daemon",
+            "fixed_rate": "Fixed Rate",
+            "restart_delay": "Restart Delay (ms)",
+            "max_failures": "Max Consecutive Failures",
+            "interval": "Interval (ms)",
+            "max_concurrent": "Max Concurrent"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "Status",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "Project Details",
+            "service_template": "Service Template",
+            "runtime_status": "Runtime Status",
+            "schedule": "Schedule",
+            "enabled": "Enabled",
+            "actions": "Actions",
+            "total_count": "Total {{count}} projects",
+            "stop_confirm": "Stop project?",
+            "delete_confirm": "Delete project?",
+            "restart_prefix": "restart"
+        },
+        "overview": {
+            "start_project": "Start Project",
+            "stop_confirm": "Stop this project?",
+            "project_id": "Project ID",
+            "display_name": "Display Name",
+            "service_template": "Service Template",
+            "enabled": "Enabled",
+            "validation": "Validation",
+            "pass": "Pass",
+            "fail": "Fail",
+            "schedule_strategy": "Schedule Strategy",
+            "active_instances": "Active Instances",
+            "consecutive_failures": "Consecutive Failures"
+        }
+    },
+    "services": {
+        "title": "Services",
+        "new_service": "New Service",
+        "search_placeholder": "Search services...",
+        "scan": "Scan",
+        "detail": {
+            "overview": "Overview",
+            "files": "Files",
+            "schema": "Schema",
+            "projects": "Projects",
+            "not_found": "Service not found"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "Name",
+            "version": "Version",
+            "description": "Description",
+            "author": "Author",
+            "directory": "Directory",
+            "has_schema": "Has Schema",
+            "projects": "Projects"
+        },
+        "files": {
+            "explorer": "File Explorer",
+            "unsaved": "Unsaved",
+            "reset": "Reset",
+            "save_changes": "Save Changes",
+            "no_file": "Select a file to start editing",
+            "load_fail": "Failed to load files",
+            "read_fail": "Failed to read file",
+            "save_success": "File saved",
+            "save_fail": "Failed to save file",
+            "create_success": "File created",
+            "create_fail": "Failed to create file",
+            "delete_success": "File deleted",
+            "delete_fail": "Failed to delete file"
+        },
+        "table": {
+            "service_template": "Service Template",
+            "version": "Version",
+            "active_projects": "Active Projects",
+            "instances": "instances",
+            "actions": "Actions",
+            "delete_confirm": "Delete service?",
+            "delete_used": "This template is used by {{count}} projects.",
+            "delete_unused": "Are you sure you want to delete this template?",
+            "total_count": "{{count}} templates available"
+        }
+    },
+    "instances": {
+        "title": "Instances",
+        "refresh": "Refresh",
+        "search_placeholder": "Search by ID or Project...",
+        "filter_project": "Filter by Project",
+        "filter_status": "Filter by Status",
+        "table": {
+            "id": "ID",
+            "project": "Project",
+            "service": "Service",
+            "status": "Status",
+            "pid": "PID",
+            "uptime": "Uptime",
+            "actions": "Actions",
+            "detail": "Detail",
+            "terminate_confirm": "Terminate this instance?"
+        },
+        "detail": {
+            "trace": "Instance Trace",
+            "terminate_btn": "Terminate Process",
+            "overview": "Overview",
+            "process_tree": "Process Tree",
+            "resources": "Resources",
+            "logs": "Logs",
+            "refresh_logs": "Refresh Logs",
+            "not_found": "Instance not found",
+            "instance_id": "Instance ID",
+            "project": "Project",
+            "started_at": "Started At",
+            "working_dir": "Working Dir",
+            "loading": "Tracing process lifecycle...",
+            "terminate_confirm": "Terminate this instance?"
+        }
+    },
+    "drivers": {
+        "title": "Drivers",
+        "scan": "Scan",
+        "refresh": "Refresh",
+        "search_placeholder": "Search by ID or name...",
+        "empty": "No drivers found. Try scanning the drivers directory.",
+        "table": {
+            "driver": "Driver",
+            "version": "Version",
+            "executable_path": "Executable Path",
+            "actions": "Actions"
+        },
+        "detail": {
+            "not_found": "Driver not found",
+            "metadata": "Metadata",
+            "no_metadata": "No metadata available",
+            "commands": "Commands",
+            "no_commands": "No commands defined",
+            "docs": "Docs",
+            "test_in_lab": "Test in DriverLab",
+            "no_docs": "No documentation available"
+        },
+        "info": {
+            "id": "ID",
+            "name": "Name",
+            "version": "Version",
+            "vendor": "Vendor",
+            "description": "Description",
+            "capabilities": "Capabilities",
+            "profiles": "Profiles"
+        },
+        "command": {
+            "test": "Test",
+            "returns": "Returns: "
+        },
+        "params": {
+            "empty": "No parameters",
+            "name": "Name",
+            "type": "Type",
+            "required": "Required",
+            "default": "Default",
+            "description": "Description"
+        }
+    },
+    "driverlab": {
+        "title": "Driver Lab",
+        "subtitle": "Interactive protocol debugger & playground",
+        "command_palette": "Command Palette",
+        "protocol_stream": "Protocol Stream",
+        "auto_scroll": "Auto-scroll",
+        "connection": {
+            "target_driver": "Target Driver",
+            "select_driver": "Select a driver",
+            "mode": "Mode",
+            "oneshot": "OneShot",
+            "keepalive": "KeepAlive",
+            "arguments": "Arguments",
+            "args_placeholder": "arg1, arg2, ...",
+            "connecting": "Connecting...",
+            "connect": "Connect",
+            "disconnect": "Disconnect"
+        },
+        "command": {
+            "waiting_meta": "Waiting for driver metadata...",
+            "select_command": "Select Command",
+            "select_placeholder": "Select command",
+            "execute": "Execute",
+            "no_params": "No parameters for this command"
+        },
+        "toolbar": {
+            "clear": "Clear",
+            "export_json": "Export JSON"
+        },
+        "status": {
+            "status": "Status:",
+            "pid": "PID:",
+            "mode": "Mode:",
+            "uptime": "Uptime:",
+            "connected": "Connected",
+            "connecting": "Connecting",
+            "disconnected": "Disconnected",
+            "error": "Error"
+        },
+        "stream": {
+            "no_messages": "No messages yet"
+        },
+        "cmdline": {
+            "placeholder": "Select a command to see the CLI example",
+            "copied": "Copied",
+            "copy_failed": "Copy failed"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "No logs available",
+        "search_placeholder": "Search logs...",
+        "pause_scroll": "Pause Auto-scroll",
+        "resume_scroll": "Resume Auto-scroll",
+        "level_all": "ALL"
+    },
+    "schema": {
+        "visual": "Visual",
+        "json": "JSON",
+        "preview": "Preview",
+        "validate": "Validate",
+        "save": "Save",
+        "reset": "Reset",
+        "unsaved_changes": "Unsaved changes",
+        "no_fields": "No fields defined",
+        "add_first_field": "Add First Field",
+        "add_field": "Add Field",
+        "add_child_field": "Add Child Field",
+        "no_preview": "No fields to preview",
+        "required": "required",
+        "default_prefix": "Default: ",
+        "constraints_prefix": "Constraints: ",
+        "child_fields": "{{count}} child field(s)",
+        "edit_field": "Edit Field",
+        "field_name": "Field Name",
+        "field_name_placeholder": "field_name",
+        "field_name_required": "Field name is required",
+        "field_name_exists": "Field name already exists",
+        "type": "Type",
+        "required_label": "Required",
+        "description": "Description",
+        "default_value": "Default Value",
+        "default_placeholder": "JSON or plain text",
+        "constraints": "Constraints",
+        "ui_hints": "UI Hints",
+        "min_length": "Min Length",
+        "max_length": "Max Length",
+        "pattern": "Pattern",
+        "pattern_placeholder": "Regular expression",
+        "min": "Min",
+        "max": "Max",
+        "min_items": "Min Items",
+        "max_items": "Max Items",
+        "enum_values": "Enum Values",
+        "no_constraints": "No constraints available for this type.",
+        "add_option": "Add Option",
+        "option_placeholder": "Option {{index}}",
+        "group": "Group",
+        "group_placeholder": "Field group name",
+        "order": "Order",
+        "advanced": "Advanced",
+        "read_only": "Read Only",
+        "placeholder": "Placeholder",
+        "unit": "Unit"
+    },
+    "sse": {
+        "live": "Live",
+        "connecting": "Connecting",
+        "reconnecting": "Reconnecting",
+        "offline": "Offline",
+        "error": "Error",
+        "no_events": "No events received",
+        "last_event": "Last event: {{time}}"
+    }
+}

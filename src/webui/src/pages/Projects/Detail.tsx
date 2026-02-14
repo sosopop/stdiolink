@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Tabs, Spin, Alert, Empty } from 'antd';
 import { useProjectsStore } from '@/stores/useProjectsStore';
@@ -10,6 +11,7 @@ import { ProjectLogs } from './components/ProjectLogs';
 import { ProjectSchedule } from './components/ProjectSchedule';
 
 export const ProjectDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab');
@@ -34,12 +36,12 @@ export const ProjectDetailPage: React.FC = () => {
 
   if (loading) return <Spin data-testid="detail-loading" />;
   if (error) return <Alert type="error" message={error} data-testid="detail-error" />;
-  if (!currentProject) return <Empty description="Project not found" data-testid="detail-not-found" />;
+  if (!currentProject) return <Empty description={t('projects.detail.not_found')} data-testid="detail-not-found" />;
 
   const items = [
     {
       key: 'overview',
-      label: 'Overview',
+      label: t('projects.detail.overview'),
       children: (
         <ProjectOverview
           project={currentProject}
@@ -52,7 +54,7 @@ export const ProjectDetailPage: React.FC = () => {
     },
     {
       key: 'config',
-      label: 'Config',
+      label: t('projects.detail.config'),
       children: (
         <ProjectConfig
           config={currentProject.config}
@@ -63,17 +65,17 @@ export const ProjectDetailPage: React.FC = () => {
     },
     {
       key: 'instances',
-      label: 'Instances',
+      label: t('projects.detail.instances'),
       children: <ProjectInstances projectId={currentProject.id} />,
     },
     {
       key: 'logs',
-      label: 'Logs',
+      label: t('projects.detail.logs'),
       children: <ProjectLogs projectId={currentProject.id} />,
     },
     {
       key: 'schedule',
-      label: 'Schedule',
+      label: t('projects.detail.schedule'),
       children: (
         <ProjectSchedule
           schedule={currentProject.schedule}

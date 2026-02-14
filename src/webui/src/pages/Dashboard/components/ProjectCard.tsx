@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Button, Tooltip } from 'antd';
 import { PlayCircleOutlined, StopOutlined, EyeOutlined, SettingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +15,7 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onStart, onStop }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const status = runtime?.status || (project.valid ? 'stopped' : 'invalid');
@@ -40,24 +42,24 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
       <div className={styles.projectCardBody}>
         <div className={styles.projectMetaGrid}>
           <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>INSTANCES</span>
+            <span className={styles.metaLabel}>{t('dashboard.project_card.instances')}</span>
             <span className={styles.metaValue}>{runtime?.runningInstances || 0}</span>
           </div>
           <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>STRATEGY</span>
+            <span className={styles.metaLabel}>{t('dashboard.project_card.strategy')}</span>
             <span className={styles.metaValue} style={{ textTransform: 'capitalize' }}>{project.schedule.type}</span>
           </div>
           <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>STATUS</span>
+            <span className={styles.metaLabel}>{t('dashboard.project_card.status')}</span>
             <span className={styles.metaValue} style={{
               color: isRunning ? 'var(--color-success)' : 'var(--text-tertiary)',
               fontWeight: 700
             }}>
-              {status}
+              {t(`common.status_${status}`, status)}
             </span>
           </div>
           <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>SERVICE</span>
+            <span className={styles.metaLabel}>{t('dashboard.project_card.service')}</span>
             <div className={styles.serviceTag} title={project.serviceId}>{project.serviceId}</div>
           </div>
         </div>
@@ -66,7 +68,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
       <div className={styles.projectCardActions} onClick={(e) => e.stopPropagation()}>
         <div className={styles.actionGroup}>
           {isRunning ? (
-            <Tooltip title="Stop Project">
+            <Tooltip title={t('common.stop')}>
               <Button
                 type="text"
                 danger
@@ -76,7 +78,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
               />
             </Tooltip>
           ) : (
-            <Tooltip title="Start Project">
+            <Tooltip title={t('common.start')}>
               <Button
                 type="text"
                 icon={<PlayCircleOutlined style={{ color: canStart ? 'var(--color-success)' : 'inherit', opacity: canStart ? 1 : 0.3 }} />}
@@ -86,7 +88,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
               />
             </Tooltip>
           )}
-          <Tooltip title="Configure">
+          <Tooltip title={t('common.configure')}>
             <Button
               type="text"
               icon={<SettingOutlined />}
@@ -103,7 +105,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
           icon={<EyeOutlined />}
           onClick={() => navigate(`/projects/${project.id}`)}
         >
-          Details
+          {t('common.details')}
         </Button>
       </div>
     </Card>

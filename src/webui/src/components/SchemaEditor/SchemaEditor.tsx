@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs } from 'antd';
 import { useSchemaEditorStore } from '@/stores/useSchemaEditorStore';
 import { VisualEditor } from './VisualEditor';
@@ -11,6 +12,7 @@ interface SchemaEditorProps {
 }
 
 export const SchemaEditor: React.FC<SchemaEditorProps> = ({ serviceId }) => {
+  const { t } = useTranslation();
   const { activeMode, setActiveMode, loadSchema } = useSchemaEditorStore();
 
   useEffect(() => {
@@ -20,17 +22,17 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({ serviceId }) => {
   const items = [
     {
       key: 'visual',
-      label: 'Visual',
+      label: t('schema.visual'),
       children: <VisualEditor />,
     },
     {
       key: 'json',
-      label: 'JSON',
+      label: t('schema.json'),
       children: <JsonEditor />,
     },
     {
       key: 'preview',
-      label: 'Preview',
+      label: t('schema.preview'),
       children: <PreviewEditor />,
     },
   ];

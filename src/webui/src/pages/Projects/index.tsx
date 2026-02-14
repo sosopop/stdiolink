@@ -11,7 +11,10 @@ import type { ServiceDetail } from '@/types/service';
 
 const { Search } = Input;
 
+import { useTranslation } from 'react-i18next';
+
 export const ProjectsPage: React.FC = () => {
+  const { t } = useTranslation();
   const {
     projects, runtimes, loading, error,
     fetchProjects, fetchRuntimes, startProject, stopProject, deleteProject, setEnabled, createProject,
@@ -74,14 +77,14 @@ export const ProjectsPage: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Space>
           <Search
-            placeholder="Search projects..."
+            placeholder={t('projects.search_placeholder')}
             allowClear
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 240 }}
             data-testid="search-input"
           />
           <Select
-            placeholder="Service"
+            placeholder={t('projects.service_filter')}
             allowClear
             onChange={(v) => setServiceFilter(v ?? null)}
             options={services.map((s) => ({ label: s.name, value: s.id }))}
@@ -89,20 +92,20 @@ export const ProjectsPage: React.FC = () => {
             data-testid="service-filter"
           />
           <Select
-            placeholder="Status"
+            placeholder={t('projects.status_filter')}
             allowClear
             onChange={(v) => setStatusFilter(v ?? null)}
             options={[
-              { label: 'Running', value: 'running' },
-              { label: 'Stopped', value: 'stopped' },
-              { label: 'Error', value: 'error' },
+              { label: t('common.running'), value: 'running' },
+              { label: t('common.stopped'), value: 'stopped' },
+              { label: t('common.error'), value: 'error' },
             ]}
             style={{ width: 120 }}
             data-testid="status-filter"
           />
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)} data-testid="create-btn">
-          New Project
+          {t('projects.new_project')}
         </Button>
       </div>
       {loading && projects.length === 0 ? (

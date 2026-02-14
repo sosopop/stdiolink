@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Badge, Popconfirm, Button, Space } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import type { Instance } from '@/types/instance';
@@ -26,45 +27,46 @@ interface InstancesTableProps {
 }
 
 export const InstancesTable: React.FC<InstancesTableProps> = ({ instances, onTerminate }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const columns = [
     {
-      title: 'ID',
+      title: t('instances.table.id'),
       dataIndex: 'id',
       key: 'id',
       ellipsis: true,
       width: 180,
     },
     {
-      title: 'Project',
+      title: t('instances.table.project'),
       dataIndex: 'projectId',
       key: 'projectId',
       width: 140,
     },
     {
-      title: 'Service',
+      title: t('instances.table.service'),
       dataIndex: 'serviceId',
       key: 'serviceId',
       width: 140,
     },
     {
-      title: 'Status',
+      title: t('instances.table.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status: string) => (
-        <Badge status={statusMap[status] || 'default'} text={status} data-testid="instance-status" />
+        <Badge status={statusMap[status] || 'default'} text={t(`common.status_${status}`, status)} data-testid="instance-status" />
       ),
     },
     {
-      title: 'PID',
+      title: t('instances.table.pid'),
       dataIndex: 'pid',
       key: 'pid',
       width: 80,
     },
     {
-      title: 'Uptime',
+      title: t('instances.table.uptime'),
       dataIndex: 'startedAt',
       key: 'uptime',
       width: 100,
@@ -73,21 +75,21 @@ export const InstancesTable: React.FC<InstancesTableProps> = ({ instances, onTer
       render: (startedAt: string) => startedAt ? formatUptime(startedAt) : '--',
     },
     {
-      title: 'Actions',
+      title: t('instances.table.actions'),
       key: 'actions',
       width: 140,
       render: (_: unknown, record: Instance) => (
         <Space>
           <Button size="small" onClick={() => navigate(`/instances/${record.id}`)} data-testid={`detail-${record.id}`}>
-            Detail
+            {t('instances.table.detail')}
           </Button>
           <Popconfirm
-            title="Terminate this instance?"
+            title={t('instances.table.terminate_confirm')}
             onConfirm={() => onTerminate(record.id)}
             data-testid={`confirm-terminate-${record.id}`}
           >
             <Button size="small" danger data-testid={`terminate-${record.id}`}>
-              Terminate
+              {t('common.terminate')}
             </Button>
           </Popconfirm>
         </Space>

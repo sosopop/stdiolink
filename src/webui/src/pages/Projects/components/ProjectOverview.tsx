@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Descriptions, Tag, Button, Space, Popconfirm, Typography, Card } from 'antd';
 import { PlayCircleOutlined, StopOutlined, ReloadOutlined } from '@ant-design/icons';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
@@ -17,6 +18,7 @@ const { Text } = Typography;
 export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   project, runtime, onStart, onStop, onReload,
 }) => {
+  const { t } = useTranslation();
   const status = runtime?.status ?? 'stopped';
   const canStart = project.enabled && project.valid && status !== 'running';
   const canStop = status === 'running';
@@ -47,9 +49,9 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
             onClick={onStart}
             data-testid="start-btn"
           >
-            Start Project
+            {t('projects.overview.start_project')}
           </Button>
-          <Popconfirm title="Stop this project?" onConfirm={onStop} disabled={!canStop} okButtonProps={{ danger: true }}>
+          <Popconfirm title={t('projects.overview.stop_confirm')} onConfirm={onStop} disabled={!canStop} okButtonProps={{ danger: true }}>
             <Button
               danger
               size="large"
@@ -65,7 +67,7 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
               disabled={!canStop}
               data-testid="stop-btn"
             >
-              Stop
+              {t('common.stop')}
             </Button>
           </Popconfirm>
           <Button
@@ -82,13 +84,13 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
             onClick={onReload}
             data-testid="reload-btn"
           >
-            Reload
+            {t('common.reload')}
           </Button>
         </Space>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 100, border: '1px solid var(--surface-border)' }}>
           <StatusDot status={dotStatus} />
-          <Text strong style={{ fontSize: 14, textTransform: 'capitalize' }}>{status}</Text>
+          <Text strong style={{ fontSize: 14, textTransform: 'capitalize' }}>{t(`common.status_${status}`, status)}</Text>
         </div>
       </div>
 
@@ -100,18 +102,18 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
           labelStyle={{ background: 'rgba(255,255,255,0.02)', fontWeight: 600, width: 160 }}
           contentStyle={{ background: 'transparent' }}
         >
-          <Descriptions.Item label="Project ID">{project.id}</Descriptions.Item>
-          <Descriptions.Item label="Display Name">{project.name}</Descriptions.Item>
-          <Descriptions.Item label="Service Template">
+          <Descriptions.Item label={t('projects.overview.project_id')}>{project.id}</Descriptions.Item>
+          <Descriptions.Item label={t('projects.overview.display_name')}>{project.name}</Descriptions.Item>
+          <Descriptions.Item label={t('projects.overview.service_template')}>
             <Tag bordered={false} style={{ background: 'var(--primary-dim)', color: 'var(--brand-primary)' }}>{project.serviceId}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Enabled">{project.enabled ? <Tag color="success">Yes</Tag> : <Tag>No</Tag>}</Descriptions.Item>
-          <Descriptions.Item label="Validation">{project.valid ? <Tag color="success">Pass</Tag> : <Tag color="error">Fail: {project.error}</Tag>}</Descriptions.Item>
-          <Descriptions.Item label="Schedule Strategy"><Text code>{project.schedule.type}</Text></Descriptions.Item>
+          <Descriptions.Item label={t('projects.overview.enabled')}>{project.enabled ? <Tag color="success">{t('common.yes')}</Tag> : <Tag>{t('common.no')}</Tag>}</Descriptions.Item>
+          <Descriptions.Item label={t('projects.overview.validation')}>{project.valid ? <Tag color="success">{t('projects.overview.pass')}</Tag> : <Tag color="error">{t('projects.overview.fail')}: {project.error}</Tag>}</Descriptions.Item>
+          <Descriptions.Item label={t('projects.overview.schedule_strategy')}><Text code>{project.schedule.type}</Text></Descriptions.Item>
           {runtime && (
             <>
-              <Descriptions.Item label="Active Instances">{runtime.runningInstances}</Descriptions.Item>
-              <Descriptions.Item label="Consecutive Failures">{runtime.schedule.consecutiveFailures}</Descriptions.Item>
+              <Descriptions.Item label={t('projects.overview.active_instances')}>{runtime.runningInstances}</Descriptions.Item>
+              <Descriptions.Item label={t('projects.overview.consecutive_failures')}>{runtime.schedule.consecutiveFailures}</Descriptions.Item>
             </>
           )}
         </Descriptions>

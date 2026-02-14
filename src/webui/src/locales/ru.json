@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "Запустить",
+        "stop": "Остановить",
+        "restart": "Перезапустить",
+        "configure": "Настроить",
+        "details": "Подробности",
+        "terminate": "Завершить",
+        "view_trace": "Просмотр трассировки",
+        "cancel": "Отмена",
+        "confirm": "Подтвердить",
+        "status": "Статус",
+        "save": "Сохранить",
+        "delete": "Удалить",
+        "edit": "Редактировать",
+        "create": "Создать",
+        "search": "Поиск",
+        "running": "Работает",
+        "stopped": "Остановлен",
+        "error": "Ошибка",
+        "yes": "Да",
+        "no": "Нет",
+        "retry": "Повторить",
+        "reload": "Перезагрузить",
+        "actions": "Действия",
+        "view_all": "Показать все",
+        "view_detail": "Подробнее",
+        "lab": "Лаборатория",
+        "status_running": "Работает",
+        "status_stopped": "Остановлен",
+        "status_starting": "Запускается",
+        "status_stopping": "Останавливается",
+        "status_failed": "Сбой",
+        "status_crashed": "Аварийный останов",
+        "status_invalid": "Недействителен"
+    },
+    "layout": {
+        "dashboard": "Панель управления",
+        "services": "Сервисы",
+        "projects": "Проекты",
+        "instances": "Экземпляры",
+        "drivers": "Драйверы",
+        "driver_lab": "Лаборатория драйверов"
+    },
+    "dashboard": {
+        "loading": "Загрузка центра управления...",
+        "title": "Центр управления",
+        "subtitle": "Телеметрия системы в реальном времени и оркестрация проектов",
+        "active_projects": "Активные проекты",
+        "new_project": "Новый проект",
+        "empty_projects": "Проекты не настроены. Начните с создания первого проекта.",
+        "live_instances": "Активные экземпляры",
+        "terminate_confirm": "Завершить процесс?",
+        "no_instances": "Активных потоков выполнения не обнаружено",
+        "kpi": {
+            "projects": "Проекты",
+            "instances": "Экземпляры",
+            "services": "Сервисы",
+            "drivers": "Драйверы",
+            "uptime": "Время работы",
+            "enabled": "включено",
+            "running": "работает"
+        },
+        "titles": {
+            "active_projects": "Активные проекты",
+            "live_instances": "Активные экземпляры",
+            "event_feed": "Лента событий",
+            "empty_events": "Событий не зарегистрировано"
+        },
+        "table": {
+            "lifecycle": "Жизненный цикл",
+            "target_project": "Целевой проект",
+            "system_pid": "Системный PID",
+            "uptime": "Время работы"
+        },
+        "project_card": {
+            "instances": "ЭКЗЕМПЛЯРЫ",
+            "strategy": "СТРАТЕГИЯ",
+            "status": "СТАТУС",
+            "service": "СЕРВИС"
+        }
+    },
+    "projects": {
+        "title": "Проекты",
+        "new_project": "Новый проект",
+        "search_placeholder": "Поиск проектов...",
+        "service_filter": "Сервис",
+        "status_filter": "Статус",
+        "create_wizard": {
+            "title": "Создание проекта",
+            "step_service": "Сервис",
+            "step_info": "Информация",
+            "step_config": "Конфигурация",
+            "step_schedule": "Расписание",
+            "project_id": "ID проекта",
+            "name": "Название",
+            "enabled": "Включён",
+            "next": "Далее",
+            "create": "Создать",
+            "success": "Проект успешно создан",
+            "fail": "Не удалось создать проект"
+        },
+        "detail": {
+            "overview": "Обзор",
+            "config": "Конфигурация",
+            "instances": "Экземпляры",
+            "logs": "Журналы",
+            "schedule": "Расписание",
+            "not_found": "Проект не найден"
+        },
+        "logs": {
+            "refresh": "Обновить"
+        },
+        "schedule": {
+            "save": "Сохранить расписание",
+            "save_success": "Расписание сохранено",
+            "save_fail": "Не удалось сохранить расписание",
+            "type": "Тип расписания",
+            "manual": "Ручной",
+            "daemon": "Демон",
+            "fixed_rate": "Фиксированный интервал",
+            "restart_delay": "Задержка перезапуска (мс)",
+            "max_failures": "Макс. последовательных сбоев",
+            "interval": "Интервал (мс)",
+            "max_concurrent": "Макс. параллельных"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "Статус",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "Подробности проекта",
+            "service_template": "Шаблон сервиса",
+            "runtime_status": "Состояние выполнения",
+            "schedule": "Расписание",
+            "enabled": "Включён",
+            "actions": "Действия",
+            "total_count": "Всего {{count}} проектов",
+            "stop_confirm": "Остановить проект?",
+            "delete_confirm": "Удалить проект?",
+            "restart_prefix": "перезапуск"
+        },
+        "overview": {
+            "start_project": "Запустить проект",
+            "stop_confirm": "Остановить этот проект?",
+            "project_id": "ID проекта",
+            "display_name": "Отображаемое имя",
+            "service_template": "Шаблон сервиса",
+            "enabled": "Включён",
+            "validation": "Валидация",
+            "pass": "Пройдена",
+            "fail": "Не пройдена",
+            "schedule_strategy": "Стратегия расписания",
+            "active_instances": "Активные экземпляры",
+            "consecutive_failures": "Последовательные сбои"
+        }
+    },
+    "services": {
+        "title": "Сервисы",
+        "new_service": "Новый сервис",
+        "search_placeholder": "Поиск сервисов...",
+        "scan": "Сканировать",
+        "detail": {
+            "overview": "Обзор",
+            "files": "Файлы",
+            "schema": "Схема",
+            "projects": "Проекты",
+            "not_found": "Сервис не найден"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "Название",
+            "version": "Версия",
+            "description": "Описание",
+            "author": "Автор",
+            "directory": "Каталог",
+            "has_schema": "Есть схема",
+            "projects": "Проекты"
+        },
+        "files": {
+            "explorer": "Проводник файлов",
+            "unsaved": "Не сохранено",
+            "reset": "Сбросить",
+            "save_changes": "Сохранить изменения",
+            "no_file": "Выберите файл для редактирования",
+            "load_fail": "Не удалось загрузить файлы",
+            "read_fail": "Не удалось прочитать файл",
+            "save_success": "Файл сохранён",
+            "save_fail": "Не удалось сохранить файл",
+            "create_success": "Файл создан",
+            "create_fail": "Не удалось создать файл",
+            "delete_success": "Файл удалён",
+            "delete_fail": "Не удалось удалить файл"
+        },
+        "table": {
+            "service_template": "Шаблон сервиса",
+            "version": "Версия",
+            "active_projects": "Активные проекты",
+            "instances": "экземпляры",
+            "actions": "Действия",
+            "delete_confirm": "Удалить сервис?",
+            "delete_used": "Этот шаблон используется в {{count}} проектах.",
+            "delete_unused": "Вы уверены, что хотите удалить этот шаблон?",
+            "total_count": "{{count}} шаблонов доступно"
+        }
+    },
+    "instances": {
+        "title": "Экземпляры",
+        "refresh": "Обновить",
+        "search_placeholder": "Поиск по ID или проекту...",
+        "filter_project": "Фильтр по проекту",
+        "filter_status": "Фильтр по статусу",
+        "table": {
+            "id": "ID",
+            "project": "Проект",
+            "service": "Сервис",
+            "status": "Статус",
+            "pid": "PID",
+            "uptime": "Время работы",
+            "actions": "Действия",
+            "detail": "Подробности",
+            "terminate_confirm": "Завершить этот экземпляр?"
+        },
+        "detail": {
+            "trace": "Трассировка экземпляра",
+            "terminate_btn": "Завершить процесс",
+            "overview": "Обзор",
+            "process_tree": "Дерево процессов",
+            "resources": "Ресурсы",
+            "logs": "Журналы",
+            "refresh_logs": "Обновить журналы",
+            "not_found": "Экземпляр не найден",
+            "instance_id": "ID экземпляра",
+            "project": "Проект",
+            "started_at": "Время запуска",
+            "working_dir": "Рабочий каталог",
+            "loading": "Отслеживание жизненного цикла процесса...",
+            "terminate_confirm": "Завершить этот экземпляр?"
+        }
+    },
+    "drivers": {
+        "title": "Драйверы",
+        "scan": "Сканировать",
+        "refresh": "Обновить",
+        "search_placeholder": "Поиск по ID или названию...",
+        "empty": "Драйверы не найдены. Попробуйте сканировать каталог драйверов.",
+        "table": {
+            "driver": "Драйвер",
+            "version": "Версия",
+            "executable_path": "Путь к исполняемому файлу",
+            "actions": "Действия"
+        },
+        "detail": {
+            "not_found": "Драйвер не найден",
+            "metadata": "Метаданные",
+            "no_metadata": "Метаданные недоступны",
+            "commands": "Команды",
+            "no_commands": "Команды не определены",
+            "docs": "Документация",
+            "test_in_lab": "Тестировать в лаборатории",
+            "no_docs": "Документация недоступна"
+        },
+        "info": {
+            "id": "ID",
+            "name": "Название",
+            "version": "Версия",
+            "vendor": "Производитель",
+            "description": "Описание",
+            "capabilities": "Возможности",
+            "profiles": "Профили"
+        },
+        "command": {
+            "test": "Тест",
+            "returns": "Возвращает: "
+        },
+        "params": {
+            "empty": "Нет параметров",
+            "name": "Название",
+            "type": "Тип",
+            "required": "Обязательный",
+            "default": "По умолчанию",
+            "description": "Описание"
+        }
+    },
+    "driverlab": {
+        "title": "Лаборатория драйверов",
+        "subtitle": "Интерактивный отладчик протокола и песочница",
+        "command_palette": "Палитра команд",
+        "protocol_stream": "Поток протокола",
+        "auto_scroll": "Автопрокрутка",
+        "connection": {
+            "target_driver": "Целевой драйвер",
+            "select_driver": "Выберите драйвер",
+            "mode": "Режим",
+            "oneshot": "Одноразовый",
+            "keepalive": "Постоянный",
+            "arguments": "Аргументы",
+            "args_placeholder": "арг1, арг2, ...",
+            "connecting": "Подключение...",
+            "connect": "Подключить",
+            "disconnect": "Отключить"
+        },
+        "command": {
+            "waiting_meta": "Ожидание метаданных драйвера...",
+            "select_command": "Выбор команды",
+            "select_placeholder": "Выберите команду",
+            "execute": "Выполнить",
+            "no_params": "У этой команды нет параметров"
+        },
+        "toolbar": {
+            "clear": "Очистить",
+            "export_json": "Экспорт JSON"
+        },
+        "status": {
+            "status": "Статус:",
+            "pid": "PID:",
+            "mode": "Режим:",
+            "uptime": "Время работы:",
+            "connected": "Подключён",
+            "connecting": "Подключение",
+            "disconnected": "Отключён",
+            "error": "Ошибка"
+        },
+        "stream": {
+            "no_messages": "Сообщений пока нет"
+        },
+        "cmdline": {
+            "placeholder": "Выберите команду, чтобы увидеть пример CLI",
+            "copied": "Скопировано",
+            "copy_failed": "Не удалось скопировать"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "Журналы недоступны",
+        "search_placeholder": "Поиск по журналам...",
+        "pause_scroll": "Приостановить автопрокрутку",
+        "resume_scroll": "Возобновить автопрокрутку",
+        "level_all": "ВСЕ"
+    },
+    "schema": {
+        "visual": "Визуальный",
+        "json": "JSON",
+        "preview": "Предпросмотр",
+        "validate": "Проверить",
+        "save": "Сохранить",
+        "reset": "Сбросить",
+        "unsaved_changes": "Несохранённые изменения",
+        "no_fields": "Поля не определены",
+        "add_first_field": "Добавить первое поле",
+        "add_field": "Добавить поле",
+        "add_child_field": "Добавить дочернее поле",
+        "no_preview": "Нет полей для предпросмотра",
+        "required": "обязательное",
+        "default_prefix": "По умолчанию: ",
+        "constraints_prefix": "Ограничения: ",
+        "child_fields": "{{count}} дочерних полей",
+        "edit_field": "Редактировать поле",
+        "field_name": "Имя поля",
+        "field_name_placeholder": "имя_поля",
+        "field_name_required": "Имя поля обязательно",
+        "field_name_exists": "Поле с таким именем уже существует",
+        "type": "Тип",
+        "required_label": "Обязательное",
+        "description": "Описание",
+        "default_value": "Значение по умолчанию",
+        "default_placeholder": "JSON или обычный текст",
+        "constraints": "Ограничения",
+        "ui_hints": "Подсказки интерфейса",
+        "min_length": "Мин. длина",
+        "max_length": "Макс. длина",
+        "pattern": "Шаблон",
+        "pattern_placeholder": "Регулярное выражение",
+        "min": "Мин.",
+        "max": "Макс.",
+        "min_items": "Мин. элементов",
+        "max_items": "Макс. элементов",
+        "enum_values": "Значения перечисления",
+        "no_constraints": "Для этого типа ограничения недоступны.",
+        "add_option": "Добавить вариант",
+        "option_placeholder": "Вариант {{index}}",
+        "group": "Группа",
+        "group_placeholder": "Название группы полей",
+        "order": "Порядок",
+        "advanced": "Расширенные",
+        "read_only": "Только для чтения",
+        "placeholder": "Заполнитель",
+        "unit": "Единица измерения"
+    },
+    "sse": {
+        "live": "В эфире",
+        "connecting": "Подключение",
+        "reconnecting": "Переподключение",
+        "offline": "Не в сети",
+        "error": "Ошибка",
+        "no_events": "Событий не получено",
+        "last_event": "Последнее событие: {{time}}"
+    }
+}

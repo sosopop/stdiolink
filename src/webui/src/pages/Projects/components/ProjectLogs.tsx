@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { LogViewer } from '@/components/LogViewer/LogViewer';
@@ -9,6 +10,7 @@ interface ProjectLogsProps {
 }
 
 export const ProjectLogs: React.FC<ProjectLogsProps> = ({ projectId }) => {
+  const { t } = useTranslation();
   const [lines, setLines] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +39,7 @@ export const ProjectLogs: React.FC<ProjectLogsProps> = ({ projectId }) => {
         style={{ marginBottom: 8 }}
         data-testid="refresh-logs-btn"
       >
-        Refresh
+        {t('projects.logs.refresh')}
       </Button>
       <LogViewer lines={lines} loading={loading} />
     </div>

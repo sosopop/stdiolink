@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Spin, message, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { FileTree } from '@/components/FileTree/FileTree';
@@ -11,6 +12,7 @@ interface ServiceFilesProps {
 }
 
 export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
+  const { t } = useTranslation();
   const [files, setFiles] = useState<ServiceFile[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [content, setContent] = useState('');
@@ -23,7 +25,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
       const data = await servicesApi.files(serviceId);
       setFiles(data.files);
     } catch {
-      message.error('Failed to load files');
+      message.error(t('services.files.load_fail'));
     }
   }, [serviceId]);
 
@@ -40,7 +42,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
       setFileSize(data.size);
       setModified(false);
     } catch {
-      message.error('Failed to read file');
+      message.error(t('services.files.read_fail'));
     } finally {
       setLoading(false);
     }
@@ -51,9 +53,9 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
     try {
       await servicesApi.fileWrite(serviceId, selectedPath, content);
       setModified(false);
-      message.success('File saved');
+      message.success(t('services.files.save_success'));
     } catch {
-      message.error('Failed to save file');
+      message.error(t('services.files.save_fail'));
     }
   };
 
@@ -61,9 +63,9 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
     try {
       await servicesApi.fileCreate(serviceId, path, '');
       await loadFiles();
-      message.success('File created');
+      message.success(t('services.files.create_success'));
     } catch {
-      message.error('Failed to create file');
+      message.error(t('services.files.create_fail'));
     }
   };
 
@@ -75,9 +77,9 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
         setContent('');
       }
       await loadFiles();
-      message.success('File deleted');
+      message.success(t('services.files.delete_success'));
     } catch {
-      message.error('Failed to delete file');
+      message.error(t('services.files.delete_fail'));
     }
   };
 
@@ -92,7 +94,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
           alignItems: 'center'
         }}>
           <span style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            File Explorer
+            {t('services.files.explorer')}
           </span>
           <Button
             type="text"
@@ -131,7 +133,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-primary)' }}>{selectedPath}</span>
                 {modified && <span style={{ color: 'var(--brand-warning)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }}></span>
-                  Unsaved
+                  {t('services.files.unsaved')}
                 </span>}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -141,7 +143,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
                   disabled={!modified}
                   type="text"
                 >
-                  Reset
+                  {t('services.files.reset')}
                 </Button>
                 <Button
                   type="primary"
@@ -153,7 +155,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
                     boxShadow: modified ? '0 0 10px rgba(99, 102, 241, 0.4)' : 'none'
                   }}
                 >
-                  Save Changes
+                  {t('services.files.save_changes')}
                 </Button>
               </div>
             </div>
@@ -176,7 +178,7 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
           <div data-testid="no-file-selected" style={{ display: 'grid', placeItems: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.2 }}>📄</div>
-              <div>Select a file to start editing</div>
+              <div>{t('services.files.no_file')}</div>
             </div>
           </div>
         )}

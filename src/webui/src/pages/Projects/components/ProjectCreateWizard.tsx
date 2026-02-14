@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Steps, Input, Switch, Form, Card, Typography, Alert } from 'antd';
 import { SchemaForm } from '@/components/SchemaForm/SchemaForm';
 import { ScheduleForm } from './ScheduleForm';
@@ -20,6 +21,7 @@ interface ProjectCreateWizardProps {
 export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
   open, onClose, onCreate, services, getServiceDetail,
 }) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [serviceDetail, setServiceDetail] = useState<ServiceDetail | null>(null);
@@ -78,7 +80,7 @@ export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
         reset();
         onClose();
       } else {
-        setError('Failed to create project');
+        setError(t('projects.create_wizard.fail'));
         setCreating(false);
       }
     }
@@ -107,17 +109,17 @@ export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
       open={open}
       onOk={handleOk}
       onCancel={handleCancel}
-      okText={step < 3 ? 'Next' : 'Create'}
+      okText={step < 3 ? t('projects.create_wizard.next') : t('projects.create_wizard.create')}
       okButtonProps={okButtonProps}
       cancelButtonProps={cancelButtonProps}
       width={720}
       data-testid="create-wizard"
     >
       <Steps current={step} size="small" style={{ marginBottom: 24 }} items={[
-        { title: 'Service' },
-        { title: 'Info' },
-        { title: 'Config' },
-        { title: 'Schedule' },
+        { title: t('projects.create_wizard.step_service') },
+        { title: t('projects.create_wizard.step_info') },
+        { title: t('projects.create_wizard.step_config') },
+        { title: t('projects.create_wizard.step_schedule') },
       ]} />
 
       {step === 0 && (
@@ -145,7 +147,7 @@ export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
       {step === 1 && (
         <div data-testid="step-info">
           <Form layout="vertical">
-            <Form.Item label="Project ID" required validateStatus={idError ? 'error' : undefined} help={idError}>
+            <Form.Item label={t('projects.create_wizard.project_id')} required validateStatus={idError ? 'error' : undefined} help={idError}>
               <Input
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
@@ -153,7 +155,7 @@ export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
                 data-testid="project-id-input"
               />
             </Form.Item>
-            <Form.Item label="Name" required>
+            <Form.Item label={t('projects.create_wizard.name')} required>
               <Input
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
@@ -161,7 +163,7 @@ export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
                 data-testid="project-name-input"
               />
             </Form.Item>
-            <Form.Item label="Enabled">
+            <Form.Item label={t('projects.create_wizard.enabled')}>
               <Switch checked={enabled} onChange={setEnabled} data-testid="project-enabled" />
             </Form.Item>
           </Form>

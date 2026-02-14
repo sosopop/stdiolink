@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Space } from 'antd';
 import { DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { MessageEntry } from '@/stores/useDriverLabStore';
@@ -30,6 +31,7 @@ export const MessageToolbar: React.FC<MessageToolbarProps> = ({
   driverId,
   onClear,
 }) => {
+  const { t } = useTranslation();
   return (
     <div data-testid="message-toolbar" style={{ padding: '8px 0' }}>
       <Space>
@@ -39,7 +41,7 @@ export const MessageToolbar: React.FC<MessageToolbarProps> = ({
           onClick={onClear}
           data-testid="clear-btn"
         >
-          Clear
+          {t('driverlab.toolbar.clear')}
         </Button>
         <Button
           size="small"
@@ -48,7 +50,7 @@ export const MessageToolbar: React.FC<MessageToolbarProps> = ({
           disabled={messages.length === 0}
           data-testid="export-btn"
         >
-          Export JSON
+          {t('driverlab.toolbar.export_json')}
         </Button>
       </Space>
     </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layout, Menu } from 'antd';
 import {
   DashboardOutlined,
@@ -19,17 +20,18 @@ interface AppSidebarProps {
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar);
 
   const menuItems = [
-    { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
-    { key: '/projects', icon: <ProjectOutlined />, label: 'Projects' },
-    { key: '/instances', icon: <DeploymentUnitOutlined />, label: 'Instances' },
-    { key: '/services', icon: <CloudServerOutlined />, label: 'Services' },
-    { key: '/drivers', icon: <ApiOutlined />, label: 'Drivers' },
-    { key: '/driverlab', icon: <ExperimentOutlined />, label: 'DriverLab' },
+    { key: '/', icon: <DashboardOutlined />, label: t('layout.dashboard') },
+    { key: '/projects', icon: <ProjectOutlined />, label: t('layout.projects') },
+    { key: '/instances', icon: <DeploymentUnitOutlined />, label: t('layout.instances') },
+    { key: '/services', icon: <CloudServerOutlined />, label: t('layout.services') },
+    { key: '/drivers', icon: <ApiOutlined />, label: t('layout.drivers') },
+    { key: '/driverlab', icon: <ExperimentOutlined />, label: t('layout.driver_lab') },
   ];
 
   const selectedKey = location.pathname === '/' ? '/' : `/${location.pathname.split('/')[1]}`;

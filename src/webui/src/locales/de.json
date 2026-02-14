@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "Starten",
+        "stop": "Stoppen",
+        "restart": "Neustarten",
+        "configure": "Konfigurieren",
+        "details": "Details",
+        "terminate": "Beenden",
+        "view_trace": "Trace anzeigen",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "status": "Status",
+        "save": "Speichern",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "create": "Erstellen",
+        "search": "Suchen",
+        "running": "Läuft",
+        "stopped": "Gestoppt",
+        "error": "Fehler",
+        "yes": "Ja",
+        "no": "Nein",
+        "retry": "Wiederholen",
+        "reload": "Neu laden",
+        "actions": "Aktionen",
+        "view_all": "Alle anzeigen",
+        "view_detail": "Detail anzeigen",
+        "lab": "Labor",
+        "status_running": "Läuft",
+        "status_stopped": "Gestoppt",
+        "status_starting": "Startet",
+        "status_stopping": "Stoppt",
+        "status_failed": "Fehlgeschlagen",
+        "status_crashed": "Abgestürzt",
+        "status_invalid": "Ungültig"
+    },
+    "layout": {
+        "dashboard": "Dashboard",
+        "services": "Dienste",
+        "projects": "Projekte",
+        "instances": "Instanzen",
+        "drivers": "Treiber",
+        "driver_lab": "Treiber-Labor"
+    },
+    "dashboard": {
+        "loading": "Leitstelle wird geladen...",
+        "title": "Leitstelle",
+        "subtitle": "Echtzeit-Systemtelemetrie und Projektorchestrierung",
+        "active_projects": "Aktive Projekte",
+        "new_project": "Neues Projekt",
+        "empty_projects": "Keine Projekte konfiguriert. Erstellen Sie Ihr erstes Projekt, um loszulegen.",
+        "live_instances": "Aktive Instanzen",
+        "terminate_confirm": "Prozess beenden?",
+        "no_instances": "Keine aktiven Ausführungsthreads erkannt",
+        "kpi": {
+            "projects": "Projekte",
+            "instances": "Instanzen",
+            "services": "Dienste",
+            "drivers": "Treiber",
+            "uptime": "Betriebszeit",
+            "enabled": "aktiviert",
+            "running": "laufend"
+        },
+        "titles": {
+            "active_projects": "Aktive Projekte",
+            "live_instances": "Aktive Instanzen",
+            "event_feed": "Ereignisprotokoll",
+            "empty_events": "Keine Ereignisse aufgezeichnet"
+        },
+        "table": {
+            "lifecycle": "Lebenszyklus",
+            "target_project": "Zielprojekt",
+            "system_pid": "System-PID",
+            "uptime": "Betriebszeit"
+        },
+        "project_card": {
+            "instances": "INSTANZEN",
+            "strategy": "STRATEGIE",
+            "status": "STATUS",
+            "service": "DIENST"
+        }
+    },
+    "projects": {
+        "title": "Projekte",
+        "new_project": "Neues Projekt",
+        "search_placeholder": "Projekte suchen...",
+        "service_filter": "Dienst",
+        "status_filter": "Status",
+        "create_wizard": {
+            "title": "Projekt erstellen",
+            "step_service": "Dienst",
+            "step_info": "Info",
+            "step_config": "Konfiguration",
+            "step_schedule": "Zeitplan",
+            "project_id": "Projekt-ID",
+            "name": "Name",
+            "enabled": "Aktiviert",
+            "next": "Weiter",
+            "create": "Erstellen",
+            "success": "Projekt erfolgreich erstellt",
+            "fail": "Projekt konnte nicht erstellt werden"
+        },
+        "detail": {
+            "overview": "Übersicht",
+            "config": "Konfiguration",
+            "instances": "Instanzen",
+            "logs": "Protokolle",
+            "schedule": "Zeitplan",
+            "not_found": "Projekt nicht gefunden"
+        },
+        "logs": {
+            "refresh": "Aktualisieren"
+        },
+        "schedule": {
+            "save": "Zeitplan speichern",
+            "save_success": "Zeitplan gespeichert",
+            "save_fail": "Zeitplan konnte nicht gespeichert werden",
+            "type": "Zeitplantyp",
+            "manual": "Manuell",
+            "daemon": "Daemon",
+            "fixed_rate": "Feste Rate",
+            "restart_delay": "Neustartverzögerung (ms)",
+            "max_failures": "Max. aufeinanderfolgende Fehler",
+            "interval": "Intervall (ms)",
+            "max_concurrent": "Max. gleichzeitig"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "Status",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "Projektdetails",
+            "service_template": "Dienstvorlage",
+            "runtime_status": "Laufzeitstatus",
+            "schedule": "Zeitplan",
+            "enabled": "Aktiviert",
+            "actions": "Aktionen",
+            "total_count": "Insgesamt {{count}} Projekte",
+            "stop_confirm": "Projekt stoppen?",
+            "delete_confirm": "Projekt löschen?",
+            "restart_prefix": "Neustart"
+        },
+        "overview": {
+            "start_project": "Projekt starten",
+            "stop_confirm": "Dieses Projekt stoppen?",
+            "project_id": "Projekt-ID",
+            "display_name": "Anzeigename",
+            "service_template": "Dienstvorlage",
+            "enabled": "Aktiviert",
+            "validation": "Validierung",
+            "pass": "Bestanden",
+            "fail": "Fehlgeschlagen",
+            "schedule_strategy": "Zeitplanstrategie",
+            "active_instances": "Aktive Instanzen",
+            "consecutive_failures": "Aufeinanderfolgende Fehler"
+        }
+    },
+    "services": {
+        "title": "Dienste",
+        "new_service": "Neuer Dienst",
+        "search_placeholder": "Dienste suchen...",
+        "scan": "Scannen",
+        "detail": {
+            "overview": "Übersicht",
+            "files": "Dateien",
+            "schema": "Schema",
+            "projects": "Projekte",
+            "not_found": "Dienst nicht gefunden"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "Name",
+            "version": "Version",
+            "description": "Beschreibung",
+            "author": "Autor",
+            "directory": "Verzeichnis",
+            "has_schema": "Hat Schema",
+            "projects": "Projekte"
+        },
+        "files": {
+            "explorer": "Datei-Explorer",
+            "unsaved": "Nicht gespeichert",
+            "reset": "Zurücksetzen",
+            "save_changes": "Änderungen speichern",
+            "no_file": "Wählen Sie eine Datei zum Bearbeiten aus",
+            "load_fail": "Dateien konnten nicht geladen werden",
+            "read_fail": "Datei konnte nicht gelesen werden",
+            "save_success": "Datei gespeichert",
+            "save_fail": "Datei konnte nicht gespeichert werden",
+            "create_success": "Datei erstellt",
+            "create_fail": "Datei konnte nicht erstellt werden",
+            "delete_success": "Datei gelöscht",
+            "delete_fail": "Datei konnte nicht gelöscht werden"
+        },
+        "table": {
+            "service_template": "Dienstvorlage",
+            "version": "Version",
+            "active_projects": "Aktive Projekte",
+            "instances": "Instanzen",
+            "actions": "Aktionen",
+            "delete_confirm": "Dienst löschen?",
+            "delete_used": "Diese Vorlage wird von {{count}} Projekten verwendet.",
+            "delete_unused": "Sind Sie sicher, dass Sie diese Vorlage löschen möchten?",
+            "total_count": "{{count}} Vorlagen verfügbar"
+        }
+    },
+    "instances": {
+        "title": "Instanzen",
+        "refresh": "Aktualisieren",
+        "search_placeholder": "Nach ID oder Projekt suchen...",
+        "filter_project": "Nach Projekt filtern",
+        "filter_status": "Nach Status filtern",
+        "table": {
+            "id": "ID",
+            "project": "Projekt",
+            "service": "Dienst",
+            "status": "Status",
+            "pid": "PID",
+            "uptime": "Betriebszeit",
+            "actions": "Aktionen",
+            "detail": "Detail",
+            "terminate_confirm": "Diese Instanz beenden?"
+        },
+        "detail": {
+            "trace": "Instanz-Trace",
+            "terminate_btn": "Prozess beenden",
+            "overview": "Übersicht",
+            "process_tree": "Prozessbaum",
+            "resources": "Ressourcen",
+            "logs": "Protokolle",
+            "refresh_logs": "Protokolle aktualisieren",
+            "not_found": "Instanz nicht gefunden",
+            "instance_id": "Instanz-ID",
+            "project": "Projekt",
+            "started_at": "Gestartet am",
+            "working_dir": "Arbeitsverzeichnis",
+            "loading": "Prozesslebenszyklus wird verfolgt...",
+            "terminate_confirm": "Diese Instanz beenden?"
+        }
+    },
+    "drivers": {
+        "title": "Treiber",
+        "scan": "Scannen",
+        "refresh": "Aktualisieren",
+        "search_placeholder": "Nach ID oder Name suchen...",
+        "empty": "Keine Treiber gefunden. Versuchen Sie, das Treiberverzeichnis zu scannen.",
+        "table": {
+            "driver": "Treiber",
+            "version": "Version",
+            "executable_path": "Ausführbarer Pfad",
+            "actions": "Aktionen"
+        },
+        "detail": {
+            "not_found": "Treiber nicht gefunden",
+            "metadata": "Metadaten",
+            "no_metadata": "Keine Metadaten verfügbar",
+            "commands": "Befehle",
+            "no_commands": "Keine Befehle definiert",
+            "docs": "Dokumentation",
+            "test_in_lab": "Im Treiber-Labor testen",
+            "no_docs": "Keine Dokumentation verfügbar"
+        },
+        "info": {
+            "id": "ID",
+            "name": "Name",
+            "version": "Version",
+            "vendor": "Hersteller",
+            "description": "Beschreibung",
+            "capabilities": "Fähigkeiten",
+            "profiles": "Profile"
+        },
+        "command": {
+            "test": "Testen",
+            "returns": "Rückgabe: "
+        },
+        "params": {
+            "empty": "Keine Parameter",
+            "name": "Name",
+            "type": "Typ",
+            "required": "Erforderlich",
+            "default": "Standard",
+            "description": "Beschreibung"
+        }
+    },
+    "driverlab": {
+        "title": "Treiber-Labor",
+        "subtitle": "Interaktiver Protokoll-Debugger und Spielwiese",
+        "command_palette": "Befehlspalette",
+        "protocol_stream": "Protokollstrom",
+        "auto_scroll": "Automatisch scrollen",
+        "connection": {
+            "target_driver": "Zieltreiber",
+            "select_driver": "Treiber auswählen",
+            "mode": "Modus",
+            "oneshot": "OneShot",
+            "keepalive": "KeepAlive",
+            "arguments": "Argumente",
+            "args_placeholder": "arg1, arg2, ...",
+            "connecting": "Verbinde...",
+            "connect": "Verbinden",
+            "disconnect": "Trennen"
+        },
+        "command": {
+            "waiting_meta": "Warte auf Treiber-Metadaten...",
+            "select_command": "Befehl auswählen",
+            "select_placeholder": "Befehl auswählen",
+            "execute": "Ausführen",
+            "no_params": "Keine Parameter für diesen Befehl"
+        },
+        "toolbar": {
+            "clear": "Leeren",
+            "export_json": "JSON exportieren"
+        },
+        "status": {
+            "status": "Status:",
+            "pid": "PID:",
+            "mode": "Modus:",
+            "uptime": "Betriebszeit:",
+            "connected": "Verbunden",
+            "connecting": "Verbinde",
+            "disconnected": "Getrennt",
+            "error": "Fehler"
+        },
+        "stream": {
+            "no_messages": "Noch keine Nachrichten"
+        },
+        "cmdline": {
+            "placeholder": "Wählen Sie einen Befehl, um das CLI-Beispiel zu sehen",
+            "copied": "Kopiert",
+            "copy_failed": "Kopieren fehlgeschlagen"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "Keine Protokolle verfügbar",
+        "search_placeholder": "Protokolle durchsuchen...",
+        "pause_scroll": "Automatisches Scrollen pausieren",
+        "resume_scroll": "Automatisches Scrollen fortsetzen",
+        "level_all": "ALLE"
+    },
+    "schema": {
+        "visual": "Visuell",
+        "json": "JSON",
+        "preview": "Vorschau",
+        "validate": "Validieren",
+        "save": "Speichern",
+        "reset": "Zurücksetzen",
+        "unsaved_changes": "Nicht gespeicherte Änderungen",
+        "no_fields": "Keine Felder definiert",
+        "add_first_field": "Erstes Feld hinzufügen",
+        "add_field": "Feld hinzufügen",
+        "add_child_field": "Unterfeld hinzufügen",
+        "no_preview": "Keine Felder für Vorschau",
+        "required": "erforderlich",
+        "default_prefix": "Standard: ",
+        "constraints_prefix": "Einschränkungen: ",
+        "child_fields": "{{count}} Unterfeld(er)",
+        "edit_field": "Feld bearbeiten",
+        "field_name": "Feldname",
+        "field_name_placeholder": "feldname",
+        "field_name_required": "Feldname ist erforderlich",
+        "field_name_exists": "Feldname existiert bereits",
+        "type": "Typ",
+        "required_label": "Erforderlich",
+        "description": "Beschreibung",
+        "default_value": "Standardwert",
+        "default_placeholder": "JSON oder Klartext",
+        "constraints": "Einschränkungen",
+        "ui_hints": "UI-Hinweise",
+        "min_length": "Mindestlänge",
+        "max_length": "Maximallänge",
+        "pattern": "Muster",
+        "pattern_placeholder": "Regulärer Ausdruck",
+        "min": "Min",
+        "max": "Max",
+        "min_items": "Min. Elemente",
+        "max_items": "Max. Elemente",
+        "enum_values": "Aufzählungswerte",
+        "no_constraints": "Keine Einschränkungen für diesen Typ verfügbar.",
+        "add_option": "Option hinzufügen",
+        "option_placeholder": "Option {{index}}",
+        "group": "Gruppe",
+        "group_placeholder": "Feldgruppenname",
+        "order": "Reihenfolge",
+        "advanced": "Erweitert",
+        "read_only": "Schreibgeschützt",
+        "placeholder": "Platzhalter",
+        "unit": "Einheit"
+    },
+    "sse": {
+        "live": "Live",
+        "connecting": "Verbinde",
+        "reconnecting": "Verbinde erneut",
+        "offline": "Offline",
+        "error": "Fehler",
+        "no_events": "Keine Ereignisse empfangen",
+        "last_event": "Letztes Ereignis: {{time}}"
+    }
+}

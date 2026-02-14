@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Button, Tag, Space } from 'antd';
 import { PlayCircleOutlined } from '@ant-design/icons';
 import type { CommandMeta } from '@/types/driver';
@@ -10,33 +11,36 @@ interface CommandCardProps {
   onTest: (commandName: string) => void;
 }
 
-export const CommandCard: React.FC<CommandCardProps> = ({ command, onTest }) => (
-  <Card
-    data-testid={`command-${command.name}`}
-    size="small"
-    title={
-      <Space>
-        <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>{command.name}</span>
-        {command.description && <span style={{ color: '#8c8c8c', fontWeight: 400 }}>— {command.description}</span>}
-      </Space>
-    }
-    extra={
-      <Button
-        size="small"
-        icon={<PlayCircleOutlined />}
-        onClick={() => onTest(command.name)}
-        data-testid={`test-cmd-${command.name}`}
-      >
-        Test
-      </Button>
-    }
-    style={{ marginBottom: 12 }}
-  >
-    <ParamsTable params={command.params} />
-    <div style={{ marginTop: 8 }}>
-      <span style={{ fontWeight: 500 }}>Returns: </span>
-      <Tag data-testid={`return-type-${command.name}`}>{command.returns?.type || 'void'}</Tag>
-      {command.returns?.description && <span style={{ color: '#8c8c8c' }}>{command.returns.description}</span>}
-    </div>
-  </Card>
-);
+export const CommandCard: React.FC<CommandCardProps> = ({ command, onTest }) => {
+  const { t } = useTranslation();
+  return (
+    <Card
+      data-testid={`command-${command.name}`}
+      size="small"
+      title={
+        <Space>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>{command.name}</span>
+          {command.description && <span style={{ color: '#8c8c8c', fontWeight: 400 }}>— {command.description}</span>}
+        </Space>
+      }
+      extra={
+        <Button
+          size="small"
+          icon={<PlayCircleOutlined />}
+          onClick={() => onTest(command.name)}
+          data-testid={`test-cmd-${command.name}`}
+        >
+          {t('drivers.command.test')}
+        </Button>
+      }
+      style={{ marginBottom: 12 }}
+    >
+      <ParamsTable params={command.params} />
+      <div style={{ marginTop: 8 }}>
+        <span style={{ fontWeight: 500 }}>{t('drivers.command.returns')}</span>
+        <Tag data-testid={`return-type-${command.name}`}>{command.returns?.type || 'void'}</Tag>
+        {command.returns?.description && <span style={{ color: '#8c8c8c' }}>{command.returns.description}</span>}
+      </div>
+    </Card>
+  );
+};

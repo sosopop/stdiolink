@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Select, Radio, Input, Button, Form, Space } from 'antd';
 import { LinkOutlined, DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { DriverListItem } from '@/types/driver';
@@ -23,6 +24,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
 }) => {
   const [driverId, setDriverId] = React.useState<string | null>(null);
   const [runMode, setRunMode] = React.useState<'oneshot' | 'keepalive'>('oneshot');
+  const { t } = useTranslation();
 
   // Sync from URL query param when not connected
   React.useEffect(() => {
@@ -45,12 +47,12 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
   return (
     <div data-testid="connection-panel">
       <Form layout={layout === 'horizontal' ? 'inline' : 'vertical'} style={layout === 'horizontal' ? { alignItems: 'center', gap: 24 } : undefined}>
-        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>Target Driver</span>} style={layout === 'horizontal' ? { marginBottom: 0, flex: 1, minWidth: 240 } : undefined}>
+        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>{t('driverlab.connection.target_driver')}</span>} style={layout === 'horizontal' ? { marginBottom: 0, flex: 1, minWidth: 240 } : undefined}>
           <Select
             value={driverId}
             onChange={setDriverId}
             disabled={disabled}
-            placeholder="Select a driver"
+            placeholder={t('driverlab.connection.select_driver')}
             data-testid="driver-select"
             options={drivers.map((d) => ({
               label: d.name || d.id,
@@ -58,23 +60,23 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
             }))}
           />
         </Form.Item>
-        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>Mode</span>} style={layout === 'horizontal' ? { marginBottom: 0 } : undefined}>
+        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>{t('driverlab.connection.mode')}</span>} style={layout === 'horizontal' ? { marginBottom: 0 } : undefined}>
           <Radio.Group
             value={runMode}
             onChange={(e) => setRunMode(e.target.value)}
             disabled={disabled}
             data-testid="runmode-radio"
           >
-            <Radio value="oneshot">OneShot</Radio>
-            <Radio value="keepalive">KeepAlive</Radio>
+            <Radio value="oneshot">{t('driverlab.connection.oneshot')}</Radio>
+            <Radio value="keepalive">{t('driverlab.connection.keepalive')}</Radio>
           </Radio.Group>
         </Form.Item>
-        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>Arguments</span>} style={layout === 'horizontal' ? { marginBottom: 0, flex: 1.5, minWidth: 200 } : undefined}>
+        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>{t('driverlab.connection.arguments')}</span>} style={layout === 'horizontal' ? { marginBottom: 0, flex: 1.5, minWidth: 200 } : undefined}>
           <Input
             value={args}
             onChange={(e) => setArgs(e.target.value)}
             disabled={disabled}
-            placeholder="arg1, arg2, ..."
+            placeholder={t('driverlab.connection.args_placeholder')}
             data-testid="args-input"
           />
         </Form.Item>
@@ -89,7 +91,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
                 loading={connecting}
                 data-testid="connect-btn"
               >
-                {connecting ? 'Connecting...' : 'Connect'}
+                {connecting ? t('driverlab.connection.connecting') : t('driverlab.connection.connect')}
               </Button>
             ) : (
               <Button
@@ -98,7 +100,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
                 onClick={onDisconnect}
                 data-testid="disconnect-btn"
               >
-                Disconnect
+                {t('driverlab.connection.disconnect')}
               </Button>
             )}
           </Space>

@@ -4,6 +4,7 @@ import { SunOutlined, MoonOutlined } from '@ant-design/icons';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useEventStreamStore } from '@/stores/useEventStreamStore';
 import { SseStatusIndicator } from '@/components/Common/SseStatusIndicator';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 import styles from './AppLayout.module.css';
 
 export const AppHeader: React.FC = () => {
@@ -60,6 +61,7 @@ export const AppHeader: React.FC = () => {
             />
             <MoonOutlined style={{ fontSize: 14, opacity: themeMode === 'dark' ? 1 : 0.3 }} />
           </div>
+          <LanguageSwitcher />
         </Space>
       </div>
     </header>

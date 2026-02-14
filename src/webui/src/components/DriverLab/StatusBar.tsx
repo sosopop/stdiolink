@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Space, Tag, Typography } from 'antd';
 import type { ConnectionState } from '@/stores/useDriverLabStore';
 
@@ -22,6 +23,7 @@ const statusColorMap: Record<string, string> = {
 };
 
 export const StatusBar: React.FC<StatusBarProps> = ({ connection }) => {
+  const { t } = useTranslation();
   return (
     <div
       data-testid="status-bar"
@@ -35,24 +37,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({ connection }) => {
       }}
     >
       <Space size={4}>
-        <Typography.Text type="secondary">Status:</Typography.Text>
+        <Typography.Text type="secondary">{t('driverlab.status.status')}</Typography.Text>
         <Tag color={statusColorMap[connection.status]} data-testid="status-tag">
-          {connection.status}
+          {t(`driverlab.status.${connection.status}`)}
         </Tag>
       </Space>
       {connection.pid && (
         <Space size={4}>
-          <Typography.Text type="secondary">PID:</Typography.Text>
+          <Typography.Text type="secondary">{t('driverlab.status.pid')}</Typography.Text>
           <Typography.Text data-testid="status-pid">{connection.pid}</Typography.Text>
         </Space>
       )}
       <Space size={4}>
-        <Typography.Text type="secondary">Mode:</Typography.Text>
+        <Typography.Text type="secondary">{t('driverlab.status.mode')}</Typography.Text>
         <Typography.Text data-testid="status-mode">{connection.runMode}</Typography.Text>
       </Space>
       {connection.connectedAt && (
         <Space size={4}>
-          <Typography.Text type="secondary">Uptime:</Typography.Text>
+          <Typography.Text type="secondary">{t('driverlab.status.uptime')}</Typography.Text>
           <Typography.Text data-testid="status-uptime">
             {formatUptime(connection.connectedAt)}
           </Typography.Text>

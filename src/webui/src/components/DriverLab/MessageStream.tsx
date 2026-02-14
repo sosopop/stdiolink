@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Typography } from 'antd';
 import type { MessageEntry } from '@/stores/useDriverLabStore';
 import { MessageEntryComponent } from './MessageEntry';
@@ -14,6 +15,7 @@ export const MessageStream: React.FC<MessageStreamProps> = ({
   autoScroll,
   onToggleMessage,
 }) => {
+  const { t } = useTranslation();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export const MessageStream: React.FC<MessageStreamProps> = ({
     return (
       <div data-testid="message-stream" style={{ padding: 24, textAlign: 'center' }}>
         <Typography.Text type="secondary" data-testid="empty-messages">
-          No messages yet
+          {t('driverlab.stream.no_messages')}
         </Typography.Text>
       </div>
     );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Form } from 'antd';
 import type { FieldMeta } from '@/types/service';
 import { FieldRenderer } from '@/components/SchemaForm/FieldRenderer';
@@ -12,10 +13,12 @@ interface ParamFormProps {
 }
 
 export const ParamForm: React.FC<ParamFormProps> = ({ params, values, onChange }) => {
+  const { t } = useTranslation();
+
   if (!params || params.length === 0) {
     return (
       <Typography.Text type="secondary" data-testid="no-params" style={{ fontSize: 13 }}>
-        No parameters for this command
+        {t('driverlab.command.no_params')}
       </Typography.Text>
     );
   }

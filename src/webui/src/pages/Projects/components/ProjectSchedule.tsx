@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, message } from 'antd';
 import { ScheduleForm } from './ScheduleForm';
 import type { Schedule } from '@/types/project';
@@ -9,14 +10,15 @@ interface ProjectScheduleProps {
 }
 
 export const ProjectSchedule: React.FC<ProjectScheduleProps> = ({ schedule, onSave }) => {
+  const { t } = useTranslation();
   const [value, setValue] = useState<Schedule>(schedule);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     const ok = await onSave(value);
-    if (ok) message.success('Schedule saved');
-    else message.error('Failed to save schedule');
+    if (ok) message.success(t('projects.schedule.save_success'));
+    else message.error(t('projects.schedule.save_fail'));
     setSaving(false);
   };
 
@@ -30,7 +32,7 @@ export const ProjectSchedule: React.FC<ProjectScheduleProps> = ({ schedule, onSa
         style={{ marginTop: 16 }}
         data-testid="save-schedule-btn"
       >
-        Save Schedule
+        {t('projects.schedule.save')}
       </Button>
     </div>
   );

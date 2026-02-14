@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tooltip, Space, Typography } from 'antd';
 import type { SseStatus } from '@/stores/useEventStreamStore';
 
@@ -8,26 +9,28 @@ interface SseStatusIndicatorProps {
   error?: string | null;
 }
 
-const statusConfig: Record<SseStatus, { color: string; label: string; animate: boolean }> = {
-  connected: { color: '#52c41a', label: 'Live', animate: true },
-  connecting: { color: '#faad14', label: 'Connecting', animate: true },
-  reconnecting: { color: '#faad14', label: 'Reconnecting', animate: true },
-  disconnected: { color: '#ff4d4f', label: 'Offline', animate: false },
-  error: { color: '#ff4d4f', label: 'Error', animate: false },
+const statusConfig: Record<SseStatus, { color: string; labelKey: string; animate: boolean }> = {
+  connected: { color: '#52c41a', labelKey: 'sse.live', animate: true },
+  connecting: { color: '#faad14', labelKey: 'sse.connecting', animate: true },
+  reconnecting: { color: '#faad14', labelKey: 'sse.reconnecting', animate: true },
+  disconnected: { color: '#ff4d4f', labelKey: 'sse.offline', animate: false },
+  error: { color: '#ff4d4f', labelKey: 'sse.error', animate: false },
 };
-
-function formatLastEvent(ts: number | null): string {
-  if (!ts) return 'No events received';
-  const d = new Date(ts);
-  return `Last event: ${d.toLocaleTimeString()}`;
-}
 
 export const SseStatusIndicator: React.FC<SseStatusIndicatorProps> = ({
   status,
   lastEventTime,
   error,
 }) => {
+  const { t } = useTranslation();
   const config = statusConfig[status];
+
+  const formatLastEvent = (ts: number | null): string => {
+    if (!ts) return t('sse.no_events');
+    const d = new Date(ts);
+    return t('sse.last_event', { time: d.toLocaleTimeString() });
+  };
+
   const tooltipText = error && status === 'error'
     ? error
     : formatLastEvent(lastEventTime);
@@ -50,7 +53,7 @@ export const SseStatusIndicator: React.FC<SseStatusIndicatorProps> = ({
           style={{ fontSize: 12 }}
           data-testid="sse-label"
         >
-          {config.label}
+          {t(config.labelKey)}
         </Typography.Text>
       </Space>
     </Tooltip>

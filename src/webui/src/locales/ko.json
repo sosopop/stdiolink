@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "시작",
+        "stop": "중지",
+        "restart": "재시작",
+        "configure": "설정",
+        "details": "상세",
+        "terminate": "종료",
+        "view_trace": "추적 보기",
+        "cancel": "취소",
+        "confirm": "확인",
+        "status": "상태",
+        "save": "저장",
+        "delete": "삭제",
+        "edit": "편집",
+        "create": "생성",
+        "search": "검색",
+        "running": "실행 중",
+        "stopped": "중지됨",
+        "error": "오류",
+        "yes": "예",
+        "no": "아니오",
+        "retry": "재시도",
+        "reload": "새로고침",
+        "actions": "작업",
+        "view_all": "전체 보기",
+        "view_detail": "상세 보기",
+        "lab": "실험실",
+        "status_running": "실행 중",
+        "status_stopped": "중지됨",
+        "status_starting": "시작 중",
+        "status_stopping": "중지 중",
+        "status_failed": "실패",
+        "status_crashed": "비정상 종료",
+        "status_invalid": "유효하지 않음"
+    },
+    "layout": {
+        "dashboard": "대시보드",
+        "services": "서비스",
+        "projects": "프로젝트",
+        "instances": "인스턴스",
+        "drivers": "드라이버",
+        "driver_lab": "드라이버 실험실"
+    },
+    "dashboard": {
+        "loading": "관제 센터 로딩 중...",
+        "title": "관제 센터",
+        "subtitle": "실시간 시스템 텔레메트리 및 프로젝트 오케스트레이션",
+        "active_projects": "활성 프로젝트",
+        "new_project": "새 프로젝트",
+        "empty_projects": "구성된 프로젝트가 없습니다. 첫 번째 프로젝트를 생성하여 시작하세요.",
+        "live_instances": "실행 중인 인스턴스",
+        "terminate_confirm": "프로세스를 종료하시겠습니까?",
+        "no_instances": "활성 실행 스레드가 감지되지 않았습니다",
+        "kpi": {
+            "projects": "프로젝트",
+            "instances": "인스턴스",
+            "services": "서비스",
+            "drivers": "드라이버",
+            "uptime": "가동 시간",
+            "enabled": "활성화됨",
+            "running": "실행 중"
+        },
+        "titles": {
+            "active_projects": "활성 프로젝트",
+            "live_instances": "실행 중인 인스턴스",
+            "event_feed": "이벤트 피드",
+            "empty_events": "기록된 이벤트 없음"
+        },
+        "table": {
+            "lifecycle": "생명주기",
+            "target_project": "대상 프로젝트",
+            "system_pid": "시스템 PID",
+            "uptime": "가동 시간"
+        },
+        "project_card": {
+            "instances": "인스턴스",
+            "strategy": "전략",
+            "status": "상태",
+            "service": "서비스"
+        }
+    },
+    "projects": {
+        "title": "프로젝트",
+        "new_project": "새 프로젝트",
+        "search_placeholder": "프로젝트 검색...",
+        "service_filter": "서비스",
+        "status_filter": "상태",
+        "create_wizard": {
+            "title": "프로젝트 생성",
+            "step_service": "서비스",
+            "step_info": "정보",
+            "step_config": "설정",
+            "step_schedule": "스케줄",
+            "project_id": "프로젝트 ID",
+            "name": "이름",
+            "enabled": "활성화",
+            "next": "다음",
+            "create": "생성",
+            "success": "프로젝트가 성공적으로 생성되었습니다",
+            "fail": "프로젝트 생성에 실패했습니다"
+        },
+        "detail": {
+            "overview": "개요",
+            "config": "설정",
+            "instances": "인스턴스",
+            "logs": "로그",
+            "schedule": "스케줄",
+            "not_found": "프로젝트를 찾을 수 없습니다"
+        },
+        "logs": {
+            "refresh": "새로고침"
+        },
+        "schedule": {
+            "save": "스케줄 저장",
+            "save_success": "스케줄이 저장되었습니다",
+            "save_fail": "스케줄 저장에 실패했습니다",
+            "type": "스케줄 유형",
+            "manual": "수동",
+            "daemon": "데몬",
+            "fixed_rate": "고정 주기",
+            "restart_delay": "재시작 지연 (ms)",
+            "max_failures": "최대 연속 실패 횟수",
+            "interval": "간격 (ms)",
+            "max_concurrent": "최대 동시 실행 수"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "상태",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "프로젝트 상세",
+            "service_template": "서비스 템플릿",
+            "runtime_status": "런타임 상태",
+            "schedule": "스케줄",
+            "enabled": "활성화",
+            "actions": "작업",
+            "total_count": "총 {{count}}개 프로젝트",
+            "stop_confirm": "프로젝트를 중지하시겠습니까?",
+            "delete_confirm": "프로젝트를 삭제하시겠습니까?",
+            "restart_prefix": "재시작"
+        },
+        "overview": {
+            "start_project": "프로젝트 시작",
+            "stop_confirm": "이 프로젝트를 중지하시겠습니까?",
+            "project_id": "프로젝트 ID",
+            "display_name": "표시 이름",
+            "service_template": "서비스 템플릿",
+            "enabled": "활성화",
+            "validation": "유효성 검사",
+            "pass": "통과",
+            "fail": "실패",
+            "schedule_strategy": "스케줄 전략",
+            "active_instances": "활성 인스턴스",
+            "consecutive_failures": "연속 실패 횟수"
+        }
+    },
+    "services": {
+        "title": "서비스",
+        "new_service": "새 서비스",
+        "search_placeholder": "서비스 검색...",
+        "scan": "스캔",
+        "detail": {
+            "overview": "개요",
+            "files": "파일",
+            "schema": "스키마",
+            "projects": "프로젝트",
+            "not_found": "서비스를 찾을 수 없습니다"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "이름",
+            "version": "버전",
+            "description": "설명",
+            "author": "작성자",
+            "directory": "디렉터리",
+            "has_schema": "스키마 보유",
+            "projects": "프로젝트"
+        },
+        "files": {
+            "explorer": "파일 탐색기",
+            "unsaved": "저장되지 않음",
+            "reset": "초기화",
+            "save_changes": "변경 사항 저장",
+            "no_file": "편집할 파일을 선택하세요",
+            "load_fail": "파일 로드에 실패했습니다",
+            "read_fail": "파일 읽기에 실패했습니다",
+            "save_success": "파일이 저장되었습니다",
+            "save_fail": "파일 저장에 실패했습니다",
+            "create_success": "파일이 생성되었습니다",
+            "create_fail": "파일 생성에 실패했습니다",
+            "delete_success": "파일이 삭제되었습니다",
+            "delete_fail": "파일 삭제에 실패했습니다"
+        },
+        "table": {
+            "service_template": "서비스 템플릿",
+            "version": "버전",
+            "active_projects": "활성 프로젝트",
+            "instances": "인스턴스",
+            "actions": "작업",
+            "delete_confirm": "서비스를 삭제하시겠습니까?",
+            "delete_used": "이 템플릿은 {{count}}개의 프로젝트에서 사용 중입니다.",
+            "delete_unused": "이 템플릿을 삭제하시겠습니까?",
+            "total_count": "{{count}}개의 템플릿 사용 가능"
+        }
+    },
+    "instances": {
+        "title": "인스턴스",
+        "refresh": "새로고침",
+        "search_placeholder": "ID 또는 프로젝트로 검색...",
+        "filter_project": "프로젝트별 필터",
+        "filter_status": "상태별 필터",
+        "table": {
+            "id": "ID",
+            "project": "프로젝트",
+            "service": "서비스",
+            "status": "상태",
+            "pid": "PID",
+            "uptime": "가동 시간",
+            "actions": "작업",
+            "detail": "상세",
+            "terminate_confirm": "이 인스턴스를 종료하시겠습니까?"
+        },
+        "detail": {
+            "trace": "인스턴스 추적",
+            "terminate_btn": "프로세스 종료",
+            "overview": "개요",
+            "process_tree": "프로세스 트리",
+            "resources": "리소스",
+            "logs": "로그",
+            "refresh_logs": "로그 새로고침",
+            "not_found": "인스턴스를 찾을 수 없습니다",
+            "instance_id": "인스턴스 ID",
+            "project": "프로젝트",
+            "started_at": "시작 시각",
+            "working_dir": "작업 디렉터리",
+            "loading": "프로세스 생명주기 추적 중...",
+            "terminate_confirm": "이 인스턴스를 종료하시겠습니까?"
+        }
+    },
+    "drivers": {
+        "title": "드라이버",
+        "scan": "스캔",
+        "refresh": "새로고침",
+        "search_placeholder": "ID 또는 이름으로 검색...",
+        "empty": "드라이버를 찾을 수 없습니다. 드라이버 디렉터리를 스캔해 보세요.",
+        "table": {
+            "driver": "드라이버",
+            "version": "버전",
+            "executable_path": "실행 파일 경로",
+            "actions": "작업"
+        },
+        "detail": {
+            "not_found": "드라이버를 찾을 수 없습니다",
+            "metadata": "메타데이터",
+            "no_metadata": "사용 가능한 메타데이터가 없습니다",
+            "commands": "명령어",
+            "no_commands": "정의된 명령어가 없습니다",
+            "docs": "문서",
+            "test_in_lab": "드라이버 실험실에서 테스트",
+            "no_docs": "사용 가능한 문서가 없습니다"
+        },
+        "info": {
+            "id": "ID",
+            "name": "이름",
+            "version": "버전",
+            "vendor": "제조사",
+            "description": "설명",
+            "capabilities": "기능",
+            "profiles": "프로필"
+        },
+        "command": {
+            "test": "테스트",
+            "returns": "반환값: "
+        },
+        "params": {
+            "empty": "매개변수 없음",
+            "name": "이름",
+            "type": "유형",
+            "required": "필수",
+            "default": "기본값",
+            "description": "설명"
+        }
+    },
+    "driverlab": {
+        "title": "드라이버 실험실",
+        "subtitle": "대화형 프로토콜 디버거 및 플레이그라운드",
+        "command_palette": "명령 팔레트",
+        "protocol_stream": "프로토콜 스트림",
+        "auto_scroll": "자동 스크롤",
+        "connection": {
+            "target_driver": "대상 드라이버",
+            "select_driver": "드라이버 선택",
+            "mode": "모드",
+            "oneshot": "원샷",
+            "keepalive": "상시 연결",
+            "arguments": "인수",
+            "args_placeholder": "인수1, 인수2, ...",
+            "connecting": "연결 중...",
+            "connect": "연결",
+            "disconnect": "연결 해제"
+        },
+        "command": {
+            "waiting_meta": "드라이버 메타데이터 대기 중...",
+            "select_command": "명령어 선택",
+            "select_placeholder": "명령어 선택",
+            "execute": "실행",
+            "no_params": "이 명령어에는 매개변수가 없습니다"
+        },
+        "toolbar": {
+            "clear": "지우기",
+            "export_json": "JSON 내보내기"
+        },
+        "status": {
+            "status": "상태:",
+            "pid": "PID:",
+            "mode": "모드:",
+            "uptime": "가동 시간:",
+            "connected": "연결됨",
+            "connecting": "연결 중",
+            "disconnected": "연결 해제됨",
+            "error": "오류"
+        },
+        "stream": {
+            "no_messages": "아직 메시지가 없습니다"
+        },
+        "cmdline": {
+            "placeholder": "CLI 예시를 보려면 명령어를 선택하세요",
+            "copied": "복사됨",
+            "copy_failed": "복사 실패"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "사용 가능한 로그가 없습니다",
+        "search_placeholder": "로그 검색...",
+        "pause_scroll": "자동 스크롤 일시 중지",
+        "resume_scroll": "자동 스크롤 재개",
+        "level_all": "전체"
+    },
+    "schema": {
+        "visual": "시각화",
+        "json": "JSON",
+        "preview": "미리보기",
+        "validate": "유효성 검사",
+        "save": "저장",
+        "reset": "초기화",
+        "unsaved_changes": "저장되지 않은 변경 사항",
+        "no_fields": "정의된 필드가 없습니다",
+        "add_first_field": "첫 번째 필드 추가",
+        "add_field": "필드 추가",
+        "add_child_field": "하위 필드 추가",
+        "no_preview": "미리볼 필드가 없습니다",
+        "required": "필수",
+        "default_prefix": "기본값: ",
+        "constraints_prefix": "제약 조건: ",
+        "child_fields": "하위 필드 {{count}}개",
+        "edit_field": "필드 편집",
+        "field_name": "필드 이름",
+        "field_name_placeholder": "field_name",
+        "field_name_required": "필드 이름은 필수입니다",
+        "field_name_exists": "필드 이름이 이미 존재합니다",
+        "type": "유형",
+        "required_label": "필수",
+        "description": "설명",
+        "default_value": "기본값",
+        "default_placeholder": "JSON 또는 일반 텍스트",
+        "constraints": "제약 조건",
+        "ui_hints": "UI 힌트",
+        "min_length": "최소 길이",
+        "max_length": "최대 길이",
+        "pattern": "패턴",
+        "pattern_placeholder": "정규 표현식",
+        "min": "최솟값",
+        "max": "최댓값",
+        "min_items": "최소 항목 수",
+        "max_items": "최대 항목 수",
+        "enum_values": "열거형 값",
+        "no_constraints": "이 유형에 사용 가능한 제약 조건이 없습니다.",
+        "add_option": "옵션 추가",
+        "option_placeholder": "옵션 {{index}}",
+        "group": "그룹",
+        "group_placeholder": "필드 그룹 이름",
+        "order": "순서",
+        "advanced": "고급",
+        "read_only": "읽기 전용",
+        "placeholder": "플레이스홀더",
+        "unit": "단위"
+    },
+    "sse": {
+        "live": "실시간",
+        "connecting": "연결 중",
+        "reconnecting": "재연결 중",
+        "offline": "오프라인",
+        "error": "오류",
+        "no_events": "수신된 이벤트 없음",
+        "last_event": "마지막 이벤트: {{time}}"
+    }
+}

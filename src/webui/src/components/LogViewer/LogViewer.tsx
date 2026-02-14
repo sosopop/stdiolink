@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Empty, Input, Select, Button, Tooltip } from 'antd';
 import { ArrowDownOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import styles from './LogViewer.module.css';
@@ -47,6 +48,7 @@ function getLevelColor(level: string): string {
 }
 
 export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -82,7 +84,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
   if (!loading && lines.length === 0) {
     return (
       <div className={styles.logWindow} style={{ display: 'grid', placeItems: 'center', height: 400 }}>
-        <Empty description={<span style={{ color: 'var(--text-tertiary)' }}>No logs available</span>} />
+        <Empty description={<span style={{ color: 'var(--text-tertiary)' }}>{t('log_viewer.no_logs')}</span>} />
       </div>
     );
   }
@@ -94,14 +96,14 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
           <Select
             value={filter}
             onChange={setFilter}
-            options={LOG_LEVELS.map((l) => ({ label: l, value: l }))}
+            options={LOG_LEVELS.map((l) => ({ label: l === 'ALL' ? t('log_viewer.level_all') : l, value: l }))}
             style={{ width: 120 }}
             size="small"
             variant="borderless"
             className="glass-input" // Assuming global class exists or will fallback
           />
           <Search
-            placeholder="Search logs..."
+            placeholder={t('log_viewer.search_placeholder')}
             allowClear
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 240 }}
@@ -110,7 +112,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
           />
         </div>
         <div className={styles.filterGroup}>
-          <Tooltip title={autoScroll ? "Pause Auto-scroll" : "Resume Auto-scroll"}>
+          <Tooltip title={autoScroll ? t('log_viewer.pause_scroll') : t('log_viewer.resume_scroll')}>
             <Button
               type="text"
               size="small"

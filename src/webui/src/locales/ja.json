@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "開始",
+        "stop": "停止",
+        "restart": "再起動",
+        "configure": "設定",
+        "details": "詳細",
+        "terminate": "終了",
+        "view_trace": "トレース表示",
+        "cancel": "キャンセル",
+        "confirm": "確認",
+        "status": "ステータス",
+        "save": "保存",
+        "delete": "削除",
+        "edit": "編集",
+        "create": "作成",
+        "search": "検索",
+        "running": "実行中",
+        "stopped": "停止済み",
+        "error": "エラー",
+        "yes": "はい",
+        "no": "いいえ",
+        "retry": "再試行",
+        "reload": "再読み込み",
+        "actions": "操作",
+        "view_all": "すべて表示",
+        "view_detail": "詳細表示",
+        "lab": "ラボ",
+        "status_running": "実行中",
+        "status_stopped": "停止済み",
+        "status_starting": "起動中",
+        "status_stopping": "停止中",
+        "status_failed": "失敗",
+        "status_crashed": "クラッシュ",
+        "status_invalid": "無効"
+    },
+    "layout": {
+        "dashboard": "ダッシュボード",
+        "services": "サービス",
+        "projects": "プロジェクト",
+        "instances": "インスタンス",
+        "drivers": "ドライバー",
+        "driver_lab": "ドライバーラボ"
+    },
+    "dashboard": {
+        "loading": "コントロールパネルを読み込み中...",
+        "title": "コントロールパネル",
+        "subtitle": "リアルタイムシステムテレメトリとプロジェクトオーケストレーション",
+        "active_projects": "アクティブプロジェクト",
+        "new_project": "新規プロジェクト",
+        "empty_projects": "プロジェクトが設定されていません。最初のプロジェクトを作成してください。",
+        "live_instances": "ライブインスタンス",
+        "terminate_confirm": "プロセスを終了しますか？",
+        "no_instances": "アクティブな実行スレッドが検出されません",
+        "kpi": {
+            "projects": "プロジェクト",
+            "instances": "インスタンス",
+            "services": "サービス",
+            "drivers": "ドライバー",
+            "uptime": "稼働時間",
+            "enabled": "有効",
+            "running": "実行中"
+        },
+        "titles": {
+            "active_projects": "アクティブプロジェクト",
+            "live_instances": "ライブインスタンス",
+            "event_feed": "イベントフィード",
+            "empty_events": "イベントが記録されていません"
+        },
+        "table": {
+            "lifecycle": "ライフサイクル",
+            "target_project": "対象プロジェクト",
+            "system_pid": "システムPID",
+            "uptime": "稼働時間"
+        },
+        "project_card": {
+            "instances": "インスタンス",
+            "strategy": "戦略",
+            "status": "ステータス",
+            "service": "サービス"
+        }
+    },
+    "projects": {
+        "title": "プロジェクト",
+        "new_project": "新規プロジェクト",
+        "search_placeholder": "プロジェクトを検索...",
+        "service_filter": "サービス",
+        "status_filter": "ステータス",
+        "create_wizard": {
+            "title": "プロジェクト作成",
+            "step_service": "サービス",
+            "step_info": "情報",
+            "step_config": "設定",
+            "step_schedule": "スケジュール",
+            "project_id": "プロジェクトID",
+            "name": "名前",
+            "enabled": "有効",
+            "next": "次へ",
+            "create": "作成",
+            "success": "プロジェクトが正常に作成されました",
+            "fail": "プロジェクトの作成に失敗しました"
+        },
+        "detail": {
+            "overview": "概要",
+            "config": "設定",
+            "instances": "インスタンス",
+            "logs": "ログ",
+            "schedule": "スケジュール",
+            "not_found": "プロジェクトが見つかりません"
+        },
+        "logs": {
+            "refresh": "更新"
+        },
+        "schedule": {
+            "save": "スケジュール保存",
+            "save_success": "スケジュールが保存されました",
+            "save_fail": "スケジュールの保存に失敗しました",
+            "type": "スケジュールタイプ",
+            "manual": "手動",
+            "daemon": "デーモン",
+            "fixed_rate": "定期実行",
+            "restart_delay": "再起動遅延 (ms)",
+            "max_failures": "最大連続失敗回数",
+            "interval": "実行間隔 (ms)",
+            "max_concurrent": "最大同時実行数"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "ステータス",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "プロジェクト詳細",
+            "service_template": "サービステンプレート",
+            "runtime_status": "ランタイムステータス",
+            "schedule": "スケジュール",
+            "enabled": "有効",
+            "actions": "操作",
+            "total_count": "合計 {{count}} プロジェクト",
+            "stop_confirm": "プロジェクトを停止しますか？",
+            "delete_confirm": "プロジェクトを削除しますか？",
+            "restart_prefix": "再起動"
+        },
+        "overview": {
+            "start_project": "プロジェクト開始",
+            "stop_confirm": "このプロジェクトを停止しますか？",
+            "project_id": "プロジェクトID",
+            "display_name": "表示名",
+            "service_template": "サービステンプレート",
+            "enabled": "有効",
+            "validation": "検証",
+            "pass": "合格",
+            "fail": "不合格",
+            "schedule_strategy": "スケジュール戦略",
+            "active_instances": "アクティブインスタンス",
+            "consecutive_failures": "連続失敗回数"
+        }
+    },
+    "services": {
+        "title": "サービス",
+        "new_service": "新規サービス",
+        "search_placeholder": "サービスを検索...",
+        "scan": "スキャン",
+        "detail": {
+            "overview": "概要",
+            "files": "ファイル",
+            "schema": "スキーマ",
+            "projects": "プロジェクト",
+            "not_found": "サービスが見つかりません"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "名前",
+            "version": "バージョン",
+            "description": "説明",
+            "author": "作者",
+            "directory": "ディレクトリ",
+            "has_schema": "スキーマ有無",
+            "projects": "プロジェクト"
+        },
+        "files": {
+            "explorer": "ファイルエクスプローラー",
+            "unsaved": "未保存",
+            "reset": "リセット",
+            "save_changes": "変更を保存",
+            "no_file": "ファイルを選択して編集を開始",
+            "load_fail": "ファイルの読み込みに失敗しました",
+            "read_fail": "ファイルの読み取りに失敗しました",
+            "save_success": "ファイルが保存されました",
+            "save_fail": "ファイルの保存に失敗しました",
+            "create_success": "ファイルが作成されました",
+            "create_fail": "ファイルの作成に失敗しました",
+            "delete_success": "ファイルが削除されました",
+            "delete_fail": "ファイルの削除に失敗しました"
+        },
+        "table": {
+            "service_template": "サービステンプレート",
+            "version": "バージョン",
+            "active_projects": "アクティブプロジェクト",
+            "instances": "インスタンス",
+            "actions": "操作",
+            "delete_confirm": "サービスを削除しますか？",
+            "delete_used": "このテンプレートは {{count}} 個のプロジェクトで使用されています。",
+            "delete_unused": "このテンプレートを削除してもよろしいですか？",
+            "total_count": "{{count}} 個のテンプレート"
+        }
+    },
+    "instances": {
+        "title": "インスタンス",
+        "refresh": "更新",
+        "search_placeholder": "IDまたはプロジェクトで検索...",
+        "filter_project": "プロジェクトフィルター",
+        "filter_status": "ステータスフィルター",
+        "table": {
+            "id": "ID",
+            "project": "プロジェクト",
+            "service": "サービス",
+            "status": "ステータス",
+            "pid": "PID",
+            "uptime": "稼働時間",
+            "actions": "操作",
+            "detail": "詳細",
+            "terminate_confirm": "このインスタンスを終了しますか？"
+        },
+        "detail": {
+            "trace": "インスタンストレース",
+            "terminate_btn": "プロセス終了",
+            "overview": "概要",
+            "process_tree": "プロセスツリー",
+            "resources": "リソース",
+            "logs": "ログ",
+            "refresh_logs": "ログ更新",
+            "not_found": "インスタンスが見つかりません",
+            "instance_id": "インスタンスID",
+            "project": "プロジェクト",
+            "started_at": "開始時刻",
+            "working_dir": "作業ディレクトリ",
+            "loading": "プロセスライフサイクルをトレース中...",
+            "terminate_confirm": "このインスタンスを終了しますか？"
+        }
+    },
+    "drivers": {
+        "title": "ドライバー",
+        "scan": "スキャン",
+        "refresh": "更新",
+        "search_placeholder": "IDまたは名前で検索...",
+        "empty": "ドライバーが見つかりません。ドライバーディレクトリをスキャンしてください。",
+        "table": {
+            "driver": "ドライバー",
+            "version": "バージョン",
+            "executable_path": "実行パス",
+            "actions": "操作"
+        },
+        "detail": {
+            "not_found": "ドライバーが見つかりません",
+            "metadata": "メタデータ",
+            "no_metadata": "メタデータがありません",
+            "commands": "コマンド",
+            "no_commands": "コマンドが定義されていません",
+            "docs": "ドキュメント",
+            "test_in_lab": "ドライバーラボでテスト",
+            "no_docs": "ドキュメントがありません"
+        },
+        "info": {
+            "id": "ID",
+            "name": "名前",
+            "version": "バージョン",
+            "vendor": "ベンダー",
+            "description": "説明",
+            "capabilities": "機能",
+            "profiles": "プロファイル"
+        },
+        "command": {
+            "test": "テスト",
+            "returns": "戻り値: "
+        },
+        "params": {
+            "empty": "パラメータなし",
+            "name": "名前",
+            "type": "タイプ",
+            "required": "必須",
+            "default": "デフォルト",
+            "description": "説明"
+        }
+    },
+    "driverlab": {
+        "title": "ドライバーラボ",
+        "subtitle": "インタラクティブプロトコルデバッガー＆プレイグラウンド",
+        "command_palette": "コマンドパレット",
+        "protocol_stream": "プロトコルストリーム",
+        "auto_scroll": "自動スクロール",
+        "connection": {
+            "target_driver": "対象ドライバー",
+            "select_driver": "ドライバーを選択",
+            "mode": "モード",
+            "oneshot": "ワンショット",
+            "keepalive": "キープアライブ",
+            "arguments": "引数",
+            "args_placeholder": "引数1, 引数2, ...",
+            "connecting": "接続中...",
+            "connect": "接続",
+            "disconnect": "切断"
+        },
+        "command": {
+            "waiting_meta": "ドライバーメタデータを待機中...",
+            "select_command": "コマンド選択",
+            "select_placeholder": "コマンドを選択",
+            "execute": "実行",
+            "no_params": "このコマンドにはパラメータがありません"
+        },
+        "toolbar": {
+            "clear": "クリア",
+            "export_json": "JSONエクスポート"
+        },
+        "status": {
+            "status": "ステータス:",
+            "pid": "PID:",
+            "mode": "モード:",
+            "uptime": "稼働時間:",
+            "connected": "接続済み",
+            "connecting": "接続中",
+            "disconnected": "切断済み",
+            "error": "エラー"
+        },
+        "stream": {
+            "no_messages": "メッセージがありません"
+        },
+        "cmdline": {
+            "placeholder": "コマンドを選択してCLI例を表示",
+            "copied": "コピーしました",
+            "copy_failed": "コピーに失敗しました"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "ログがありません",
+        "search_placeholder": "ログを検索...",
+        "pause_scroll": "自動スクロール一時停止",
+        "resume_scroll": "自動スクロール再開",
+        "level_all": "すべて"
+    },
+    "schema": {
+        "visual": "ビジュアル",
+        "json": "JSON",
+        "preview": "プレビュー",
+        "validate": "検証",
+        "save": "保存",
+        "reset": "リセット",
+        "unsaved_changes": "未保存の変更",
+        "no_fields": "フィールドが定義されていません",
+        "add_first_field": "最初のフィールドを追加",
+        "add_field": "フィールド追加",
+        "add_child_field": "子フィールド追加",
+        "no_preview": "プレビューするフィールドがありません",
+        "required": "必須",
+        "default_prefix": "デフォルト: ",
+        "constraints_prefix": "制約: ",
+        "child_fields": "{{count}} 個の子フィールド",
+        "edit_field": "フィールド編集",
+        "field_name": "フィールド名",
+        "field_name_placeholder": "field_name",
+        "field_name_required": "フィールド名は必須です",
+        "field_name_exists": "フィールド名は既に存在します",
+        "type": "タイプ",
+        "required_label": "必須",
+        "description": "説明",
+        "default_value": "デフォルト値",
+        "default_placeholder": "JSONまたはプレーンテキスト",
+        "constraints": "制約",
+        "ui_hints": "UIヒント",
+        "min_length": "最小長",
+        "max_length": "最大長",
+        "pattern": "パターン",
+        "pattern_placeholder": "正規表現",
+        "min": "最小",
+        "max": "最大",
+        "min_items": "最小項目数",
+        "max_items": "最大項目数",
+        "enum_values": "列挙値",
+        "no_constraints": "このタイプには利用可能な制約がありません。",
+        "add_option": "オプション追加",
+        "option_placeholder": "オプション {{index}}",
+        "group": "グループ",
+        "group_placeholder": "フィールドグループ名",
+        "order": "順序",
+        "advanced": "詳細",
+        "read_only": "読み取り専用",
+        "placeholder": "プレースホルダー",
+        "unit": "単位"
+    },
+    "sse": {
+        "live": "ライブ",
+        "connecting": "接続中",
+        "reconnecting": "再接続中",
+        "offline": "オフライン",
+        "error": "エラー",
+        "no_events": "イベントがありません",
+        "last_event": "最終イベント: {{time}}"
+    }
+}

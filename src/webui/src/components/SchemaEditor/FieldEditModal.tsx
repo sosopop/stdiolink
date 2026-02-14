@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Select, Switch, Collapse } from 'antd';
 import type { SchemaNode, SchemaFieldDescriptor } from '@/utils/schemaPath';
 import { ConstraintsSection } from './ConstraintsSection';
@@ -21,6 +22,7 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [type, setType] = useState<string>('string');
   const [required, setRequired] = useState(false);
@@ -58,14 +60,14 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
   const handleOk = () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setNameError('Field name is required');
+      setNameError(t('schema.field_name_required'));
       return;
     }
     const otherNames = isEdit
       ? existingNames.filter((n) => n !== field!.name)
       : existingNames;
     if (otherNames.includes(trimmed)) {
-      setNameError('Field name already exists');
+      setNameError(t('schema.field_name_exists'));
       return;
     }
 
@@ -102,7 +104,7 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
   const collapseItems = [
     {
       key: 'constraints',
-      label: 'Constraints',
+      label: t('schema.constraints'),
       children: (
         <ConstraintsSection
           type={type}
@@ -113,7 +115,7 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
     },
     {
       key: 'uiHints',
-      label: 'UI Hints',
+      label: t('schema.ui_hints'),
       children: (
         <UiHintsSection
           hints={uiHints as any}
@@ -125,7 +127,7 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
 
   return (
     <Modal
-      title={isEdit ? 'Edit Field' : 'Add Field'}
+      title={isEdit ? t('schema.edit_field') : t('schema.add_field')}
       open={visible}
       onOk={handleOk}
       onCancel={onCancel}
@@ -135,33 +137,33 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
     >
       <Form layout="vertical">
         <Form.Item
-          label="Field Name"
+          label={t('schema.field_name')}
           validateStatus={nameError ? 'error' : undefined}
           help={nameError}
         >
           <Input
             value={name}
             onChange={(e) => { setName(e.target.value); setNameError(null); }}
-            placeholder="field_name"
+            placeholder={t('schema.field_name_placeholder')}
             data-testid="field-name-input"
           />
         </Form.Item>
-        <Form.Item label="Type">
+        <Form.Item label={t('schema.type')}>
           <Select
             value={type}
             onChange={(v) => { setType(v); setConstraints({}); }}
             data-testid="field-type-select"
-            options={FIELD_TYPES.map((t) => ({ label: t, value: t }))}
+            options={FIELD_TYPES.map((ft) => ({ label: ft, value: ft }))}
           />
         </Form.Item>
-        <Form.Item label="Required">
+        <Form.Item label={t('schema.required_label')}>
           <Switch
             checked={required}
             onChange={setRequired}
             data-testid="field-required-switch"
           />
         </Form.Item>
-        <Form.Item label="Description">
+        <Form.Item label={t('schema.description')}>
           <Input.TextArea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -169,11 +171,11 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
             data-testid="field-description-input"
           />
         </Form.Item>
-        <Form.Item label="Default Value">
+        <Form.Item label={t('schema.default_value')}>
           <Input
             value={defaultValue}
             onChange={(e) => setDefaultValue(e.target.value)}
-            placeholder="JSON or plain text"
+            placeholder={t('schema.default_placeholder')}
             data-testid="field-default-input"
           />
         </Form.Item>

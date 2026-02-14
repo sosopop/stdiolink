@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Typography, Button, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 
@@ -40,14 +41,15 @@ export const CommandLineExample: React.FC<CommandLineExampleProps> = ({
   command,
   params,
 }) => {
+  const { t } = useTranslation();
   const cmdLine = buildCommandLine(driverId, command, params);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(cmdLine);
-      message.success('Copied');
+      message.success(t('driverlab.cmdline.copied'));
     } catch {
-      message.error('Copy failed');
+      message.error(t('driverlab.cmdline.copy_failed'));
     }
   };
 
@@ -55,7 +57,7 @@ export const CommandLineExample: React.FC<CommandLineExampleProps> = ({
     return (
       <div data-testid="cmdline-example">
         <Typography.Text type="secondary" data-testid="cmdline-placeholder">
-          Select a command to see the CLI example
+          {t('driverlab.cmdline.placeholder')}
         </Typography.Text>
       </div>
     );

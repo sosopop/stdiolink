@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Button, Space, Popconfirm, Tag, Typography } from 'antd';
 import { EyeOutlined, DeleteOutlined, SettingOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -13,11 +14,12 @@ interface ServiceTableProps {
 const { Text } = Typography;
 
 export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, onDelete }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const columns = [
     {
-      title: 'Service Template',
+      title: t('services.table.service_template'),
       key: 'name',
       render: (_: unknown, record: ServiceInfo) => (
         <Space size={12}>
@@ -32,7 +34,7 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
       ),
     },
     {
-      title: 'Version',
+      title: t('services.table.version'),
       dataIndex: 'version',
       key: 'version',
       width: 120,
@@ -43,7 +45,7 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
       ),
     },
     {
-      title: 'Active Projects',
+      title: t('services.table.active_projects'),
       dataIndex: 'projectCount',
       key: 'projectCount',
       width: 150,
@@ -51,12 +53,12 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
       render: (count: number) => (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Text strong style={{ fontSize: 16 }}>{count}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>instances</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{t('services.table.instances')}</Text>
         </div>
       )
     },
     {
-      title: 'Actions',
+      title: t('services.table.actions'),
       key: 'actions',
       align: 'right' as const,
       width: 150,
@@ -73,12 +75,12 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
             onClick={(e) => { e.stopPropagation(); navigate(`/services/${record.id}`); }}
           />
           <Popconfirm
-            title="Delete service?"
-            description={record.projectCount > 0 ? `This template is used by ${record.projectCount} projects.` : "Are you sure you want to delete this template?"}
+            title={t('services.table.delete_confirm')}
+            description={record.projectCount > 0 ? t('services.table.delete_used', { count: record.projectCount }) : t('services.table.delete_unused')}
             onConfirm={(e) => { e?.stopPropagation(); onDelete(record.id); }}
             onCancel={(e) => e?.stopPropagation()}
-            okText="Delete"
-            cancelText="Cancel"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             okButtonProps={{ danger: true }}
           >
             <Button
@@ -103,7 +105,7 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
         pagination={{
           pageSize: 10,
           style: { marginRight: 24, marginTop: 24 },
-          showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>{total} templates available</Text>
+          showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>{t('services.table.total_count', { count: total })}</Text>
         }}
         onRow={(record) => ({
           onClick: () => navigate(`/services/${record.id}`),

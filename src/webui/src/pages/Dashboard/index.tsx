@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Spin, Alert, Typography, Button, Space } from 'antd';
 import { PlusOutlined, RightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ import styles from './dashboard.module.css';
 const SSE_FILTERS = ['instance.started', 'instance.finished', 'schedule.triggered', 'schedule.suppressed'];
 
 export const DashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     serverStatus,
@@ -73,7 +75,7 @@ export const DashboardPage: React.FC = () => {
   if (loading && !serverStatus && projects.length === 0) {
     return (
       <div style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <Spin size="large" tip="Loading mission control..." data-testid="dashboard-loading" />
+        <Spin size="large" tip={t('dashboard.loading')} data-testid="dashboard-loading" />
       </div>
     );
   }
@@ -82,8 +84,8 @@ export const DashboardPage: React.FC = () => {
     <div data-testid="page-dashboard">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
         <div>
-          <Typography.Title level={2} style={{ margin: 0, letterSpacing: '-1px' }}>Mission Control</Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 14 }}>Real-time system telemetry and project orchestration</Typography.Text>
+          <Typography.Title level={2} style={{ margin: 0, letterSpacing: '-1px' }}>{t('dashboard.title')}</Typography.Title>
+          <Typography.Text type="secondary" style={{ fontSize: 14 }}>{t('dashboard.subtitle')}</Typography.Text>
         </div>
         <ServerIndicator status={serverStatus} connected={connected} />
       </div>
@@ -105,10 +107,10 @@ export const DashboardPage: React.FC = () => {
           {/* Projects Section */}
           <section>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Active Projects</h3>
+              <h3 className={styles.sectionTitle}>{t('dashboard.active_projects')}</h3>
               <Space>
                 <Button type="link" size="small" onClick={() => navigate('/projects')}>
-                  View All <RightOutlined style={{ fontSize: 10 }} />
+                  {t('common.view_all')} <RightOutlined style={{ fontSize: 10 }} />
                 </Button>
                 <Button
                   type="primary"
@@ -117,7 +119,7 @@ export const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/projects?action=create')}
                   style={{ borderRadius: 6 }}
                 >
-                  New Project
+                  {t('dashboard.new_project')}
                 </Button>
               </Space>
             </div>
@@ -133,7 +135,7 @@ export const DashboardPage: React.FC = () => {
               ))}
               {projects.length === 0 && (
                 <div className="glass-panel" style={{ gridColumn: '1/-1', padding: 40, textAlign: 'center', color: 'var(--text-tertiary)' }}>
-                  No projects configured. Get started by creating your first project.
+                  {t('dashboard.empty_projects')}
                 </div>
               )}
             </div>
@@ -142,9 +144,9 @@ export const DashboardPage: React.FC = () => {
           {/* Instances Section */}
           <section>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Live Instances</h3>
+              <h3 className={styles.sectionTitle}>{t('dashboard.live_instances')}</h3>
               <Button type="link" size="small" onClick={() => navigate('/instances')}>
-                View Detail <RightOutlined style={{ fontSize: 10 }} />
+                {t('common.view_detail')} <RightOutlined style={{ fontSize: 10 }} />
               </Button>
             </div>
             <ActiveInstances instances={instances} onTerminate={handleTerminate} />

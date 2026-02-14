@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Spin, Alert, Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +12,7 @@ interface DriverDocsProps {
 }
 
 export const DriverDocs: React.FC<DriverDocsProps> = ({ driverId }) => {
+  const { t } = useTranslation();
   const { docsMarkdown, docsLoading, error, fetchDriverDocs } = useDriversStore();
 
   useEffect(() => {
@@ -26,14 +28,14 @@ export const DriverDocs: React.FC<DriverDocsProps> = ({ driverId }) => {
       <div data-testid="docs-error">
         <Alert type="error" message={error} style={{ marginBottom: 8 }} />
         <Button icon={<ReloadOutlined />} onClick={() => fetchDriverDocs(driverId, 'markdown').catch(() => { })} data-testid="docs-retry">
-          Retry
+          {t('common.retry')}
         </Button>
       </div>
     );
   }
 
   if (!docsMarkdown) {
-    return <Alert type="info" message="No documentation available" data-testid="docs-empty" />;
+    return <Alert type="info" message={t('drivers.detail.no_docs')} data-testid="docs-empty" />;
   }
 
   return (

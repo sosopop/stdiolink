@@ -1,0 +1,399 @@
+{
+    "common": {
+        "start": "启动",
+        "stop": "停止",
+        "restart": "重启",
+        "configure": "配置",
+        "details": "详情",
+        "terminate": "终止",
+        "view_trace": "查看追踪",
+        "cancel": "取消",
+        "confirm": "确认",
+        "status": "状态",
+        "save": "保存",
+        "delete": "删除",
+        "edit": "编辑",
+        "create": "创建",
+        "search": "搜索",
+        "running": "运行中",
+        "stopped": "已停止",
+        "error": "错误",
+        "yes": "是",
+        "no": "否",
+        "retry": "重试",
+        "reload": "重新加载",
+        "actions": "操作",
+        "view_all": "查看全部",
+        "view_detail": "查看详情",
+        "lab": "实验室",
+        "status_running": "运行中",
+        "status_stopped": "已停止",
+        "status_starting": "启动中",
+        "status_stopping": "停止中",
+        "status_failed": "失败",
+        "status_crashed": "崩溃",
+        "status_invalid": "无效"
+    },
+    "layout": {
+        "dashboard": "仪表盘",
+        "services": "服务",
+        "projects": "项目",
+        "instances": "实例",
+        "drivers": "驱动",
+        "driver_lab": "驱动实验室"
+    },
+    "dashboard": {
+        "loading": "加载控制台...",
+        "title": "控制台",
+        "subtitle": "实时系统遥测与项目编排",
+        "active_projects": "活跃项目",
+        "new_project": "新建项目",
+        "empty_projects": "暂无项目配置。创建您的第一个项目以开始使用。",
+        "live_instances": "实时实例",
+        "terminate_confirm": "确认终止进程？",
+        "no_instances": "未检测到活跃执行线程",
+        "kpi": {
+            "projects": "项目",
+            "instances": "实例",
+            "services": "服务",
+            "drivers": "驱动",
+            "uptime": "运行时间",
+            "enabled": "已启用",
+            "running": "运行中"
+        },
+        "titles": {
+            "active_projects": "活跃项目",
+            "live_instances": "实时实例",
+            "event_feed": "事件流",
+            "empty_events": "暂无事件记录"
+        },
+        "table": {
+            "lifecycle": "生命周期",
+            "target_project": "目标项目",
+            "system_pid": "系统 PID",
+            "uptime": "运行时间"
+        },
+        "project_card": {
+            "instances": "实例",
+            "strategy": "策略",
+            "status": "状态",
+            "service": "服务"
+        }
+    },
+    "projects": {
+        "title": "项目",
+        "new_project": "新建项目",
+        "search_placeholder": "搜索项目...",
+        "service_filter": "服务",
+        "status_filter": "状态",
+        "create_wizard": {
+            "title": "创建项目",
+            "step_service": "服务",
+            "step_info": "信息",
+            "step_config": "配置",
+            "step_schedule": "调度",
+            "project_id": "项目 ID",
+            "name": "名称",
+            "enabled": "启用",
+            "next": "下一步",
+            "create": "创建",
+            "success": "项目创建成功",
+            "fail": "项目创建失败"
+        },
+        "detail": {
+            "overview": "概览",
+            "config": "配置",
+            "instances": "实例",
+            "logs": "日志",
+            "schedule": "调度",
+            "not_found": "项目未找到"
+        },
+        "logs": {
+            "refresh": "刷新"
+        },
+        "schedule": {
+            "save": "保存调度",
+            "save_success": "调度已保存",
+            "save_fail": "保存调度失败",
+            "type": "调度类型",
+            "manual": "手动",
+            "daemon": "守护进程",
+            "fixed_rate": "定时执行",
+            "restart_delay": "重启延迟 (ms)",
+            "max_failures": "最大连续失败次数",
+            "interval": "执行间隔 (ms)",
+            "max_concurrent": "最大并发数"
+        },
+        "instances_tab": {
+            "id": "ID",
+            "status": "状态",
+            "pid": "PID"
+        },
+        "table": {
+            "details": "项目详情",
+            "service_template": "服务模板",
+            "runtime_status": "运行状态",
+            "schedule": "调度",
+            "enabled": "启用",
+            "actions": "操作",
+            "total_count": "共 {{count}} 个项目",
+            "stop_confirm": "确认停止项目？",
+            "delete_confirm": "确认删除项目？",
+            "restart_prefix": "重启"
+        },
+        "overview": {
+            "start_project": "启动项目",
+            "stop_confirm": "确认停止此项目？",
+            "project_id": "项目 ID",
+            "display_name": "显示名称",
+            "service_template": "服务模板",
+            "enabled": "启用",
+            "validation": "验证",
+            "pass": "通过",
+            "fail": "失败",
+            "schedule_strategy": "调度策略",
+            "active_instances": "活跃实例",
+            "consecutive_failures": "连续失败次数"
+        }
+    },
+    "services": {
+        "title": "服务",
+        "new_service": "新建服务",
+        "search_placeholder": "搜索服务...",
+        "scan": "扫描",
+        "detail": {
+            "overview": "概览",
+            "files": "文件",
+            "schema": "模型",
+            "projects": "项目",
+            "not_found": "服务未找到"
+        },
+        "overview": {
+            "id": "ID",
+            "name": "名称",
+            "version": "版本",
+            "description": "描述",
+            "author": "作者",
+            "directory": "目录",
+            "has_schema": "配置模型",
+            "projects": "关联项目"
+        },
+        "files": {
+            "explorer": "文件浏览器",
+            "unsaved": "未保存",
+            "reset": "重置",
+            "save_changes": "保存更改",
+            "no_file": "选择文件以开始编辑",
+            "load_fail": "加载文件失败",
+            "read_fail": "读取文件失败",
+            "save_success": "文件已保存",
+            "save_fail": "保存文件失败",
+            "create_success": "文件已创建",
+            "create_fail": "创建文件失败",
+            "delete_success": "文件已删除",
+            "delete_fail": "删除文件失败"
+        },
+        "table": {
+            "service_template": "服务模板",
+            "version": "版本",
+            "active_projects": "活跃项目",
+            "instances": "实例",
+            "actions": "操作",
+            "delete_confirm": "确认删除服务？",
+            "delete_used": "此模板被 {{count}} 个项目使用。",
+            "delete_unused": "确认删除此模板？",
+            "total_count": "共 {{count}} 个模板"
+        }
+    },
+    "instances": {
+        "title": "实例",
+        "refresh": "刷新",
+        "search_placeholder": "通过 ID 或项目搜索...",
+        "filter_project": "项目筛选",
+        "filter_status": "状态筛选",
+        "table": {
+            "id": "ID",
+            "project": "项目",
+            "service": "服务",
+            "status": "状态",
+            "pid": "PID",
+            "uptime": "运行时间",
+            "actions": "操作",
+            "detail": "详情",
+            "terminate_confirm": "确认终止此实例？"
+        },
+        "detail": {
+            "trace": "实例追踪",
+            "terminate_btn": "终止进程",
+            "overview": "概览",
+            "process_tree": "进程树",
+            "resources": "资源",
+            "logs": "日志",
+            "refresh_logs": "刷新日志",
+            "not_found": "实例未找到",
+            "instance_id": "实例 ID",
+            "project": "项目",
+            "started_at": "启动时间",
+            "working_dir": "工作目录",
+            "loading": "追踪进程生命周期...",
+            "terminate_confirm": "确认终止此实例？"
+        }
+    },
+    "drivers": {
+        "title": "驱动",
+        "scan": "扫描",
+        "refresh": "刷新",
+        "search_placeholder": "通过 ID 或名称搜索...",
+        "empty": "未找到驱动。请尝试扫描驱动目录。",
+        "table": {
+            "driver": "驱动",
+            "version": "版本",
+            "executable_path": "可执行路径",
+            "actions": "操作"
+        },
+        "detail": {
+            "not_found": "驱动未找到",
+            "metadata": "元数据",
+            "no_metadata": "无可用元数据",
+            "commands": "命令",
+            "no_commands": "未定义命令",
+            "docs": "文档",
+            "test_in_lab": "在驱动实验室中测试",
+            "no_docs": "无可用文档"
+        },
+        "info": {
+            "id": "ID",
+            "name": "名称",
+            "version": "版本",
+            "vendor": "厂商",
+            "description": "描述",
+            "capabilities": "能力",
+            "profiles": "配置"
+        },
+        "command": {
+            "test": "测试",
+            "returns": "返回: "
+        },
+        "params": {
+            "empty": "无参数",
+            "name": "名称",
+            "type": "类型",
+            "required": "必填",
+            "default": "默认值",
+            "description": "描述"
+        }
+    },
+    "driverlab": {
+        "title": "驱动实验室",
+        "subtitle": "交互式协议调试器与演练场",
+        "command_palette": "指令面板",
+        "protocol_stream": "协议流",
+        "auto_scroll": "自动滚动",
+        "connection": {
+            "target_driver": "目标驱动",
+            "select_driver": "选择驱动",
+            "mode": "模式",
+            "oneshot": "单次执行",
+            "keepalive": "保活",
+            "arguments": "参数",
+            "args_placeholder": "参数1, 参数2, ...",
+            "connecting": "连接中...",
+            "connect": "连接",
+            "disconnect": "断开"
+        },
+        "command": {
+            "waiting_meta": "等待驱动元数据...",
+            "select_command": "选择命令",
+            "select_placeholder": "选择命令",
+            "execute": "执行",
+            "no_params": "此命令无参数"
+        },
+        "toolbar": {
+            "clear": "清除",
+            "export_json": "导出 JSON"
+        },
+        "status": {
+            "status": "状态:",
+            "pid": "PID:",
+            "mode": "模式:",
+            "uptime": "运行时间:",
+            "connected": "已连接",
+            "connecting": "连接中",
+            "disconnected": "已断开",
+            "error": "错误"
+        },
+        "stream": {
+            "no_messages": "暂无消息"
+        },
+        "cmdline": {
+            "placeholder": "选择命令以查看 CLI 示例",
+            "copied": "已复制",
+            "copy_failed": "复制失败"
+        }
+    },
+    "log_viewer": {
+        "no_logs": "暂无日志",
+        "search_placeholder": "搜索日志...",
+        "pause_scroll": "暂停自动滚动",
+        "resume_scroll": "恢复自动滚动",
+        "level_all": "全部"
+    },
+    "schema": {
+        "visual": "可视化",
+        "json": "JSON",
+        "preview": "预览",
+        "validate": "校验",
+        "save": "保存",
+        "reset": "重置",
+        "unsaved_changes": "未保存的更改",
+        "no_fields": "暂无字段定义",
+        "add_first_field": "添加第一个字段",
+        "add_field": "添加字段",
+        "add_child_field": "添加子字段",
+        "no_preview": "暂无可预览的字段",
+        "required": "必填",
+        "default_prefix": "默认值: ",
+        "constraints_prefix": "约束: ",
+        "child_fields": "{{count}} 个子字段",
+        "edit_field": "编辑字段",
+        "field_name": "字段名称",
+        "field_name_placeholder": "field_name",
+        "field_name_required": "字段名称不能为空",
+        "field_name_exists": "字段名称已存在",
+        "type": "类型",
+        "required_label": "必填",
+        "description": "描述",
+        "default_value": "默认值",
+        "default_placeholder": "JSON 或纯文本",
+        "constraints": "约束条件",
+        "ui_hints": "UI 提示",
+        "min_length": "最小长度",
+        "max_length": "最大长度",
+        "pattern": "正则模式",
+        "pattern_placeholder": "正则表达式",
+        "min": "最小值",
+        "max": "最大值",
+        "min_items": "最少项数",
+        "max_items": "最多项数",
+        "enum_values": "枚举值",
+        "no_constraints": "此类型无可用约束。",
+        "add_option": "添加选项",
+        "option_placeholder": "选项 {{index}}",
+        "group": "分组",
+        "group_placeholder": "字段分组名称",
+        "order": "排序",
+        "advanced": "高级",
+        "read_only": "只读",
+        "placeholder": "占位符",
+        "unit": "单位"
+    },
+    "sse": {
+        "live": "实时",
+        "connecting": "连接中",
+        "reconnecting": "重连中",
+        "offline": "离线",
+        "error": "错误",
+        "no_events": "暂无事件",
+        "last_event": "最近事件: {{time}}"
+    }
+}

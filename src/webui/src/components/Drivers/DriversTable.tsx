@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Button, Space, Empty, Typography, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { ApiOutlined, ExperimentOutlined } from '@ant-design/icons';
@@ -11,6 +12,7 @@ interface DriversTableProps {
 const { Text } = Typography;
 
 export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   if (drivers.length === 0) {
@@ -18,7 +20,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
       <div className="glass-panel" style={{ padding: 48, textAlign: 'center' }}>
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={<Text type="secondary">No drivers found. Try scanning the drivers directory.</Text>}
+          description={<Text type="secondary">{t('drivers.empty')}</Text>}
           data-testid="empty-drivers"
         />
       </div>
@@ -27,7 +29,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
 
   const columns = [
     {
-      title: 'Driver',
+      title: t('drivers.table.driver'),
       key: 'driver',
       width: 260,
       render: (_: unknown, record: DriverListItem) => (
@@ -43,7 +45,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
       )
     },
     {
-      title: 'Version',
+      title: t('drivers.table.version'),
       dataIndex: 'version',
       key: 'version',
       width: 100,
@@ -54,7 +56,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
       ) : <Text type="secondary" style={{ fontSize: 12 }}>--</Text>
     },
     {
-      title: 'Executable Path',
+      title: t('drivers.table.executable_path'),
       dataIndex: 'program',
       key: 'program',
       ellipsis: true,
@@ -65,7 +67,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
       )
     },
     {
-      title: 'Actions',
+      title: t('drivers.table.actions'),
       key: 'actions',
       width: 200,
       align: 'right' as const,
@@ -78,7 +80,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
             onClick={(e) => { e.stopPropagation(); navigate(`/drivers/${record.id}`); }}
             data-testid={`detail-${record.id}`}
           >
-            Details
+            {t('common.details')}
           </Button>
           <div style={{ width: 1, height: 14, background: 'var(--surface-border)', margin: '0 4px' }} />
           <Button
@@ -88,7 +90,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
             onClick={(e) => { e.stopPropagation(); navigate(`/driverlab?driverId=${record.id}`); }}
             data-testid={`test-${record.id}`}
           >
-            Lab
+            {t('common.lab')}
           </Button>
         </Space>
       ),

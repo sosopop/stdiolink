@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Typography, Switch, Space } from 'antd';
 import { ExperimentOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
@@ -20,6 +21,7 @@ const statusColorMap: Record<string, string> = {
 };
 
 export const DriverLabPage: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const urlDriverId = searchParams.get('driverId');
 
@@ -70,8 +72,8 @@ export const DriverLabPage: React.FC = () => {
             <ExperimentOutlined style={{ fontSize: 22, color: 'var(--brand-primary)' }} />
           </div>
           <div>
-            <Title level={4} style={{ margin: 0, fontWeight: 600, letterSpacing: '-0.01em' }}>Driver Lab</Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>Interactive protocol debugger & playground</Text>
+            <Title level={4} style={{ margin: 0, fontWeight: 600, letterSpacing: '-0.01em' }}>{t('driverlab.title')}</Title>
+            <Text type="secondary" style={{ fontSize: 13 }}>{t('driverlab.subtitle')}</Text>
           </div>
         </Space>
 
@@ -84,7 +86,7 @@ export const DriverLabPage: React.FC = () => {
             }}
           />
           <Text strong style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.5px' }} data-testid="header-status">
-            {connection.status}
+            {t(`driverlab.status.${connection.status}`)}
           </Text>
         </div>
       </div>
@@ -110,7 +112,7 @@ export const DriverLabPage: React.FC = () => {
           {/* Left: Command Palette */}
           <div className="glass-panel" style={{ width: 320, display: 'flex', flexDirection: 'column', padding: 16 }}>
             <div style={{ marginBottom: 12 }}>
-              <Title level={5} style={{ margin: 0 }}>Command Palette</Title>
+              <Title level={5} style={{ margin: 0 }}>{t('driverlab.command_palette')}</Title>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <CommandPanel
@@ -135,10 +137,10 @@ export const DriverLabPage: React.FC = () => {
             style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
           >
             <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--surface-border)' }}>
-              <Text strong style={{ textTransform: 'uppercase', fontSize: 12, letterSpacing: '1px', opacity: 0.8 }}>Protocol Stream</Text>
+              <Text strong style={{ textTransform: 'uppercase', fontSize: 12, letterSpacing: '1px', opacity: 0.8 }}>{t('driverlab.protocol_stream')}</Text>
               <Space size={16}>
                 <Space size={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Auto-scroll</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('driverlab.auto_scroll')}</Text>
                   <Switch
                     size="small"
                     checked={autoScroll}

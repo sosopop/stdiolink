@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { InputNumber, Input, Typography } from 'antd';
 import { EnumValuesEditor } from './EnumValuesEditor';
 
@@ -11,6 +12,7 @@ interface ConstraintsSectionProps {
 }
 
 export const ConstraintsSection: React.FC<ConstraintsSectionProps> = ({ type, constraints, onChange }) => {
+  const { t } = useTranslation();
   const update = (key: string, value: unknown) => {
     onChange({ ...constraints, [key]: value });
   };
@@ -32,14 +34,14 @@ export const ConstraintsSection: React.FC<ConstraintsSectionProps> = ({ type, co
     case 'string':
       return (
         <div data-testid="constraints-string">
-          {numField('Min Length', 'minLength')}
-          {numField('Max Length', 'maxLength')}
+          {numField(t('schema.min_length'), 'minLength')}
+          {numField(t('schema.max_length'), 'maxLength')}
           <div style={{ marginBottom: 8 }}>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>Pattern</Text>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>{t('schema.pattern')}</Text>
             <Input
               value={(constraints.pattern as string) ?? ''}
               onChange={(e) => update('pattern', e.target.value || undefined)}
-              placeholder="Regular expression"
+              placeholder={t('schema.pattern_placeholder')}
               data-testid="constraint-pattern"
             />
           </div>
@@ -50,31 +52,31 @@ export const ConstraintsSection: React.FC<ConstraintsSectionProps> = ({ type, co
     case 'int64':
       return (
         <div data-testid="constraints-int">
-          {numField('Min', 'min')}
-          {numField('Max', 'max')}
+          {numField(t('schema.min'), 'min')}
+          {numField(t('schema.max'), 'max')}
         </div>
       );
 
     case 'double':
       return (
         <div data-testid="constraints-double">
-          {numField('Min', 'min', 0.1)}
-          {numField('Max', 'max', 0.1)}
+          {numField(t('schema.min'), 'min', 0.1)}
+          {numField(t('schema.max'), 'max', 0.1)}
         </div>
       );
 
     case 'array':
       return (
         <div data-testid="constraints-array">
-          {numField('Min Items', 'minItems')}
-          {numField('Max Items', 'maxItems')}
+          {numField(t('schema.min_items'), 'minItems')}
+          {numField(t('schema.max_items'), 'maxItems')}
         </div>
       );
 
     case 'enum':
       return (
         <div data-testid="constraints-enum">
-          <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>Enum Values</Text>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>{t('schema.enum_values')}</Text>
           <EnumValuesEditor
             values={(constraints.enumValues as string[]) ?? []}
             onChange={(vals) => update('enumValues', vals)}
@@ -85,7 +87,7 @@ export const ConstraintsSection: React.FC<ConstraintsSectionProps> = ({ type, co
     default:
       return (
         <div data-testid="constraints-none">
-          <Text type="secondary">No constraints available for this type.</Text>
+          <Text type="secondary">{t('schema.no_constraints')}</Text>
         </div>
       );
   }

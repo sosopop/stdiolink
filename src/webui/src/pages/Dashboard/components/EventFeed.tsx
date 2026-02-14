@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tag } from 'antd';
 import type { ServerEvent } from '@/types/server';
 import styles from '../dashboard.module.css';
@@ -15,6 +16,8 @@ const eventColorMap: Record<string, string> = {
 };
 
 export const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
+  const { t } = useTranslation();
+
   const formatTime = (ts?: string) => {
     if (!ts) return '';
     return new Date(ts).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -46,10 +49,11 @@ export const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
 
   return (
     <div className="glass-panel" style={{ padding: 24 }} data-testid="event-feed">
-      <h3 className={styles.sectionTitle}>Event Feed</h3>
+
+      <h3 className={styles.sectionTitle}>{t('dashboard.titles.event_feed')}</h3>
       {groupedEvents.length === 0 ? (
         <div data-testid="empty-events" style={{ textAlign: 'center', padding: 20, color: 'var(--text-tertiary)' }}>
-          No events recorded
+          {t('dashboard.titles.empty_events')}
         </div>
       ) : (
         <div className={styles.eventList}>

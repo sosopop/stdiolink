@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Empty } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SchemaNode } from '@/utils/schemaPath';
@@ -8,6 +9,7 @@ import { FieldCard } from './FieldCard';
 import { FieldEditModal } from './FieldEditModal';
 
 export const VisualEditor: React.FC = () => {
+  const { t } = useTranslation();
   const { nodes, addField, updateField, removeField, moveField } = useSchemaEditorStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingPath, setEditingPath] = useState<string | null>(null);
@@ -53,14 +55,14 @@ export const VisualEditor: React.FC = () => {
   return (
     <div data-testid="visual-editor">
       {nodes.length === 0 ? (
-        <Empty description="No fields defined" data-testid="visual-empty">
+        <Empty description={t('schema.no_fields')} data-testid="visual-empty">
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
             data-testid="visual-add-first"
           >
-            Add First Field
+            {t('schema.add_first_field')}
           </Button>
         </Empty>
       ) : (
@@ -87,7 +89,7 @@ export const VisualEditor: React.FC = () => {
             data-testid="visual-add-btn"
             block
           >
-            Add Field
+            {t('schema.add_field')}
           </Button>
         </>
       )}

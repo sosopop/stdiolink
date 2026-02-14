@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -8,6 +9,7 @@ interface EnumValuesEditorProps {
 }
 
 export const EnumValuesEditor: React.FC<EnumValuesEditorProps> = ({ values, onChange }) => {
+  const { t } = useTranslation();
   const handleAdd = () => onChange([...values, '']);
 
   const handleChange = (index: number, val: string) => {
@@ -27,7 +29,7 @@ export const EnumValuesEditor: React.FC<EnumValuesEditorProps> = ({ values, onCh
           <Input
             value={v}
             onChange={(e) => handleChange(i, e.target.value)}
-            placeholder={`Option ${i + 1}`}
+            placeholder={t('schema.option_placeholder', { index: i + 1 })}
             data-testid={`enum-value-${i}`}
             style={{ width: 200 }}
           />
@@ -47,7 +49,7 @@ export const EnumValuesEditor: React.FC<EnumValuesEditorProps> = ({ values, onCh
         data-testid="enum-add-btn"
         block
       >
-        Add Option
+        {t('schema.add_option')}
       </Button>
     </div>
   );

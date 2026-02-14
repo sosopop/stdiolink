@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Form, Select, InputNumber } from 'antd';
 import type { Schedule, ScheduleType } from '@/types/project';
 
@@ -7,13 +8,15 @@ interface ScheduleFormProps {
   onChange: (value: Schedule) => void;
 }
 
-const SCHEDULE_TYPES: { label: string; value: ScheduleType }[] = [
-  { label: 'Manual', value: 'manual' },
-  { label: 'Daemon', value: 'daemon' },
-  { label: 'Fixed Rate', value: 'fixed_rate' },
-];
-
 export const ScheduleForm: React.FC<ScheduleFormProps> = ({ value, onChange }) => {
+  const { t } = useTranslation();
+
+  const scheduleTypes: { label: string; value: ScheduleType }[] = [
+    { label: t('projects.schedule.manual'), value: 'manual' },
+    { label: t('projects.schedule.daemon'), value: 'daemon' },
+    { label: t('projects.schedule.fixed_rate'), value: 'fixed_rate' },
+  ];
+
   const handleTypeChange = (type: ScheduleType) => {
     onChange({ ...value, type });
   };
@@ -21,18 +24,18 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ value, onChange }) =
   return (
     <div data-testid="schedule-form">
       <Form layout="vertical">
-        <Form.Item label="Schedule Type">
+        <Form.Item label={t('projects.schedule.type')}>
           <Select
             value={value.type}
             onChange={handleTypeChange}
-            options={SCHEDULE_TYPES}
+            options={scheduleTypes}
             data-testid="schedule-type"
           />
         </Form.Item>
 
         {value.type === 'daemon' && (
           <>
-            <Form.Item label="Restart Delay (ms)">
+            <Form.Item label={t('projects.schedule.restart_delay')}>
               <InputNumber
                 value={value.restartDelayMs ?? 3000}
                 onChange={(v) => onChange({ ...value, restartDelayMs: v ?? 3000 })}
@@ -41,7 +44,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ value, onChange }) =
                 data-testid="restart-delay"
               />
             </Form.Item>
-            <Form.Item label="Max Consecutive Failures">
+            <Form.Item label={t('projects.schedule.max_failures')}>
               <InputNumber
                 value={value.maxConsecutiveFailures ?? 5}
                 onChange={(v) => onChange({ ...value, maxConsecutiveFailures: v ?? 5 })}
@@ -55,7 +58,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ value, onChange }) =
 
         {value.type === 'fixed_rate' && (
           <>
-            <Form.Item label="Interval (ms)">
+            <Form.Item label={t('projects.schedule.interval')}>
               <InputNumber
                 value={value.intervalMs ?? 60000}
                 onChange={(v) => onChange({ ...value, intervalMs: v ?? 60000 })}
@@ -64,7 +67,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ value, onChange }) =
                 data-testid="interval-ms"
               />
             </Form.Item>
-            <Form.Item label="Max Concurrent">
+            <Form.Item label={t('projects.schedule.max_concurrent')}>
               <InputNumber
                 value={value.maxConcurrent ?? 1}
                 onChange={(v) => onChange({ ...value, maxConcurrent: v ?? 1 })}

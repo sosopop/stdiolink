@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Empty } from 'antd';
 import type { FieldMeta } from '@/types/service';
 
@@ -20,15 +21,17 @@ function flattenParams(params: FieldMeta[], prefix = '', depth = 0): Array<Field
 }
 
 export const ParamsTable: React.FC<ParamsTableProps> = ({ params }) => {
+  const { t } = useTranslation();
+
   if (!params || params.length === 0) {
-    return <Empty description="No parameters" data-testid="empty-params" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    return <Empty description={t('drivers.params.empty')} data-testid="empty-params" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
   }
 
   const flat = flattenParams(params);
 
   const columns = [
     {
-      title: 'Name',
+      title: t('drivers.params.name'),
       dataIndex: 'fullPath',
       key: 'name',
       width: 180,
@@ -38,16 +41,16 @@ export const ParamsTable: React.FC<ParamsTableProps> = ({ params }) => {
         </span>
       ),
     },
-    { title: 'Type', dataIndex: 'type', key: 'type', width: 100 },
+    { title: t('drivers.params.type'), dataIndex: 'type', key: 'type', width: 100 },
     {
-      title: 'Required',
+      title: t('drivers.params.required'),
       dataIndex: 'required',
       key: 'required',
       width: 80,
       render: (v: boolean) => v ? '✓' : '',
     },
     {
-      title: 'Default',
+      title: t('drivers.params.default'),
       key: 'default',
       width: 120,
       render: (_: unknown, record: FieldMeta) => {
@@ -56,7 +59,7 @@ export const ParamsTable: React.FC<ParamsTableProps> = ({ params }) => {
       },
     },
     {
-      title: 'Description',
+      title: t('drivers.params.description'),
       key: 'description',
       render: (_: unknown, record: FieldMeta) => {
         const parts: string[] = [];

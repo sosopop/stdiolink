@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, Button, Spin, Alert, Empty, Descriptions, Popconfirm, Space, Card, Typography, Tag } from 'antd';
 import { ArrowLeftOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
@@ -12,6 +13,7 @@ import { StatusDot } from '@/components/StatusDot/StatusDot';
 const { Text, Title } = Typography;
 
 export const InstanceDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
@@ -46,7 +48,7 @@ export const InstanceDetailPage: React.FC = () => {
   if (loading && !currentInstance) {
     return (
       <div style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <Spin size="large" tip="Tracing process lifecycle..." data-testid="detail-loading" />
+        <Spin size="large" tip={t('instances.detail.loading')} data-testid="detail-loading" />
       </div>
     );
   }
@@ -56,7 +58,7 @@ export const InstanceDetailPage: React.FC = () => {
   }
 
   if (!currentInstance) {
-    return <Empty description="Instance not found" data-testid="detail-not-found" />;
+    return <Empty description={t('instances.detail.not_found')} data-testid="detail-not-found" />;
   }
 
   const handleTerminate = async () => {
@@ -69,29 +71,29 @@ export const InstanceDetailPage: React.FC = () => {
   const items = [
     {
       key: 'overview',
-      label: 'Overview',
+      label: t('instances.detail.overview'),
       children: (
         <div data-testid="instance-overview">
           <Card className="glass-panel" bordered={false} style={{ marginBottom: 24 }}>
-            <Descriptions 
-              bordered 
-              size="small" 
+            <Descriptions
+              bordered
+              size="small"
               column={2}
               labelStyle={{ background: 'rgba(255,255,255,0.02)', fontWeight: 600, width: 140 }}
             >
-              <Descriptions.Item label="Instance ID">{currentInstance.id}</Descriptions.Item>
-              <Descriptions.Item label="Project"><Tag>{currentInstance.projectId}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Service Template"><Tag>{currentInstance.serviceId}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Status">
+              <Descriptions.Item label={t('instances.detail.instance_id')}>{currentInstance.id}</Descriptions.Item>
+              <Descriptions.Item label={t('instances.detail.project')}><Tag>{currentInstance.projectId}</Tag></Descriptions.Item>
+              <Descriptions.Item label={t('projects.table.service_template')}><Tag>{currentInstance.serviceId}</Tag></Descriptions.Item>
+              <Descriptions.Item label={t('common.status')}>
                 <Space>
                   <StatusDot status={currentInstance.status === 'running' ? 'running' : 'stopped'} />
                   <Text strong>{currentInstance.status}</Text>
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="System PID"><Text code>{currentInstance.pid}</Text></Descriptions.Item>
-              <Descriptions.Item label="Started At">{new Date(currentInstance.startedAt).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label={t('dashboard.table.system_pid')}><Text code>{currentInstance.pid}</Text></Descriptions.Item>
+              <Descriptions.Item label={t('instances.detail.started_at')}>{new Date(currentInstance.startedAt).toLocaleString()}</Descriptions.Item>
               {currentInstance.workingDirectory && (
-                <Descriptions.Item label="Working Dir" span={2}><Text type="secondary" style={{ fontSize: 12 }}>{currentInstance.workingDirectory}</Text></Descriptions.Item>
+                <Descriptions.Item label={t('instances.detail.working_dir')} span={2}><Text type="secondary" style={{ fontSize: 12 }}>{currentInstance.workingDirectory}</Text></Descriptions.Item>
               )}
             </Descriptions>
           </Card>
@@ -101,7 +103,7 @@ export const InstanceDetailPage: React.FC = () => {
     },
     {
       key: 'process-tree',
-      label: 'Process Tree',
+      label: t('instances.detail.process_tree'),
       children: (
         <div data-testid="instance-process-tree" className="glass-panel" style={{ padding: 24 }}>
           <ProcessTree
@@ -113,7 +115,7 @@ export const InstanceDetailPage: React.FC = () => {
     },
     {
       key: 'resources',
-      label: 'Resources',
+      label: t('instances.detail.resources'),
       children: (
         <div data-testid="instance-resources">
           <ResourceMetricCards processes={resources} />
@@ -125,7 +127,7 @@ export const InstanceDetailPage: React.FC = () => {
     },
     {
       key: 'logs',
-      label: 'Logs',
+      label: t('instances.detail.logs'),
       children: (
         <div data-testid="instance-logs">
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
@@ -134,7 +136,7 @@ export const InstanceDetailPage: React.FC = () => {
               onClick={() => id && fetchLogs(id)}
               data-testid="refresh-logs-btn"
             >
-              Refresh Logs
+              {t('instances.detail.refresh_logs')}
             </Button>
           </div>
           <LogViewer lines={logs} />
@@ -147,25 +149,27 @@ export const InstanceDetailPage: React.FC = () => {
     <div data-testid="page-instance-detail">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <Space size={16}>
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/instances')} 
-            data-testid="back-btn" 
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/instances')}
+            data-testid="back-btn"
             style={{ color: 'var(--text-secondary)' }}
           />
           <div>
-            <Title level={3} style={{ margin: 0 }}>Instance Trace</Title>
+            <Title level={3} style={{ margin: 0 }}>{t('instances.detail.trace')}</Title>
             <Text type="secondary" code>{currentInstance.id}</Text>
           </div>
         </Space>
-        <Popconfirm 
-          title="Terminate this instance?" 
+        <Popconfirm
+          title={t('instances.detail.terminate_confirm')}
           onConfirm={handleTerminate}
+          okText={t('common.terminate')}
+          cancelText={t('common.cancel')}
           okButtonProps={{ danger: true }}
         >
           <Button danger size="large" icon={<StopOutlined />} data-testid="terminate-btn">
-            Terminate Process
+            {t('instances.detail.terminate_btn')}
           </Button>
         </Popconfirm>
       </div>

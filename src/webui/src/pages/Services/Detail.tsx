@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { Tabs, Spin, Alert, Empty } from 'antd';
 import { useServicesStore } from '@/stores/useServicesStore';
@@ -8,6 +9,7 @@ import { SchemaEditor } from '@/components/SchemaEditor/SchemaEditor';
 import { ServiceProjects } from './components/ServiceProjects';
 
 export const ServiceDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { currentService, loading, error, fetchServiceDetail } = useServicesStore();
 
@@ -17,27 +19,27 @@ export const ServiceDetailPage: React.FC = () => {
 
   if (loading) return <Spin data-testid="detail-loading" />;
   if (error) return <Alert type="error" message={error} data-testid="detail-error" />;
-  if (!currentService) return <Empty description="Service not found" data-testid="detail-not-found" />;
+  if (!currentService) return <Empty description={t('services.detail.not_found')} data-testid="detail-not-found" />;
 
   const items = [
     {
       key: 'overview',
-      label: 'Overview',
+      label: t('services.detail.overview'),
       children: <ServiceOverview service={currentService} />,
     },
     {
       key: 'files',
-      label: 'Files',
+      label: t('services.detail.files'),
       children: <ServiceFiles serviceId={currentService.id} />,
     },
     {
       key: 'schema',
-      label: 'Schema',
+      label: t('services.detail.schema'),
       children: <SchemaEditor serviceId={currentService.id} />,
     },
     {
       key: 'projects',
-      label: 'Projects',
+      label: t('services.detail.projects'),
       children: <ServiceProjects serviceId={currentService.id} />,
     },
   ];

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Space, Tag } from 'antd';
 import { SaveOutlined, UndoOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useSchemaEditorStore } from '@/stores/useSchemaEditorStore';
@@ -8,6 +9,7 @@ interface SchemaToolbarProps {
 }
 
 export const SchemaToolbar: React.FC<SchemaToolbarProps> = ({ serviceId }) => {
+  const { t } = useTranslation();
   const { dirty, saving, validating, validationErrors, validate, save, reset } =
     useSchemaEditorStore();
 
@@ -23,7 +25,7 @@ export const SchemaToolbar: React.FC<SchemaToolbarProps> = ({ serviceId }) => {
           loading={validating}
           data-testid="schema-validate-btn"
         >
-          Validate
+          {t('schema.validate')}
         </Button>
         <Button
           type="primary"
@@ -33,7 +35,7 @@ export const SchemaToolbar: React.FC<SchemaToolbarProps> = ({ serviceId }) => {
           disabled={!dirty}
           data-testid="schema-save-btn"
         >
-          Save
+          {t('schema.save')}
         </Button>
         <Button
           icon={<UndoOutlined />}
@@ -41,11 +43,11 @@ export const SchemaToolbar: React.FC<SchemaToolbarProps> = ({ serviceId }) => {
           disabled={!dirty}
           data-testid="schema-reset-btn"
         >
-          Reset
+          {t('schema.reset')}
         </Button>
       </Space>
       <Space>
-        {dirty && <Tag color="orange">Unsaved changes</Tag>}
+        {dirty && <Tag color="orange">{t('schema.unsaved_changes')}</Tag>}
         {validationErrors.length > 0 && (
           <Tag color="red" data-testid="validation-error-tag">
             {validationErrors[0]}

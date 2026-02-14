@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, Button, Spin, Alert, Empty, Space } from 'antd';
 import { ArrowLeftOutlined, PlayCircleOutlined } from '@ant-design/icons';
@@ -10,6 +11,7 @@ import { DocExportButton } from '@/components/Drivers/DocExportButton';
 import { ExportMetaButton } from '@/components/Drivers/ExportMetaButton';
 
 export const DriverDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentDriver, loading, error, fetchDriverDetail } = useDriversStore();
@@ -32,7 +34,7 @@ export const DriverDetailPage: React.FC = () => {
   }
 
   if (!currentDriver) {
-    return <Empty description="Driver not found" data-testid="detail-not-found" />;
+    return <Empty description={t('drivers.detail.not_found')} data-testid="detail-not-found" />;
   }
 
   const meta = currentDriver.meta;
@@ -40,20 +42,20 @@ export const DriverDetailPage: React.FC = () => {
   const items = [
     {
       key: 'metadata',
-      label: 'Metadata',
+      label: t('drivers.detail.metadata'),
       children: (
         <div data-testid="driver-metadata">
           {meta?.info ? (
             <DriverInfoCard info={meta.info} />
           ) : (
-            <Alert type="info" message="No metadata available" data-testid="no-meta" />
+            <Alert type="info" message={t('drivers.detail.no_metadata')} data-testid="no-meta" />
           )}
         </div>
       ),
     },
     {
       key: 'commands',
-      label: 'Commands',
+      label: t('drivers.detail.commands'),
       children: (
         <div data-testid="driver-commands">
           {meta?.commands && meta.commands.length > 0 ? (
@@ -61,14 +63,14 @@ export const DriverDetailPage: React.FC = () => {
               <CommandCard key={cmd.name} command={cmd} driverId={currentDriver.id} onTest={handleTestCommand} />
             ))
           ) : (
-            <Empty description="No commands defined" data-testid="empty-commands" />
+            <Empty description={t('drivers.detail.no_commands')} data-testid="empty-commands" />
           )}
         </div>
       ),
     },
     {
       key: 'docs',
-      label: 'Docs',
+      label: t('drivers.detail.docs'),
       children: id ? <DriverDocs driverId={id} /> : null,
     },
   ];
@@ -82,7 +84,7 @@ export const DriverDetailPage: React.FC = () => {
         </Space>
         <Space>
           <Button icon={<PlayCircleOutlined />} onClick={() => navigate(`/driverlab?driverId=${id}`)} data-testid="test-in-lab-btn">
-            Test in DriverLab
+            {t('drivers.detail.test_in_lab')}
           </Button>
           <DocExportButton driverId={currentDriver.id} />
           <ExportMetaButton driverId={currentDriver.id} meta={meta} />
