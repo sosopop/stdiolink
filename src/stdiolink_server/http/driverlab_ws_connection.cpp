@@ -265,6 +265,8 @@ void DriverLabWsConnection::onDriverFinished(int exitCode, QProcess::ExitStatus 
                                ? "driver exited normally"
                                : "driver crashed";
 
+    m_lastExitWasCrash = (status != QProcess::NormalExit || exitCode != 0);
+
     sendJson(QJsonObject{
         {"type", "driver.exited"},
         {"exitCode", exitCode},
@@ -299,15 +301,19 @@ void DriverLabWsConnection::onDriverErrorOccurred(QProcess::ProcessError error) 
 }
 
 void DriverLabWsConnection::restartDriverForOneShot() {
-    // Check crash backoff
-    const qint64 elapsed = m_lastDriverStart.msecsTo(QDateTime::currentDateTimeUtc());
-    if (elapsed < kRapidCrashWindowMs) {
-        m_consecutiveFastExits++;
+    // Check crash backoff — only count actual crashes, not normal OneShot exits
+    if (m_lastExitWasCrash) {
+        const qint64 elapsed = m_lastDriverStart.msecsTo(QDateTime::currentDateTimeUtc());
+        if (elapsed < kRapidCrashWindowMs) {
+            m_consecutiveFastCrashes++;
+        } else {
+            m_consecutiveFastCrashes = 0;
+        }
     } else {
-        m_consecutiveFastExits = 0;
+        m_consecutiveFastCrashes = 0;
     }
 
-    if (m_consecutiveFastExits >= kMaxRapidCrashes) {
+    if (m_consecutiveFastCrashes >= kMaxRapidCrashes) {
         m_restartSuppressed = true;
         sendJson(QJsonObject{
             {"type", "error"},

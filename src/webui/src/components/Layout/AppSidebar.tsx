@@ -1,3 +1,4 @@
+import React from 'react';
 import { Layout, Menu } from 'antd';
 import {
   DashboardOutlined,
@@ -33,20 +34,21 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed }) => {
 
   return (
     <Layout.Sider
-      width={200}
-      collapsedWidth={64}
+      width={220}
+      collapsedWidth={80}
       collapsed={collapsed}
       className={styles.sidebar}
       trigger={null}
     >
-      <Menu
-        mode="inline"
-        theme="dark"
-        selectedKeys={[selectedKey]}
-        items={menuItems}
-        onClick={({ key }) => navigate(key)}
-        style={{ borderRight: 'none', marginTop: 8 }}
-      />
+      <div style={{ flex: 1, paddingTop: 16 }}>
+        <Menu
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={menuItems}
+          onClick={({ key }) => navigate(key)}
+          style={{ background: 'transparent' }}
+        />
+      </div>
     </Layout.Sider>
   );
 };

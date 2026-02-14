@@ -1,27 +1,6 @@
+/* 这里的样式已移至全局 effects.css 以实现更好的复用 */
 .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  /* 仅保留定位相关的最小化基础样式 */
   display: inline-block;
-  flex-shrink: 0;
-}
-
-.running {
-  background: var(--color-success);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-  animation: breathe 3s ease-in-out infinite;
-}
-
-.stopped {
-  background: #6B7280;
-}
-
-.error {
-  background: var(--color-error);
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
-}
-
-@keyframes breathe {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
-  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+  vertical-align: middle;
 }

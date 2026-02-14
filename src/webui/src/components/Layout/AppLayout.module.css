@@ -2,41 +2,91 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  height: 48px;
+  padding: 0 24px;
+  height: 56px;
   backdrop-filter: var(--surface-glass);
-  border-bottom: var(--glass-border);
+  -webkit-backdrop-filter: var(--surface-glass);
+  border-bottom: 1px solid var(--surface-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  line-height: 56px;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.sidebarTrigger {
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.logo {
-  font-size: 16px;
-  font-weight: 700;
+.brandIcon {
+  width: 28px;
+  height: 28px;
   background: var(--brand-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 16px;
+  box-shadow: 0 4px 12px var(--brand-glow);
+}
+
+.logoText {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
 }
 
 .headerRight {
   display: flex;
   align-items: center;
+}
+
+.themeSwitchWrapper {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  background: var(--surface-hover);
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--surface-border);
 }
 
 .sidebar {
-  border-right: var(--glass-border) !important;
+  border-right: 1px solid var(--surface-border) !important;
+  background: var(--bg-body) !important;
 }
 
 .content {
-  padding: 24px;
-  background: var(--surface-base);
-  background-image: var(--bg-gradient);
-  min-height: calc(100vh - 48px);
+  padding: 32px;
+  background: transparent;
+  min-height: calc(100vh - 56px);
   overflow-y: auto;
+}
+
+/* 隐藏侧边栏原生边框 */
+:global(.ant-layout-sider-children) {
+  display: flex;
+  flex-direction: column;
+}
+
+:global(.ant-menu-root) {
+  border-inline-end: none !important;
 }

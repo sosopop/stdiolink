@@ -54,9 +54,10 @@ private:
     // OneShot crash backoff
     static constexpr int kMaxRapidCrashes = 3;
     static constexpr int kRapidCrashWindowMs = 2000;
-    int m_consecutiveFastExits = 0;
+    int m_consecutiveFastCrashes = 0;
     QDateTime m_lastDriverStart;
     bool m_restartSuppressed = false;
+    bool m_lastExitWasCrash = false;
 };
 
 } // namespace stdiolink_server

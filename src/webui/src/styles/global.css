@@ -1,33 +1,40 @@
 @import './variables.css';
 @import './effects.css';
 
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
-html,
-body {
+html, body {
+  margin: 0;
+  padding: 0;
   height: 100%;
+  background-color: var(--bg-body);
+  color: var(--text-primary);
   font-family: var(--font-ui);
-  background: var(--surface-base);
-  background-image: var(--bg-gradient);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  overflow: hidden; /* 由 AppLayout 处理内部滚动 */
 }
 
 #root {
   height: 100%;
 }
 
-code,
-pre {
-  font-family: var(--font-code);
+a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  transition: opacity 0.2s;
 }
 
+a:hover {
+  opacity: 0.8;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
+
+/* 滚动条美化 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -38,18 +45,26 @@ pre {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  background: var(--surface-border);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--text-tertiary);
 }
 
-[data-theme='light'] ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+/* Ant Design 样式微调 - 增强玻璃态兼容性 */
+.ant-table {
+  background: transparent !important;
 }
 
-[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+.ant-table-thead > tr > th {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-bottom: 1px solid var(--surface-border) !important;
+}
+
+.ant-card {
+  background: var(--surface-card) !important;
+  backdrop-filter: var(--surface-glass) !important;
+  border: 1px solid var(--surface-border) !important;
 }

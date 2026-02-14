@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Typography, Tag, Switch, Space } from 'antd';
+import { Typography, Switch, Space } from 'antd';
+import { ExperimentOutlined } from '@ant-design/icons';
 import { useDriverLabStore } from '@/stores/useDriverLabStore';
 import { useDriversStore } from '@/stores/useDriversStore';
 import { ConnectionPanel } from '@/components/DriverLab/ConnectionPanel';
@@ -8,11 +9,13 @@ import { MessageStream } from '@/components/DriverLab/MessageStream';
 import { MessageToolbar } from '@/components/DriverLab/MessageToolbar';
 import { StatusBar } from '@/components/DriverLab/StatusBar';
 
+const { Title, Text } = Typography;
+
 const statusColorMap: Record<string, string> = {
-  connected: 'green',
-  connecting: 'blue',
-  disconnected: 'default',
-  error: 'red',
+  connected: 'var(--color-success)',
+  connecting: 'var(--color-info)',
+  disconnected: 'var(--text-tertiary)',
+  error: 'var(--color-error)',
 };
 
 export const DriverLabPage: React.FC = () => {
@@ -55,44 +58,56 @@ export const DriverLabPage: React.FC = () => {
   };
 
   return (
-    <div data-testid="driverlab-page" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div data-testid="driverlab-page" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
       {/* Header */}
-      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-secondary, #303030)' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          DriverLab
-        </Typography.Title>
-        <Tag color={statusColorMap[connection.status]} data-testid="header-status">
-          {connection.status}
-        </Tag>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Space size={12}>
+          <ExperimentOutlined style={{ fontSize: 24, color: 'var(--brand-primary)' }} />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>DriverLab</Title>
+            <Text type="secondary">Interactive driver debugging and protocol testing</Text>
+          </div>
+        </Space>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 100, border: '1px solid var(--surface-border)' }}>
+          <div 
+            style={{ 
+              width: 8, height: 8, borderRadius: '50%', 
+              backgroundColor: statusColorMap[connection.status] || 'var(--text-tertiary)',
+              boxShadow: connection.status === 'connected' ? '0 0 8px var(--color-success)' : 'none'
+            }} 
+          />
+          <Text strong style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.5px' }} data-testid="header-status">
+            {connection.status}
+          </Text>
+        </div>
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-        {/* Left panel */}
+      <div style={{ flex: 1, display: 'flex', gap: 24, minHeight: 0, overflow: 'hidden' }}>
+        {/* Left panel: Controls */}
         <div
           data-testid="left-panel"
           style={{
-            width: 320,
-            minWidth: 280,
-            borderRight: '1px solid var(--border-secondary, #303030)',
+            width: 360,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
             overflow: 'auto',
-            padding: 16,
           }}
         >
-          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-            Connection
-          </Typography.Text>
-          <ConnectionPanel
-            drivers={drivers}
-            status={connection.status}
-            onConnect={connect}
-            onDisconnect={disconnect}
-          />
+          <div className="glass-panel" style={{ padding: 20 }}>
+            <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>Session Config</Title>
+            <ConnectionPanel
+              drivers={drivers}
+              status={connection.status}
+              onConnect={connect}
+              onDisconnect={disconnect}
+            />
+          </div>
 
-          <div style={{ marginTop: 16 }}>
-            <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Commands
-            </Typography.Text>
+          <div className="glass-panel" style={{ padding: 20, flex: 1 }}>
+            <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>Command Palette</Title>
             <CommandPanel
               commands={commands}
               selectedCommand={selectedCommand}
@@ -108,40 +123,44 @@ export const DriverLabPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right panel */}
+        {/* Right panel: Stream */}
         <div
           data-testid="right-panel"
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}
+          className="glass-panel"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
         >
-          <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-secondary, #303030)' }}>
-            <Typography.Text strong>Messages</Typography.Text>
-            <Space size={8}>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Auto-scroll</Typography.Text>
-              <Switch
-                size="small"
-                checked={autoScroll}
-                onChange={toggleAutoScroll}
-                data-testid="autoscroll-toggle"
+          <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--surface-border)' }}>
+            <Text strong style={{ textTransform: 'uppercase', fontSize: 12, letterSpacing: '1px', opacity: 0.8 }}>Protocol Stream</Text>
+            <Space size={16}>
+              <Space size={8}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Auto-scroll</Text>
+                <Switch
+                  size="small"
+                  checked={autoScroll}
+                  onChange={toggleAutoScroll}
+                  data-testid="autoscroll-toggle"
+                />
+              </Space>
+              <div style={{ width: 1, height: 16, background: 'var(--surface-border)' }} />
+              <MessageToolbar
+                messages={messages}
+                driverId={connection.driverId}
+                onClear={clearMessages}
               />
             </Space>
           </div>
-          <MessageStream
-            messages={messages}
-            autoScroll={autoScroll}
-            onToggleMessage={handleToggleMessage}
-          />
-          <div style={{ padding: '0 16px', borderTop: '1px solid var(--border-secondary, #303030)' }}>
-            <MessageToolbar
+          
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.2)' }}>
+            <MessageStream
               messages={messages}
-              driverId={connection.driverId}
-              onClear={clearMessages}
+              autoScroll={autoScroll}
+              onToggleMessage={handleToggleMessage}
             />
           </div>
+          
+          <StatusBar connection={connection} />
         </div>
       </div>
-
-      {/* Status bar */}
-      <StatusBar connection={connection} />
     </div>
   );
 };

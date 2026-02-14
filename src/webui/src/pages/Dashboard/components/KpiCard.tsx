@@ -1,9 +1,10 @@
+import React from 'react';
 import { Card } from 'antd';
 import styles from '../dashboard.module.css';
 
 interface KpiCardProps {
   title: string;
-  value: number;
+  value: number | string;
   icon: React.ReactNode;
   status?: 'normal' | 'warning' | 'error';
   subtitle?: string;
@@ -17,13 +18,15 @@ const statusColorMap: Record<string, string> = {
 
 export const KpiCard: React.FC<KpiCardProps> = ({ title, value, icon, status = 'normal', subtitle }) => (
   <Card className={`${styles.kpiCard} glass-panel hover-card`} bordered={false}>
-    <div className={styles.kpiIcon} style={{ color: statusColorMap[status] }}>
-      {icon}
+    <div className={styles.kpiHeader}>
+      <span className={styles.kpiTitle}>{title}</span>
+      <div className={styles.kpiIcon} style={{ color: statusColorMap[status] }}>
+        {icon}
+      </div>
     </div>
     <div className={styles.kpiValue} data-testid="kpi-value">
       {value}
     </div>
-    <div className={styles.kpiTitle}>{title}</div>
     {subtitle && <div className={styles.kpiSubtitle}>{subtitle}</div>}
   </Card>
 );

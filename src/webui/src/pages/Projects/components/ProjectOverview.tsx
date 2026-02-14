@@ -1,5 +1,5 @@
 import React from 'react';
-import { Descriptions, Tag, Button, Space, Popconfirm } from 'antd';
+import { Descriptions, Tag, Button, Space, Popconfirm, Typography, Card } from 'antd';
 import { PlayCircleOutlined, StopOutlined, ReloadOutlined } from '@ant-design/icons';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
@@ -11,6 +11,8 @@ interface ProjectOverviewProps {
   onStop: () => void;
   onReload: () => void;
 }
+
+const { Text } = Typography;
 
 export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   project, runtime, onStart, onStop, onReload,
@@ -26,44 +28,80 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
 
   return (
     <div data-testid="project-overview">
-      <Space style={{ marginBottom: 16 }}>
-        <Button
-          type="primary"
-          icon={<PlayCircleOutlined />}
-          disabled={!canStart}
-          onClick={onStart}
-          data-testid="start-btn"
-        >
-          Start
-        </Button>
-        <Popconfirm title="Stop this project?" onConfirm={onStop} disabled={!canStop}>
-          <Button danger icon={<StopOutlined />} disabled={!canStop} data-testid="stop-btn">
-            Stop
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <Space size={12}>
+          <Button
+            type="primary"
+            size="large"
+            className="brand-gradient-btn"
+            style={{ 
+              background: 'var(--brand-gradient)', 
+              border: 'none', 
+              boxShadow: '0 4px 12px var(--brand-glow)',
+              height: 40,
+              padding: '0 24px',
+              fontWeight: 600
+            }}
+            icon={<PlayCircleOutlined />}
+            disabled={!canStart}
+            onClick={onStart}
+            data-testid="start-btn"
+          >
+            Start Project
           </Button>
-        </Popconfirm>
-        <Button icon={<ReloadOutlined />} onClick={onReload} data-testid="reload-btn">
-          Reload
-        </Button>
-      </Space>
-
-      <Descriptions bordered column={1} size="small">
-        <Descriptions.Item label="ID">{project.id}</Descriptions.Item>
-        <Descriptions.Item label="Name">{project.name}</Descriptions.Item>
-        <Descriptions.Item label="Service"><Tag>{project.serviceId}</Tag></Descriptions.Item>
-        <Descriptions.Item label="Status">
+          <Popconfirm title="Stop this project?" onConfirm={onStop} disabled={!canStop} okButtonProps={{ danger: true }}>
+            <Button 
+              danger 
+              size="large"
+              style={{ height: 40 }}
+              icon={<StopOutlined />} 
+              disabled={!canStop} 
+              data-testid="stop-btn"
+            >
+              Stop
+            </Button>
+          </Popconfirm>
+          <Button 
+            icon={<ReloadOutlined />} 
+            size="large"
+            style={{ height: 40, backgroundColor: 'rgba(255,255,255,0.02)' }}
+            onClick={onReload} 
+            data-testid="reload-btn"
+          >
+            Reload
+          </Button>
+        </Space>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 100, border: '1px solid var(--surface-border)' }}>
           <StatusDot status={dotStatus} />
-          {' '}{status}
-        </Descriptions.Item>
-        <Descriptions.Item label="Enabled">{project.enabled ? 'Yes' : 'No'}</Descriptions.Item>
-        <Descriptions.Item label="Valid">{project.valid ? 'Yes' : <Tag color="red">{project.error ?? 'Invalid'}</Tag>}</Descriptions.Item>
-        <Descriptions.Item label="Schedule">{project.schedule.type}</Descriptions.Item>
-        {runtime && (
-          <>
-            <Descriptions.Item label="Running Instances">{runtime.runningInstances}</Descriptions.Item>
-            <Descriptions.Item label="Consecutive Failures">{runtime.schedule.consecutiveFailures}</Descriptions.Item>
-          </>
-        )}
-      </Descriptions>
+          <Text strong style={{ fontSize: 14, textTransform: 'capitalize' }}>{status}</Text>
+        </div>
+      </div>
+
+      <Card className="glass-panel" bordered={false}>
+        <Descriptions 
+          bordered 
+          column={2} 
+          size="small" 
+          labelStyle={{ background: 'rgba(255,255,255,0.02)', fontWeight: 600, width: 160 }}
+          contentStyle={{ background: 'transparent' }}
+        >
+          <Descriptions.Item label="Project ID">{project.id}</Descriptions.Item>
+          <Descriptions.Item label="Display Name">{project.name}</Descriptions.Item>
+          <Descriptions.Item label="Service Template">
+            <Tag bordered={false} style={{ background: 'var(--primary-dim)', color: 'var(--brand-primary)' }}>{project.serviceId}</Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Enabled">{project.enabled ? <Tag color="success">Yes</Tag> : <Tag>No</Tag>}</Descriptions.Item>
+          <Descriptions.Item label="Validation">{project.valid ? <Tag color="success">Pass</Tag> : <Tag color="error">Fail: {project.error}</Tag>}</Descriptions.Item>
+          <Descriptions.Item label="Schedule Strategy"><Text code>{project.schedule.type}</Text></Descriptions.Item>
+          {runtime && (
+            <>
+              <Descriptions.Item label="Active Instances">{runtime.runningInstances}</Descriptions.Item>
+              <Descriptions.Item label="Consecutive Failures">{runtime.schedule.consecutiveFailures}</Descriptions.Item>
+            </>
+          )}
+        </Descriptions>
+      </Card>
     </div>
   );
 };

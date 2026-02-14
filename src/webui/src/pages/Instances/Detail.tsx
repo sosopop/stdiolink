@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tabs, Button, Spin, Alert, Empty, Descriptions, Popconfirm, Space } from 'antd';
-import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Tabs, Button, Spin, Alert, Empty, Descriptions, Popconfirm, Space, Card, Typography, Tag } from 'antd';
+import { ArrowLeftOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import { useInstancesStore } from '@/stores/useInstancesStore';
 import { ProcessTree } from '@/components/Instances/ProcessTree';
 import { ResourceChart } from '@/components/Instances/ResourceChart';
 import { ResourceMetricCards } from '@/components/Instances/ResourceMetricCards';
 import { LogViewer } from '@/components/LogViewer/LogViewer';
+import { StatusDot } from '@/components/StatusDot/StatusDot';
+
+const { Text, Title } = Typography;
 
 export const InstanceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +30,6 @@ export const InstanceDetailPage: React.FC = () => {
     }
   }, [id, fetchInstanceDetail, fetchProcessTree, fetchResources, fetchLogs]);
 
-  // 5s polling for active tabs
   useEffect(() => {
     if (!id) return;
     const interval = setInterval(() => {
@@ -42,11 +44,15 @@ export const InstanceDetailPage: React.FC = () => {
   }, [id, activeTab, fetchProcessTree, fetchResources]);
 
   if (loading && !currentInstance) {
-    return <Spin data-testid="detail-loading" />;
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
+        <Spin size="large" tip="Tracing process lifecycle..." data-testid="detail-loading" />
+      </div>
+    );
   }
 
   if (error && !currentInstance) {
-    return <Alert type="error" message={error} data-testid="detail-error" />;
+    return <Alert type="error" message={error} showIcon style={{ borderRadius: 12 }} data-testid="detail-error" />;
   }
 
   if (!currentInstance) {
@@ -66,17 +72,29 @@ export const InstanceDetailPage: React.FC = () => {
       label: 'Overview',
       children: (
         <div data-testid="instance-overview">
-          <Descriptions bordered size="small" column={2} style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="ID">{currentInstance.id}</Descriptions.Item>
-            <Descriptions.Item label="Project">{currentInstance.projectId}</Descriptions.Item>
-            <Descriptions.Item label="Service">{currentInstance.serviceId}</Descriptions.Item>
-            <Descriptions.Item label="Status">{currentInstance.status}</Descriptions.Item>
-            <Descriptions.Item label="PID">{currentInstance.pid}</Descriptions.Item>
-            <Descriptions.Item label="Started At">{currentInstance.startedAt}</Descriptions.Item>
-            {currentInstance.workingDirectory && (
-              <Descriptions.Item label="Working Dir" span={2}>{currentInstance.workingDirectory}</Descriptions.Item>
-            )}
-          </Descriptions>
+          <Card className="glass-panel" bordered={false} style={{ marginBottom: 24 }}>
+            <Descriptions 
+              bordered 
+              size="small" 
+              column={2}
+              labelStyle={{ background: 'rgba(255,255,255,0.02)', fontWeight: 600, width: 140 }}
+            >
+              <Descriptions.Item label="Instance ID">{currentInstance.id}</Descriptions.Item>
+              <Descriptions.Item label="Project"><Tag>{currentInstance.projectId}</Tag></Descriptions.Item>
+              <Descriptions.Item label="Service Template"><Tag>{currentInstance.serviceId}</Tag></Descriptions.Item>
+              <Descriptions.Item label="Status">
+                <Space>
+                  <StatusDot status={currentInstance.status === 'running' ? 'running' : 'stopped'} />
+                  <Text strong>{currentInstance.status}</Text>
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="System PID"><Text code>{currentInstance.pid}</Text></Descriptions.Item>
+              <Descriptions.Item label="Started At">{new Date(currentInstance.startedAt).toLocaleString()}</Descriptions.Item>
+              {currentInstance.workingDirectory && (
+                <Descriptions.Item label="Working Dir" span={2}><Text type="secondary" style={{ fontSize: 12 }}>{currentInstance.workingDirectory}</Text></Descriptions.Item>
+              )}
+            </Descriptions>
+          </Card>
           <ResourceMetricCards processes={resources} />
         </div>
       ),
@@ -85,7 +103,7 @@ export const InstanceDetailPage: React.FC = () => {
       key: 'process-tree',
       label: 'Process Tree',
       children: (
-        <div data-testid="instance-process-tree">
+        <div data-testid="instance-process-tree" className="glass-panel" style={{ padding: 24 }}>
           <ProcessTree
             tree={processTree?.tree ?? null}
             summary={processTree?.summary ?? null}
@@ -99,9 +117,9 @@ export const InstanceDetailPage: React.FC = () => {
       children: (
         <div data-testid="instance-resources">
           <ResourceMetricCards processes={resources} />
-          <div style={{ marginTop: 16 }}>
+          <Card className="glass-panel" bordered={false} style={{ marginTop: 24, padding: 12 }}>
             <ResourceChart data={resourceHistory} />
-          </div>
+          </Card>
         </div>
       ),
     },
@@ -110,14 +128,13 @@ export const InstanceDetailPage: React.FC = () => {
       label: 'Logs',
       children: (
         <div data-testid="instance-logs">
-          <div style={{ marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             <Button
               icon={<ReloadOutlined />}
-              size="small"
               onClick={() => id && fetchLogs(id)}
               data-testid="refresh-logs-btn"
             >
-              Refresh
+              Refresh Logs
             </Button>
           </div>
           <LogViewer lines={logs} />
@@ -128,13 +145,28 @@ export const InstanceDetailPage: React.FC = () => {
 
   return (
     <div data-testid="page-instance-detail">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/instances')} data-testid="back-btn" />
-          <h2 style={{ margin: 0 }}>Instance: {currentInstance.id}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <Space size={16}>
+          <Button 
+            type="text" 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate('/instances')} 
+            data-testid="back-btn" 
+            style={{ color: 'var(--text-secondary)' }}
+          />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>Instance Trace</Title>
+            <Text type="secondary" code>{currentInstance.id}</Text>
+          </div>
         </Space>
-        <Popconfirm title="Terminate this instance?" onConfirm={handleTerminate}>
-          <Button danger data-testid="terminate-btn">Terminate</Button>
+        <Popconfirm 
+          title="Terminate this instance?" 
+          onConfirm={handleTerminate}
+          okButtonProps={{ danger: true }}
+        >
+          <Button danger size="large" icon={<StopOutlined />} data-testid="terminate-btn">
+            Terminate Process
+          </Button>
         </Popconfirm>
       </div>
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
