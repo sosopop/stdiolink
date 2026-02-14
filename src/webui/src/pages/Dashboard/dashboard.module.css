@@ -152,6 +152,16 @@
 .projectCard:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-elevation);
+  border-color: var(--surface-border);
+  background: linear-gradient(135deg, var(--surface-card) 0%, rgba(99, 102, 241, 0.05) 100%) !important;
+}
+
+.projectName {
+  /* Add gradient text for brand */
+  background: var(--logo-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
 }
 
 .projectCardHeader {
@@ -180,6 +190,8 @@
   justify-content: center;
   border: 1px solid var(--surface-border);
   flex-shrink: 0;
+  /* Add subtle glow to badge */
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
 }
 
 .projectTitle {

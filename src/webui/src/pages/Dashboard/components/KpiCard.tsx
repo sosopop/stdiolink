@@ -14,19 +14,29 @@ const statusColorMap: Record<string, string> = {
   normal: 'var(--color-success)',
   warning: 'var(--color-warning)',
   error: 'var(--color-error)',
+  brand: 'var(--brand-primary)',
+  info: 'var(--color-info)',
 };
 
-export const KpiCard: React.FC<KpiCardProps> = ({ title, value, icon, status = 'normal', subtitle }) => (
-  <Card className={`${styles.kpiCard} glass-panel hover-card`} bordered={false}>
-    <div className={styles.kpiHeader}>
-      <span className={styles.kpiTitle}>{title}</span>
-      <div className={styles.kpiIcon} style={{ color: statusColorMap[status] }}>
-        {icon}
+export const KpiCard: React.FC<KpiCardProps & { color?: string }> = ({ title, value, icon, status = 'normal', subtitle, color }) => {
+  const iconColor = color || statusColorMap[status] || 'var(--text-secondary)';
+
+  return (
+    <Card
+      className={`${styles.kpiCard} glass-panel hover-card`}
+      bordered={false}
+      style={{ borderBottom: `2px solid ${iconColor}40` }} // Subtle colored underline
+    >
+      <div className={styles.kpiHeader}>
+        <span className={styles.kpiTitle}>{title}</span>
+        <div className={styles.kpiIcon} style={{ color: iconColor, opacity: 1 }}>
+          {icon}
+        </div>
       </div>
-    </div>
-    <div className={styles.kpiValue} data-testid="kpi-value">
-      {value}
-    </div>
-    {subtitle && <div className={styles.kpiSubtitle}>{subtitle}</div>}
-  </Card>
-);
+      <div className={styles.kpiValue} style={{ color: iconColor }}>
+        {value}
+      </div>
+      {subtitle && <div className={styles.kpiSubtitle}>{subtitle}</div>}
+    </Card>
+  );
+};
