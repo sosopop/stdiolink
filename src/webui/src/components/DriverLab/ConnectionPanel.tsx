@@ -7,6 +7,7 @@ import type { ConnectionStatus } from '@/stores/useDriverLabStore';
 interface ConnectionPanelProps {
   drivers: DriverListItem[];
   status: ConnectionStatus;
+  initialDriverId?: string | null;
   onConnect: (driverId: string, runMode: 'oneshot' | 'keepalive', args?: string[]) => void;
   onDisconnect: () => void;
 }
@@ -14,11 +15,19 @@ interface ConnectionPanelProps {
 export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
   drivers,
   status,
+  initialDriverId,
   onConnect,
   onDisconnect,
 }) => {
   const [driverId, setDriverId] = React.useState<string | null>(null);
   const [runMode, setRunMode] = React.useState<'oneshot' | 'keepalive'>('oneshot');
+
+  // Sync from URL query param when not connected
+  React.useEffect(() => {
+    if (initialDriverId && status === 'disconnected') {
+      setDriverId(initialDriverId);
+    }
+  }, [initialDriverId, status]);
   const [args, setArgs] = React.useState('');
 
   const connected = status === 'connected';

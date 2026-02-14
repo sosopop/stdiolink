@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Typography, Switch, Space } from 'antd';
 import { ExperimentOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import { useDriverLabStore } from '@/stores/useDriverLabStore';
 import { useDriversStore } from '@/stores/useDriversStore';
 import { ConnectionPanel } from '@/components/DriverLab/ConnectionPanel';
@@ -19,6 +20,9 @@ const statusColorMap: Record<string, string> = {
 };
 
 export const DriverLabPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const urlDriverId = searchParams.get('driverId');
+
   const drivers = useDriversStore((s) => s.drivers);
   const fetchDrivers = useDriversStore((s) => s.fetchDrivers);
 
@@ -101,6 +105,7 @@ export const DriverLabPage: React.FC = () => {
             <ConnectionPanel
               drivers={drivers}
               status={connection.status}
+              initialDriverId={urlDriverId}
               onConnect={connect}
               onDisconnect={disconnect}
             />
