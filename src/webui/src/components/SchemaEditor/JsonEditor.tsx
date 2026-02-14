@@ -7,7 +7,7 @@ export const JsonEditor: React.FC = () => {
   const { jsonText, jsonError, setJsonText } = useSchemaEditorStore();
 
   return (
-    <div data-testid="json-editor">
+    <div data-testid="json-editor" style={{ height: 'calc(100vh - 320px)', display: 'flex', flexDirection: 'column' }}>
       {jsonError && (
         <Alert
           type="error"
@@ -16,11 +16,13 @@ export const JsonEditor: React.FC = () => {
           data-testid="json-error"
         />
       )}
-      <MonacoEditor
-        content={jsonText}
-        language="json"
-        onChange={setJsonText}
-      />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <MonacoEditor
+          content={jsonText}
+          language="json"
+          onChange={setJsonText}
+        />
+      </div>
     </div>
   );
 };

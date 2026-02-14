@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Spin, message } from 'antd';
+import { Spin, message, Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { FileTree } from '@/components/FileTree/FileTree';
 import { MonacoEditor } from '@/components/CodeEditor/MonacoEditor';
 import { servicesApi } from '@/api/services';
@@ -81,38 +82,102 @@ export const ServiceFiles: React.FC<ServiceFilesProps> = ({ serviceId }) => {
   };
 
   return (
-    <div data-testid="service-files" style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <div style={{ width: 240, flexShrink: 0 }}>
-        <FileTree
-          files={files}
-          selectedPath={selectedPath}
-          onSelect={handleSelect}
-          onCreateFile={handleCreate}
-          onDeleteFile={handleDelete}
-        />
+    <div data-testid="service-files" style={{ display: 'flex', gap: 16, height: 'calc(100vh - 240px)', minHeight: 500 }}>
+      <div className="glass-panel" style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--surface-border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            File Explorer
+          </span>
+          <Button
+            type="text"
+            size="small"
+            icon={<PlusOutlined />}
+            style={{ color: 'var(--text-secondary)' }}
+            onClick={() => handleCreate('new_file.js')}
+            data-testid="create-file-btn"
+          />
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '8px 5px' }}>
+          <FileTree
+            files={files}
+            selectedPath={selectedPath}
+            onSelect={handleSelect}
+            onDeleteFile={handleDelete}
+          />
+        </div>
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="glass-panel" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {loading ? (
-          <Spin data-testid="file-loading" />
-        ) : selectedPath ? (
-          <div>
-            <div style={{ marginBottom: 8, fontSize: 12, color: '#888' }}>
-              {selectedPath} {modified && <span data-testid="modified-marker">*</span>}
-            </div>
-            <MonacoEditor
-              content={content}
-              filePath={selectedPath}
-              fileSize={fileSize}
-              onChange={(v) => {
-                setContent(v);
-                setModified(true);
-              }}
-              onSave={handleSave}
-            />
+          <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
+            <Spin data-testid="file-loading" />
           </div>
+        ) : selectedPath ? (
+          <>
+            <div style={{
+              padding: '8px 16px',
+              borderBottom: '1px solid var(--surface-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'rgba(0,0,0,0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-primary)' }}>{selectedPath}</span>
+                {modified && <span style={{ color: 'var(--brand-warning)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }}></span>
+                  Unsaved
+                </span>}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button
+                  size="small"
+                  onClick={() => handleSelect(selectedPath)}
+                  disabled={!modified}
+                  type="text"
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={handleSave}
+                  loading={loading}
+                  disabled={!modified}
+                  style={{
+                    boxShadow: modified ? '0 0 10px rgba(99, 102, 241, 0.4)' : 'none'
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: 0 }}>
+                <MonacoEditor
+                  content={content}
+                  filePath={selectedPath}
+                  fileSize={fileSize}
+                  onChange={(v) => {
+                    setContent(v);
+                    setModified(true);
+                  }}
+                  onSave={handleSave}
+                />
+              </div>
+            </div>
+          </>
         ) : (
-          <div data-testid="no-file-selected" style={{ color: '#888', padding: 40, textAlign: 'center' }}>
-            Select a file to edit
+          <div data-testid="no-file-selected" style={{ display: 'grid', placeItems: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.2 }}>📄</div>
+              <div>Select a file to start editing</div>
+            </div>
           </div>
         )}
       </div>

@@ -14,7 +14,7 @@ export const SchemaToolbar: React.FC<SchemaToolbarProps> = ({ serviceId }) => {
   return (
     <div
       data-testid="schema-toolbar"
-      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}
     >
       <Space>
         <Button

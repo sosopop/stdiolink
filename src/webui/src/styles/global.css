@@ -123,3 +123,26 @@ pre {
 .ant-btn-text:hover {
   background: rgba(255, 255, 255, 0.05) !important;
 }
+
+/* Service File Tree Style Overrides */
+[data-testid="file-tree"] .ant-tree,
+[data-testid="file-tree"] .ant-tree .ant-tree-list-holder-inner,
+[data-testid="file-tree"] .ant-tree .ant-tree-list-holder {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+[data-testid="file-tree"] .ant-tree .ant-tree-node-content-wrapper {
+  transition: all 0.2s;
+  border-radius: 4px;
+  /* Restore slight rounding for items */
+}
+
+[data-testid="file-tree"] .ant-tree .ant-tree-node-content-wrapper:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-testid="file-tree"] .ant-tree .ant-tree-node-selected .ant-tree-node-content-wrapper {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+  color: var(--brand-primary);
+}
