@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Tabs, Spin, Alert, Empty } from 'antd';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useServicesStore } from '@/stores/useServicesStore';
@@ -11,6 +11,8 @@ import { ProjectSchedule } from './components/ProjectSchedule';
 
 export const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab');
   const {
     currentProject, currentRuntime, loading, error,
     fetchProjectDetail, fetchRuntime, startProject, stopProject, reloadProject, updateProject,
@@ -84,7 +86,12 @@ export const ProjectDetailPage: React.FC = () => {
   return (
     <div data-testid="page-project-detail">
       <h2 style={{ marginBottom: 16 }}>{currentProject.name}</h2>
-      <Tabs items={items} data-testid="detail-tabs" />
+      <Tabs
+        activeKey={tab || 'overview'}
+        items={items}
+        onChange={(key) => setSearchParams({ tab: key })}
+        data-testid="detail-tabs"
+      />
     </div>
   );
 };

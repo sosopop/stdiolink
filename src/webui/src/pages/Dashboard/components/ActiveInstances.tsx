@@ -3,6 +3,7 @@ import { Table, Button, Popconfirm, Typography, Space, Tooltip } from 'antd';
 import { StopOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
+import styles from '../dashboard.module.css';
 import type { Instance } from '@/types/instance';
 
 interface ActiveInstancesProps {
@@ -88,7 +89,7 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '0 0 8px 0', overflow: 'hidden' }}>
+    <div className={`glass-panel ${styles.activeInstancesTable}`} style={{ padding: '0 0 8px 0', overflow: 'hidden' }}>
       <Table
         dataSource={instances}
         columns={columns}

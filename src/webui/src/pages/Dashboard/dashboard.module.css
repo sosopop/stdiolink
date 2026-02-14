@@ -360,3 +360,7 @@
   border-radius: 4px;
   margin-top: 2px;
 }
+
+.activeInstancesTable :global(.ant-table-tbody > tr:last-child > td) {
+  border-bottom: none !important;
+}
