@@ -55,6 +55,12 @@ export const useDriversStore = create<DriversState>()((set, get) => ({
       }
       return content;
     } catch (e: any) {
+      // 404 means the docs endpoint doesn't exist — treat as empty, not error
+      const status = e?.response?.status ?? e?.status;
+      if (status === 404) {
+        set({ docsLoading: false, docsMarkdown: null });
+        return '';
+      }
       set({ error: e?.error || 'Failed to fetch docs', docsLoading: false, docsMarkdown: null });
       throw e;
     }

@@ -18,6 +18,7 @@
 #include "manager/process_monitor.h"
 #include "manager/project_manager.h"
 #include "server_manager.h"
+#include "stdiolink/doc/doc_generator.h"
 #include "stdiolink_service/config/service_config_schema.h"
 #include "stdiolink_service/config/service_config_validator.h"
 
@@ -307,6 +308,9 @@ void ApiRouter::registerRoutes(QHttpServer& server) {
     });
     server.route("/api/drivers/scan", Method::Post, [this](const QHttpServerRequest& req) {
         return handleDriverScan(req);
+    });
+    server.route("/api/drivers/<arg>/docs", Method::Get, [this](const QString& id, const QHttpServerRequest& req) {
+        return handleDriverDocs(id, req);
     });
     server.route("/api/drivers/<arg>", Method::Get, [this](const QString& id, const QHttpServerRequest& req) {
         return handleDriverDetail(id, req);
@@ -1605,6 +1609,39 @@ QHttpServerResponse ApiRouter::handleDriverDetail(const QString& id,
     }
 
     return jsonResponse(result);
+}
+
+QHttpServerResponse ApiRouter::handleDriverDocs(const QString& id,
+                                                 const QHttpServerRequest& req) {
+    auto* catalog = m_manager->driverCatalog();
+    if (!catalog->hasDriver(id)) {
+        return errorResponse(QHttpServerResponse::StatusCode::NotFound, "driver not found");
+    }
+
+    const auto cfg = catalog->getConfig(id);
+    if (!cfg.meta) {
+        return errorResponse(QHttpServerResponse::StatusCode::NotFound, "driver has no metadata");
+    }
+
+    const QUrlQuery query(req.url());
+    const QString format = query.queryItemValue("format").toLower();
+
+    if (format == "html") {
+        QString html = stdiolink::DocGenerator::toHtml(*cfg.meta);
+        return QHttpServerResponse("text/html", html.toUtf8());
+    }
+    if (format == "openapi") {
+        QJsonObject api = stdiolink::DocGenerator::toOpenAPI(*cfg.meta);
+        return jsonResponse(api);
+    }
+    if (format == "typescript" || format == "ts") {
+        QString ts = stdiolink::DocGenerator::toTypeScript(*cfg.meta);
+        return QHttpServerResponse("text/plain", ts.toUtf8());
+    }
+
+    // Default: markdown
+    QString md = stdiolink::DocGenerator::toMarkdown(*cfg.meta);
+    return QHttpServerResponse("text/plain", md.toUtf8());
 }
 
 QHttpServerResponse ApiRouter::handleInstanceProcessTree(const QString& id,

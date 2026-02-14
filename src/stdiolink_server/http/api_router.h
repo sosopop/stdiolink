@@ -84,6 +84,8 @@ private:
     QHttpServerResponse handleDriverList(const QHttpServerRequest& req);
     QHttpServerResponse handleDriverDetail(const QString& id,
                                            const QHttpServerRequest& req);
+    QHttpServerResponse handleDriverDocs(const QString& id,
+                                         const QHttpServerRequest& req);
     QHttpServerResponse handleDriverScan(const QHttpServerRequest& req);
 
     void handleEventStream(const QHttpServerRequest& req,
