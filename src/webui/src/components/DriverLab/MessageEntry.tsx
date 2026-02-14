@@ -38,7 +38,7 @@ export const MessageEntryComponent: React.FC<MessageEntryProps> = ({ entry, onTo
       onClick={() => onToggle(entry.id)}
       style={{
         padding: '6px 10px',
-        borderBottom: '1px solid var(--border-secondary, #303030)',
+        borderBottom: '1px solid var(--surface-border)',
         cursor: 'pointer',
         fontSize: 13,
       }}
@@ -77,7 +77,8 @@ export const MessageEntryComponent: React.FC<MessageEntryProps> = ({ entry, onTo
           style={{
             marginTop: 6,
             padding: 8,
-            background: 'var(--surface-layer2, #1a1a2e)',
+            background: 'var(--bg-body)',
+            border: '1px solid var(--surface-border)',
             borderRadius: 4,
             fontSize: 12,
             fontFamily: 'monospace',

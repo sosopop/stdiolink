@@ -13,7 +13,7 @@ export const DriverDocs: React.FC<DriverDocsProps> = ({ driverId }) => {
   const { docsMarkdown, docsLoading, error, fetchDriverDocs } = useDriversStore();
 
   useEffect(() => {
-    fetchDriverDocs(driverId, 'markdown').catch(() => {});
+    fetchDriverDocs(driverId, 'markdown').catch(() => { });
   }, [driverId, fetchDriverDocs]);
 
   if (docsLoading) {
@@ -24,7 +24,7 @@ export const DriverDocs: React.FC<DriverDocsProps> = ({ driverId }) => {
     return (
       <div data-testid="docs-error">
         <Alert type="error" message={error} style={{ marginBottom: 8 }} />
-        <Button icon={<ReloadOutlined />} onClick={() => fetchDriverDocs(driverId, 'markdown').catch(() => {})} data-testid="docs-retry">
+        <Button icon={<ReloadOutlined />} onClick={() => fetchDriverDocs(driverId, 'markdown').catch(() => { })} data-testid="docs-retry">
           Retry
         </Button>
       </div>
@@ -36,7 +36,7 @@ export const DriverDocs: React.FC<DriverDocsProps> = ({ driverId }) => {
   }
 
   return (
-    <div data-testid="driver-docs" style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 8, padding: 32 }}>
+    <div data-testid="driver-docs" style={{ background: 'var(--surface-hover)', borderRadius: 8, padding: 32 }}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{docsMarkdown}</ReactMarkdown>
     </div>
   );

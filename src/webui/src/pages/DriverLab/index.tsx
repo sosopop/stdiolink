@@ -72,14 +72,14 @@ export const DriverLabPage: React.FC = () => {
             <Text type="secondary">Interactive driver debugging and protocol testing</Text>
           </div>
         </Space>
-        
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 100, border: '1px solid var(--surface-border)' }}>
-          <div 
-            style={{ 
-              width: 8, height: 8, borderRadius: '50%', 
+          <div
+            style={{
+              width: 8, height: 8, borderRadius: '50%',
               backgroundColor: statusColorMap[connection.status] || 'var(--text-tertiary)',
               boxShadow: connection.status === 'connected' ? '0 0 8px var(--color-success)' : 'none'
-            }} 
+            }}
           />
           <Text strong style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.5px' }} data-testid="header-status">
             {connection.status}
@@ -154,15 +154,15 @@ export const DriverLabPage: React.FC = () => {
               />
             </Space>
           </div>
-          
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.2)' }}>
+
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-hover)' }}>
             <MessageStream
               messages={messages}
               autoScroll={autoScroll}
               onToggleMessage={handleToggleMessage}
             />
           </div>
-          
+
           <StatusBar connection={connection} />
         </div>
       </div>
