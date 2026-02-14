@@ -2,6 +2,7 @@
   "mode": {
     "type": "enum",
     "default": "normal",
+    "description": "运行模式：normal 正常执行，crash 模拟崩溃退出",
     "constraints": {
       "enumValues": [
         "normal",
@@ -12,6 +13,7 @@
   "runMs": {
     "type": "int",
     "default": 300,
+    "description": "运行持续时间（毫秒），模拟业务处理耗时",
     "constraints": {
       "min": 0,
       "max": 60000
@@ -19,6 +21,7 @@
   },
   "message": {
     "type": "string",
-    "default": "hello"
+    "default": "hello",
+    "description": "输出的消息内容"
   }
 }

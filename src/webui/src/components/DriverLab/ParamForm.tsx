@@ -3,6 +3,7 @@ import { Form } from 'antd';
 import type { FieldMeta } from '@/types/service';
 import { FieldRenderer } from '@/components/SchemaForm/FieldRenderer';
 import { Typography } from 'antd';
+import styles from './ParamForm.module.css';
 
 interface ParamFormProps {
   params: FieldMeta[];
@@ -13,7 +14,7 @@ interface ParamFormProps {
 export const ParamForm: React.FC<ParamFormProps> = ({ params, values, onChange }) => {
   if (!params || params.length === 0) {
     return (
-      <Typography.Text type="secondary" data-testid="no-params">
+      <Typography.Text type="secondary" data-testid="no-params" style={{ fontSize: 13 }}>
         No parameters for this command
       </Typography.Text>
     );
@@ -24,7 +25,7 @@ export const ParamForm: React.FC<ParamFormProps> = ({ params, values, onChange }
   };
 
   return (
-    <Form layout="vertical" size="small" data-testid="param-form">
+    <Form layout="vertical" data-testid="param-form" className={styles.driverParamForm}>
       {params.map((field) => (
         <FieldRenderer
           key={field.name}

@@ -1,11 +1,13 @@
 {
   "baseUrl": {
     "type": "string",
-    "default": "http://127.0.0.1:18080"
+    "default": "http://127.0.0.1:18080",
+    "description": "stdiolink_server API 基础地址"
   },
   "timeoutMs": {
     "type": "int",
     "default": 5000,
+    "description": "单次 HTTP 请求超时时间（毫秒）",
     "constraints": {
       "min": 1000,
       "max": 30000
@@ -13,11 +15,13 @@
   },
   "checkDrivers": {
     "type": "bool",
-    "default": true
+    "default": true,
+    "description": "是否检查驱动相关 API（/api/drivers）"
   },
   "intervalMs": {
     "type": "int",
     "default": 10000,
+    "description": "循环模式下每轮检查的间隔时间（毫秒）",
     "constraints": {
       "min": 1000,
       "max": 300000
@@ -25,6 +29,7 @@
   },
   "loop": {
     "type": "bool",
-    "default": false
+    "default": false,
+    "description": "是否启用循环模式（daemon 调度时需设为 true）"
   }
 }

@@ -1,0 +1,16 @@
+.driverParamForm :global(.ant-form-item-label > label) {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
+}
+
+.driverParamForm :global(.ant-form-item) {
+    margin-bottom: 20px !important;
+}
+
+.driverParamForm :global(.ant-input),
+.driverParamForm :global(.ant-input-number),
+.driverParamForm :global(.ant-select-selector) {
+    border-radius: 6px !important;
+    /* Tech squircle */
+}

@@ -1,10 +1,12 @@
 {
   "outputDir": {
     "type": "string",
-    "default": "./output"
+    "default": "./output",
+    "description": "执行结果输出目录路径"
   },
   "spawnDriver": {
     "type": "string",
-    "default": "calculator_driver"
+    "default": "calculator_driver",
+    "description": "spawn 交互演示使用的驱动程序名称"
   }
 }

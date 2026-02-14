@@ -4,6 +4,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useDriversStore } from '@/stores/useDriversStore';
+import styles from './DriverDocs.module.css';
 
 interface DriverDocsProps {
   driverId: string;
@@ -36,7 +37,7 @@ export const DriverDocs: React.FC<DriverDocsProps> = ({ driverId }) => {
   }
 
   return (
-    <div data-testid="driver-docs" style={{ background: 'var(--surface-hover)', borderRadius: 8, padding: 32 }}>
+    <div data-testid="driver-docs" className={styles.driverDocs} style={{ background: 'var(--surface-hover)', borderRadius: 8, padding: 32 }}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{docsMarkdown}</ReactMarkdown>
     </div>
   );

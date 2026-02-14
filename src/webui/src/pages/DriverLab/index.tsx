@@ -65,11 +65,13 @@ export const DriverLabPage: React.FC = () => {
     <div data-testid="driverlab-page" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Space size={12}>
-          <ExperimentOutlined style={{ fontSize: 24, color: 'var(--brand-primary)' }} />
+        <Space size={16} align="center">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))', borderRadius: 12, border: '1px solid rgba(99,102,241,0.2)' }}>
+            <ExperimentOutlined style={{ fontSize: 22, color: 'var(--brand-primary)' }} />
+          </div>
           <div>
-            <Title level={3} style={{ margin: 0 }}>DriverLab</Title>
-            <Text type="secondary">Interactive driver debugging and protocol testing</Text>
+            <Title level={4} style={{ margin: 0, fontWeight: 600, letterSpacing: '-0.01em' }}>Driver Lab</Title>
+            <Text type="secondary" style={{ fontSize: 13 }}>Interactive protocol debugger & playground</Text>
           </div>
         </Space>
 

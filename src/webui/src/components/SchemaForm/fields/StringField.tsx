@@ -12,9 +12,18 @@ interface StringFieldProps {
 export const StringField: React.FC<StringFieldProps> = ({ field, value, onChange, error }) => {
   return (
     <Form.Item
-      label={field.name}
+      label={
+        <span>
+          {field.name}
+          {field.description && (
+            <span style={{ color: 'var(--text-tertiary)', marginLeft: 8, fontWeight: 'normal', fontSize: 12 }}>
+              ({field.description})
+            </span>
+          )}
+        </span>
+      }
       required={field.required}
-      help={error || field.description}
+      help={error}
       validateStatus={error ? 'error' : undefined}
       data-testid={`field-${field.name}`}
     >

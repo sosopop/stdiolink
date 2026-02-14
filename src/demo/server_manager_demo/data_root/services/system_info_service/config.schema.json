@@ -1,14 +1,17 @@
 {
   "outputDir": {
     "type": "string",
-    "default": "./output"
+    "default": "./output",
+    "description": "报告输出目录路径"
   },
   "reportName": {
     "type": "string",
-    "default": "system_report"
+    "default": "system_report",
+    "description": "生成的报告文件名（不含扩展名）"
   },
   "verbose": {
     "type": "bool",
-    "default": false
+    "default": false,
+    "description": "是否输出详细日志信息"
   }
 }

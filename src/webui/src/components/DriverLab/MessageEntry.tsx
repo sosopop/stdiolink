@@ -37,11 +37,13 @@ export const MessageEntryComponent: React.FC<MessageEntryProps> = ({ entry, onTo
       data-testid={`msg-${entry.id}`}
       onClick={() => onToggle(entry.id)}
       style={{
-        padding: '6px 10px',
+        padding: '8px 12px',
         borderBottom: '1px solid var(--surface-border)',
         cursor: 'pointer',
         fontSize: 13,
+        transition: 'background 0.2s',
       }}
+      className="message-entry"
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ color, fontWeight: 600 }} data-testid="msg-direction">
@@ -79,8 +81,9 @@ export const MessageEntryComponent: React.FC<MessageEntryProps> = ({ entry, onTo
             padding: 8,
             background: 'var(--bg-body)',
             border: '1px solid var(--surface-border)',
-            borderRadius: 4,
-            fontSize: 12,
+            borderRadius: 6,
+            fontSize: 13,
+            lineHeight: 1.5,
             fontFamily: 'monospace',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-all',

@@ -36,7 +36,7 @@ DriverLabWsConnection::~DriverLabWsConnection() {
     }
 }
 
-void DriverLabWsConnection::startDriver() {
+void DriverLabWsConnection::startDriver(bool queryMeta) {
     m_process = std::make_unique<QProcess>();
 
     connect(m_process.get(), &QProcess::readyReadStandardOutput,
@@ -58,7 +58,7 @@ void DriverLabWsConnection::startDriver() {
     m_process->setProcessEnvironment(env);
 
     m_lastDriverStart = QDateTime::currentDateTimeUtc();
-    m_metaSent = false;
+    m_metaSent = !queryMeta;  // Skip meta parsing on restart (already have it)
     m_stdoutBuffer.clear();
 
     QStringList args = m_extraArgs;
@@ -85,19 +85,21 @@ void DriverLabWsConnection::startDriver() {
         {"pid", static_cast<qint64>(m_process->processId())}
     });
 
-    // Query meta
-    const QByteArray metaCmd = "{\"cmd\":\"meta.describe\",\"data\":{}}\n";
-    m_process->write(metaCmd);
+    // Query meta (skip on OneShot restart — we already have it)
+    if (queryMeta) {
+        const QByteArray metaCmd = "{\"cmd\":\"meta.describe\",\"data\":{}}\n";
+        m_process->write(metaCmd);
 
-    // Meta timeout
-    QTimer::singleShot(5000, this, [this]() {
-        if (!m_metaSent && m_socket && m_socket->state() == QAbstractSocket::ConnectedState) {
-            sendJson(QJsonObject{
-                {"type", "error"},
-                {"message", "meta query timeout"}
-            });
-        }
-    });
+        // Meta timeout
+        QTimer::singleShot(5000, this, [this]() {
+            if (!m_metaSent && m_socket && m_socket->state() == QAbstractSocket::ConnectedState) {
+                sendJson(QJsonObject{
+                    {"type", "error"},
+                    {"message", "meta query timeout"}
+                });
+            }
+        });
+    }
 }
 
 void DriverLabWsConnection::stopDriver() {
@@ -325,8 +327,8 @@ void DriverLabWsConnection::restartDriverForOneShot() {
     // Clean up old process
     m_process.reset();
 
-    // Start new driver
-    startDriver();
+    // Start new driver (skip meta query — we already have it)
+    startDriver(false);
 
     if (m_process && m_process->state() == QProcess::Running) {
         sendJson(QJsonObject{

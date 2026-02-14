@@ -2,6 +2,7 @@
   "iterations": {
     "type": "int",
     "default": 3,
+    "description": "驱动命令执行的迭代次数",
     "constraints": {
       "min": 1,
       "max": 20
@@ -9,6 +10,7 @@
   },
   "outputDir": {
     "type": "string",
-    "default": "./output"
+    "default": "./output",
+    "description": "Pipeline 结果报告输出目录路径"
   }
 }

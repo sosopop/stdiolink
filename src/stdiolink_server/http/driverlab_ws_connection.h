@@ -33,7 +33,7 @@ private slots:
     void onDriverErrorOccurred(QProcess::ProcessError error);
 
 private:
-    void startDriver();
+    void startDriver(bool queryMeta = true);
     void stopDriver();
     void sendJson(const QJsonObject& msg);
     void forwardStdoutLine(const QByteArray& line);

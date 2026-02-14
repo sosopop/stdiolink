@@ -44,8 +44,8 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
 
   return (
     <div data-testid="connection-panel">
-      <Form layout={layout === 'horizontal' ? 'inline' : 'vertical'} size="small" style={layout === 'horizontal' ? { alignItems: 'center', gap: 16 } : undefined}>
-        <Form.Item label="Driver" style={layout === 'horizontal' ? { marginBottom: 0, flex: 1 } : undefined}>
+      <Form layout={layout === 'horizontal' ? 'inline' : 'vertical'} style={layout === 'horizontal' ? { alignItems: 'center', gap: 24 } : undefined}>
+        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>Target Driver</span>} style={layout === 'horizontal' ? { marginBottom: 0, flex: 1, minWidth: 240 } : undefined}>
           <Select
             value={driverId}
             onChange={setDriverId}
@@ -58,7 +58,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
             }))}
           />
         </Form.Item>
-        <Form.Item label="Run Mode" style={layout === 'horizontal' ? { marginBottom: 0 } : undefined}>
+        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>Mode</span>} style={layout === 'horizontal' ? { marginBottom: 0 } : undefined}>
           <Radio.Group
             value={runMode}
             onChange={(e) => setRunMode(e.target.value)}
@@ -69,7 +69,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
             <Radio value="keepalive">KeepAlive</Radio>
           </Radio.Group>
         </Form.Item>
-        <Form.Item label="Startup Args" style={layout === 'horizontal' ? { marginBottom: 0, flex: 2 } : undefined}>
+        <Form.Item label={<span style={{ fontWeight: 500, fontSize: 13 }}>Arguments</span>} style={layout === 'horizontal' ? { marginBottom: 0, flex: 1.5, minWidth: 200 } : undefined}>
           <Input
             value={args}
             onChange={(e) => setArgs(e.target.value)}

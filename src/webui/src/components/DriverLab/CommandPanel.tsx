@@ -44,9 +44,9 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
 
   return (
     <div data-testid="command-panel">
-      <div style={{ marginBottom: 12 }}>
-        <Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
-          Command
+      <div style={{ marginBottom: 20 }}>
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Select Command
         </Typography.Text>
         <Select
           value={selectedCommand}
@@ -64,7 +64,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
       {currentCmd && (
         <div style={{ marginBottom: 12 }}>
           {currentCmd.description && (
-            <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 13, lineHeight: 1.5 }}>
               {currentCmd.description}
             </Typography.Paragraph>
           )}
