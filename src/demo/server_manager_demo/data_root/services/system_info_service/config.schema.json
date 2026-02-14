@@ -1,0 +1,14 @@
+{
+  "outputDir": {
+    "type": "string",
+    "default": "./output"
+  },
+  "reportName": {
+    "type": "string",
+    "default": "system_report"
+  },
+  "verbose": {
+    "type": "bool",
+    "default": false
+  }
+}

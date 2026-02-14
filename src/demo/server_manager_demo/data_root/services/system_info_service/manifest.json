@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "system_info_service",
+  "name": "System Info Service",
+  "version": "1.0.0",
+  "description": "系统信息收集，覆盖 constants/path/fs/log/config/time 绑定"
+}

@@ -1,0 +1,10 @@
+{
+  "outputDir": {
+    "type": "string",
+    "default": "./output"
+  },
+  "spawnDriver": {
+    "type": "string",
+    "default": "calculator_driver"
+  }
+}

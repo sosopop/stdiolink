@@ -1,0 +1,18 @@
+{
+  "baseUrl": {
+    "type": "string",
+    "default": "http://127.0.0.1:18080"
+  },
+  "timeoutMs": {
+    "type": "int",
+    "default": 5000,
+    "constraints": {
+      "min": 1000,
+      "max": 30000
+    }
+  },
+  "checkDrivers": {
+    "type": "bool",
+    "default": true
+  }
+}

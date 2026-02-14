@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "driver_pipeline_service",
+  "name": "Driver Pipeline Service",
+  "version": "1.0.0",
+  "description": "Driver 编排演示，覆盖 openDriver/waitAny/time/log/config/fs/path/constants 绑定"
+}

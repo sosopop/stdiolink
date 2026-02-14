@@ -1,0 +1,15 @@
+{
+  "name": "Fixed Rate Health Check",
+  "serviceId": "api_health_check_service",
+  "enabled": true,
+  "schedule": {
+    "type": "fixed_rate",
+    "intervalMs": 10000,
+    "maxConcurrent": 1
+  },
+  "config": {
+    "baseUrl": "http://127.0.0.1:18080",
+    "timeoutMs": 5000,
+    "checkDrivers": true
+  }
+}

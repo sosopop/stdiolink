@@ -1,0 +1,12 @@
+{
+  "name": "Manual Process Exec",
+  "serviceId": "process_exec_service",
+  "enabled": true,
+  "schedule": {
+    "type": "manual"
+  },
+  "config": {
+    "outputDir": "./output",
+    "spawnDriver": "calculator_driver"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "process_exec_service",
+  "name": "Process Exec Service",
+  "version": "1.0.0",
+  "description": "进程执行演示，覆盖 process_async(execAsync+spawn)/constants/path/fs/log/config/time 绑定"
+}

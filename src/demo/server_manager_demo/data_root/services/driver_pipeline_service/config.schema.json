@@ -1,0 +1,14 @@
+{
+  "iterations": {
+    "type": "int",
+    "default": 3,
+    "constraints": {
+      "min": 1,
+      "max": 20
+    }
+  },
+  "outputDir": {
+    "type": "string",
+    "default": "./output"
+  }
+}

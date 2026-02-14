@@ -1,0 +1,15 @@
+{
+  "name": "Daemon Health Check",
+  "serviceId": "api_health_check_service",
+  "enabled": true,
+  "schedule": {
+    "type": "daemon",
+    "restartDelayMs": 5000,
+    "maxConsecutiveFailures": 10
+  },
+  "config": {
+    "baseUrl": "http://127.0.0.1:18080",
+    "timeoutMs": 5000,
+    "checkDrivers": false
+  }
+}

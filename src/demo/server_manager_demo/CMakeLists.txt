@@ -36,3 +36,11 @@ endif()
 if(TARGET driver_3dvision)
     add_dependencies(server_manager_demo_assets driver_3dvision)
 endif()
+
+if(TARGET heartbeat_driver)
+    add_dependencies(server_manager_demo_assets heartbeat_driver)
+endif()
+
+if(TARGET kv_store_driver)
+    add_dependencies(server_manager_demo_assets kv_store_driver)
+endif()

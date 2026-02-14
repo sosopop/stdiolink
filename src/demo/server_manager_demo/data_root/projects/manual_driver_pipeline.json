@@ -1,0 +1,12 @@
+{
+  "name": "Manual Driver Pipeline",
+  "serviceId": "driver_pipeline_service",
+  "enabled": true,
+  "schedule": {
+    "type": "manual"
+  },
+  "config": {
+    "iterations": 3,
+    "outputDir": "./output"
+  }
+}

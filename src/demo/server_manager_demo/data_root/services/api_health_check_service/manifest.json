@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "api_health_check_service",
+  "name": "API Health Check Service",
+  "version": "1.0.0",
+  "description": "API 健康检查，覆盖 http/time/log/config/constants 绑定"
+}
