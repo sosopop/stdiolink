@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
-import { Empty, Input, Tag, Select } from 'antd';
+import { Empty, Input, Select, Button, Tooltip } from 'antd';
+import { ArrowDownOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import styles from './LogViewer.module.css';
 
 const { Search } = Input;
 
@@ -10,21 +12,37 @@ interface LogViewerProps {
 
 const LOG_LEVELS = ['ALL', 'ERROR', 'WARN', 'INFO', 'DEBUG'] as const;
 
-function detectLevel(line: string): string {
-  const upper = line.toUpperCase();
-  if (upper.includes('ERROR') || upper.includes('[E]')) return 'ERROR';
-  if (upper.includes('WARN') || upper.includes('[W]')) return 'WARN';
-  if (upper.includes('INFO') || upper.includes('[I]')) return 'INFO';
-  if (upper.includes('DEBUG') || upper.includes('[D]')) return 'DEBUG';
-  return 'INFO';
+function parseLine(line: string): { timestamp?: string; level: string; message: string } {
+  // Try to extract timestamp: 2023-01-01 12:00:00 or [2023-01-01...]
+  const timeRegex = /^\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]?\s*/;
+  const match = line.match(timeRegex);
+
+  let timestamp = undefined;
+  let message = line;
+
+  if (match) {
+    timestamp = match[1];
+    message = line.substring(match[0].length);
+  }
+
+  // Detect level in the remaining message
+  let level = 'INFO';
+  const upper = message.toUpperCase();
+  if (upper.includes('ERROR') || upper.includes('[E]')) level = 'ERROR';
+  else if (upper.includes('WARN') || upper.includes('[W]')) level = 'WARN';
+  else if (upper.includes('INFO') || upper.includes('[I]')) level = 'INFO';
+  else if (upper.includes('DEBUG') || upper.includes('[D]')) level = 'DEBUG';
+
+  return { timestamp, level, message };
 }
 
-function levelColor(level: string): string {
+function getLevelColor(level: string): string {
   switch (level) {
-    case 'ERROR': return '#ff4d4f';
-    case 'WARN': return '#faad14';
-    case 'DEBUG': return '#8c8c8c';
-    default: return '#d9d9d9';
+    case 'ERROR': return '#f87171'; // Red-400
+    case 'WARN': return '#fbbf24';  // Amber-400
+    case 'DEBUG': return '#9ca3af'; // Gray-400
+    case 'INFO': return '#60a5fa';  // Blue-400
+    default: return '#9ca3af';
   }
 }
 
@@ -32,66 +50,119 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState('ALL');
   const [search, setSearch] = useState('');
+  const [autoScroll, setAutoScroll] = useState(true);
 
   const filtered = useMemo(() => {
     return lines.filter((line) => {
-      if (filter !== 'ALL' && detectLevel(line) !== filter) return false;
+      const { level } = parseLine(line);
+      if (filter !== 'ALL' && level !== filter) return false;
       if (search && !line.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [lines, filter, search]);
 
   useEffect(() => {
-    if (containerRef.current) {
+    if (containerRef.current && autoScroll) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [filtered]);
+  }, [filtered, autoScroll]);
+
+  const handleScroll = () => {
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+      if (!isAtBottom && autoScroll) {
+        setAutoScroll(false);
+      } else if (isAtBottom && !autoScroll) {
+        setAutoScroll(true);
+      }
+    }
+  };
 
   if (!loading && lines.length === 0) {
-    return <Empty description="No logs available" data-testid="empty-logs" />;
+    return (
+      <div className={styles.logWindow} style={{ display: 'grid', placeItems: 'center', height: 400 }}>
+        <Empty description={<span style={{ color: 'var(--text-tertiary)' }}>No logs available</span>} />
+      </div>
+    );
   }
 
   return (
-    <div data-testid="log-viewer">
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-        <Select
-          value={filter}
-          onChange={setFilter}
-          options={LOG_LEVELS.map((l) => ({ label: l, value: l }))}
-          style={{ width: 120 }}
-          data-testid="log-level-filter"
-        />
-        <Search
-          placeholder="Search logs..."
-          allowClear
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 240 }}
-          data-testid="log-search"
-        />
+    <div className={styles.container}>
+      <div className={styles.toolbar}>
+        <div className={styles.filterGroup}>
+          <Select
+            value={filter}
+            onChange={setFilter}
+            options={LOG_LEVELS.map((l) => ({ label: l, value: l }))}
+            style={{ width: 120 }}
+            size="small"
+            variant="borderless"
+            className="glass-input" // Assuming global class exists or will fallback
+          />
+          <Search
+            placeholder="Search logs..."
+            allowClear
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: 240 }}
+            size="small"
+            variant="borderless"
+          />
+        </div>
+        <div className={styles.filterGroup}>
+          <Tooltip title={autoScroll ? "Pause Auto-scroll" : "Resume Auto-scroll"}>
+            <Button
+              type="text"
+              size="small"
+              icon={autoScroll ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+              onClick={() => setAutoScroll(!autoScroll)}
+              style={{ color: autoScroll ? 'var(--color-success)' : 'var(--text-tertiary)' }}
+            />
+          </Tooltip>
+        </div>
       </div>
+
       <div
+        className={styles.logWindow}
         ref={containerRef}
-        data-testid="log-container"
-        style={{
-          height: 400,
-          overflow: 'auto',
-          background: 'rgba(0,0,0,0.3)',
-          borderRadius: 6,
-          padding: 12,
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 12,
-          lineHeight: 1.6,
-        }}
+        onScroll={handleScroll}
       >
         {filtered.map((line, i) => {
-          const level = detectLevel(line);
+          const { timestamp, level, message } = parseLine(line);
+          const color = getLevelColor(level);
+
           return (
-            <div key={i} data-testid="log-line" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-              <Tag color={levelColor(level)} style={{ fontSize: 10, marginRight: 6 }}>{level}</Tag>
-              <span>{line}</span>
+            <div key={i} className={styles.logLine}>
+              {timestamp && <span className={styles.timestamp}>{timestamp}</span>}
+              <span className={styles.levelTag} style={{ color, border: `1px solid ${color}40`, background: `${color}10` }}>
+                {level}
+              </span>
+              <span className={styles.message} style={{ color: level === 'ERROR' ? '#fca5a5' : 'inherit' }}>
+                {message}
+              </span>
             </div>
           );
         })}
+        {!autoScroll && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              right: 36,
+              zIndex: 10
+            }}
+          >
+            <Button
+              type="primary"
+              shape="circle"
+              icon={<ArrowDownOutlined />}
+              onClick={() => {
+                setAutoScroll(true);
+                containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

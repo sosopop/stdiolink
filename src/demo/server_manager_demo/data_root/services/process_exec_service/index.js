@@ -4,7 +4,7 @@
  * 覆盖绑定: process_async(execAsync+spawn), constants, path, fs, log, config, time
  */
 
-import { getConfig } from "stdiolink/config";
+import { getConfig } from "stdiolink";
 import { SYSTEM, APP_PATHS } from "stdiolink/constants";
 import { join, resolve } from "stdiolink/path";
 import { exists, mkdir, writeJson } from "stdiolink/fs";

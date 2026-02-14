@@ -4,7 +4,7 @@
  * 覆盖绑定: constants, path, fs, log, config, time
  */
 
-import { getConfig } from "stdiolink/config";
+import { getConfig } from "stdiolink";
 import { SYSTEM, APP_PATHS } from "stdiolink/constants";
 import { join, resolve, dirname, basename, extname } from "stdiolink/path";
 import { exists, mkdir, writeJson, readJson, writeText, listDir } from "stdiolink/fs";

@@ -27,7 +27,6 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ status }) => {
 
   return (
     <div className={styles.kpiSection} data-testid="kpi-section">
-      <KpiCard title="Services" value={counts?.services ?? 0} icon={<AppstoreOutlined />} />
       <KpiCard
         title="Projects"
         value={counts?.projects.total ?? 0}
@@ -42,6 +41,7 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ status }) => {
         status={counts?.instances.running ? 'normal' : undefined}
         subtitle={counts ? `${counts.instances.running} running` : undefined}
       />
+      <KpiCard title="Services" value={counts?.services ?? 0} icon={<AppstoreOutlined />} />
       <KpiCard title="Drivers" value={counts?.drivers ?? 0} icon={<ApiOutlined />} />
       <KpiCard
         title="Uptime"

@@ -4,16 +4,18 @@
  * 覆盖绑定: http, time, log, config, constants
  */
 
-import { getConfig } from "stdiolink/config";
+import { getConfig } from "stdiolink";
 import { SYSTEM } from "stdiolink/constants";
 import { get, post, request } from "stdiolink/http";
 import { createLogger } from "stdiolink/log";
-import { nowMs, monotonicMs } from "stdiolink/time";
+import { nowMs, monotonicMs, sleep } from "stdiolink/time";
 
 const cfg = getConfig();
 const baseUrl = String(cfg.baseUrl ?? "http://127.0.0.1:18080");
 const timeoutMs = Number(cfg.timeoutMs ?? 5000);
 const checkDrivers = cfg.checkDrivers !== false;
+const loop = Boolean(cfg.loop);
+const intervalMs = Number(cfg.intervalMs ?? 10000);
 
 const logger = createLogger({ service: "api_health_check" });
 
@@ -40,7 +42,7 @@ async function checkEndpoint(method, path, body) {
     }
 }
 
-(async () => {
+async function runOnce() {
     const t0 = monotonicMs();
     logger.info("start health check", { baseUrl, timeoutMs, checkDrivers, os: SYSTEM.os });
 
@@ -81,5 +83,17 @@ async function checkEndpoint(method, path, body) {
         logger.warn("some checks failed", {
             failedEndpoints: results.filter(r => !r.ok).map(r => r.path),
         });
+    }
+}
+
+(async () => {
+    if (loop) {
+        logger.info("daemon mode", { intervalMs });
+        while (true) {
+            await runOnce();
+            await sleep(intervalMs);
+        }
+    } else {
+        await runOnce();
     }
 })();

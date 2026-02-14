@@ -14,5 +14,17 @@
   "checkDrivers": {
     "type": "bool",
     "default": true
+  },
+  "intervalMs": {
+    "type": "int",
+    "default": 10000,
+    "constraints": {
+      "min": 1000,
+      "max": 300000
+    }
+  },
+  "loop": {
+    "type": "bool",
+    "default": false
   }
 }

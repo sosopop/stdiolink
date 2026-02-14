@@ -10,6 +10,8 @@
   "config": {
     "baseUrl": "http://127.0.0.1:18080",
     "timeoutMs": 5000,
-    "checkDrivers": false
+    "checkDrivers": false,
+    "loop": true,
+    "intervalMs": 10000
   }
 }

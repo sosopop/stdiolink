@@ -1,0 +1,93 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 12px;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface-hover);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+}
+
+.filterGroup {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.logWindow {
+    flex: 1;
+    background: #0d1117;
+    /* Darker, terminal-like background */
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-y: auto;
+    color: #c9d1d9;
+    scroll-behavior: smooth;
+    min-height: 400px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.logLine {
+    display: flex;
+    gap: 8px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.logLine:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.timestamp {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    user-select: none;
+    min-width: 140px;
+}
+
+.levelTag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    min-width: 50px;
+    text-align: center;
+    text-transform: uppercase;
+    user-select: none;
+}
+
+.message {
+    white-space: pre-wrap;
+    word-break: break-all;
+    flex: 1;
+}
+
+/* Scrollbar styling for log window */
+.logWindow::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.logWindow::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.logWindow::-webkit-scrollbar-thumb {
+    background: var(--surface-border);
+    border-radius: 4px;
+}
+
+.logWindow::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}

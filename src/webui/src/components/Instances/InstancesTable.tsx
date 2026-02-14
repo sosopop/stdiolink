@@ -68,6 +68,8 @@ export const InstancesTable: React.FC<InstancesTableProps> = ({ instances, onTer
       dataIndex: 'startedAt',
       key: 'uptime',
       width: 100,
+      defaultSortOrder: 'ascend' as const,
+      sorter: (a: Instance, b: Instance) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
       render: (startedAt: string) => startedAt ? formatUptime(startedAt) : '--',
     },
     {

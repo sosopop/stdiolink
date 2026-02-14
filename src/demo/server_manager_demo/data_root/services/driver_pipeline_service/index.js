@@ -5,7 +5,7 @@
  */
 
 import { openDriver, waitAny } from "stdiolink";
-import { getConfig } from "stdiolink/config";
+import { getConfig } from "stdiolink";
 import { SYSTEM } from "stdiolink/constants";
 import { join, resolve } from "stdiolink/path";
 import { exists, mkdir, writeJson } from "stdiolink/fs";

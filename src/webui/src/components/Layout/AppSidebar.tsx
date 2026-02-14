@@ -26,8 +26,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed }) => {
   const menuItems = [
     { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
     { key: '/projects', icon: <ProjectOutlined />, label: 'Projects' },
-    { key: '/services', icon: <CloudServerOutlined />, label: 'Services' },
     { key: '/instances', icon: <DeploymentUnitOutlined />, label: 'Instances' },
+    { key: '/services', icon: <CloudServerOutlined />, label: 'Services' },
     { key: '/drivers', icon: <ApiOutlined />, label: 'Drivers' },
     { key: '/driverlab', icon: <ExperimentOutlined />, label: 'DriverLab' },
   ];

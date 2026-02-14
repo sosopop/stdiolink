@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Tag, Button, Space, Switch, Popconfirm, Typography } from 'antd';
-import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined, ClockCircleOutlined, ThunderboltOutlined, SyncOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
@@ -66,6 +66,31 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       },
     },
     {
+      title: 'Schedule',
+      key: 'schedule',
+      width: 150,
+      render: (_: unknown, record: Project) => {
+        const t = record.schedule?.type;
+        const icon = t === 'daemon' ? <SyncOutlined /> : t === 'fixed_rate' ? <ClockCircleOutlined /> : <ThunderboltOutlined />;
+        const color = t === 'daemon' ? 'var(--color-success)' : t === 'fixed_rate' ? 'var(--brand-primary)' : 'var(--text-tertiary)';
+        const label = t === 'fixed_rate' ? 'fixed_rate' : (t ?? 'manual');
+        const detail = t === 'fixed_rate' && record.schedule?.intervalMs
+          ? `${(record.schedule.intervalMs / 1000).toFixed(0)}s`
+          : t === 'daemon' && record.schedule?.restartDelayMs
+            ? `restart ${(record.schedule.restartDelayMs / 1000).toFixed(0)}s`
+            : null;
+        return (
+          <Space size={6}>
+            <span style={{ color, fontSize: 13 }}>{icon}</span>
+            <Space direction="vertical" size={0}>
+              <Text style={{ fontSize: 12, fontWeight: 600 }}>{label}</Text>
+              {detail && <Text type="secondary" style={{ fontSize: 10 }}>{detail}</Text>}
+            </Space>
+          </Space>
+        );
+      },
+    },
+    {
       title: 'Enabled',
       key: 'enabled',
       width: 100,
@@ -113,7 +138,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
             <Button
               type="text"
               icon={<SettingOutlined />}
-              onClick={(e) => { e.stopPropagation(); navigate(`/projects/${record.id}/edit`); }}
+              onClick={(e) => { e.stopPropagation(); navigate(`/projects/${record.id}`); }}
             />
             <Popconfirm 
               title="Delete project?" 
