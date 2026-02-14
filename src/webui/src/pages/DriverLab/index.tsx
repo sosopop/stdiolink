@@ -88,82 +88,82 @@ export const DriverLabPage: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', gap: 24, minHeight: 0, overflow: 'hidden' }}>
-        {/* Left panel: Controls */}
-        <div
-          data-testid="left-panel"
-          style={{
-            width: 360,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 20,
-            overflow: 'auto',
-          }}
-        >
-          <div className="glass-panel" style={{ padding: 20 }}>
-            <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>Session Config</Title>
-            <ConnectionPanel
-              drivers={drivers}
-              status={connection.status}
-              initialDriverId={urlDriverId}
-              onConnect={connect}
-              onDisconnect={disconnect}
-            />
-          </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, overflow: 'hidden' }}>
 
-          <div className="glass-panel" style={{ padding: 20, flex: 1 }}>
-            <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>Command Palette</Title>
-            <CommandPanel
-              commands={commands}
-              selectedCommand={selectedCommand}
-              commandParams={commandParams}
-              executing={executing}
-              connected={connection.status === 'connected'}
-              driverId={connection.driverId}
-              onSelectCommand={selectCommand}
-              onParamsChange={setCommandParams}
-              onExec={handleExec}
-              onCancel={cancelCommand}
-            />
-          </div>
+        {/* Top: Session Config */}
+        <div className="glass-panel" style={{ padding: 16, flexShrink: 0 }}>
+          <ConnectionPanel
+            drivers={drivers}
+            status={connection.status}
+            initialDriverId={urlDriverId}
+            onConnect={connect}
+            onDisconnect={disconnect}
+            layout="horizontal"
+          />
         </div>
 
-        {/* Right panel: Stream */}
-        <div
-          data-testid="right-panel"
-          className="glass-panel"
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
-        >
-          <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--surface-border)' }}>
-            <Text strong style={{ textTransform: 'uppercase', fontSize: 12, letterSpacing: '1px', opacity: 0.8 }}>Protocol Stream</Text>
-            <Space size={16}>
-              <Space size={8}>
-                <Text type="secondary" style={{ fontSize: 12 }}>Auto-scroll</Text>
-                <Switch
-                  size="small"
-                  checked={autoScroll}
-                  onChange={toggleAutoScroll}
-                  data-testid="autoscroll-toggle"
+        {/* Bottom: Split View */}
+        <div style={{ flex: 1, display: 'flex', gap: 16, minHeight: 0, overflow: 'hidden' }}>
+
+          {/* Left: Command Palette */}
+          <div className="glass-panel" style={{ width: 320, display: 'flex', flexDirection: 'column', padding: 16 }}>
+            <div style={{ marginBottom: 12 }}>
+              <Title level={5} style={{ margin: 0 }}>Command Palette</Title>
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <CommandPanel
+                commands={commands}
+                selectedCommand={selectedCommand}
+                commandParams={commandParams}
+                executing={executing}
+                connected={connection.status === 'connected'}
+                driverId={connection.driverId}
+                onSelectCommand={selectCommand}
+                onParamsChange={setCommandParams}
+                onExec={handleExec}
+                onCancel={cancelCommand}
+              />
+            </div>
+          </div>
+
+          {/* Right: Stream */}
+          <div
+            data-testid="right-panel"
+            className="glass-panel"
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
+          >
+            <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--surface-border)' }}>
+              <Text strong style={{ textTransform: 'uppercase', fontSize: 12, letterSpacing: '1px', opacity: 0.8 }}>Protocol Stream</Text>
+              <Space size={16}>
+                <Space size={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Auto-scroll</Text>
+                  <Switch
+                    size="small"
+                    checked={autoScroll}
+                    onChange={toggleAutoScroll}
+                    data-testid="autoscroll-toggle"
+                  />
+                </Space>
+                <div style={{ width: 1, height: 16, background: 'var(--surface-border)' }} />
+                <MessageToolbar
+                  messages={messages}
+                  driverId={connection.driverId}
+                  onClear={clearMessages}
                 />
               </Space>
-              <div style={{ width: 1, height: 16, background: 'var(--surface-border)' }} />
-              <MessageToolbar
+            </div>
+
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-hover)' }}>
+              <MessageStream
                 messages={messages}
-                driverId={connection.driverId}
-                onClear={clearMessages}
+                autoScroll={autoScroll}
+                onToggleMessage={handleToggleMessage}
               />
-            </Space>
+            </div>
+
+            <StatusBar connection={connection} />
           </div>
 
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-hover)' }}>
-            <MessageStream
-              messages={messages}
-              autoScroll={autoScroll}
-              onToggleMessage={handleToggleMessage}
-            />
-          </div>
-
-          <StatusBar connection={connection} />
         </div>
       </div>
     </div>

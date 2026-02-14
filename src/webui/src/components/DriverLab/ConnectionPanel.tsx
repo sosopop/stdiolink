@@ -10,6 +10,7 @@ interface ConnectionPanelProps {
   initialDriverId?: string | null;
   onConnect: (driverId: string, runMode: 'oneshot' | 'keepalive', args?: string[]) => void;
   onDisconnect: () => void;
+  layout?: 'horizontal' | 'vertical';
 }
 
 export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
@@ -18,6 +19,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
   initialDriverId,
   onConnect,
   onDisconnect,
+  layout = 'vertical',
 }) => {
   const [driverId, setDriverId] = React.useState<string | null>(null);
   const [runMode, setRunMode] = React.useState<'oneshot' | 'keepalive'>('oneshot');
@@ -42,8 +44,8 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
 
   return (
     <div data-testid="connection-panel">
-      <Form layout="vertical" size="small">
-        <Form.Item label="Driver">
+      <Form layout={layout === 'horizontal' ? 'inline' : 'vertical'} size="small" style={layout === 'horizontal' ? { alignItems: 'center', gap: 16 } : undefined}>
+        <Form.Item label="Driver" style={layout === 'horizontal' ? { marginBottom: 0, flex: 1 } : undefined}>
           <Select
             value={driverId}
             onChange={setDriverId}
@@ -56,7 +58,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
             }))}
           />
         </Form.Item>
-        <Form.Item label="Run Mode">
+        <Form.Item label="Run Mode" style={layout === 'horizontal' ? { marginBottom: 0 } : undefined}>
           <Radio.Group
             value={runMode}
             onChange={(e) => setRunMode(e.target.value)}
@@ -67,7 +69,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
             <Radio value="keepalive">KeepAlive</Radio>
           </Radio.Group>
         </Form.Item>
-        <Form.Item label="Startup Args">
+        <Form.Item label="Startup Args" style={layout === 'horizontal' ? { marginBottom: 0, flex: 2 } : undefined}>
           <Input
             value={args}
             onChange={(e) => setArgs(e.target.value)}
@@ -76,7 +78,7 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
             data-testid="args-input"
           />
         </Form.Item>
-        <Form.Item>
+        <Form.Item style={layout === 'horizontal' ? { marginBottom: 0 } : undefined}>
           <Space>
             {!connected ? (
               <Button
