@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Tag, Button, Space, Switch, Popconfirm, Typography } from 'antd';
-import { PlayCircleOutlined, StopOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
@@ -8,7 +8,7 @@ import type { Project, ProjectRuntime } from '@/types/project';
 interface ProjectTableProps {
   projects: Project[];
   runtimes: Record<string, ProjectRuntime>;
-  loading?: boolean;
+  loading: boolean;
   onStart: (id: string) => void;
   onStop: (id: string) => void;
   onDelete: (id: string) => void;
@@ -22,46 +22,46 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const getStatus = (p: Project): string => {
-    const rt = runtimes[p.id];
-    return rt?.status ?? (p.enabled ? 'stopped' : 'disabled');
+  const getStatus = (project: Project) => {
+    if (!project.valid) return 'invalid';
+    return runtimes[project.id]?.status || 'stopped';
   };
 
   const columns = [
     {
-      title: 'Project ID',
-      dataIndex: 'id',
-      key: 'id',
-      render: (id: string) => (
-        <Text strong style={{ color: 'var(--brand-primary)', cursor: 'pointer' }} onClick={() => navigate(`/projects/${id}`)}>
-          {id}
-        </Text>
+      title: 'Project Details',
+      key: 'details',
+      render: (_: unknown, record: Project) => (
+        <Space direction="vertical" size={0}>
+          <Text strong style={{ color: 'var(--brand-primary)', cursor: 'pointer', fontSize: 15 }} onClick={() => navigate(`/projects/${record.id}`)}>
+            {record.name}
+          </Text>
+          <Text type="secondary" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{record.id}</Text>
+        </Space>
       ),
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name: string) => <Text>{name}</Text>
-    },
-    {
-      title: 'Service',
+      title: 'Service Template',
       dataIndex: 'serviceId',
       key: 'serviceId',
-      render: (id: string) => <Tag bordered={false} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>{id}</Tag>,
+      render: (id: string) => (
+        <Tag bordered={false} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', padding: '2px 10px', borderRadius: 6 }}>
+          {id}
+        </Tag>
+      ),
     },
     {
-      title: 'Status',
+      title: 'Runtime Status',
       key: 'status',
-      width: 140,
+      width: 160,
       render: (_: unknown, record: Project) => {
         const status = getStatus(record);
-        const dotStatus = status === 'running' ? 'running' : status === 'error' || status === 'invalid' ? 'error' : 'stopped';
+        const dotStatus = status === 'running' ? 'running' : status === 'invalid' ? 'error' : 'stopped';
         return (
-          <Space data-testid={`status-${record.id}`} size={8}>
-            <StatusDot status={dotStatus} />
-            <Text style={{ fontSize: 13, textTransform: 'capitalize' }}>{status}</Text>
-          </Space>
+          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 10, border: '1px solid var(--surface-border)' }}>
+            <StatusDot status={dotStatus} size={10} />
+            <Text style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{status}</Text>
+          </div>
         );
       },
     },
@@ -72,10 +72,10 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       align: 'center' as const,
       render: (_: unknown, record: Project) => (
         <Switch
-          checked={record.enabled}
-          onChange={(v) => onToggleEnabled(record.id, v)}
           size="small"
-          data-testid={`enabled-${record.id}`}
+          checked={record.enabled}
+          onChange={(checked) => onToggleEnabled(record.id, checked)}
+          onClick={(_, e) => e.stopPropagation()}
         />
       ),
     },
@@ -83,59 +83,48 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       title: 'Actions',
       key: 'actions',
       align: 'right' as const,
-      width: 160,
+      width: 200,
       render: (_: unknown, record: Project) => {
         const status = getStatus(record);
         const canStart = record.enabled && record.valid && status !== 'running';
         const canStop = status === 'running';
         return (
-          <Space size={0}>
+          <Space size={4}>
             <Button
               type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={(e) => { e.stopPropagation(); navigate(`/projects/${record.id}`); }}
-              data-testid={`view-${record.id}`}
+              icon={<PlayCircleOutlined style={{ color: canStart ? 'var(--color-success)' : 'inherit', opacity: canStart ? 1 : 0.2 }} />}
+              disabled={!canStart}
+              onClick={(e) => { e.stopPropagation(); onStart(record.id); }}
             />
-            {canStart ? (
-              <Button
-                type="text"
-                size="small"
-                icon={<PlayCircleOutlined style={{ color: 'var(--color-success)' }} />}
-                onClick={(e) => { e.stopPropagation(); onStart(record.id); }}
-                data-testid={`start-${record.id}`}
-              />
-            ) : (
-              <Button type="text" size="small" disabled icon={<PlayCircleOutlined style={{ opacity: 0.2 }} />} />
-            )}
-            {canStop && (
-              <Popconfirm 
-                title={`Stop project "${record.name}"?`} 
-                onConfirm={(e) => { e?.stopPropagation(); onStop(record.id); }}
-                onCancel={(e) => e?.stopPropagation()}
-              >
-                <Button 
-                  type="text" 
-                  size="small" 
-                  danger 
-                  icon={<StopOutlined />} 
-                  data-testid={`stop-${record.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </Popconfirm>
-            )}
             <Popconfirm 
-              title={`Delete project "${record.id}"?`} 
+              title="Stop project?" 
+              onConfirm={(e) => { e?.stopPropagation(); onStop(record.id); }}
+              onCancel={(e) => e?.stopPropagation()}
+            >
+              <Button 
+                type="text" 
+                danger 
+                icon={<StopOutlined style={{ opacity: canStop ? 1 : 0.2 }} />} 
+                disabled={!canStop}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Popconfirm>
+            <div style={{ width: 1, height: 16, background: 'var(--surface-border)', margin: '0 4px' }} />
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
+              onClick={(e) => { e.stopPropagation(); navigate(`/projects/${record.id}/edit`); }}
+            />
+            <Popconfirm 
+              title="Delete project?" 
               onConfirm={(e) => { e?.stopPropagation(); onDelete(record.id); }}
               onCancel={(e) => e?.stopPropagation()}
               okButtonProps={{ danger: true }}
             >
               <Button 
                 type="text" 
-                size="small" 
                 danger 
                 icon={<DeleteOutlined />} 
-                data-testid={`delete-${record.id}`} 
                 onClick={(e) => e.stopPropagation()}
               />
             </Popconfirm>
@@ -146,14 +135,17 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '8px 0' }}>
+    <div className="glass-panel" style={{ padding: '16px 0' }}>
       <Table
         dataSource={projects}
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 10, style: { marginRight: 24 } }}
-        data-testid="project-table"
+        pagination={{ 
+          pageSize: 10, 
+          style: { marginRight: 24, marginTop: 24 },
+          showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>Total {total} projects</Text>
+        }}
         onRow={(record) => ({
           onClick: () => navigate(`/projects/${record.id}`),
           className: 'hover-row',

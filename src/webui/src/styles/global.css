@@ -13,15 +13,25 @@ html, body {
   color: var(--text-primary);
   font-family: var(--font-ui);
   transition: background-color 0.4s ease, color 0.4s ease;
-  overflow: hidden; /* 由 AppLayout 处理内部滚动 */
+  overflow: hidden; /* 由 AppLayout 处理内部滚动 */       
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
   height: 100%;
 }
 
-a {
-  color: var(--brand-primary);
+.hover-row {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.hover-row:hover > td {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+a {  color: var(--brand-primary);
   text-decoration: none;
   transition: opacity 0.2s;
 }

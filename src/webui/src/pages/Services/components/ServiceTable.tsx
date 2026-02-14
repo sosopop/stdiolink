@@ -1,12 +1,12 @@
 import React from 'react';
 import { Table, Button, Space, Popconfirm, Tag, Typography } from 'antd';
-import { EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EyeOutlined, DeleteOutlined, SettingOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ServiceInfo } from '@/types/service';
 
 interface ServiceTableProps {
   services: ServiceInfo[];
-  loading?: boolean;
+  loading: boolean;
   onDelete: (id: string) => void;
 }
 
@@ -17,55 +17,64 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
 
   const columns = [
     {
-      title: 'Service ID',
-      dataIndex: 'id',
-      key: 'id',
-      render: (id: string) => (
-        <Text strong style={{ color: 'var(--brand-primary)', cursor: 'pointer' }} onClick={() => navigate(`/services/${id}`)}>
-          {id}
-        </Text>
-      ),
-    },
-    {
-      title: 'Name',
-      dataIndex: 'name',
+      title: 'Service Template',
       key: 'name',
-      render: (name: string) => <Text>{name}</Text>
+      render: (_: unknown, record: ServiceInfo) => (
+        <Space size={12}>
+          <div style={{ width: 36, height: 36, background: 'rgba(99, 102, 241, 0.1)', borderRadius: 10, display: 'grid', placeItems: 'center' }}>
+            <AppstoreOutlined style={{ color: 'var(--brand-primary)', fontSize: 18 }} />
+          </div>
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ fontSize: 15 }}>{record.name}</Text>
+            <Text type="secondary" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{record.id}</Text>
+          </Space>
+        </Space>
+      ),
     },
     {
       title: 'Version',
       dataIndex: 'version',
       key: 'version',
+      width: 120,
       render: (v: string) => (
-        <Tag bordered={false} style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--brand-primary)' }}>
+        <Tag bordered={false} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontWeight: 600 }}>
           v{v}
         </Tag>
       ),
     },
     {
-      title: 'Projects',
+      title: 'Active Projects',
       dataIndex: 'projectCount',
       key: 'projectCount',
+      width: 150,
       align: 'center' as const,
       render: (count: number) => (
-        <Text code style={{ fontSize: 13 }}>{count}</Text>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Text strong style={{ fontSize: 16 }}>{count}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>instances</Text>
+        </div>
       )
     },
     {
       title: 'Actions',
       key: 'actions',
       align: 'right' as const,
+      width: 150,
       render: (_: unknown, record: ServiceInfo) => (
         <Space size={4}>
           <Button
             type="text"
+            icon={<SettingOutlined />}
+            onClick={(e) => { e.stopPropagation(); navigate(`/services/${record.id}/config`); }}
+          />
+          <Button
+            type="text"
             icon={<EyeOutlined />}
-            data-testid={`view-${record.id}`}
             onClick={(e) => { e.stopPropagation(); navigate(`/services/${record.id}`); }}
           />
           <Popconfirm
-            title={`Delete service "${record.id}"?`}
-            description={record.projectCount > 0 ? `Warning: This service has ${record.projectCount} active projects.` : undefined}
+            title="Delete service?"
+            description={record.projectCount > 0 ? `This template is used by ${record.projectCount} projects.` : "Are you sure you want to delete this template?"}
             onConfirm={(e) => { e?.stopPropagation(); onDelete(record.id); }}
             onCancel={(e) => e?.stopPropagation()}
             okText="Delete"
@@ -75,8 +84,7 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
             <Button 
               type="text" 
               danger 
-              icon={<DeleteOutlined />} 
-              data-testid={`delete-${record.id}`}
+              icon={<DeleteOutlined />}
               onClick={(e) => e.stopPropagation()}
             />
           </Popconfirm>
@@ -86,7 +94,7 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '8px 0' }}>
+    <div className="glass-panel" style={{ padding: '16px 0' }}>
       <Table
         dataSource={services}
         columns={columns}
@@ -94,15 +102,13 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
         loading={loading}
         pagination={{ 
           pageSize: 10,
-          showSizeChanger: false,
-          style: { marginRight: 24 }
+          style: { marginRight: 24, marginTop: 24 },
+          showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>{total} templates available</Text>
         }}
-        data-testid="service-table"
         onRow={(record) => ({
           onClick: () => navigate(`/services/${record.id}`),
           className: 'hover-row',
           style: { cursor: 'pointer' },
-          'data-testid': `service-row-${record.id}`,
         })}
       />
     </div>

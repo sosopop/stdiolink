@@ -1,4 +1,4 @@
-import { Layout } from 'antd';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
@@ -11,14 +11,14 @@ export const AppLayout: React.FC = () => {
   useGlobalEventStream();
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <AppSidebar collapsed={collapsed} />
-      <Layout>
-        <AppHeader />
-        <Layout.Content className={styles.content}>
+    <div className={styles.layoutWrapper}>
+      <AppHeader />
+      <div className={styles.bodyContainer}>
+        <AppSidebar collapsed={collapsed} />
+        <main className={styles.content}>
           <Outlet />
-        </Layout.Content>
-      </Layout>
-    </Layout>
+        </main>
+      </div>
+    </div>
   );
 };

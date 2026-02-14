@@ -17,18 +17,18 @@ export const darkTheme: ThemeConfig = {
   algorithm: theme.darkAlgorithm,
   token: {
     ...commonToken,
-    colorBgBase: '#0B0C15',
-    colorBgContainer: '#1E222D', // 对应 --surface-card (opaque version for antd fallback)
-    colorBgElevated: '#2A2F3E',
-    colorBorder: 'rgba(255, 255, 255, 0.08)',
-    colorTextBase: '#FFFFFF',
+    colorBgBase: '#05060A',
+    colorBgContainer: '#14161E', // Matches --surface-card
+    colorBgElevated: '#1E222D',
+    colorBorder: 'rgba(255, 255, 255, 0.1)',
+    colorTextBase: '#F1F5F9',
     colorTextSecondary: '#94A3B8',
   },
   components: {
     Layout: {
-      headerBg: 'rgba(11, 12, 21, 0.8)',
-      siderBg: '#0B0C15',
-      bodyBg: 'transparent', // 透出全局极光渐变
+      headerBg: 'transparent',
+      siderBg: 'rgba(11, 12, 21, 0.4)',
+      bodyBg: 'transparent',
     },
     Menu: {
       darkItemBg: 'transparent',
