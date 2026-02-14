@@ -121,15 +121,15 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
               disabled={!canStart}
               onClick={(e) => { e.stopPropagation(); onStart(record.id); }}
             />
-            <Popconfirm 
-              title="Stop project?" 
+            <Popconfirm
+              title="Stop project?"
               onConfirm={(e) => { e?.stopPropagation(); onStop(record.id); }}
               onCancel={(e) => e?.stopPropagation()}
             >
-              <Button 
-                type="text" 
-                danger 
-                icon={<StopOutlined style={{ opacity: canStop ? 1 : 0.2 }} />} 
+              <Button
+                type="text"
+                danger
+                icon={<StopOutlined style={{ opacity: canStop ? 1 : 0.2 }} />}
                 disabled={!canStop}
                 onClick={(e) => e.stopPropagation()}
               />
@@ -140,16 +140,16 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
               icon={<SettingOutlined />}
               onClick={(e) => { e.stopPropagation(); navigate(`/projects/${record.id}`); }}
             />
-            <Popconfirm 
-              title="Delete project?" 
+            <Popconfirm
+              title="Delete project?"
               onConfirm={(e) => { e?.stopPropagation(); onDelete(record.id); }}
               onCancel={(e) => e?.stopPropagation()}
               okButtonProps={{ danger: true }}
             >
-              <Button 
-                type="text" 
-                danger 
-                icon={<DeleteOutlined />} 
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
                 onClick={(e) => e.stopPropagation()}
               />
             </Popconfirm>
@@ -160,14 +160,14 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '16px 0' }}>
+    <div className="glass-panel" style={{ padding: '0 0 16px 0', overflow: 'hidden' }}>
       <Table
         dataSource={projects}
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ 
-          pageSize: 10, 
+        pagination={{
+          pageSize: 10,
           style: { marginRight: 24, marginTop: 24 },
           showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>Total {total} projects</Text>
         }}

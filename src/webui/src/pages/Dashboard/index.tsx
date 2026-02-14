@@ -18,17 +18,17 @@ const SSE_FILTERS = ['instance.started', 'instance.finished', 'schedule.triggere
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { 
-    serverStatus, 
-    instances, 
-    events, 
-    loading: dashLoading, 
-    error: dashError, 
-    connected, 
-    fetchServerStatus, 
-    fetchInstances, 
-    addEvent, 
-    setConnected 
+  const {
+    serverStatus,
+    instances,
+    events,
+    loading: dashLoading,
+    error: dashError,
+    connected,
+    fetchServerStatus,
+    fetchInstances,
+    addEvent,
+    setConnected
   } = useDashboardStore();
 
   const {
@@ -89,18 +89,18 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {error && (
-        <Alert 
-          type="error" 
-          message={error} 
-          showIcon 
-          style={{ marginBottom: 24, borderRadius: 'var(--radius-md)' }} 
-          data-testid="dashboard-error" 
+        <Alert
+          type="error"
+          message={error}
+          showIcon
+          style={{ marginBottom: 24, borderRadius: 'var(--radius-md)' }}
+          data-testid="dashboard-error"
         />
       )}
 
       <div className={styles.grid}>
         <KpiCards status={serverStatus} />
-        
+
         <div className={styles.mainPanel}>
           {/* Projects Section */}
           <section>
@@ -110,11 +110,11 @@ export const DashboardPage: React.FC = () => {
                 <Button type="link" size="small" onClick={() => navigate('/projects')}>
                   View All <RightOutlined style={{ fontSize: 10 }} />
                 </Button>
-                <Button 
-                  type="primary" 
-                  size="small" 
-                  icon={<PlusOutlined />} 
-                  onClick={() => navigate('/projects/new')}
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate('/projects?action=create')}
                   style={{ borderRadius: 6 }}
                 >
                   New Project
@@ -123,9 +123,9 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className={styles.projectsGrid}>
               {projects.slice(0, 4).map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
+                <ProjectCard
+                  key={project.id}
+                  project={project}
                   runtime={runtimes[project.id]}
                   onStart={startProject}
                   onStop={stopProject}

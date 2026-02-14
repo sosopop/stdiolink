@@ -27,18 +27,18 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
         </div>
       ),
     },
-    { 
-      title: 'Target Project', 
-      dataIndex: 'projectId', 
+    {
+      title: 'Target Project',
+      dataIndex: 'projectId',
       key: 'projectId',
       render: (id: string) => (
         <Text strong style={{ fontSize: 14, color: 'var(--brand-primary)' }}>{id}</Text>
       )
     },
-    { 
-      title: 'System PID', 
-      dataIndex: 'pid', 
-      key: 'pid', 
+    {
+      title: 'System PID',
+      dataIndex: 'pid',
+      key: 'pid',
       width: 120,
       render: (pid: number) => <Text code style={{ fontSize: 12, background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: 4 }}>{pid}</Text>
     },
@@ -61,25 +61,25 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
       render: (_: unknown, record: Instance) => (
         <Space size={4}>
           <Tooltip title="View Trace">
-            <Button 
-              type="text" 
-              size="small" 
-              icon={<EyeOutlined />} 
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
               onClick={() => navigate(`/instances/${record.id}`)}
             />
           </Tooltip>
-          <Popconfirm 
-            title="Terminate process?" 
+          <Popconfirm
+            title="Terminate process?"
             onConfirm={() => onTerminate(record.id)}
             okText="Terminate"
             cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              type="text" 
-              size="small" 
-              icon={<StopOutlined />} 
-              danger 
+            <Button
+              type="text"
+              size="small"
+              icon={<StopOutlined />}
+              danger
             />
           </Popconfirm>
         </Space>
@@ -88,7 +88,7 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '8px 0' }}>
+    <div className="glass-panel" style={{ padding: '0 0 8px 0', overflow: 'hidden' }}>
       <Table
         dataSource={instances}
         columns={columns}
@@ -100,12 +100,12 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
           className: 'hover-row',
           style: { cursor: 'pointer' },
         })}
-        locale={{ 
+        locale={{
           emptyText: (
             <div style={{ padding: '40px 0', textAlign: 'center' }}>
               <Text type="secondary">No active execution threads detected</Text>
             </div>
-          ) 
+          )
         }}
       />
     </div>

@@ -81,9 +81,9 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
             cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              type="text" 
-              danger 
+            <Button
+              type="text"
+              danger
               icon={<DeleteOutlined />}
               onClick={(e) => e.stopPropagation()}
             />
@@ -94,13 +94,13 @@ export const ServiceTable: React.FC<ServiceTableProps> = ({ services, loading, o
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '16px 0' }}>
+    <div className="glass-panel" style={{ padding: '0 0 16px 0', overflow: 'hidden' }}>
       <Table
         dataSource={services}
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ 
+        pagination={{
           pageSize: 10,
           style: { marginRight: 24, marginTop: 24 },
           showTotal: (total) => <Text type="secondary" style={{ fontSize: 12 }}>{total} templates available</Text>

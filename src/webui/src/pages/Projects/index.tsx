@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Input, Space, Spin, Alert, Select } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useProjectsStore } from '@/stores/useProjectsStore';
@@ -26,6 +27,19 @@ export const ProjectsPage: React.FC = () => {
     fetchRuntimes();
     fetchServices();
   }, [fetchProjects, fetchRuntimes, fetchServices]);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setCreateOpen(true);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('action');
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const filtered = useMemo(() => {
     let list = projects;

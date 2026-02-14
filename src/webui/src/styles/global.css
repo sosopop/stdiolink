@@ -1,11 +1,14 @@
 @import './variables.css';
 @import './effects.css';
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -13,7 +16,8 @@ html, body {
   color: var(--text-primary);
   font-family: var(--font-ui);
   transition: background-color 0.4s ease, color 0.4s ease;
-  overflow: hidden; /* 由 AppLayout 处理内部滚动 */       
+  overflow: hidden;
+  /* 由 AppLayout 处理内部滚动 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -27,11 +31,12 @@ html, body {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.hover-row:hover > td {
+.hover-row:hover>td {
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
-a {  color: var(--brand-primary);
+a {
+  color: var(--brand-primary);
   text-decoration: none;
   transition: opacity 0.2s;
 }
@@ -40,7 +45,8 @@ a:hover {
   opacity: 0.8;
 }
 
-code, pre {
+code,
+pre {
   font-family: var(--font-mono);
 }
 
@@ -64,12 +70,14 @@ code, pre {
 }
 
 /* Ant Design 样式微调 - 增强玻璃态兼容性 */
+
+/* Ant Design 样式微调 - 增强玻璃态兼容性 */
 .ant-table {
   background: transparent !important;
 }
 
-.ant-table-thead > tr > th {
-  background: rgba(255, 255, 255, 0.02) !important;
+.ant-table-thead>tr>th {
+  background: rgba(255, 255, 255, 0.04) !important;
   border-bottom: 1px solid var(--surface-border) !important;
 }
 
@@ -77,4 +85,31 @@ code, pre {
   background: var(--surface-card) !important;
   backdrop-filter: var(--surface-glass) !important;
   border: 1px solid var(--surface-border) !important;
+}
+
+/* Button Standardizations */
+.ant-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.ant-btn:active {
+  transform: scale(0.98);
+}
+
+.ant-btn-default {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--surface-border);
+  backdrop-filter: blur(4px);
+}
+
+.ant-btn-default:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.ant-btn-text:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
 }

@@ -13,6 +13,29 @@ const commonToken = {
   wireframe: false,
 };
 
+const sharedComponentConfig = {
+  Button: {
+    borderRadius: 6,
+    controlHeight: 36,
+    controlHeightSM: 28,
+    controlHeightLG: 44,
+    paddingInline: 16,
+    fontWeight: 500,
+    primaryShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.3)', // Glow effect for primary
+  },
+  Input: {
+    borderRadius: 6,
+    controlHeight: 36,
+  },
+  Select: {
+    borderRadius: 6,
+    controlHeight: 36,
+  },
+  Card: {
+    borderRadius: 12, // Keep cards rounded
+  },
+};
+
 export const darkTheme: ThemeConfig = {
   algorithm: theme.darkAlgorithm,
   token: {
@@ -25,6 +48,7 @@ export const darkTheme: ThemeConfig = {
     colorTextSecondary: '#94A3B8',
   },
   components: {
+    ...sharedComponentConfig,
     Layout: {
       headerBg: 'transparent',
       siderBg: 'rgba(11, 12, 21, 0.4)',
@@ -40,12 +64,8 @@ export const darkTheme: ThemeConfig = {
     },
     Table: {
       colorBgContainer: 'transparent',
-      headerBg: 'rgba(255, 255, 255, 0.02)',
+      headerBg: 'rgba(255, 255, 255, 0.04)',
     },
-    Button: {
-      borderRadius: 8,
-      controlHeight: 36,
-    }
   }
 };
 
@@ -61,6 +81,7 @@ export const lightTheme: ThemeConfig = {
     colorTextSecondary: '#64748B',
   },
   components: {
+    ...sharedComponentConfig,
     Layout: {
       headerBg: 'rgba(248, 249, 250, 0.8)',
       siderBg: '#FFFFFF',
