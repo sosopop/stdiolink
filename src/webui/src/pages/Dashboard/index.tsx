@@ -99,9 +99,9 @@ export const DashboardPage: React.FC = () => {
       )}
 
       <div className={styles.grid}>
-        <KpiCards status={serverStatus} />
-
         <div className={styles.mainPanel}>
+          <KpiCards status={serverStatus} />
+
           {/* Projects Section */}
           <section>
             <div className={styles.sectionHeader}>

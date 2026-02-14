@@ -1,7 +1,9 @@
 .grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  grid-template-rows: auto auto 1fr;
+  grid-template-columns: 1fr 340px;
+  /* Slightly wider side panel */
+  grid-template-rows: 1fr;
+  align-items: start;
   gap: 24px;
 }
 
@@ -25,11 +27,11 @@
 }
 
 .kpiSection {
-  grid-column: 1 / -1;
+  /* Removed grid-column: 1 / -1 */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 0;
 }
 
 .kpiCard {
@@ -38,6 +40,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.kpiCard :global(.ant-card-body) {
+  padding: 12px 0 !important;
+  width: 100%;
 }
 
 .kpiHeader {
@@ -84,10 +91,15 @@
 
 .sidePanel {
   grid-column: 2;
-  grid-row: 2 / 4;
+  /* Removed grid-row specific spacing */
   display: flex;
   flex-direction: column;
   gap: 24px;
+  position: sticky;
+  top: 24px;
+  height: calc(100vh - 140px);
+  /* Fill remaining height */
+  overflow: hidden;
 }
 
 .sectionHeader {
@@ -127,6 +139,14 @@
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   gap: 16px;
+}
+
+.projectCard :global(.ant-card-body) {
+  padding: 0 !important;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .projectCard:hover {

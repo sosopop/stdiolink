@@ -19,7 +19,7 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
     {
       title: 'Lifecycle',
       key: 'lifecycle',
-      width: 120,
+      width: 180,
       render: (_: unknown, record: Instance) => (
         <div style={{ background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid var(--surface-border)' }}>
           <StatusDot status={record.status === 'running' ? 'running' : record.status === 'error' ? 'error' : 'stopped'} size={8} />
