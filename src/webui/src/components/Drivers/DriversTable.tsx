@@ -27,55 +27,68 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
 
   const columns = [
     {
-      title: 'Driver ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 220,
-      render: (id: string) => <Text strong style={{ color: 'var(--brand-primary)' }}>{id}</Text>
-    },
-    {
-      title: 'Display Name',
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      render: (v: string) => <Text>{v || '--'}</Text>
+      title: 'Driver',
+      key: 'driver',
+      width: 260,
+      render: (_: unknown, record: DriverListItem) => (
+        <Space size={12}>
+          <div style={{ width: 36, height: 36, background: 'rgba(99, 102, 241, 0.1)', borderRadius: 8, display: 'grid', placeItems: 'center', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+            <ApiOutlined style={{ color: 'var(--brand-primary)', fontSize: 18 }} />
+          </div>
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ fontSize: 15, color: 'var(--text-primary)' }}>{record.name || record.id}</Text>
+            {record.name && <Text type="secondary" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{record.id}</Text>}
+          </Space>
+        </Space>
+      )
     },
     {
       title: 'Version',
       dataIndex: 'version',
       key: 'version',
-      width: 120,
-      render: (v: string) => v ? <Tag bordered={false} style={{ background: 'rgba(255,255,255,0.05)' }}>v{v}</Tag> : '--'
+      width: 100,
+      render: (v: string) => v ? (
+        <Tag bordered={false} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', borderRadius: 4, padding: '0 8px' }}>
+          v{v}
+        </Tag>
+      ) : <Text type="secondary" style={{ fontSize: 12 }}>--</Text>
     },
     {
-      title: 'Binary Path',
+      title: 'Executable Path',
       dataIndex: 'program',
       key: 'program',
       ellipsis: true,
-      render: (p: string) => <Text type="secondary" style={{ fontSize: 12, fontFamily: 'var(--font-mono)' }}>{p}</Text>
+      render: (p: string) => (
+        <Text type="secondary" style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }} title={p}>
+          {p}
+        </Text>
+      )
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 220,
+      width: 200,
       align: 'right' as const,
       render: (_: unknown, record: DriverListItem) => (
-        <Space size={8}>
+        <Space size={4}>
           <Button
+            type="text"
             size="small"
             icon={<ApiOutlined />}
             onClick={(e) => { e.stopPropagation(); navigate(`/drivers/${record.id}`); }}
             data-testid={`detail-${record.id}`}
           >
-            Detail
+            Details
           </Button>
+          <div style={{ width: 1, height: 14, background: 'var(--surface-border)', margin: '0 4px' }} />
           <Button
+            type="text"
             size="small"
             icon={<ExperimentOutlined />}
             onClick={(e) => { e.stopPropagation(); navigate(`/driverlab?driverId=${record.id}`); }}
             data-testid={`test-${record.id}`}
           >
-            Test Lab
+            Lab
           </Button>
         </Space>
       ),

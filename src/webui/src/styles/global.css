@@ -81,6 +81,16 @@ pre {
   border-bottom: 1px solid var(--surface-border) !important;
 }
 
+.ant-table-thead>tr>th:first-child,
+.ant-table-tbody>tr>td:first-child {
+  padding-left: 24px !important;
+}
+
+.ant-table-thead>tr>th:last-child,
+.ant-table-tbody>tr>td:last-child {
+  padding-right: 24px !important;
+}
+
 .ant-card {
   background: var(--surface-card) !important;
   backdrop-filter: var(--surface-glass) !important;
