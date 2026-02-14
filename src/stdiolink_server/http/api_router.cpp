@@ -14,6 +14,7 @@
 #include "cors_middleware.h"
 #include "event_stream_handler.h"
 #include "service_file_handler.h"
+#include "static_file_server.h"
 #include "manager/process_monitor.h"
 #include "manager/project_manager.h"
 #include "server_manager.h"
@@ -172,7 +173,8 @@ QJsonArray readTailLines(const QString& path, int maxLines) {
 
 ApiRouter::ApiRouter(ServerManager* manager, QObject* parent)
     : QObject(parent)
-    , m_manager(manager) {
+    , m_manager(manager)
+    , m_staticFileServer(manager ? manager->staticFileServer() : nullptr) {
 }
 
 ApiRouter::~ApiRouter() {
@@ -315,8 +317,44 @@ void ApiRouter::registerRoutes(QHttpServer& server) {
                      handleEventStream(req, responder);
                  });
 
-    server.setMissingHandler(this, [corsOrigin = m_manager->config().corsOrigin](
-                                        const QHttpServerRequest&, QHttpServerResponder& responder) {
+    server.setMissingHandler(this, [this, corsOrigin = m_manager->config().corsOrigin](
+                                        const QHttpServerRequest& req, QHttpServerResponder& responder) {
+        // 静态文件回退：仅处理 GET/HEAD 请求
+        if (m_staticFileServer && m_staticFileServer->isValid()
+            && (req.method() == QHttpServerRequest::Method::Get
+                || req.method() == QHttpServerRequest::Method::Head)) {
+            const QString path = req.url().path();
+            const bool isApiPath = path == "/api" || path.startsWith("/api/");
+            if (!isApiPath) {
+                // 先按静态资源尝试
+                auto result = m_staticFileServer->serveRaw(path);
+                if (result.found) {
+                    QHttpHeaders headers = CorsMiddleware::buildCorsHeaders(corsOrigin);
+                    headers.append(QHttpHeaders::WellKnownHeader::ContentType,
+                                   result.mimeType);
+                    headers.append("Cache-Control", result.cacheControl);
+                    responder.write(result.body, headers,
+                                    QHttpServerResponder::StatusCode::Ok);
+                    return;
+                }
+                // 仅无扩展名路径视为 SPA 路由回退
+                const bool hasExtension = path.contains('.', Qt::CaseSensitive)
+                                          && path.lastIndexOf('.') > path.lastIndexOf('/');
+                if (!hasExtension) {
+                    auto indexResult = m_staticFileServer->serveIndexRaw();
+                    if (indexResult.found) {
+                        QHttpHeaders headers = CorsMiddleware::buildCorsHeaders(corsOrigin);
+                        headers.append(QHttpHeaders::WellKnownHeader::ContentType,
+                                       indexResult.mimeType);
+                        headers.append("Cache-Control", indexResult.cacheControl);
+                        responder.write(indexResult.body, headers,
+                                        QHttpServerResponder::StatusCode::Ok);
+                        return;
+                    }
+                }
+            }
+        }
+        // 原有 404 JSON 处理
         const QByteArray body = QJsonDocument(QJsonObject{{"error", "not found"}})
                                     .toJson(QJsonDocument::Compact);
         QHttpHeaders headers = CorsMiddleware::buildCorsHeaders(corsOrigin);

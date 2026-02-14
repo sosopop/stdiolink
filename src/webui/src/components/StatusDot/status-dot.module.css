@@ -1,0 +1,27 @@
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.running {
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.stopped {
+  background: #6B7280;
+}
+
+.error {
+  background: var(--color-error);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+}

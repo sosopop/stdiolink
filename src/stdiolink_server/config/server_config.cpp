@@ -43,7 +43,7 @@ ServerConfig ServerConfig::loadFromFile(const QString& filePath, QString& error)
     }
 
     const QJsonObject obj = doc.object();
-    static const QSet<QString> known = {"port", "host", "logLevel", "serviceProgram", "corsOrigin"};
+    static const QSet<QString> known = {"port", "host", "logLevel", "serviceProgram", "corsOrigin", "webuiDir"};
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (!known.contains(it.key())) {
             error = "unknown field in config.json: " + it.key();
@@ -107,6 +107,14 @@ ServerConfig ServerConfig::loadFromFile(const QString& filePath, QString& error)
         }
     }
 
+    if (obj.contains("webuiDir")) {
+        if (!obj.value("webuiDir").isString()) {
+            error = "config field 'webuiDir' must be a string";
+            return cfg;
+        }
+        cfg.webuiDir = obj.value("webuiDir").toString();
+    }
+
     error.clear();
     return cfg;
 }
@@ -120,6 +128,9 @@ void ServerConfig::applyArgs(const ServerArgs& args) {
     }
     if (args.hasLogLevel) {
         logLevel = args.logLevel;
+    }
+    if (args.hasWebuiDir) {
+        webuiDir = args.webuiDir;
     }
 }
 

@@ -7,6 +7,7 @@
 namespace stdiolink_server {
 
 class ServerManager;
+class StaticFileServer;
 
 class ApiRouter : public QObject {
     Q_OBJECT
@@ -89,6 +90,7 @@ private:
                            QHttpServerResponder& responder);
 
     ServerManager* m_manager = nullptr;
+    StaticFileServer* m_staticFileServer = nullptr;
 };
 
 } // namespace stdiolink_server

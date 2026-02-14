@@ -15,6 +15,7 @@ set(STDIOLINK_SERVER_SOURCES
     http/event_bus.cpp
     http/event_stream_handler.cpp
     http/service_file_handler.cpp
+    http/static_file_server.cpp
     http/driverlab_ws_handler.cpp
     http/driverlab_ws_connection.cpp
     server_manager.cpp
@@ -38,6 +39,7 @@ set(STDIOLINK_SERVER_HEADERS
     http/event_bus.h
     http/event_stream_handler.h
     http/service_file_handler.h
+    http/static_file_server.h
     http/driverlab_ws_handler.h
     http/driverlab_ws_connection.h
     http/api_router.h

@@ -5,7 +5,33 @@ vcpkg_installed/
 .cache
 compile_commands.json
 single_include/
-.claude/settings.local.json
+.claude/
 nul
 .DS_Store
 release/
+src/webui/node_modules/
+src/webui/dist/
+
+# IDEs and editors
+.idea/
+.vs/
+*.user
+*.user.*
+*.suo
+*.sln.docstates
+
+# System files
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+
+# Tool specific
+.eslintcache
+src/webui/test-results/
+src/webui/tsconfig.tsbuildinfo

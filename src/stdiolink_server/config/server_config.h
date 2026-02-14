@@ -12,6 +12,7 @@ struct ServerConfig {
     QString logLevel = "info";
     QString serviceProgram;
     QString corsOrigin = "*";
+    QString webuiDir;
 
     static ServerConfig loadFromFile(const QString& filePath, QString& error);
     void applyArgs(const ServerArgs& args);

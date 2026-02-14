@@ -1,0 +1,48 @@
+name: WebUI CI
+
+on:
+  push:
+    paths: ['src/webui/**']
+  pull_request:
+    paths: ['src/webui/**']
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/webui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: src/webui/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run test
+      - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    defaults:
+      run:
+        working-directory: src/webui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: src/webui/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: src/webui/playwright-report/

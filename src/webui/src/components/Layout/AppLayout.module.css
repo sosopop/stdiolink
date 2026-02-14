@@ -1,0 +1,42 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 48px;
+  backdrop-filter: var(--surface-glass);
+  border-bottom: var(--glass-border);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar {
+  border-right: var(--glass-border) !important;
+}
+
+.content {
+  padding: 24px;
+  background: var(--surface-base);
+  background-image: var(--bg-gradient);
+  min-height: calc(100vh - 48px);
+  overflow-y: auto;
+}

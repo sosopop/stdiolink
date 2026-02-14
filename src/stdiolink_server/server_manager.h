@@ -5,10 +5,12 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <memory>
 
 #include "config/server_config.h"
 #include "http/event_bus.h"
 #include "http/event_stream_handler.h"
+#include "http/static_file_server.h"
 #include "manager/instance_manager.h"
 #include "manager/process_monitor.h"
 #include "manager/project_manager.h"
@@ -91,6 +93,7 @@ public:
     ProcessMonitor* processMonitor() { return &m_processMonitor; }
     EventBus* eventBus() { return m_eventBus; }
     EventStreamHandler* eventStreamHandler() { return m_eventStreamHandler; }
+    StaticFileServer* staticFileServer() { return m_staticFileServer.get(); }
 
     struct ServiceCreateRequest {
         QString id;
@@ -139,6 +142,7 @@ private:
     EventStreamHandler* m_eventStreamHandler = nullptr;
     QDateTime m_startedAt;
     DriverLabWsHandler* m_driverLabWsHandler = nullptr;
+    std::unique_ptr<StaticFileServer> m_staticFileServer;
 };
 
 } // namespace stdiolink_server

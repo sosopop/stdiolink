@@ -144,6 +144,33 @@ should_skip_binary() {
     return 1
 }
 
+echo "Building WebUI..."
+if [[ -f "${ROOT_DIR}/src/webui/package.json" ]]; then
+    pushd "${ROOT_DIR}/src/webui" > /dev/null
+    if ! command -v npm &> /dev/null; then
+        echo "Error: npm not found, cannot build WebUI" >&2
+        popd > /dev/null
+        exit 1
+    fi
+
+    if ! npm ci --ignore-scripts; then
+        echo "npm ci failed, retrying with npm install..."
+        npm install --ignore-scripts
+    fi
+    npm run build
+    if [[ ! -d "dist" ]]; then
+        echo "Error: WebUI build succeeded but dist/ is missing" >&2
+        popd > /dev/null
+        exit 1
+    fi
+
+    mkdir -p "${PACKAGE_DIR}/data_root/webui"
+    cp -r dist/* "${PACKAGE_DIR}/data_root/webui/"
+    echo "WebUI build copied to ${PACKAGE_DIR}/data_root/webui/"
+
+    popd > /dev/null
+fi
+
 echo "Copying binaries..."
 while IFS= read -r -d '' file; do
     base="$(basename "${file}")"

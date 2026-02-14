@@ -57,6 +57,7 @@ set(TEST_SOURCES
     test_driverlab_ws_handler.cpp
     test_process_monitor.cpp
     test_event_bus.cpp
+    test_static_file_server.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -103,6 +104,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_bus.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_stream_handler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/service_file_handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/static_file_server.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_handler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_connection.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/server_manager.cpp

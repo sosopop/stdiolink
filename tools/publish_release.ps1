@@ -12,10 +12,14 @@ Options:
   --output-dir <dir>   Release output root (default: release)
   --name <name>        Package name (default: stdiolink_<timestamp>_<git>)
   --with-tests         Include test binaries in bin/
+  --skip-build         Skip C++ build (assume build/bin already exists)
+  --skip-webui         Skip WebUI build
+  --demo               Seed data_root with demo data (services/projects)
   -h, --help           Show this help
 
 Example:
   tools/publish_release.ps1 --build-dir build --output-dir release
+  tools/publish_release.ps1 --demo --name my_release
 "@ | Write-Host
 }
 
@@ -91,6 +95,9 @@ $buildDir = "build"
 $outputDir = "release"
 $packageName = ""
 $withTests = $false
+$skipBuild = $false
+$skipWebui = $false
+$seedDemo = $false
 
 for ($i = 0; $i -lt $args.Count; ) {
     $arg = [string]$args[$i]
@@ -130,6 +137,21 @@ for ($i = 0; $i -lt $args.Count; ) {
             $i += 1
             continue
         }
+        "--skip-build" {
+            $skipBuild = $true
+            $i += 1
+            continue
+        }
+        "--skip-webui" {
+            $skipWebui = $true
+            $i += 1
+            continue
+        }
+        "--demo" {
+            $seedDemo = $true
+            $i += 1
+            continue
+        }
         "-h" {
             Show-Usage
             exit 0
@@ -155,6 +177,27 @@ $buildDirAbs = Resolve-AbsolutePath -Path $buildDir -RootDir $rootDir
 $outputDirAbs = Resolve-AbsolutePath -Path $outputDir -RootDir $rootDir
 $binDir = Join-Path $buildDirAbs "bin"
 
+# ── C++ build ────────────────────────────────────────────────────────
+if (-not $skipBuild) {
+    Write-Host "Building C++ project (Release)..."
+    $buildBat = Join-Path $rootDir "build.bat"
+    if (-not (Test-Path -LiteralPath $buildBat -PathType Leaf)) {
+        Write-Error "build.bat not found at $buildBat"
+        exit 1
+    }
+
+    Push-Location $rootDir
+    try {
+        & cmd /c "call `"$buildBat`" Release"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "C++ build failed (exit code $LASTEXITCODE)"
+            exit 1
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 if (-not (Test-Path -LiteralPath $binDir -PathType Container)) {
     Write-Error "Build bin directory not found: $binDir"
     Write-Error "Please build project first, for example: build.bat Release"
@@ -178,6 +221,8 @@ Write-Host "  build bin   : $binDir"
 Write-Host "  output root : $outputDirAbs"
 Write-Host "  package dir : $packageDir"
 Write-Host "  with tests  : $([int][bool]$withTests)"
+Write-Host "  skip webui  : $([int][bool]$skipWebui)"
+Write-Host "  seed demo   : $([int][bool]$seedDemo)"
 
 if (Test-Path -LiteralPath $packageDir) {
     Remove-Item -LiteralPath $packageDir -Recurse -Force
@@ -223,6 +268,56 @@ function Should-SkipBinary {
     return $false
 }
 
+# ── WebUI build ──────────────────────────────────────────────────────
+$webuiPackageJson = Join-Path $rootDir "src/webui/package.json"
+if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Leaf)) {
+    Write-Host "Building WebUI..."
+    $webuiDir = Join-Path $rootDir "src/webui"
+
+    $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+    if (-not $npmCmd) {
+        Write-Error "npm not found. Install Node.js or use --skip-webui to skip WebUI build."
+        exit 1
+    }
+
+    Push-Location $webuiDir
+    try {
+        Write-Host "  npm ci ..."
+        & npm ci --ignore-scripts 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  npm ci failed, retrying with npm install ..."
+            & npm install --ignore-scripts 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "npm install failed"
+                exit 1
+            }
+        }
+
+        Write-Host "  npm run build ..."
+        & npm run build 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "WebUI build failed"
+            exit 1
+        }
+
+        $distDir = Join-Path $webuiDir "dist"
+        if (-not (Test-Path -LiteralPath $distDir -PathType Container)) {
+            Write-Error "WebUI build succeeded but dist/ is missing"
+            exit 1
+        }
+
+        $webuiDest = Join-Path $packageDir "data_root/webui"
+        New-Item -ItemType Directory -Path $webuiDest -Force | Out-Null
+        Copy-Item -Path (Join-Path $distDir "*") -Destination $webuiDest -Recurse -Force
+        Write-Host "  WebUI copied to $webuiDest"
+    } finally {
+        Pop-Location
+    }
+} elseif (-not $skipWebui) {
+    Write-Host "WebUI source not found, skipping WebUI build."
+}
+
+# ── Binaries ─────────────────────────────────────────────────────────
 Write-Host "Copying binaries..."
 $binFiles = Get-ChildItem -LiteralPath $binDir -File
 foreach ($file in $binFiles) {
@@ -267,6 +362,88 @@ Copy-FileIfExists -Source (Join-Path $rootDir "doc/http_api.md") -DestinationDir
 Copy-FileIfExists -Source (Join-Path $rootDir "doc/stdiolink-server-api-requirements.md") -DestinationDir (Join-Path $packageDir "doc")
 Copy-FileIfExists -Source (Join-Path $rootDir "doc/milestone/milestone_39_server_manager_demo_and_release.md") -DestinationDir (Join-Path $packageDir "doc")
 
+# ── Seed demo data ───────────────────────────────────────────────────
+if ($seedDemo) {
+    Write-Host "Seeding demo data into data_root..."
+    $demoDataRoot = Join-Path $rootDir "src/demo/server_manager_demo/data_root"
+    if (Test-Path -LiteralPath $demoDataRoot -PathType Container) {
+        # Copy services
+        $demoServices = Join-Path $demoDataRoot "services"
+        if (Test-Path -LiteralPath $demoServices -PathType Container) {
+            Copy-Item -Path (Join-Path $demoServices "*") -Destination (Join-Path $packageDir "data_root/services") -Recurse -Force
+        }
+        # Copy projects
+        $demoProjects = Join-Path $demoDataRoot "projects"
+        if (Test-Path -LiteralPath $demoProjects -PathType Container) {
+            Copy-Item -Path (Join-Path $demoProjects "*") -Destination (Join-Path $packageDir "data_root/projects") -Recurse -Force
+        }
+        Write-Host "  Demo services and projects seeded."
+    } else {
+        Write-Host "  WARNING: Demo data_root not found at $demoDataRoot"
+    }
+
+    # Copy driver binaries into data_root/drivers/<name>/<name>.exe
+    # Scanner expects each driver in its own subdirectory
+    Write-Host "Copying drivers into data_root/drivers..."
+    $driversDest = Join-Path $packageDir "data_root/drivers"
+    $driversCopied = 0
+    foreach ($file in (Get-ChildItem -LiteralPath $binDir -File -Filter "*.exe")) {
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+        # Match demo drivers (*_driver) and production drivers (driver_*), skip test_*
+        $isDemoDriver = $stem -match '_driver$' -and -not $stem.StartsWith("test_")
+        $isProdDriver = $stem.StartsWith("driver_")
+        if ($isDemoDriver -or $isProdDriver) {
+            $driverSubDir = Join-Path $driversDest $stem
+            New-Item -ItemType Directory -Path $driverSubDir -Force | Out-Null
+            Copy-Item -LiteralPath $file.FullName -Destination $driverSubDir -Force
+            Write-Host "  + $stem/$($file.Name)"
+            $driversCopied++
+        }
+    }
+    Write-Host "  $driversCopied driver(s) copied."
+}
+
+# ── Default config.json ──────────────────────────────────────────────
+$configPath = Join-Path $packageDir "data_root/config.json"
+if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+    Write-Host "Generating default config.json..."
+    $defaultConfig = @{
+        host     = "127.0.0.1"
+        port     = 18080
+        logLevel = "info"
+    }
+    $defaultConfig | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $configPath -Encoding utf8
+}
+
+# ── Startup launcher ─────────────────────────────────────────────────
+Write-Host "Generating startup scripts..."
+
+$startBat = Join-Path $packageDir "start.bat"
+@"
+@echo off
+setlocal
+set SCRIPT_DIR=%~dp0
+"%SCRIPT_DIR%bin\stdiolink_server.exe" --data-root="%SCRIPT_DIR%data_root" %*
+"@ | Set-Content -LiteralPath $startBat -Encoding ascii
+
+$startPs1 = Join-Path $packageDir "start.ps1"
+@"
+#!/usr/bin/env pwsh
+`$scriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
+`$dataRoot  = Join-Path `$scriptDir "data_root"
+`$server    = Join-Path `$scriptDir "bin/stdiolink_server.exe"
+
+if (-not (Test-Path -LiteralPath `$server)) {
+    Write-Error "Server binary not found: `$server"
+    exit 1
+}
+
+Write-Host "Starting stdiolink_server..."
+Write-Host "  data_root : `$dataRoot"
+Write-Host "  args      : `$args"
+& `$server --data-root="`$dataRoot" @args
+"@ | Set-Content -LiteralPath $startPs1 -Encoding utf8
+
 $manifestPath = Join-Path $packageDir "RELEASE_MANIFEST.txt"
 $manifestLines = @()
 $manifestLines += "package_name=$packageName"
@@ -274,6 +451,8 @@ $manifestLines += "created_at=$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')"
 $manifestLines += "git_commit=$(Get-GitRev -RootDir $rootDir -RevArgs @('HEAD'))"
 $manifestLines += "build_dir=$buildDirAbs"
 $manifestLines += "with_tests=$([int][bool]$withTests)"
+$manifestLines += "skip_webui=$([int][bool]$skipWebui)"
+$manifestLines += "seed_demo=$([int][bool]$seedDemo)"
 $manifestLines += ""
 $manifestLines += "[bin]"
 
@@ -287,8 +466,28 @@ $manifestDemoEntries = Get-ChildItem -LiteralPath (Join-Path $packageDir "demo")
     Sort-Object Name |
     ForEach-Object { $_.Name }
 $manifestLines += $manifestDemoEntries
+$manifestLines += ""
+$manifestLines += "[webui]"
+$webuiIndex = Join-Path $packageDir "data_root/webui/index.html"
+if (Test-Path -LiteralPath $webuiIndex -PathType Leaf) {
+    $manifestLines += "status=bundled"
+    $webuiFiles = Get-ChildItem -LiteralPath (Join-Path $packageDir "data_root/webui") -File -Recurse |
+        Sort-Object Name |
+        ForEach-Object { $_.Name }
+    $manifestLines += $webuiFiles
+} else {
+    $manifestLines += "status=not_included"
+}
 
 Set-Content -LiteralPath $manifestPath -Value $manifestLines -Encoding utf8
 
-Write-Host "Release package created: $packageDir"
-Write-Host "Manifest file: $manifestPath"
+Write-Host ""
+Write-Host "=== Release package created ==="
+Write-Host "  Package : $packageDir"
+Write-Host "  Manifest: $manifestPath"
+Write-Host ""
+Write-Host "To start the server:"
+Write-Host "  cd $packageDir"
+Write-Host "  .\start.bat              (cmd)"
+Write-Host "  .\start.ps1              (PowerShell)"
+Write-Host "  .\start.bat --port=8080  (custom port)"

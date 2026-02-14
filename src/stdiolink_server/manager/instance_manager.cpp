@@ -124,6 +124,17 @@ QString InstanceManager::startInstance(const Project& project,
     proc->setProgram(program);
     proc->setArguments({serviceDir, "--config-file=" + tempConfigPath});
 
+    // Add server directory to PATH so child process can find Qt DLLs
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const QString pathValue = env.value("PATH");
+    if (!pathValue.isEmpty()) {
+        env.insert("PATH", appDir + ";" + pathValue);
+    } else {
+        env.insert("PATH", appDir);
+    }
+    proc->setProcessEnvironment(env);
+
     const QString logPath = logsDir + "/" + project.id + ".log";
     proc->setStandardOutputFile(logPath, QIODevice::Append);
     proc->setStandardErrorFile(logPath, QIODevice::Append);

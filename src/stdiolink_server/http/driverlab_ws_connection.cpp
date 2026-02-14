@@ -1,5 +1,6 @@
 #include "driverlab_ws_connection.h"
 
+#include <QCoreApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTimer>
@@ -44,6 +45,17 @@ void DriverLabWsConnection::startDriver() {
             this, &DriverLabWsConnection::onDriverFinished);
     connect(m_process.get(), &QProcess::errorOccurred,
             this, &DriverLabWsConnection::onDriverErrorOccurred);
+
+    // Add server directory to PATH so driver can find Qt DLLs
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const QString pathValue = env.value("PATH");
+    if (!pathValue.isEmpty()) {
+        env.insert("PATH", appDir + ";" + pathValue);
+    } else {
+        env.insert("PATH", appDir);
+    }
+    m_process->setProcessEnvironment(env);
 
     m_lastDriverStart = QDateTime::currentDateTimeUtc();
     m_metaSent = false;

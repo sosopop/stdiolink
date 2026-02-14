@@ -1,0 +1,65 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+}
+
+.kpiSection {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.kpiCard {
+  text-align: center;
+  padding: 8px;
+}
+
+.kpiIcon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.kpiValue {
+  font-family: var(--font-code);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.kpiTitle {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.kpiSubtitle {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 2px;
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.eventItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventData {
+  font-family: var(--font-code);
+  font-size: 12px;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

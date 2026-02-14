@@ -1,0 +1,46 @@
+.glass-panel {
+  background: var(--surface-layer1);
+  backdrop-filter: var(--surface-glass);
+  border: var(--glass-border);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.status-dot--running {
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.status-dot--stopped {
+  background: #6B7280;
+}
+
+.status-dot--error {
+  background: var(--color-error);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.hover-card {
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+  border-color: rgba(99, 102, 241, 0.3);
+}

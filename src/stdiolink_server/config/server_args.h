@@ -10,10 +10,12 @@ struct ServerArgs {
     int port = 8080;
     QString host = "127.0.0.1";
     QString logLevel = "info";
+    QString webuiDir;
 
     bool hasPort = false;
     bool hasHost = false;
     bool hasLogLevel = false;
+    bool hasWebuiDir = false;
 
     bool help = false;
     bool version = false;

@@ -173,6 +173,25 @@ bool ServerManager::initialize(QString& error) {
 
     m_startedAt = QDateTime::currentDateTimeUtc();
 
+    // Initialize static file server
+    QString webuiDir = m_config.webuiDir;
+    if (webuiDir.isEmpty()) {
+        webuiDir = m_dataRoot + "/webui";
+    } else if (QDir::isRelativePath(webuiDir)) {
+        webuiDir = m_dataRoot + "/" + webuiDir;
+    }
+
+    if (QDir(webuiDir).exists()) {
+        m_staticFileServer = std::make_unique<StaticFileServer>(webuiDir);
+        if (m_staticFileServer->isValid()) {
+            qInfo("WebUI: serving from %s", qPrintable(webuiDir));
+        } else {
+            qInfo("WebUI: directory exists but no index.html found: %s", qPrintable(webuiDir));
+        }
+    } else {
+        qInfo("WebUI: directory not found, static file serving disabled: %s", qPrintable(webuiDir));
+    }
+
     error.clear();
     return true;
 }

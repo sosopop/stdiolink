@@ -43,6 +43,15 @@ ServerArgs ServerArgs::parse(const QStringList& args) {
             result.hasHost = true;
             continue;
         }
+        if (arg.startsWith("--webui-dir=")) {
+            result.webuiDir = arg.mid(12);
+            if (result.webuiDir.isEmpty()) {
+                result.error = "webui-dir cannot be empty";
+                return result;
+            }
+            result.hasWebuiDir = true;
+            continue;
+        }
         if (arg.startsWith("--log-level=")) {
             result.logLevel = arg.mid(12);
             if (result.logLevel != "debug" && result.logLevel != "info"
