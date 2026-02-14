@@ -233,7 +233,7 @@ export const useDriverLabStore = create<DriverLabState>()((set, get) => ({
       }
       case 'stdout': {
         const message = msg.message as Record<string, unknown> | undefined;
-        if (message && ('ok' in message || 'error' in message)) {
+        if (message && (message.status === 'done' || message.status === 'error')) {
           set({ executing: false });
         }
         break;

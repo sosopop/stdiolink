@@ -61,7 +61,10 @@ void DriverLabWsConnection::startDriver() {
     m_metaSent = false;
     m_stdoutBuffer.clear();
 
-    m_process->start(m_program, m_extraArgs);
+    QStringList args = m_extraArgs;
+    args.prepend(QStringLiteral("--profile=") + m_runMode);
+
+    m_process->start(m_program, args);
     if (!m_process->waitForStarted(5000)) {
         sendJson(QJsonObject{
             {"type", "error"},
@@ -220,14 +223,14 @@ void DriverLabWsConnection::onDriverStdoutReady() {
             const QJsonDocument doc = QJsonDocument::fromJson(line, &err);
             if (err.error == QJsonParseError::NoError && doc.isObject()) {
                 const QJsonObject obj = doc.object();
-                if (obj.value("status").toString() == "ok") {
+                if (obj.value("status").toString() == "done") {
                     m_metaSent = true;
                     sendJson(QJsonObject{
                         {"type", "meta"},
                         {"driverId", m_driverId},
                         {"pid", m_process ? static_cast<qint64>(m_process->processId()) : 0},
                         {"runMode", m_runMode},
-                        {"meta", obj.value("payload")}
+                        {"meta", obj.value("data")}
                     });
                     continue;
                 }

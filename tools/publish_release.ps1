@@ -327,6 +327,24 @@ foreach ($file in $binFiles) {
     Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $packageDir "bin") -Force
 }
 
+# Copy Qt plugin subdirectories (tls, platforms, networkinformation, etc.)
+Write-Host "Copying Qt plugin directories..."
+$pluginDirs = Get-ChildItem -LiteralPath $binDir -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -notin @("config_demo", "js_runtime_demo", "server_manager_demo") }
+foreach ($dir in $pluginDirs) {
+    $dest = Join-Path $packageDir "bin/$($dir.Name)"
+    New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    # Copy only Release DLLs (skip debug 'd' suffix variants)
+    foreach ($dll in (Get-ChildItem -LiteralPath $dir.FullName -File -Filter "*.dll")) {
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension($dll.Name)
+        if ($stem.EndsWith("d") -and (Test-Path -LiteralPath (Join-Path $dir.FullName "$($stem.Substring(0, $stem.Length - 1)).dll"))) {
+            continue
+        }
+        Copy-Item -LiteralPath $dll.FullName -Destination $dest -Force
+    }
+    Write-Host "  + $($dir.Name)/"
+}
+
 Write-Host "Copying demo assets..."
 $binConfigDemo = Join-Path $binDir "config_demo"
 $srcConfigServices = Join-Path $rootDir "src/demo/config_demo/services"

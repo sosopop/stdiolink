@@ -84,10 +84,10 @@ describe('useDriverLabStore', () => {
   it('handleWsMessage stdout appends message', () => {
     useDriverLabStore.setState({ executing: true });
     const { handleWsMessage } = useDriverLabStore.getState();
-    handleWsMessage({ type: 'stdout', message: { ok: 42 } } as unknown as WsMessage);
+    handleWsMessage({ type: 'stdout', message: { status: 'done', code: 0, data: { ok: 42 } } } as unknown as WsMessage);
     const state = useDriverLabStore.getState();
     expect(state.messages).toHaveLength(1);
-    expect(state.messages[0].payload).toEqual({ ok: 42 });
+    expect(state.messages[0].payload).toEqual({ status: 'done', code: 0, data: { ok: 42 } });
     expect(state.executing).toBe(false);
   });
 
