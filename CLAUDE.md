@@ -1,6 +1,6 @@
 # stdiolink 项目指南（CLAUDE）
 
-基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过 stdin/stdout 通信。当前代码已包含 `stdiolink_service` 与 `stdiolink_server` 两条运行时链路。
+基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过 stdin/stdout 通信。当前代码已包含核心库、JS 运行时及管控后端服务。
 
 ## 架构概览
 
@@ -9,7 +9,7 @@
 ```
 ┌──────────────────────────────────────────────────┐
 │  stdiolink_server  (管控面)                       │
-│  项目管理 · 实例编排 · 调度引擎 · REST API         │
+│  项目管理 · 实例编排 · 调度引擎 · REST API · SSE   │
 ├──────────────────────────────────────────────────┤
 │  stdiolink_service (JS 运行时)                    │
 │  QuickJS 引擎 · ES Module · C++ 绑定             │
@@ -21,155 +21,65 @@
 
 ### 通信协议
 
-进程间通过 stdin/stdout 传输 JSONL（每行一个 JSON）。三种消息语义：
+进程间通过 stdin/stdout 传输 JSONL（每行一个 JSON）。四种消息语义：
 
-- `ok` — 最终结果
+- `done` — 最终执行成功结果（替代旧版 `ok`）
 - `event` — 中间流式事件（命令执行过程中的增量推送）
-- `error` — 错误
+- `error` — 错误响应
+- `meta.describe` — 元数据导出
 
 请求格式：`{"cmd":"command_name","data":{...}}`
 
 ### 核心抽象
 
-- `DriverCore`：Driver 端主类，两种生命周期（`OneShot` / `KeepAlive`），三种运行模式（Auto / Stdio / Console）
-- `Driver`（Host 端）：管理 Driver 子进程，通过 `QProcess` 拉起、发命令、收响应
-- `Task`：类 Future/Promise 异步句柄，支持流式读取中间事件；`waitAnyNext()` 实现多 Driver 并发等待
-- `DriverMeta`：Driver 自描述元数据（命令定义、参数类型、约束、UI 提示），驱动配置校验与表单生成
-- `DriverCatalog`：可用 Driver 注册表，带元数据缓存
-- `ConfigInjector`：将配置注入 Driver 启动过程（startupArgs / env / command / file）
+- `DriverCore`：Driver 端主类，支持 `OneShot` / `KeepAlive` 生命周期。
+- `Driver`（Host 端）：管理 Driver 子进程，处理异步通讯与进程早退检测。
+- `Task`：Future/Promise 风格句柄，支持 `waitAnyNext()` 并发调度。
+- `DriverMeta`：自描述元数据，支持配置校验、自动表单生成与 OpenAPI 文档导出。
+- `ServerManager`：编排层，管理 `Service` (模板) → `Project` (配置) → `Instance` (进程) 的全生命周期。
 
-### Server 生命周期模型
+## 构建与发布
 
+### 构建 (Windows/macOS/Linux)
+
+- Windows: `build.bat [Release]`
+- Unix: `./build.sh [Debug|Release]`
+- 测试: `./build/bin/stdiolink_tests`
+
+### 发布打包
+
+使用 `tools/publish_release.ps1` (Windows) 或 `tools/publish_release.sh` (Unix)。
+```powershell
+# 典型发布命令 (含 WebUI 构建与 Demo 数据预设)
+.\tools\publish_release.ps1 --demo --name stdiolink_v1.0
 ```
-Service (模板，扫描发现) → Project (实例化配置，持久化文件) → Instance (运行中进程)
-```
-
-调度策略：`manual`（手动触发）、`fixed_rate`（定时执行，带并发上限）、`daemon`（常驻守护，崩溃自动重启）
-
-## 构建与测试
-
-### Windows
-
-```bash
-build.bat [Release]                          # 配置 + 构建（Ninja）
-cmake --build build --parallel 8             # 增量构建
-./build/bin/stdiolink_tests.exe              # 运行测试
-```
-
-### macOS / Linux
-
-```bash
-./build.sh [Debug|Release]                   # 配置 + 构建（默认 Debug）
-cmake --build build --parallel 8             # 增量构建
-./build/bin/stdiolink_tests                  # 运行测试
-```
-
-常用可执行文件（默认位于 `build/bin/`）：
-
-- `stdiolink_service`
-- `stdiolink_server`
-- `stdiolink_tests`
-- `driverlab`
-- `driver_3dvision` / `driver_modbusrtu` / `driver_modbustcp`
 
 ## 关键模块
 
 ### `src/stdiolink/`
-
-核心库：协议、Driver 端、Host 端（含进程早退快速失败机制）、Console、文档生成。
-
-### `src/stdiolink_service/`
-
-JS Service 运行时：QuickJS 引擎、模块加载、C++ 绑定（Driver/Task/Process/Config/Constants/Path/Fs/Time/Http/Log/ProcessAsync）、配置校验、代理与调度。
+核心协议与基础库。包含元数据 Builder、Validator 及文档生成器。
 
 ### `src/stdiolink_server/`
+管控后端：
+- `manager/`：项目管理 (`ProjectManager`)、实例管理 (`InstanceManager`)、调度引擎 (`ScheduleEngine`)
+- `http/`：REST API 路由、SSE 事件推送、DriverLab WebSocket 代理
+- `scanner/`：Service 与 Driver 的自动扫描发现
 
-服务管理器（M34-M38）：
-
-- `config/`：`server_args`、`server_config`
-- `scanner/`：`service_scanner`、`driver_manager_scanner`
-- `manager/`：`project_manager`、`instance_manager`、`schedule_engine`
-- `http/`：`api_router`、`http_helpers`
-- `model/`：`project`、`schedule`、`instance`
-- `server_manager.*`：编排层
-- `main.cpp`：进程入口
-
-### `src/demo/`
-
-演示代码与资源目录。现有 `config_demo` / `js_runtime_demo` 资源会在构建后复制到 `build/bin/` 下。
-
-## Server API 速览
-
-`stdiolink_server` 当前注册 API（M40）：
-
-- `GET /api/services`
-- `GET /api/services/{id}`
-- `POST /api/services/scan`
-- `GET /api/projects`
-- `POST /api/projects`
-- `GET /api/projects/{id}`
-- `PUT /api/projects/{id}`
-- `DELETE /api/projects/{id}`
-- `POST /api/projects/{id}/validate`
-- `POST /api/projects/{id}/start`
-- `POST /api/projects/{id}/stop`
-- `POST /api/projects/{id}/reload`
-- `GET /api/projects/{id}/runtime`
-- `GET /api/instances`
-- `POST /api/instances/{id}/terminate`
-- `GET /api/instances/{id}/logs`
-- `GET /api/drivers`
-- `POST /api/drivers/scan`
-
-后续 API 规划与 dashboard backlog 见：
-
-- `doc/todolist.md`
-
-## 发布与打包
-
-已提供发布脚本：
-
-- `tools/publish_release.sh`
-
-示例：
-
-```bash
-# 默认输出到 release/<自动包名>
-tools/publish_release.sh
-
-# 指定构建目录、输出目录、包名
-tools/publish_release.sh --build-dir build --output-dir release --name m39_preview
-
-# 包含测试二进制
-tools/publish_release.sh --with-tests
-```
-
-发布目录默认包含：
-
-- `bin/`（主二进制）
-- `demo/`（demo 资源）
-- `data_root/`（标准目录模板）
-- `doc/`（关键文档）
-- `RELEASE_MANIFEST.txt`
-
-## 开发约束（摘要）
-
-- 文件 I/O 与 JSON 优先使用 Qt 类型：`QFile`、`QTextStream`、`QJsonObject` 等
-- 命名：类 `CamelCase`、方法 `camelBack`、成员 `m_` 前缀
-- Windows 管道读取避免 `fread()`，使用 `QTextStream::readLine()`
-- 提交遵循 Conventional Commits：`feat:` / `fix:` / `docs:` / `test:` / `refactor:`
+### `src/webui/`
+React 18 + TypeScript + Vite 前端。
+- **设计规范**: "Style 06" (Premium Glassmorphism)，采用 Bento Grid 布局。
+- **核心组件**: Dashboard (Mission Control)、DriverLab (交互调试)、SchemaEditor (可视配置)。
+- **国际化**: 支持 9 种语言 (i18next)。
 
 ## 里程碑状态
 
-- M1-M33：已落地（协议、元数据、Host/Driver、JS runtime 等）
-- M34-M38：已落地（Server 扫描、Project/Instance/Schedule、HTTP API）
-- M39：已落地（ServerManager 全链路 demo + 发布脚本）
-- M40：已落地（Service 手动重扫 + Project runtime API）
-- M41：已落地（JS Constants & Config deep freeze 绑定）
-- M42：已落地（JS Path 绑定）
-- M43：已落地（JS Fs 绑定）
-- M44：已落地（JS Time 绑定）
-- M45：已落地（JS Http 绑定）
-- M46：已落地（JS Log 绑定）
-- M47：已落地（JS Process Async 绑定：execAsync / spawn）
-- M48：已落地（openDriver options 增强：profilePolicy / startupArgs / env）
+- [x] M1-M33: 核心协议、元数据、JS Runtime 及其全量 C++ 绑定。
+- [x] M34-M48: Server 架构、项目生命周期管理、SSE/WebSocket 通讯。
+- [x] M49-M69: WebUI 全量实现、"Style 06" 视觉重构、E2E 测试、发布脚本完善。
+
+## 开发约束
+
+- **Qt 优先**: 文件 I/O 使用 `QFile`，JSON 使用 `QJsonObject`。
+- **无阻塞 I/O**: Windows 管道读取必须使用 `QTextStream::readLine()`。
+- **命名规范**: 类 `CamelCase`、方法 `camelBack`、成员 `m_` 前缀。
+- **提交规范**: 遵循 Conventional Commits。
