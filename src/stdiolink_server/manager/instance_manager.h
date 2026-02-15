@@ -43,6 +43,9 @@ signals:
                           int exitCode,
                           QProcess::ExitStatus exitStatus);
 
+public:
+    void setGuardNameForTesting(const QString& name) { m_guardNameOverride = name; }
+
 private:
     QString generateInstanceId() const;
     void onProcessFinished(const QString& instanceId,
@@ -52,6 +55,7 @@ private:
     QString m_dataRoot;
     ServerConfig m_config;
     std::map<QString, std::unique_ptr<Instance>> m_instances;
+    QString m_guardNameOverride;
 };
 
 } // namespace stdiolink_server

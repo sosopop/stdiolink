@@ -108,14 +108,8 @@ void DriverLabWsConnection::stopDriver() {
     }
 
     if (m_process->state() != QProcess::NotRunning) {
-        m_process->closeWriteChannel();
-        if (!m_process->waitForFinished(2000)) {
-            m_process->terminate();
-            if (!m_process->waitForFinished(2000)) {
-                m_process->kill();
-                m_process->waitForFinished(1000);
-            }
-        }
+        m_process->kill();
+        m_process->waitForFinished(1000);
     }
 
     m_process.reset();

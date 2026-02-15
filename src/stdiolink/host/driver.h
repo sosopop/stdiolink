@@ -3,6 +3,7 @@
 #include <QJsonObject>
 #include <QProcess>
 #include <memory>
+#include "stdiolink/guard/process_guard_server.h"
 #include "stdiolink/protocol/jsonl_types.h"
 #include "stdiolink/protocol/meta_types.h"
 #include "stdiolink/stdiolink_export.h"
@@ -42,12 +43,19 @@ public:
     bool hasMeta() const;
     void refreshMeta();
 
+#ifdef STDIOLINK_TESTING
+public:
+    void setGuardNameForTesting(const QString& name) { m_guardNameOverride = name; }
+#endif
+
 private:
     QProcess m_proc;
     QByteArray m_buf;
 
     std::shared_ptr<TaskState> m_cur;
     std::shared_ptr<meta::DriverMeta> m_meta;
+    std::unique_ptr<ProcessGuardServer> m_guard;
+    QString m_guardNameOverride;
 
     bool tryReadLine(QByteArray& outLine);
     void pushError(int code, const QJsonObject& payload);

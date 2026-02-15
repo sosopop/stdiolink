@@ -10,28 +10,35 @@ Driver::~Driver() {
 }
 
 bool Driver::start(const QString& program, const QStringList& args) {
+    m_guard = std::make_unique<ProcessGuardServer>();
+
+    bool guardOk = m_guardNameOverride.isEmpty()
+                       ? m_guard->start()
+                       : m_guard->start(m_guardNameOverride);
+
+    if (!guardOk) {
+        m_guard.reset();
+        return false;
+    }
+
+    QStringList finalArgs = args;
+    finalArgs.append("--guard=" + m_guard->guardName());
+
     m_proc.setProgram(program);
-    m_proc.setArguments(args);
+    m_proc.setArguments(finalArgs);
     m_proc.setProcessChannelMode(QProcess::SeparateChannels);
     m_proc.start();
-    return m_proc.waitForStarted(3000);
+    if (!m_proc.waitForStarted(3000)) {
+        m_guard.reset();
+        return false;
+    }
+    return true;
 }
 
 void Driver::terminate() {
     if (m_proc.state() != QProcess::NotRunning) {
-        // 先关闭 stdin 管道，让 Driver 的 readLine() 返回
-        m_proc.closeWriteChannel();
-
-        // 等待进程正常退出
-        if (!m_proc.waitForFinished(100)) {
-            // 如果还没退出，发送终止信号
-            m_proc.terminate();
-            if (!m_proc.waitForFinished(100)) {
-                // 强制杀死
-                m_proc.kill();
-                m_proc.waitForFinished(100);
-            }
-        }
+        m_proc.kill();
+        m_proc.waitForFinished(1000);
     }
 }
 

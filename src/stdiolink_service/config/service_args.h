@@ -11,6 +11,7 @@ public:
         QString serviceDir;           // 服务目录路径
         QJsonObject rawConfigValues;  // --config.* 解析结果（叶子值均为 raw string）
         QString configFilePath;       // --config-file 路径
+        QString guardName;            // --guard=<name>，为空表示未指定
         bool dumpSchema = false;      // --dump-config-schema
         bool help = false;
         bool version = false;

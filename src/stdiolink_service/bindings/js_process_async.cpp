@@ -261,6 +261,14 @@ JSValue jsHandleKill(JSContext* ctx, JSValueConst thisVal,
     if (!h) return JS_ThrowTypeError(ctx, "invalid ProcessHandle");
     if (!h->proc || h->proc->state() == QProcess::NotRunning)
         return JS_UNDEFINED;
+
+    // Cancel timeout timer on manual kill
+    if (h->timeoutTimer) {
+        h->timeoutTimer->stop();
+        h->timeoutTimer->deleteLater();
+        h->timeoutTimer = nullptr;
+    }
+
     QString sig = "SIGTERM";
     if (argc >= 1 && JS_IsString(argv[0])) {
         sig = toQStr(ctx, argv[0]);
@@ -363,6 +371,12 @@ void wireSpawnSignals(ProcessHandleData* h) {
         h->exitNotified = true;
         h->cachedExitCode = code;
         h->cachedExitStatus = (status == QProcess::CrashExit) ? "crash" : "normal";
+
+        if (h->timeoutTimer) {
+            h->timeoutTimer->stop();
+            h->timeoutTimer->deleteLater();
+            h->timeoutTimer = nullptr;
+        }
 
         if (h->exitCallbacks.isEmpty()) return;
         JSValue result = JS_NewObject(ctx);
@@ -616,13 +630,14 @@ JSValue jsSpawn(JSContext* ctx, JSValueConst,
     }
 
     QString cwd;
+    int timeoutMs = 0;
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
     if (argc >= 3 && JS_IsObject(argv[2]) && !JS_IsNull(argv[2])) {
         JSValueConst opts = argv[2];
 
         // Validate unknown keys
-        static const QSet<QString> allowedKeys = {"cwd", "env"};
+        static const QSet<QString> allowedKeys = {"cwd", "env", "timeoutMs"};
         JSPropertyEnum* props = nullptr;
         uint32_t propCount = 0;
         if (JS_GetOwnPropertyNames(ctx, &props, &propCount, opts,
@@ -643,6 +658,14 @@ JSValue jsSpawn(JSContext* ctx, JSValueConst,
         JSValue cwdV = JS_GetPropertyStr(ctx, opts, "cwd");
         if (JS_IsString(cwdV)) cwd = toQStr(ctx, cwdV);
         JS_FreeValue(ctx, cwdV);
+
+        JSValue tmV = JS_GetPropertyStr(ctx, opts, "timeoutMs");
+        if (JS_IsNumber(tmV)) {
+            int32_t t = 0;
+            JS_ToInt32(ctx, &t, tmV);
+            if (t > 0) timeoutMs = t;
+        }
+        JS_FreeValue(ctx, tmV);
 
         JSValue envV = JS_GetPropertyStr(ctx, opts, "env");
         if (JS_IsObject(envV) && !JS_IsNull(envV)) {
@@ -668,6 +691,19 @@ JSValue jsSpawn(JSContext* ctx, JSValueConst,
 
     wireSpawnSignals(h);
     proc->start(program, args, QIODevice::ReadWrite);
+
+    // Timeout timer for spawn
+    if (timeoutMs > 0) {
+        auto* timer = new QTimer();
+        timer->setSingleShot(true);
+        h->timeoutTimer = timer;
+        QObject::connect(timer, &QTimer::timeout, [h, proc]() {
+            if (proc->state() != QProcess::NotRunning) {
+                proc->kill();
+            }
+        });
+        timer->start(timeoutMs);
+    }
 
     return createHandleObject(ctx, h);
 }

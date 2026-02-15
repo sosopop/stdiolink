@@ -8,6 +8,8 @@
 #include <QStandardPaths>
 #include <QUuid>
 
+#include "stdiolink/guard/process_guard_server.h"
+
 namespace stdiolink_server {
 
 namespace {
@@ -119,10 +121,21 @@ QString InstanceManager::startInstance(const Project& project,
     inst->status = "starting";
     inst->tempConfigFile = std::move(tempFile);
 
+    // Create ProcessGuard for parent-child liveness monitoring
+    auto guard = std::make_unique<stdiolink::ProcessGuardServer>();
+    bool guardOk = m_guardNameOverride.isEmpty()
+                       ? guard->start()
+                       : guard->start(m_guardNameOverride);
+    if (!guardOk) {
+        error = "failed to start process guard server";
+        return {};
+    }
+
     auto* proc = new QProcess(this);
     proc->setWorkingDirectory(workspaceDir);
     proc->setProgram(program);
-    proc->setArguments({serviceDir, "--config-file=" + tempConfigPath});
+    proc->setArguments({serviceDir, "--config-file=" + tempConfigPath,
+                        "--guard=" + guard->guardName()});
 
     // Add server directory to PATH so child process can find Qt DLLs
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -143,6 +156,7 @@ QString InstanceManager::startInstance(const Project& project,
     inst->logPath = logPath;
     inst->commandLine = QStringList{program} + proc->arguments();
     inst->process = proc;
+    inst->guard = std::move(guard);
 
     connect(proc,
             QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -177,13 +191,8 @@ void InstanceManager::terminateInstance(const QString& instanceId) {
         return;
     }
 
-    proc->closeWriteChannel();
-    if (!proc->waitForFinished(200)) {
-        proc->terminate();
-        if (!proc->waitForFinished(200)) {
-            proc->kill();
-        }
-    }
+    proc->kill();
+    proc->waitForFinished(1000);
 }
 
 void InstanceManager::terminateByProject(const QString& projectId) {

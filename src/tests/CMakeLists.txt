@@ -58,6 +58,7 @@ set(TEST_SOURCES
     test_process_monitor.cpp
     test_event_bus.cpp
     test_static_file_server.cpp
+    test_process_guard.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -142,6 +143,8 @@ set_target_properties(stdiolink_tests PROPERTIES
 
 add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
 
+target_compile_definitions(stdiolink_tests PRIVATE STDIOLINK_TESTING)
+
 if(TARGET stdiolink_service)
     add_dependencies(stdiolink_tests stdiolink_service)
 endif()
@@ -196,3 +199,14 @@ set_target_properties(test_slow_meta_driver PROPERTIES
 )
 
 add_dependencies(stdiolink_tests test_slow_meta_driver)
+
+# test_guard_stub (用于 ProcessGuard 测试的辅助子进程)
+add_executable(test_guard_stub test_guard_stub_main.cpp)
+
+target_link_libraries(test_guard_stub PRIVATE stdiolink Qt6::Core Qt6::Network)
+
+set_target_properties(test_guard_stub PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_guard_stub)

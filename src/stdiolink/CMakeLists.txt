@@ -39,6 +39,12 @@ set(DOC_SOURCES
     doc/doc_generator.cpp
 )
 
+set(GUARD_SOURCES
+    guard/force_fast_exit.cpp
+    guard/process_guard_server.cpp
+    guard/process_guard_client.cpp
+)
+
 set(PLATFORM_SOURCES
     platform/platform_utils.cpp
 )
@@ -49,6 +55,7 @@ set(ALL_SOURCES
     ${HOST_SOURCES}
     ${CONSOLE_SOURCES}
     ${DOC_SOURCES}
+    ${GUARD_SOURCES}
     ${PLATFORM_SOURCES}
 )
 
@@ -58,7 +65,7 @@ target_include_directories(stdiolink PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )
 
-target_link_libraries(stdiolink PUBLIC Qt6::Core)
+target_link_libraries(stdiolink PUBLIC Qt6::Core Qt6::Network)
 
 set_target_properties(stdiolink PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "stdiolink/guard/process_guard_server.h"
+
 namespace stdiolink_server {
 
 struct Instance {
@@ -24,6 +26,7 @@ struct Instance {
     QStringList commandLine;
 
     std::unique_ptr<QTemporaryFile> tempConfigFile;
+    std::unique_ptr<stdiolink::ProcessGuardServer> guard;
 };
 
 } // namespace stdiolink_server

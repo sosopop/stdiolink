@@ -65,6 +65,10 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
             result.dumpSchema = true;
             continue;
         }
+        if (arg.startsWith("--guard=")) {
+            result.guardName = arg.mid(8); // len("--guard=") == 8
+            continue;
+        }
         if (arg.startsWith("--config-file=")) {
             result.configFilePath = arg.mid(14); // len("--config-file=") == 14
             continue;

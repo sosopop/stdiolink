@@ -173,6 +173,8 @@ void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value) {
         profile = value;
     } else if (key == "cmd") {
         cmd = value;
+    } else if (key == "guard") {
+        // Recognized but not stored — guard client handled by ProcessGuardClient::startFromArgs()
     }
 }
 

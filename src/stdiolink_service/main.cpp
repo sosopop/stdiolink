@@ -17,6 +17,7 @@
 #include "bindings/js_wait_any_scheduler.h"
 #include "bindings/js_task_scheduler.h"
 #include "config/service_args.h"
+#include "stdiolink/guard/process_guard_client.h"
 #include "config/service_config_help.h"
 #include "config/service_config_schema.h"
 #include "config/service_config_validator.h"
@@ -83,6 +84,13 @@ int main(int argc, char* argv[]) {
     using namespace stdiolink_service;
 
     auto parsed = ServiceArgs::parse(app.arguments());
+
+    // Guard client (must start before business logic)
+    std::unique_ptr<stdiolink::ProcessGuardClient> guardClient;
+    if (!parsed.guardName.isEmpty()) {
+        guardClient = std::make_unique<stdiolink::ProcessGuardClient>(parsed.guardName);
+        guardClient->start();
+    }
 
     // Global help (no service directory)
     if (parsed.help && parsed.serviceDir.isEmpty()) {
@@ -235,6 +243,10 @@ int main(int argc, char* argv[]) {
     }
     if (ret == 0 && engine.hadJobError()) {
         ret = 1;
+    }
+
+    if (guardClient) {
+        guardClient->stop();
     }
 
     return ret;
