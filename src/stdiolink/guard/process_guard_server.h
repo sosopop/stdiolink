@@ -22,6 +22,8 @@ public:
     bool isListening() const;
 
 private:
+    bool listenInternal();
+
     QLocalServer* m_server = nullptr;
     QString m_name;
     QList<QLocalSocket*> m_connections;

@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFuture>
 #include <QHttpServerResponder>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -1242,7 +1243,7 @@ QHttpServerResponse ApiRouter::handleProjectStart(const QString& id,
     const Instance* inst = instanceManager->getInstance(instanceId);
     QJsonObject result;
     result["instanceId"] = instanceId;
-    result["pid"] = inst ? static_cast<qint64>(inst->pid) : 0;
+    result["status"] = inst ? inst->status : QStringLiteral("starting");
     return jsonResponse(result);
 }
 
@@ -1548,28 +1549,31 @@ QHttpServerResponse ApiRouter::handleDriverList(const QHttpServerRequest& req) {
     return jsonResponse(QJsonObject{{"drivers", drivers}});
 }
 
-QHttpServerResponse ApiRouter::handleDriverScan(const QHttpServerRequest& req) {
+QFuture<QHttpServerResponse> ApiRouter::handleDriverScan(const QHttpServerRequest& req) {
     QJsonObject body;
     QString error;
     bool tooLarge = false;
     if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
-        return bodyParseErrorResponse(error, tooLarge);
+        return QtFuture::makeReadyValueFuture(bodyParseErrorResponse(error, tooLarge));
     }
 
     bool refreshMeta = true;
     if (body.contains("refreshMeta")) {
         if (!body.value("refreshMeta").isBool()) {
-            return errorResponse(QHttpServerResponse::StatusCode::BadRequest,
-                                 "field 'refreshMeta' must be a bool");
+            return QtFuture::makeReadyValueFuture(
+                errorResponse(QHttpServerResponse::StatusCode::BadRequest,
+                              "field 'refreshMeta' must be a bool"));
         }
         refreshMeta = body.value("refreshMeta").toBool(true);
     }
 
-    const DriverManagerScanner::ScanStats stats = m_manager->rescanDrivers(refreshMeta);
-    return jsonResponse(QJsonObject{{"scanned", stats.scanned},
-                                    {"updated", stats.updated},
-                                    {"newlyFailed", stats.newlyFailed},
-                                    {"skippedFailed", stats.skippedFailed}});
+    return m_manager->rescanDriversAsync(refreshMeta)
+        .then([](DriverManagerScanner::ScanStats stats) {
+            return jsonResponse(QJsonObject{{"scanned", stats.scanned},
+                                            {"updated", stats.updated},
+                                            {"newlyFailed", stats.newlyFailed},
+                                            {"skippedFailed", stats.skippedFailed}});
+        });
 }
 
 QHttpServerResponse ApiRouter::handleServerStatus(const QHttpServerRequest& req) {

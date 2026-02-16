@@ -38,6 +38,9 @@ public:
 signals:
     void instanceStarted(const QString& instanceId,
                          const QString& projectId);
+    void instanceStartFailed(const QString& instanceId,
+                             const QString& projectId,
+                             const QString& error);
     void instanceFinished(const QString& instanceId,
                           const QString& projectId,
                           int exitCode,

@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QUuid>
 
 #include "stdiolink/guard/process_guard_server.h"
@@ -160,18 +161,52 @@ QString InstanceManager::startInstance(const Project& project,
                 onProcessFinished(instanceId, exitCode, status);
             });
 
-    proc->start();
-    if (!proc->waitForStarted(5000)) {
-        error = "process failed to start: " + proc->errorString();
-        proc->deleteLater();
-        return {};
-    }
-
-    inst->pid = proc->processId();
-    inst->status = "running";
-
+    // ⚠ 关键：先入 map，再 start()。
+    // errorOccurred(FailedToStart) 可能从 start() 内部同步触发，
+    // 若 emplace 在 start() 之后，lambda 中 find(instanceId) 会找不到实例。
     m_instances.emplace(instanceId, std::move(inst));
-    emit instanceStarted(instanceId, project.id);
+
+    // 信号驱动状态迁移
+    connect(proc, &QProcess::started, this, [this, instanceId]() {
+        auto it = m_instances.find(instanceId);
+        if (it == m_instances.end()) return;
+        Instance* inst = it->second.get();
+        inst->pid = inst->process->processId();
+        inst->status = "running";
+        emit instanceStarted(instanceId, inst->projectId);
+    });
+
+    connect(proc, &QProcess::errorOccurred, this, [this, instanceId](QProcess::ProcessError err) {
+        if (err != QProcess::FailedToStart) return;
+        auto it = m_instances.find(instanceId);
+        if (it == m_instances.end()) return;
+        Instance* inst = it->second.get();
+        const QString projectId = inst->projectId;
+        inst->status = "failed";
+        inst->startFailedEmitted = true;
+        emit instanceStartFailed(instanceId, projectId, inst->process->errorString());
+        // FailedToStart 时 Qt 不会发射 finished 信号，手动补发以维持"始终发射"不变量
+        emit instanceFinished(instanceId, projectId, -1, QProcess::CrashExit);
+        inst->process->deleteLater();
+        inst->process = nullptr;
+        m_instances.erase(it);
+    });
+
+    proc->start();
+
+    // 安全超时（替代原来的 5s 阻塞等待）
+    QTimer::singleShot(5000, this, [this, instanceId]() {
+        auto it = m_instances.find(instanceId);
+        if (it == m_instances.end()) return;
+        if (it->second->status == "starting") {
+            it->second->startFailedEmitted = true;
+            emit instanceStartFailed(instanceId, it->second->projectId,
+                                     QStringLiteral("start timeout (5s)"));
+            it->second->process->kill();
+            // kill 触发 finished → onProcessFinished 完成清理
+        }
+    });
+
     return instanceId;
 }
 
@@ -187,7 +222,7 @@ void InstanceManager::terminateInstance(const QString& instanceId) {
     }
 
     proc->kill();
-    proc->waitForFinished(1000);
+    // finished 信号触发 onProcessFinished() 完成清理
 }
 
 void InstanceManager::terminateByProject(const QString& projectId) {
@@ -290,16 +325,26 @@ void InstanceManager::onProcessFinished(const QString& instanceId,
 
     Instance* inst = it->second.get();
     const QString projectId = inst->projectId;
+    const bool wasStarting = (inst->status == "starting");
     const bool abnormal = status == QProcess::CrashExit || exitCode != 0;
     inst->status = abnormal ? "failed" : "stopped";
 
+    // starting 阶段退出：补发 startFailed（如果 errorOccurred/timeout 未发过）
+    if (wasStarting && !inst->startFailedEmitted) {
+        inst->startFailedEmitted = true;
+        const QString reason = abnormal
+            ? QStringLiteral("process exited during startup (code %1)").arg(exitCode)
+            : QStringLiteral("process exited normally before started signal");
+        emit instanceStartFailed(instanceId, projectId, reason);
+    }
+
+    // 始终发射 instanceFinished — ScheduleEngine 依赖此信号做 daemon 重启
     emit instanceFinished(instanceId, projectId, exitCode, status);
 
     if (inst->process) {
         inst->process->deleteLater();
         inst->process = nullptr;
     }
-
     m_instances.erase(it);
 }
 

@@ -61,6 +61,7 @@ private:
     QDateTime m_lastDriverStart;
     bool m_restartSuppressed = false;
     bool m_lastExitWasCrash = false;
+    bool m_isRestarting = false;
 };
 
 } // namespace stdiolink_server

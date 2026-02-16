@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDateTime>
+#include <QFuture>
 #include <QMap>
 #include <QObject>
 #include <QString>
@@ -86,6 +87,7 @@ public:
     DriverLabWsHandler* driverLabWsHandler() { return m_driverLabWsHandler; }
 
     DriverManagerScanner::ScanStats rescanDrivers(bool refreshMeta = true);
+    QFuture<DriverManagerScanner::ScanStats> rescanDriversAsync(bool refreshMeta = true);
     ServiceRescanStats rescanServices(bool revalidateProjects = true,
                                       bool restartScheduling = true,
                                       bool stopInvalidProjects = false);
@@ -143,6 +145,7 @@ private:
     QDateTime m_startedAt;
     DriverLabWsHandler* m_driverLabWsHandler = nullptr;
     std::unique_ptr<StaticFileServer> m_staticFileServer;
+    quint64 m_latestDriverScanSeq = 0;
 };
 
 } // namespace stdiolink_server

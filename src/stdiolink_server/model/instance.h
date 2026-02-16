@@ -27,6 +27,8 @@ struct Instance {
 
     std::unique_ptr<QTemporaryFile> tempConfigFile;
     std::unique_ptr<stdiolink::ProcessGuardServer> guard;
+
+    bool startFailedEmitted = false;  // 防止 startFailed 事件重复发射
 };
 
 } // namespace stdiolink_server

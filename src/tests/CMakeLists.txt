@@ -124,6 +124,7 @@ target_link_libraries(stdiolink_tests PRIVATE
     Qt6::Network
     Qt6::HttpServer
     Qt6::WebSockets
+    Qt6::Concurrent
 )
 
 if(TARGET qjs)

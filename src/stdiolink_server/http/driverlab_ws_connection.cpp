@@ -60,42 +60,38 @@ void DriverLabWsConnection::startDriver(bool queryMeta) {
     QStringList args = m_extraArgs;
     args.prepend(QStringLiteral("--profile=") + m_runMode);
 
-    m_process->start(m_program, args);
-    if (!m_process->waitForStarted(5000)) {
-        sendJson(QJsonObject{
-            {"type", "error"},
-            {"message", "failed to start driver: " + m_process->errorString()}
-        });
-        // Close WebSocket on start failure
-        QTimer::singleShot(0, this, [this]() {
-            if (m_socket) {
-                m_socket->close(QWebSocketProtocol::CloseCodeAbnormalDisconnection,
-                                "driver start failed");
-            }
-        });
-        return;
-    }
-
-    sendJson(QJsonObject{
-        {"type", "driver.started"},
-        {"pid", static_cast<qint64>(m_process->processId())}
+    // 信号驱动启动：started 信号到达后再发 driver.started / driver.restarted
+    const bool isRestart = m_isRestarting;
+    m_isRestarting = false;
+    connect(m_process.get(), &QProcess::started, this, [this, queryMeta, isRestart]() {
+        if (isRestart) {
+            sendJson(QJsonObject{
+                {"type", "driver.restarted"},
+                {"pid", static_cast<qint64>(m_process->processId())},
+                {"reason", "oneshot auto-restart"}
+            });
+        } else {
+            sendJson(QJsonObject{
+                {"type", "driver.started"},
+                {"pid", static_cast<qint64>(m_process->processId())}
+            });
+        }
+        if (queryMeta) {
+            m_process->write("{\"cmd\":\"meta.describe\",\"data\":{}}\n");
+            QTimer::singleShot(5000, this, [this]() {
+                if (!m_metaSent && m_socket &&
+                    m_socket->state() == QAbstractSocket::ConnectedState) {
+                    sendJson(QJsonObject{
+                        {"type", "error"},
+                        {"message", "meta query timeout"}
+                    });
+                }
+            });
+        }
     });
 
-    // Query meta (skip on OneShot restart — we already have it)
-    if (queryMeta) {
-        const QByteArray metaCmd = "{\"cmd\":\"meta.describe\",\"data\":{}}\n";
-        m_process->write(metaCmd);
-
-        // Meta timeout
-        QTimer::singleShot(5000, this, [this]() {
-            if (!m_metaSent && m_socket && m_socket->state() == QAbstractSocket::ConnectedState) {
-                sendJson(QJsonObject{
-                    {"type", "error"},
-                    {"message", "meta query timeout"}
-                });
-            }
-        });
-    }
+    m_process->start(m_program, args);
+    // errorOccurred(FailedToStart) 已由 onDriverErrorOccurred() 处理
 }
 
 void DriverLabWsConnection::stopDriver() {
@@ -105,7 +101,7 @@ void DriverLabWsConnection::stopDriver() {
 
     if (m_process->state() != QProcess::NotRunning) {
         m_process->kill();
-        m_process->waitForFinished(1000);
+        m_process->waitForFinished(1000);  // kill 后几乎立即返回
     }
 
     m_process.reset();
@@ -330,15 +326,9 @@ void DriverLabWsConnection::restartDriverForOneShot() {
     m_process.reset();
 
     // Start new driver (skip meta query — we already have it)
+    // driver.restarted 消息由 QProcess::started 信号处理器根据 m_isRestarting 发送
+    m_isRestarting = true;
     startDriver(false);
-
-    if (m_process && m_process->state() == QProcess::Running) {
-        sendJson(QJsonObject{
-            {"type", "driver.restarted"},
-            {"pid", static_cast<qint64>(m_process->processId())},
-            {"reason", "oneshot auto-restart"}
-        });
-    }
 }
 
 } // namespace stdiolink_server

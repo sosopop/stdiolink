@@ -7,6 +7,8 @@
 #include <QSaveFile>
 #include <QSysInfo>
 #include <QThread>
+#include <QtConcurrent>
+#include <QFuture>
 
 #include "http/driverlab_ws_handler.h"
 
@@ -123,6 +125,16 @@ ServerManager::ServerManager(const QString& dataRoot,
                     {"projectId", projectId},
                     {"exitCode", exitCode},
                     {"status", exitStatus == QProcess::NormalExit ? "normal" : "crashed"}
+                });
+            });
+
+    connect(m_instanceManager, &InstanceManager::instanceStartFailed,
+            this, [this](const QString& instanceId, const QString& projectId,
+                         const QString& error) {
+                m_eventBus->publish(QStringLiteral("instance.startFailed"), QJsonObject{
+                    {"instanceId", instanceId},
+                    {"projectId", projectId},
+                    {"error", error}
                 });
             });
 
@@ -266,6 +278,33 @@ DriverManagerScanner::ScanStats ServerManager::rescanDrivers(bool refreshMeta) {
     const auto drivers = m_driverScanner.scan(driversDir, refreshMeta, &stats);
     m_driverCatalog.replaceAll(drivers);
     return stats;
+}
+
+QFuture<DriverManagerScanner::ScanStats> ServerManager::rescanDriversAsync(bool refreshMeta) {
+    const quint64 scanSeq = ++m_latestDriverScanSeq;
+    const QString driversDir = m_dataRoot + "/drivers";
+    if (!QDir(driversDir).exists()) {
+        // 仅让最新请求生效，避免并发扫描时旧请求覆盖新状态。
+        if (scanSeq == m_latestDriverScanSeq) {
+            m_driverCatalog.clear();
+        }
+        return QtFuture::makeReadyValueFuture(DriverManagerScanner::ScanStats{});
+    }
+
+    DriverManagerScanner scanner = m_driverScanner;
+
+    return QtConcurrent::run([scanner, driversDir, refreshMeta]() mutable {
+        DriverManagerScanner::ScanStats stats;
+        auto drivers = scanner.scan(driversDir, refreshMeta, &stats);
+        return std::make_pair(drivers, stats);
+    }).then(this, [this, scanSeq](std::pair<QHash<QString, stdiolink::DriverConfig>,
+                                                 DriverManagerScanner::ScanStats> result) {
+        // 仅应用最新一次 scan 的结果，防止后发先至。
+        if (scanSeq == m_latestDriverScanSeq) {
+            m_driverCatalog.replaceAll(result.first);
+        }
+        return result.second;
+    });
 }
 
 ServerManager::ServiceRescanStats ServerManager::rescanServices(bool revalidateProjects,

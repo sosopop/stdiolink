@@ -14,7 +14,11 @@ ProcessGuardServer::~ProcessGuardServer() {
 }
 
 bool ProcessGuardServer::start() {
-    return start(m_name);
+    if (m_server) {
+        stop();
+    }
+    // m_name 在构造函数中已生成 UUID，冲突概率可忽略，跳过探测
+    return listenInternal();
 }
 
 bool ProcessGuardServer::start(const QString& nameOverride) {
@@ -24,7 +28,7 @@ bool ProcessGuardServer::start(const QString& nameOverride) {
 
     m_name = nameOverride;
 
-    // Probe: if an active server already owns this name, refuse to start.
+    // 用户指定名称可能冲突，保留探测
     {
         QLocalSocket probe;
         probe.connectToServer(m_name);
@@ -34,13 +38,16 @@ bool ProcessGuardServer::start(const QString& nameOverride) {
         }
     }
 
+    return listenInternal();
+}
+
+bool ProcessGuardServer::listenInternal() {
     m_server = new QLocalServer();
     m_server->setSocketOptions(QLocalServer::WorldAccessOption);
 
     bool listenOk = m_server->listen(m_name);
     if (!listenOk) {
-        // If AddressInUseError after probe said "not connected",
-        // the socket file is stale — remove and retry once.
+        // stale socket 恢复：探测说没有活跃 server，但 socket 文件残留
         if (m_server->serverError() == QAbstractSocket::AddressInUseError) {
             QLocalServer::removeServer(m_name);
             listenOk = m_server->listen(m_name);

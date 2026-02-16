@@ -65,6 +65,7 @@ target_link_libraries(stdiolink_server PRIVATE
     Qt6::Network
     Qt6::HttpServer
     Qt6::WebSockets
+    Qt6::Concurrent
 )
 
 set_target_properties(stdiolink_server PROPERTIES

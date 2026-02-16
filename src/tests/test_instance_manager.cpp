@@ -113,8 +113,10 @@ TEST(InstanceManagerTest, StartInstanceAndCleanup) {
     const QString instanceId = mgr.startInstance(project, serviceDir, error);
     ASSERT_TRUE(error.isEmpty());
     ASSERT_FALSE(instanceId.isEmpty());
-    EXPECT_EQ(startedCount, 1);
     EXPECT_EQ(mgr.instanceCount("p1"), 1);
+
+    // startInstance 现在是异步的，需要等待 QProcess::started 信号触发
+    ASSERT_TRUE(waitUntil([&]() { return startedCount == 1; }, 3000));
 
     const Instance* inst = mgr.getInstance(instanceId);
     ASSERT_NE(inst, nullptr);

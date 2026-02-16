@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QFuture>
 #include <QHttpServer>
 #include <QHttpServerResponder>
 #include <QObject>
@@ -86,7 +87,7 @@ private:
                                            const QHttpServerRequest& req);
     QHttpServerResponse handleDriverDocs(const QString& id,
                                          const QHttpServerRequest& req);
-    QHttpServerResponse handleDriverScan(const QHttpServerRequest& req);
+    QFuture<QHttpServerResponse> handleDriverScan(const QHttpServerRequest& req);
 
     void handleEventStream(const QHttpServerRequest& req,
                            QHttpServerResponder& responder);
