@@ -1,4 +1,5 @@
 #include "process_guard_server.h"
+#include <QLocalSocket>
 #include <QUuid>
 
 namespace stdiolink {
@@ -22,6 +23,17 @@ bool ProcessGuardServer::start(const QString& nameOverride) {
     }
 
     m_name = nameOverride;
+
+    // Probe: if an active server already owns this name, refuse to start.
+    {
+        QLocalSocket probe;
+        probe.connectToServer(m_name);
+        if (probe.waitForConnected(200)) {
+            probe.disconnectFromServer();
+            return false;
+        }
+    }
+
     m_server = new QLocalServer();
     m_server->setSocketOptions(QLocalServer::WorldAccessOption);
 
