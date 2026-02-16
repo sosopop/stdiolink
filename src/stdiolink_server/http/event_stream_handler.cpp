@@ -16,7 +16,9 @@ EventStreamConnection::EventStreamConnection(QHttpServerResponder&& responder,
     : QObject(parent)
     , m_responder(std::move(responder))
     , m_filters(filters)
-    , m_allowedOrigin(allowedOrigin) {
+    , m_allowedOrigin(allowedOrigin)
+    , m_createdAt(QDateTime::currentDateTimeUtc())
+    , m_lastSendAt(m_createdAt) {
 }
 
 void EventStreamConnection::beginStream() {
@@ -37,18 +39,36 @@ void EventStreamConnection::sendEvent(const ServerEvent& event) {
     chunk.append(QJsonDocument(event.data).toJson(QJsonDocument::Compact));
     chunk.append("\n\n");
     m_responder.writeChunk(chunk);
+    m_lastSendAt = QDateTime::currentDateTimeUtc();
 }
 
 void EventStreamConnection::sendHeartbeat() {
     m_responder.writeChunk(": heartbeat\n\n");
+    // Do NOT update m_lastSendAt here. Only sendEvent() updates it,
+    // so that sweepStaleConnections() can detect connections where no
+    // real data has been delivered for longer than the timeout window.
+    // If writeChunk() silently fails on a dead socket, the stale
+    // lastSendAt will eventually trigger eviction.
 }
 
 void EventStreamConnection::close() {
     if (!m_streamOpen) {
         return;
     }
-    m_responder.writeEndChunked(QByteArray());
+    // Do NOT call writeEndChunked() here. Passing an empty QByteArray
+    // triggers Qt's "Chunk must have length > 0" warning, and for SSE
+    // connections being forcefully closed the proper termination is a
+    // TCP-level close — the client detects the disconnect and reconnects.
+    // The QHttpServerResponder destructor handles the underlying cleanup.
     m_streamOpen = false;
+}
+
+QDateTime EventStreamConnection::createdAt() const {
+    return m_createdAt;
+}
+
+QDateTime EventStreamConnection::lastSendAt() const {
+    return m_lastSendAt;
 }
 
 bool EventStreamConnection::matchesFilter(const QString& eventType) const {
@@ -99,6 +119,8 @@ void EventStreamHandler::addConnection(QHttpServerResponder&& responder,
                                            filters,
                                            m_allowedOrigin,
                                            this);
+    connect(conn, &EventStreamConnection::disconnected,
+            this, &EventStreamHandler::onConnectionDisconnected);
     m_connections.append(conn);
     conn->beginStream();
 }
@@ -111,6 +133,10 @@ void EventStreamHandler::closeAllConnections() {
         if (!conn) {
             continue;
         }
+        conn->close();
+        // Use direct delete here: during destruction the event loop may no longer
+        // process deferred deletions, and the underlying TCP socket / QHttpServer
+        // may already be torn down.
         delete conn;
     }
 }
@@ -128,8 +154,34 @@ void EventStreamHandler::onEventPublished(const ServerEvent& event) {
 }
 
 void EventStreamHandler::onHeartbeat() {
+    // Sweep first: evict connections that haven't received any real
+    // event data within the timeout window, then send heartbeats
+    // only to the surviving (presumably healthy) connections.
+    sweepStaleConnections();
     for (auto* conn : m_connections) {
         conn->sendHeartbeat();
+    }
+}
+
+void EventStreamHandler::onConnectionDisconnected() {
+    auto* conn = qobject_cast<EventStreamConnection*>(sender());
+    if (conn) {
+        removeConnection(conn);
+    }
+}
+
+void EventStreamHandler::sweepStaleConnections() {
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    QVector<EventStreamConnection*> stale;
+    for (auto* conn : m_connections) {
+        const qint64 elapsed = conn->lastSendAt().msecsTo(now);
+        if (elapsed > kConnectionTimeoutMs) {
+            stale.append(conn);
+        }
+    }
+    for (auto* conn : stale) {
+        conn->close();
+        emit conn->disconnected();
     }
 }
 

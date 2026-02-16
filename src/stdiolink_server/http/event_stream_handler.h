@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDateTime>
 #include <QHttpServerResponder>
 #include <QObject>
 #include <QSet>
@@ -24,6 +25,9 @@ public:
     void close();
     bool matchesFilter(const QString& eventType) const;
 
+    QDateTime createdAt() const;
+    QDateTime lastSendAt() const;
+
     static bool matchesFilter(const QSet<QString>& filters, const QString& eventType);
 
 signals:
@@ -34,6 +38,8 @@ private:
     QSet<QString> m_filters;
     QString m_allowedOrigin;
     bool m_streamOpen = false;
+    QDateTime m_createdAt;
+    QDateTime m_lastSendAt;
 };
 
 class EventStreamHandler : public QObject {
@@ -52,14 +58,17 @@ public:
 
     static constexpr int kMaxSseConnections = 32;
     static constexpr int kHeartbeatIntervalMs = 30000;
+    static constexpr int kConnectionTimeoutMs = kHeartbeatIntervalMs * 2;
 
 private slots:
     void onEventPublished(const ServerEvent& event);
     void onHeartbeat();
+    void onConnectionDisconnected();
 
 private:
     void removeConnection(EventStreamConnection* conn);
     void evictOldestConnection();
+    void sweepStaleConnections();
 
     EventBus* m_bus;
     QString m_allowedOrigin;

@@ -5,6 +5,8 @@
 #include <QJsonObject>
 #include <QTimer>
 
+#include "stdiolink_server/utils/process_env_utils.h"
+
 namespace stdiolink_server {
 
 DriverLabWsConnection::DriverLabWsConnection(std::unique_ptr<QWebSocket> socket,
@@ -48,13 +50,7 @@ void DriverLabWsConnection::startDriver(bool queryMeta) {
 
     // Add server directory to PATH so driver can find Qt DLLs
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    const QString appDir = QCoreApplication::applicationDirPath();
-    const QString pathValue = env.value("PATH");
-    if (!pathValue.isEmpty()) {
-        env.insert("PATH", appDir + ";" + pathValue);
-    } else {
-        env.insert("PATH", appDir);
-    }
+    prependDirToPath(QCoreApplication::applicationDirPath(), env);
     m_process->setProcessEnvironment(env);
 
     m_lastDriverStart = QDateTime::currentDateTimeUtc();
@@ -199,6 +195,18 @@ void DriverLabWsConnection::onDriverStdoutReady() {
     }
 
     m_stdoutBuffer.append(m_process->readAllStandardOutput());
+
+    if (m_stdoutBuffer.size() > kMaxOutputBufferBytes) {
+        sendJson(QJsonObject{
+            {"type", "error"},
+            {"message", "output buffer overflow"},
+            {"channel", "stdout"},
+            {"limit", kMaxOutputBufferBytes}
+        });
+        m_stdoutBuffer.clear();
+        stopDriver();
+        return;
+    }
 
     while (true) {
         const int nlIndex = m_stdoutBuffer.indexOf('\n');

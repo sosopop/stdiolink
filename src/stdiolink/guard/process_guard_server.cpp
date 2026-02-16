@@ -37,10 +37,19 @@ bool ProcessGuardServer::start(const QString& nameOverride) {
     m_server = new QLocalServer();
     m_server->setSocketOptions(QLocalServer::WorldAccessOption);
 
-    if (!m_server->listen(m_name)) {
-        delete m_server;
-        m_server = nullptr;
-        return false;
+    bool listenOk = m_server->listen(m_name);
+    if (!listenOk) {
+        // If AddressInUseError after probe said "not connected",
+        // the socket file is stale — remove and retry once.
+        if (m_server->serverError() == QAbstractSocket::AddressInUseError) {
+            QLocalServer::removeServer(m_name);
+            listenOk = m_server->listen(m_name);
+        }
+        if (!listenOk) {
+            delete m_server;
+            m_server = nullptr;
+            return false;
+        }
     }
 
     QObject::connect(m_server, &QLocalServer::newConnection, [this]() {

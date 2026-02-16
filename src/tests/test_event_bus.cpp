@@ -98,3 +98,11 @@ TEST(EventBusTest, HandlerInitialConnectionCountIsZero) {
 TEST(EventBusTest, MaxSseConnectionsConstant) {
     EXPECT_EQ(EventStreamHandler::kMaxSseConnections, 32);
 }
+
+// M72_R14 — SSE disconnect recovery: constant invariants
+TEST(EventBusTest, M72_R14_SseTimeoutConstants) {
+    EXPECT_GT(EventStreamHandler::kHeartbeatIntervalMs, 0);
+    EXPECT_GT(EventStreamHandler::kConnectionTimeoutMs, 0);
+    EXPECT_GE(EventStreamHandler::kConnectionTimeoutMs,
+              EventStreamHandler::kHeartbeatIntervalMs);
+}

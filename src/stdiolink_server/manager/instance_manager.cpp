@@ -9,6 +9,7 @@
 #include <QUuid>
 
 #include "stdiolink/guard/process_guard_server.h"
+#include "stdiolink_server/utils/process_env_utils.h"
 
 namespace stdiolink_server {
 
@@ -139,13 +140,7 @@ QString InstanceManager::startInstance(const Project& project,
 
     // Add server directory to PATH so child process can find Qt DLLs
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    const QString appDir = QCoreApplication::applicationDirPath();
-    const QString pathValue = env.value("PATH");
-    if (!pathValue.isEmpty()) {
-        env.insert("PATH", appDir + ";" + pathValue);
-    } else {
-        env.insert("PATH", appDir);
-    }
+    prependDirToPath(QCoreApplication::applicationDirPath(), env);
     proc->setProcessEnvironment(env);
 
     const QString logPath = logsDir + "/" + project.id + ".log";

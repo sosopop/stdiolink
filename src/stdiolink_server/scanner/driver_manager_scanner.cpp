@@ -11,6 +11,7 @@
 
 #include "stdiolink/platform/platform_utils.h"
 #include "stdiolink/protocol/meta_types.h"
+#include "stdiolink_server/utils/process_env_utils.h"
 
 namespace stdiolink_server {
 
@@ -84,13 +85,7 @@ bool DriverManagerScanner::tryExportMeta(const QString& executable,
     
     // Add application directory to PATH so driver can find Qt DLLs
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    QString appDir = QCoreApplication::applicationDirPath();
-    QString pathValue = env.value("PATH");
-    if (!pathValue.isEmpty()) {
-        env.insert("PATH", appDir + ";" + pathValue);
-    } else {
-        env.insert("PATH", appDir);
-    }
+    prependDirToPath(QCoreApplication::applicationDirPath(), env);
     proc.setProcessEnvironment(env);
     
     proc.start();

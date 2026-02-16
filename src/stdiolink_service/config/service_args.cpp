@@ -117,6 +117,10 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
     return result;
 }
 
+namespace {
+constexpr qint64 kMaxConfigFileBytes = 1 * 1024 * 1024; // 1MB
+} // namespace
+
 QJsonObject ServiceArgs::loadConfigFile(const QString& filePath, QString& error) {
     QFile file;
     if (filePath == "-") {
@@ -132,7 +136,37 @@ QJsonObject ServiceArgs::loadConfigFile(const QString& filePath, QString& error)
         }
     }
 
-    const QByteArray data = file.readAll();
+    const qint64 fileSize = file.size();
+    if (fileSize > kMaxConfigFileBytes) {
+        if (filePath == "-") {
+            error = QString("config from stdin too large (limit %1 bytes)")
+                        .arg(kMaxConfigFileBytes);
+        } else {
+            error = QString("config file too large (%1 bytes, limit %2)")
+                        .arg(fileSize)
+                        .arg(kMaxConfigFileBytes);
+        }
+        return {};
+    }
+
+    // For sequential devices (pipes, stdin) file.size() is unreliable
+    // (typically returns 0). Use incremental reading with a hard cap
+    // to avoid unbounded memory allocation.
+    QByteArray data;
+    if (file.isSequential()) {
+        constexpr int kChunkSize = 64 * 1024;
+        while (!file.atEnd()) {
+            data.append(file.read(kChunkSize));
+            if (data.size() > kMaxConfigFileBytes) {
+                file.close();
+                error = QString("config input too large (limit %1 bytes)")
+                            .arg(kMaxConfigFileBytes);
+                return {};
+            }
+        }
+    } else {
+        data = file.readAll();
+    }
     file.close();
 
     QJsonParseError parseError;

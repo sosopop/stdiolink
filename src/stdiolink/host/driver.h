@@ -48,6 +48,8 @@ public:
     void setGuardNameForTesting(const QString& name) { m_guardNameOverride = name; }
 #endif
 
+    static constexpr qint64 kMaxOutputBufferBytes = 8 * 1024 * 1024; // 8MB
+
 private:
     QProcess m_proc;
     QByteArray m_buf;

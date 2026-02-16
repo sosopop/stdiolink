@@ -4,8 +4,8 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QSysInfo>
-#include <QTextStream>
 #include <QThread>
 
 #include "http/driverlab_ws_handler.h"
@@ -23,13 +23,16 @@ bool isValidServiceId(const QString& id) {
 }
 
 bool writeTextFile(const QString& path, const QString& content) {
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
         return false;
     }
-    QTextStream out(&file);
-    out << content;
-    return file.error() == QFile::NoError;
+    const QByteArray data = content.toUtf8();
+    if (file.write(data) != data.size()) {
+        file.cancelWriting();
+        return false;
+    }
+    return file.commit();
 }
 
 QString templateIndexJs(const QString& templateType) {

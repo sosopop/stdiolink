@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QRegularExpression>
+#include <QSaveFile>
 
 #include "config/service_config_validator.h"
 
@@ -142,14 +143,23 @@ bool ProjectManager::saveProject(const QString& projectsDir,
     }
 
     const QString filePath = projectsDir + "/" + project.id + ".json";
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    QSaveFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
         error = "cannot write file: " + filePath;
         return false;
     }
 
-    const QJsonDocument doc(project.toJson());
-    file.write(doc.toJson(QJsonDocument::Indented));
+    const QByteArray data = QJsonDocument(project.toJson()).toJson(QJsonDocument::Indented);
+    if (file.write(data) != data.size()) {
+        file.cancelWriting();
+        error = "write failed (incomplete): " + filePath;
+        return false;
+    }
+
+    if (!file.commit()) {
+        error = "atomic commit failed: " + filePath;
+        return false;
+    }
 
     error.clear();
     return true;

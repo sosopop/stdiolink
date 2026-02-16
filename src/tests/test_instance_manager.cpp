@@ -13,6 +13,7 @@
 
 #include "stdiolink_server/config/server_config.h"
 #include "stdiolink_server/manager/instance_manager.h"
+#include "stdiolink_server/utils/process_env_utils.h"
 
 using namespace stdiolink_server;
 
@@ -240,4 +241,20 @@ TEST(InstanceManagerTest, StartFailsForInvalidProjectAndMissingServiceDir) {
     error.clear();
     EXPECT_TRUE(mgr.startInstance(validProject, dataRoot + "/services/missing", error).isEmpty());
     EXPECT_FALSE(error.isEmpty());
+}
+
+// M72_R01 — PATH uses platform list separator
+TEST(InstanceManagerTest, M72_R01_PathUsesPlatformListSeparator) {
+    // Verify prependDirToPath uses QDir::listSeparator()
+    QProcessEnvironment env;
+    env.insert("PATH", "/usr/bin");
+    stdiolink_server::prependDirToPath("/my/dir", env);
+    const QString expected = QStringLiteral("/my/dir") + QDir::listSeparator() + QStringLiteral("/usr/bin");
+    EXPECT_EQ(env.value("PATH"), expected);
+}
+
+TEST(InstanceManagerTest, M72_R01_PathPrependToEmptyPath) {
+    QProcessEnvironment env;
+    stdiolink_server::prependDirToPath("/my/dir", env);
+    EXPECT_EQ(env.value("PATH"), "/my/dir");
 }

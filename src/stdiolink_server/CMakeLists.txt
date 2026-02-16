@@ -19,6 +19,7 @@ set(STDIOLINK_SERVER_SOURCES
     http/driverlab_ws_handler.cpp
     http/driverlab_ws_connection.cpp
     server_manager.cpp
+    utils/process_env_utils.cpp
 )
 
 set(STDIOLINK_SERVER_HEADERS
@@ -44,6 +45,7 @@ set(STDIOLINK_SERVER_HEADERS
     http/driverlab_ws_connection.h
     http/api_router.h
     server_manager.h
+    utils/process_env_utils.h
 )
 
 add_executable(stdiolink_server

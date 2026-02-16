@@ -11,6 +11,8 @@ namespace stdiolink_service {
 
 namespace {
 
+constexpr qint64 kMaxOutputBufferBytes = 8 * 1024 * 1024; // 8MB
+
 struct ProcessHandleData {
     JSContext* ctx = nullptr;
     QProcess* proc = nullptr;
@@ -501,12 +503,54 @@ JSValue jsExecAsync(JSContext* ctx, JSValueConst,
     if (!cwd.isEmpty()) proc->setWorkingDirectory(cwd);
     proc->setProcessEnvironment(env);
 
-    // Accumulate stdout/stderr for execAsync
-    QObject::connect(proc, &QProcess::readyReadStandardOutput, [h]() {
+    // Accumulate stdout/stderr for execAsync (with overflow protection)
+    QObject::connect(proc, &QProcess::readyReadStandardOutput, [h, ctx]() {
         h->capturedStdout.append(h->proc->readAllStandardOutput());
+        if (h->capturedStdout.size() > kMaxOutputBufferBytes) {
+            if (JS_IsUndefined(h->reject)) return;
+            h->running = false;
+            h->exitNotified = true;
+
+            JSValue rej = h->reject;
+            JS_FreeValue(ctx, h->resolve);
+            h->resolve = JS_UNDEFINED;
+            h->reject = JS_UNDEFINED;
+
+            h->proc->kill();
+
+            JSValue errStr = JS_NewString(ctx,
+                "execAsync: stdout buffer overflow (limit 8MB)");
+            JSValue args[1] = {errStr};
+            JSValue ret = JS_Call(ctx, rej, JS_UNDEFINED, 1, args);
+            JS_FreeValue(ctx, ret);
+            JS_FreeValue(ctx, errStr);
+            JS_FreeValue(ctx, rej);
+            cleanupExecAsyncHandle(h);
+        }
     });
-    QObject::connect(proc, &QProcess::readyReadStandardError, [h]() {
+    QObject::connect(proc, &QProcess::readyReadStandardError, [h, ctx]() {
         h->capturedStderr.append(h->proc->readAllStandardError());
+        if (h->capturedStderr.size() > kMaxOutputBufferBytes) {
+            if (JS_IsUndefined(h->reject)) return;
+            h->running = false;
+            h->exitNotified = true;
+
+            JSValue rej = h->reject;
+            JS_FreeValue(ctx, h->resolve);
+            h->resolve = JS_UNDEFINED;
+            h->reject = JS_UNDEFINED;
+
+            h->proc->kill();
+
+            JSValue errStr = JS_NewString(ctx,
+                "execAsync: stderr buffer overflow (limit 8MB)");
+            JSValue args[1] = {errStr};
+            JSValue ret = JS_Call(ctx, rej, JS_UNDEFINED, 1, args);
+            JS_FreeValue(ctx, ret);
+            JS_FreeValue(ctx, errStr);
+            JS_FreeValue(ctx, rej);
+            cleanupExecAsyncHandle(h);
+        }
     });
 
     // On finished → resolve

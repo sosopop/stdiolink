@@ -28,10 +28,20 @@ namespace stdiolink_server {
 
 namespace {
 
+constexpr qint64 kMaxRequestBodyBytes = 1 * 1024 * 1024; // 1MB
+
 bool parseJsonObjectBody(const QHttpServerRequest& req,
                          QJsonObject& out,
-                         QString& error) {
+                         QString& error,
+                         bool* payloadTooLarge = nullptr) {
     const QByteArray body = req.body();
+
+    if (body.size() > kMaxRequestBodyBytes) {
+        error = "request body too large (limit 1MB)";
+        if (payloadTooLarge) *payloadTooLarge = true;
+        return false;
+    }
+
     if (body.trimmed().isEmpty()) {
         out = QJsonObject();
         error.clear();
@@ -48,6 +58,13 @@ bool parseJsonObjectBody(const QHttpServerRequest& req,
     out = doc.object();
     error.clear();
     return true;
+}
+
+QHttpServerResponse bodyParseErrorResponse(const QString& error, bool tooLarge) {
+    if (tooLarge) {
+        return errorResponse(static_cast<QHttpServerResponse::StatusCode>(413), error);
+    }
+    return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
 }
 
 QJsonObject manifestToJson(const stdiolink_service::ServiceManifest& manifest) {
@@ -150,22 +167,40 @@ bool loadProjectFromFile(const QString& filePath,
     return true;
 }
 
+constexpr qint64 kMaxTailReadBytes = 4 * 1024 * 1024; // 4MB window
+
 QJsonArray readTailLines(const QString& path, int maxLines) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         return {};
     }
 
+    const qint64 fileSize = file.size();
+    const qint64 start = std::max(static_cast<qint64>(0), fileSize - kMaxTailReadBytes);
+    if (start > 0) {
+        file.seek(start);
+    }
+
     const QByteArray raw = file.readAll();
     const QList<QByteArray> all = raw.split('\n');
 
-    const int start = std::max(0, static_cast<int>(all.size()) - maxLines - 1);
-    QJsonArray out;
-    for (int i = start; i < all.size(); ++i) {
+    // If we seeked into the middle, discard the first (potentially incomplete) line
+    const int firstLine = (start > 0) ? 1 : 0;
+
+    // Collect non-empty lines from the tail
+    QVector<QString> lines;
+    for (int i = firstLine; i < all.size(); ++i) {
         const QByteArray line = all[i].trimmed();
         if (!line.isEmpty()) {
-            out.append(QString::fromUtf8(line));
+            lines.append(QString::fromUtf8(line));
         }
+    }
+
+    // Keep only the last maxLines
+    const int offset = std::max(0, static_cast<int>(lines.size()) - maxLines);
+    QJsonArray out;
+    for (int i = offset; i < lines.size(); ++i) {
+        out.append(lines[i]);
     }
     return out;
 }
@@ -430,8 +465,9 @@ QHttpServerResponse ApiRouter::handleServiceDetail(const QString& id,
 QHttpServerResponse ApiRouter::handleServiceScan(const QHttpServerRequest& req) {
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     bool revalidateProjects = true;
@@ -489,8 +525,9 @@ QHttpServerResponse ApiRouter::handleServiceScan(const QHttpServerRequest& req) 
 QHttpServerResponse ApiRouter::handleServiceCreate(const QHttpServerRequest& req) {
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     ServerManager::ServiceCreateRequest createReq;
@@ -693,8 +730,9 @@ QHttpServerResponse ApiRouter::handleServiceFileWrite(const QString& id,
     }
 
     QJsonObject body;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (!body.contains("content") || !body.value("content").isString()) {
@@ -779,8 +817,9 @@ QHttpServerResponse ApiRouter::handleServiceFileCreate(const QString& id,
     }
 
     QJsonObject body;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     const QByteArray content = body.value("content").toString().toUtf8();
@@ -852,8 +891,9 @@ QHttpServerResponse ApiRouter::handleValidateSchema(const QString& id,
 
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (!body.contains("schema") || !body.value("schema").isObject()) {
@@ -914,8 +954,9 @@ QHttpServerResponse ApiRouter::handleValidateConfig(const QString& id,
 
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (!body.contains("config") || !body.value("config").isObject()) {
@@ -1023,8 +1064,9 @@ QHttpServerResponse ApiRouter::handleProjectDetail(const QString& id,
 QHttpServerResponse ApiRouter::handleProjectCreate(const QHttpServerRequest& req) {
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (!body.value("id").isString()) {
@@ -1071,8 +1113,9 @@ QHttpServerResponse ApiRouter::handleProjectUpdate(const QString& id,
 
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (body.contains("id") && body.value("id").isString() && body.value("id").toString() != id) {
@@ -1131,8 +1174,9 @@ QHttpServerResponse ApiRouter::handleProjectValidate(const QString& id,
 
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (!body.value("config").isObject()) {
@@ -1302,8 +1346,9 @@ QHttpServerResponse ApiRouter::handleProjectEnabled(const QString& id,
 
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     if (!body.contains("enabled") || !body.value("enabled").isBool()) {
@@ -1506,8 +1551,9 @@ QHttpServerResponse ApiRouter::handleDriverList(const QHttpServerRequest& req) {
 QHttpServerResponse ApiRouter::handleDriverScan(const QHttpServerRequest& req) {
     QJsonObject body;
     QString error;
-    if (!parseJsonObjectBody(req, body, error)) {
-        return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
+    bool tooLarge = false;
+    if (!parseJsonObjectBody(req, body, error, &tooLarge)) {
+        return bodyParseErrorResponse(error, tooLarge);
     }
 
     bool refreshMeta = true;
@@ -1648,6 +1694,15 @@ QHttpServerResponse ApiRouter::handleInstanceProcessTree(const QString& id,
                                                           const QHttpServerRequest& req) {
     Q_UNUSED(req);
 
+    if (!ProcessMonitor::isSupported()) {
+        return jsonResponse(QJsonObject{
+            {"error", "process monitoring not supported on this platform"},
+            {"code", "PROCESS_MONITOR_UNSUPPORTED"},
+            {"supported", false},
+            {"platform", QSysInfo::productType()}
+        }, QHttpServerResponse::StatusCode::NotImplemented);
+    }
+
     const Instance* inst = m_manager->instanceManager()->getInstance(id);
     if (!inst) {
         return errorResponse(QHttpServerResponse::StatusCode::NotFound, "instance not found");
@@ -1669,6 +1724,15 @@ QHttpServerResponse ApiRouter::handleInstanceProcessTree(const QString& id,
 
 QHttpServerResponse ApiRouter::handleInstanceResources(const QString& id,
                                                         const QHttpServerRequest& req) {
+    if (!ProcessMonitor::isSupported()) {
+        return jsonResponse(QJsonObject{
+            {"error", "process monitoring not supported on this platform"},
+            {"code", "PROCESS_MONITOR_UNSUPPORTED"},
+            {"supported", false},
+            {"platform", QSysInfo::productType()}
+        }, QHttpServerResponse::StatusCode::NotImplemented);
+    }
+
     const Instance* inst = m_manager->instanceManager()->getInstance(id);
     if (!inst) {
         return errorResponse(QHttpServerResponse::StatusCode::NotFound, "instance not found");

@@ -13,6 +13,9 @@ class ProcessMonitor {
 public:
     ProcessMonitor() = default;
 
+    /// Returns true if process monitoring is supported on this platform
+    static bool isSupported();
+
     /// Get the full process tree rooted at rootPid (with resource info)
     ProcessTreeNode getProcessTree(qint64 rootPid);
 

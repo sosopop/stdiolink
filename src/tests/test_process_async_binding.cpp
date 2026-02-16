@@ -246,6 +246,30 @@ TEST_F(JsProcessAsyncTest, SpawnUnknownOptionThrows) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
 }
 
+// ── Output buffer overflow ──
+
+TEST_F(JsProcessAsyncTest, M72_R10_ExecAsyncOutputOverflowRejects) {
+    const QString floodStub = QCoreApplication::applicationDirPath() + "/test_output_flood_stub";
+    if (!QFileInfo::exists(floodStub)) {
+        GTEST_SKIP() << "test_output_flood_stub not found";
+    }
+    // Request 9MB of stdout output (exceeds 8MB limit)
+    int ret = runScript(
+        QString(
+            "import { execAsync } from 'stdiolink/process';\n"
+            "try {\n"
+            "  await execAsync('%1', ['--flood-stdout=9437184']);\n"
+            "  globalThis.ok = 0;\n"
+            "} catch (e) {\n"
+            "  const msg = (typeof e === 'string') ? e : (e.message || '');\n"
+            "  globalThis.ok = msg.includes('overflow') ? 1 : 0;\n"
+            "}\n"
+        ).arg(floodStub).toStdString().c_str()
+    );
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
 // ── Post-exit onExit registration ──
 
 TEST_F(JsProcessAsyncTest, SpawnOnExitAfterExitFiresImmediately) {

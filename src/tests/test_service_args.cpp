@@ -192,3 +192,40 @@ TEST_F(ServiceArgsTest, VersionFlag) {
     auto result = ServiceArgs::parse(args);
     EXPECT_TRUE(result.version);
 }
+
+// M72_R16 — loadConfigFile rejects file exceeding 1MB limit
+TEST_F(ServiceArgsTest, M72_R16_LoadConfigFileTooLargeRejected) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("huge.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    // Write a valid JSON object larger than 1MB
+    f.write("{\"data\":\"");
+    const QByteArray filler(1024 * 1024 + 100, 'A');
+    f.write(filler);
+    f.write("\"}");
+    f.close();
+
+    QString err;
+    auto obj = ServiceArgs::loadConfigFile(path, err);
+    EXPECT_FALSE(err.isEmpty());
+    EXPECT_TRUE(err.contains("too large"));
+    EXPECT_TRUE(obj.isEmpty());
+}
+
+// M72_R17 — loadConfigFile accepts file just under 1MB limit
+TEST_F(ServiceArgsTest, M72_R17_LoadConfigFileUnderLimitAccepted) {
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QString path = tmpDir.filePath("ok.json");
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+    f.write(R"({"port": 3000})");
+    f.close();
+
+    QString err;
+    auto obj = ServiceArgs::loadConfigFile(path, err);
+    EXPECT_TRUE(err.isEmpty()) << err.toStdString();
+    EXPECT_EQ(obj["port"].toInt(), 3000);
+}

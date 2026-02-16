@@ -109,6 +109,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_handler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_connection.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/server_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/utils/process_env_utils.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
@@ -210,3 +211,14 @@ set_target_properties(test_guard_stub PROPERTIES
 )
 
 add_dependencies(stdiolink_tests test_guard_stub)
+
+# test_output_flood_stub (用于 P0-4 输出缓冲上限测试的大输出桩进程)
+add_executable(test_output_flood_stub test_output_flood_stub_main.cpp)
+
+target_link_libraries(test_output_flood_stub PRIVATE Qt6::Core)
+
+set_target_properties(test_output_flood_stub PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_output_flood_stub)

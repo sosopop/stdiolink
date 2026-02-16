@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
 #include <QCoreApplication>
+#include <QFile>
+#include <QLocalServer>
 #include <QLocalSocket>
 #include <QProcess>
 #include <QRegularExpression>
@@ -190,6 +192,39 @@ TEST(ProcessGuard, T13_StartFromArgsEmptyGuard) {
     auto client = ProcessGuardClient::startFromArgs(
         {"app", "--guard="});
     EXPECT_EQ(client, nullptr);
+}
+
+// M72_R13 — Stale socket recovery: server can start after removing stale socket
+TEST(ProcessGuard, M72_R13_StaleSocketRecovery) {
+#ifdef Q_OS_WIN
+    GTEST_SKIP() << "Windows named pipes do not leave stale sockets";
+#endif
+    const QString fixedName = "stdiolink_guard_stale_test_m72";
+
+    // Ensure no leftover from previous runs
+    QLocalServer::removeServer(fixedName);
+
+    // Create a stale socket file by listening with a raw QLocalServer,
+    // then forcefully leaving the socket file behind.
+    {
+        QLocalServer rawServer;
+        ASSERT_TRUE(rawServer.listen(fixedName));
+        // Get the socket path before closing
+        const QString socketPath = rawServer.fullServerName();
+        rawServer.close();
+        // Re-create a dummy file at the socket path to simulate a stale socket
+        // (rawServer.close() removes it, so we put it back)
+        QFile dummy(socketPath);
+        ASSERT_TRUE(dummy.open(QIODevice::WriteOnly));
+        dummy.write("stale");
+        dummy.close();
+    }
+
+    // Now start ProcessGuardServer with the same name — should succeed
+    // because the P1-3 fix handles AddressInUseError by calling removeServer + retry
+    ProcessGuardServer server;
+    EXPECT_TRUE(server.start(fixedName));
+    EXPECT_TRUE(server.isListening());
 }
 
 // T14 — 多客户端连接同一 server

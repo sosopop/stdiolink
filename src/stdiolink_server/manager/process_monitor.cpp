@@ -158,6 +158,8 @@ void ProcessMonitor::collectFamily(qint64 pid, QVector<ProcessInfo>& out,
 
 #if defined(Q_OS_MACOS)
 
+bool ProcessMonitor::isSupported() { return true; }
+
 ProcessInfo ProcessMonitor::readProcessInfo(qint64 pid) {
     ProcessInfo info;
     info.pid = pid;
@@ -270,6 +272,8 @@ QVector<qint64> ProcessMonitor::getChildPids(qint64 pid) {
 }
 
 #elif defined(Q_OS_LINUX)
+
+bool ProcessMonitor::isSupported() { return true; }
 
 ProcessInfo ProcessMonitor::readProcessInfo(qint64 pid) {
     ProcessInfo info;
@@ -426,6 +430,8 @@ QVector<qint64> ProcessMonitor::getChildPids(qint64 pid) {
 
 #else
 // Windows / other platforms: stub implementation
+
+bool ProcessMonitor::isSupported() { return false; }
 
 ProcessInfo ProcessMonitor::readProcessInfo(qint64 pid) {
     ProcessInfo info;

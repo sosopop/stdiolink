@@ -126,6 +126,16 @@ void Driver::pumpStdout() {
 
     m_buf.append(m_proc.readAllStandardOutput());
 
+    if (m_buf.size() > kMaxOutputBufferBytes) {
+        pushError(1002, QJsonObject{
+                            {"message", "output buffer overflow"},
+                            {"channel", "stdout"},
+                            {"limit", kMaxOutputBufferBytes},
+                        });
+        m_buf.clear();
+        return;
+    }
+
     QByteArray line;
     while (tryReadLine(line)) {
         Message msg;

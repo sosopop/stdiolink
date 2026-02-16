@@ -19,6 +19,8 @@
 #include <QUrlQuery>
 
 #include "stdiolink_server/http/api_router.h"
+#include "stdiolink_server/http/event_stream_handler.h"
+#include "stdiolink_server/manager/process_monitor.h"
 #include "stdiolink_server/server_manager.h"
 
 using namespace stdiolink_server;
@@ -2085,4 +2087,324 @@ TEST(ApiRouterTest, ServiceDetailIncludesConfigSchemaFieldsViaHttp) {
     ASSERT_TRUE(parseJsonObject(body, obj));
     EXPECT_TRUE(obj.contains("configSchemaFields"));
     EXPECT_TRUE(obj.value("configSchemaFields").isArray());
+}
+
+// M72_R07 — Request body exceeding 1MB limit returns 413
+TEST(ApiRouterTest, M72_R07_RequestBodyTooLargeReturns413) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    // Build a JSON body > 1MB
+    const QByteArray filler(1024 * 1024 + 100, 'A');
+    const QByteArray largeBody = "{\"id\":\"x\",\"name\":\"" + filler + "\",\"version\":\"1.0.0\"}";
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services"),
+                            largeBody,
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 413);
+
+    QJsonObject obj;
+    if (parseJsonObject(body, obj)) {
+        EXPECT_TRUE(obj.value("error").toString().contains("too large"));
+    }
+}
+
+// M72_R06 — Bounded tail read: large log file returns only tail lines
+TEST(ApiRouterTest, M72_R06_BoundedTailReadLargeLogFile) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    // Write a log file with many lines
+    {
+        QFile logFile(root + "/logs/p1.log");
+        ASSERT_TRUE(logFile.open(QIODevice::WriteOnly));
+        for (int i = 1; i <= 200; ++i) {
+            logFile.write(QString("log line %1\n").arg(i).toUtf8());
+        }
+    }
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Request only 5 lines — should return exactly 5
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/projects/p1/logs?lines=5"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("lines").toArray().size(), 5);
+
+    // The last line should be "log line 200"
+    const QJsonArray lines = obj.value("lines").toArray();
+    EXPECT_TRUE(lines.last().toString().contains("200"));
+}
+
+// M72_R11 — ProcessMonitor::isSupported returns consistent value
+TEST(ApiRouterTest, M72_R11_ProcessMonitorIsSupportedConsistent) {
+    // On macOS/Linux isSupported() should return true
+    // On other platforms it returns false
+    // Just verify it doesn't crash and returns a bool
+    const bool supported = ProcessMonitor::isSupported();
+#if defined(Q_OS_MACOS) || defined(Q_OS_LINUX)
+    EXPECT_TRUE(supported);
+#else
+    Q_UNUSED(supported);
+#endif
+}
+
+// M72_R12 — ProcessMonitor endpoint returns correct response on all platforms
+TEST(ApiRouterTest, M72_R12_ProcessMonitorEndpointResponse) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    // Request process-tree for a nonexistent instance
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/instances/fake-id/process-tree"),
+                            QByteArray(), status, body, error))
+        << qPrintable(error);
+
+    if (ProcessMonitor::isSupported()) {
+        // Supported platform: should get 404 (instance not found), not 501
+        EXPECT_EQ(status, 404);
+    } else {
+        // Unsupported platform: should get 501 with structured body
+        EXPECT_EQ(status, 501);
+        ASSERT_TRUE(parseJsonObject(body, obj));
+        EXPECT_FALSE(obj.value("error").toString().isEmpty());
+        EXPECT_EQ(obj.value("code").toString(), "PROCESS_MONITOR_UNSUPPORTED");
+        EXPECT_FALSE(obj.value("supported").toBool());
+        EXPECT_FALSE(obj.value("platform").toString().isEmpty());
+    }
+
+    // Also test the resources endpoint
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/instances/fake-id/resources"),
+                            QByteArray(), status, body, error))
+        << qPrintable(error);
+
+    if (ProcessMonitor::isSupported()) {
+        EXPECT_EQ(status, 404);
+    } else {
+        EXPECT_EQ(status, 501);
+        ASSERT_TRUE(parseJsonObject(body, obj));
+        EXPECT_FALSE(obj.value("error").toString().isEmpty());
+        EXPECT_EQ(obj.value("code").toString(), "PROCESS_MONITOR_UNSUPPORTED");
+        EXPECT_FALSE(obj.value("supported").toBool());
+        EXPECT_FALSE(obj.value("platform").toString().isEmpty());
+    }
+}
+
+// M72_R15 — Request body too large on project create returns 413
+TEST(ApiRouterTest, M72_R15_ProjectCreateBodyTooLargeReturns413) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    // Build a JSON body > 1MB for project create
+    const QByteArray filler(1024 * 1024 + 100, 'X');
+    const QByteArray largeBody = "{\"id\":\"p-big\",\"name\":\"" + filler + "\"}";
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/projects"),
+                            largeBody,
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 413);
+
+    QJsonObject obj;
+    if (parseJsonObject(body, obj)) {
+        EXPECT_TRUE(obj.value("error").toString().contains("too large"));
+    }
+}
+
+// M72_R14 — SSE connection lifecycle: activeConnectionCount tracks open connections
+TEST(ApiRouterTest, M72_R14_SseConnectionLifecycle) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    auto* handler = manager.eventStreamHandler();
+    ASSERT_NE(handler, nullptr);
+    EXPECT_EQ(handler->activeConnectionCount(), 0);
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    // Open an SSE connection
+    QNetworkAccessManager nam;
+    QNetworkRequest req(QUrl(base + "/api/events/stream"));
+    QNetworkReply* reply = nam.get(req);
+    ASSERT_NE(reply, nullptr);
+
+    // Wait for headers (connection established)
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    QObject::connect(reply, &QNetworkReply::metaDataChanged, &loop, &QEventLoop::quit);
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    timeout.start(3000);
+    loop.exec();
+
+    if (!timeout.isActive()) {
+        reply->abort();
+        reply->deleteLater();
+        GTEST_SKIP() << "SSE connection timeout";
+    }
+    timeout.stop();
+
+    // Connection should now be tracked
+    EXPECT_EQ(handler->activeConnectionCount(), 1);
+
+    // Close all connections and verify count drops to 0
+    handler->closeAllConnections();
+    EXPECT_EQ(handler->activeConnectionCount(), 0);
+
+    reply->abort();
+    reply->deleteLater();
 }

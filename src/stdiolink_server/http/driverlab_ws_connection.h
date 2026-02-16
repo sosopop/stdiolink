@@ -51,6 +51,9 @@ private:
     bool m_metaSent = false;
     bool m_closing = false;
 
+    // Output buffer limit
+    static constexpr qint64 kMaxOutputBufferBytes = 8 * 1024 * 1024; // 8MB
+
     // OneShot crash backoff
     static constexpr int kMaxRapidCrashes = 3;
     static constexpr int kRapidCrashWindowMs = 2000;
