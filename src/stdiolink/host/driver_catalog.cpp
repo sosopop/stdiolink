@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 
 #include "stdiolink/platform/platform_utils.h"
@@ -75,10 +76,13 @@ QString DriverScanner::findExecutableInDirectory(const QString& dirPath) {
     QStringList exeFilters;
     exeFilters << PlatformUtils::executableFilter();
     const QStringList exeFiles = dir.entryList(exeFilters, QDir::Files | QDir::Executable);
-    if (exeFiles.isEmpty()) {
-        return {};
+    for (const QString& file : exeFiles) {
+        const QString stem = QFileInfo(file).completeBaseName();
+        if (PlatformUtils::isDriverExecutableName(stem)) {
+            return dir.absoluteFilePath(file);
+        }
     }
-    return dir.absoluteFilePath(exeFiles.first());
+    return {};
 }
 
 void DriverCatalog::replaceAll(const QHash<QString, DriverConfig>& drivers) {

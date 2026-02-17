@@ -54,7 +54,7 @@ protected:
     QString createDriverDirWithBinary(const QString& name, const QString& sourceBinary) {
         const QString dir = driversDir + "/" + name;
         EXPECT_TRUE(QDir().mkpath(dir));
-        const QString targetBin = dir + "/driver_under_test" + exeSuffix();
+        const QString targetBin = dir + "/stdio.drv.driver_under_test" + exeSuffix();
         EXPECT_TRUE(copyExecutable(sourceBinary, targetBin));
         return dir;
     }
@@ -123,7 +123,7 @@ TEST_F(DriverManagerScannerTest, RefreshFailureKeepsOldMeta) {
     ASSERT_EQ(first.size(), 1);
     ASSERT_TRUE(QFileInfo::exists(dir + "/driver.meta.json"));
 
-    const QString oldBin = dir + "/driver_under_test" + exeSuffix();
+    const QString oldBin = dir + "/stdio.drv.driver_under_test" + exeSuffix();
     ASSERT_TRUE(QFile::remove(oldBin));
     ASSERT_TRUE(copyExecutable(failDriverPath, oldBin));
 
@@ -156,4 +156,29 @@ TEST_F(DriverManagerScannerTest, InvalidMetaIsSkippedWithoutMarkingFailed) {
     EXPECT_EQ(stats.newlyFailed, 0);
     EXPECT_TRUE(QFileInfo::exists(dir));
     EXPECT_FALSE(QFileInfo::exists(dir + ".failed"));
+}
+
+TEST_F(DriverManagerScannerTest, ValidMetaButNonConformingExeIsSkipped) {
+    const QString dir = createDriverDirWithBinary("no-prefix", metaDriverPath);
+
+    DriverManagerScanner scanner;
+    DriverManagerScanner::ScanStats stats1;
+    const auto first = scanner.scan(driversDir, false, &stats1);
+    ASSERT_EQ(first.size(), 1);
+    ASSERT_TRUE(QFileInfo::exists(dir + "/driver.meta.json"));
+
+    // Replace prefix-conforming exe with a non-conforming one
+    const QString goodBin = dir + "/stdio.drv.driver_under_test" + exeSuffix();
+    ASSERT_TRUE(QFile::remove(goodBin));
+    const QString badBin = dir + "/driver_no_prefix" + exeSuffix();
+    ASSERT_TRUE(copyExecutable(metaDriverPath, badBin));
+
+    DriverManagerScanner::ScanStats stats2;
+    const auto second = scanner.scan(driversDir, false, &stats2);
+
+    EXPECT_TRUE(second.isEmpty());
+    EXPECT_EQ(stats2.scanned, 1);
+    EXPECT_EQ(stats2.updated, 0);
+    EXPECT_EQ(stats2.newlyFailed, 0);
+    EXPECT_TRUE(QFileInfo::exists(dir));
 }

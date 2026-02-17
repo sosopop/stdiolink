@@ -2,8 +2,8 @@ import { openDriver } from "stdiolink";
 
 (async () => {
     // Update the binary path for your environment.
-    const drvA = await openDriver("./calculator_driver.exe");
-    const drvB = await openDriver("./calculator_driver.exe");
+    const drvA = await openDriver("./stdio.drv.calculator.exe");
+    const drvB = await openDriver("./stdio.drv.calculator.exe");
 
     const [a, b] = await Promise.all([
         drvA.add({ a: 10, b: 20 }),

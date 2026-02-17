@@ -9,7 +9,7 @@ function runEcho() {
 }
 
 function exportTypeScriptDeclaration() {
-    const runners = driverPathCandidates("calculator_driver").map((program) => {
+    const runners = driverPathCandidates("stdio.drv.calculator").map((program) => {
         return () => exec(program, ["--export-doc=ts"]);
     });
     return firstSuccess(runners);

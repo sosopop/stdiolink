@@ -39,4 +39,14 @@ STDIOLINK_API QString executablePath(const QString& dir, const QString& baseName
  */
 STDIOLINK_API QString executableFilter();
 
+/**
+ * Driver 可执行文件名前缀常量
+ */
+STDIOLINK_API QString driverExecutablePrefix();
+
+/**
+ * 判断 basename（不含扩展名）是否符合 Driver 命名规范
+ */
+STDIOLINK_API bool isDriverExecutableName(const QString& baseName);
+
 } // namespace stdiolink::PlatformUtils

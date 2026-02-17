@@ -3,7 +3,7 @@ import { startDriverAuto } from "../../shared/lib/runtime_utils.js";
 
 (async () => {
     const driver = new Driver();
-    const program = startDriverAuto(driver, "calculator_driver", ["--profile=keepalive"]);
+    const program = startDriverAuto(driver, "stdio.drv.calculator", ["--profile=keepalive"]);
     console.log("[M23] started:", program);
 
     const meta = driver.queryMeta(5000);

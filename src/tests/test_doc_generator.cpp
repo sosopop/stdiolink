@@ -359,7 +359,7 @@ TEST(DocGenerator, TypeScriptEmptyMeta) {
 
 TEST(DocGenerator, TypeScriptExportDocCli) {
     QString exe = PlatformUtils::executablePath(
-        QCoreApplication::applicationDirPath(), "calculator_driver");
+        QCoreApplication::applicationDirPath(), "stdio.drv.calculator");
     ASSERT_TRUE(QFileInfo::exists(exe));
 
     QProcess proc;

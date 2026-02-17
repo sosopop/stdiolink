@@ -6,7 +6,7 @@
   },
   "spawnDriver": {
     "type": "string",
-    "default": "calculator_driver",
+    "default": "stdio.drv.calculator",
     "description": "spawn 交互演示使用的驱动程序名称"
   }
 }

@@ -50,7 +50,7 @@ QString escapeJsString(const QString& s) {
 
 QString calculatorDriverPath() {
     return stdiolink::PlatformUtils::executablePath(
-        QCoreApplication::applicationDirPath(), "calculator_driver");
+        QCoreApplication::applicationDirPath(), "stdio.drv.calculator");
 }
 
 QString slowMetaDriverPath() {

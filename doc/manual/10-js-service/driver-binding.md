@@ -69,7 +69,7 @@ Task 由 `Driver.request()` 创建，不支持直接构造。
 
 ```js
 const d = new Driver();
-d.start('./calculator_driver');
+d.start('./stdio.drv.calculator');
 
 const task = d.request('add', { a: 10, b: 20 });
 const msg = task.waitNext(5000);

@@ -20,9 +20,9 @@ const outputDir = String(cfg.outputDir ?? "./output");
 const logger = createLogger({ service: "driver_pipeline" });
 
 async function openCalc() {
-    const driverPath = findDriverPath("calculator_driver");
+    const driverPath = findDriverPath("stdio.drv.calculator");
     if (!driverPath) {
-        throw new Error("calculator_driver not found");
+        throw new Error("stdio.drv.calculator not found");
     }
     return await openDriver(driverPath);
 }

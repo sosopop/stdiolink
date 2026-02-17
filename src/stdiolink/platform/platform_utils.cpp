@@ -46,4 +46,12 @@ QString executableFilter() {
 #endif
 }
 
+QString driverExecutablePrefix() {
+    return QStringLiteral("stdio.drv.");
+}
+
+bool isDriverExecutableName(const QString& baseName) {
+    return baseName.startsWith(driverExecutablePrefix());
+}
+
 } // namespace stdiolink::PlatformUtils

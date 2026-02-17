@@ -32,5 +32,6 @@ target_link_libraries(driver_modbusrtu PRIVATE stdiolink ${QT_LIBRARIES})
 
 # 设置输出目录
 set_target_properties(driver_modbusrtu PROPERTIES
+    OUTPUT_NAME "stdio.drv.modbusrtu"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

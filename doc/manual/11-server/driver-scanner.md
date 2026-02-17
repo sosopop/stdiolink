@@ -9,10 +9,10 @@
 ```
 drivers/
 ├── driver_modbusrtu/
-│   ├── driver_modbusrtu          # 可执行文件
-│   └── driver.meta.json          # 元数据（可自动导出）
+│   ├── stdio.drv.modbusrtu          # 可执行文件
+│   └── driver.meta.json                    # 元数据（可自动导出）
 ├── driver_3dvision/
-│   ├── driver_3dvision
+│   ├── stdio.drv.3dvision
 │   └── driver.meta.json
 └── driver_broken.failed/         # 导出失败，已隔离
     └── driver_broken

@@ -44,7 +44,7 @@ int readGlobalInt(JSContext* ctx, const char* key) {
 
 QString driverBinaryPath() {
     return stdiolink::PlatformUtils::executablePath(
-        QCoreApplication::applicationDirPath(), "calculator_driver");
+        QCoreApplication::applicationDirPath(), "stdio.drv.calculator");
 }
 
 QString escapeForSingleQuoteJs(const QString& s) {

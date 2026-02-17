@@ -401,16 +401,14 @@ if ($seedDemo) {
     }
 
     # Copy driver binaries into data_root/drivers/<name>/<name>.exe
-    # Scanner expects each driver in its own subdirectory
+    # Scanner expects each driver in its own subdirectory.
+    # 强制期规则：仅接受 basename 以 "stdio.drv." 开头的 Driver 可执行文件。
     Write-Host "Copying drivers into data_root/drivers..."
     $driversDest = Join-Path $packageDir "data_root/drivers"
     $driversCopied = 0
     foreach ($file in (Get-ChildItem -LiteralPath $binDir -File -Filter "*.exe")) {
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-        # Match demo drivers (*_driver) and production drivers (driver_*), skip test_*
-        $isDemoDriver = $stem -match '_driver$' -and -not $stem.StartsWith("test_")
-        $isProdDriver = $stem.StartsWith("driver_")
-        if ($isDemoDriver -or $isProdDriver) {
+        if ($stem.StartsWith("stdio.drv.")) {
             $driverSubDir = Join-Path $driversDest $stem
             New-Item -ItemType Directory -Path $driverSubDir -Force | Out-Null
             Copy-Item -LiteralPath $file.FullName -Destination $driverSubDir -Force

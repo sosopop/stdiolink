@@ -9,7 +9,7 @@
 ```js
 import { openDriver } from 'stdiolink';
 
-const calc = await openDriver('./calculator_driver');
+const calc = await openDriver('./stdio.drv.calculator');
 const result = await calc.add({ a: 5, b: 3 });
 console.log(result);  // { result: 8 }
 calc.$close();
@@ -66,7 +66,7 @@ Proxy 对象提供以下特殊字段：
 
 ```js
 try {
-    const calc = await openDriver('./calculator_driver');
+    const calc = await openDriver('./stdio.drv.calculator');
     const result = await calc.add({ a: 5, b: 3 });
     calc.$close();
 } catch (e) {

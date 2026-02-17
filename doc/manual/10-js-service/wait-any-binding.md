@@ -45,7 +45,7 @@ const result = await waitAny(tasks, timeoutMs?);
 import { Driver, waitAny } from "stdiolink";
 
 const d = new Driver();
-d.start("./calculator_driver");
+d.start("./stdio.drv.calculator");
 
 const task = d.request("batch", {
     operations: [

@@ -511,7 +511,7 @@ curl http://127.0.0.1:8080/api/drivers
   "drivers": [
     {
       "id": "driver_modbusrtu",
-      "program": "/opt/data/drivers/driver_modbusrtu/driver_modbusrtu",
+      "program": "/opt/data/drivers/driver_modbusrtu/stdio.drv.modbusrtu",
       "metaHash": "a3f2b1...",
       "name": "Modbus RTU Driver",
       "version": "1.0.0"

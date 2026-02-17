@@ -78,7 +78,7 @@ demo/
 - Instance 列表/终止/日志
 - Driver 扫描与 meta 刷新
 - `manual` / `fixed_rate` / `daemon` 调度行为
-- 启动脚本会将 `calculator_driver`、`driver_modbusrtu`、`driver_modbustcp`、`driver_3dvision` 复制到 demo `data_root/drivers/`（仅用于扫描演示，不自动执行）
+- 启动脚本会将 `stdio.drv.calculator`、`stdio.drv.modbusrtu`、`stdio.drv.modbustcp`、`stdio.drv.3dvision` 复制到 demo `data_root/drivers/`（仅用于扫描演示，不自动执行）
 
 ## 运行方式
 
@@ -87,8 +87,8 @@ demo/
 ./build/bin/demo_host.exe
 
 # 单独测试 Driver (Console 模式)
-./build/bin/calculator_driver.exe --help
-./build/bin/calculator_driver.exe add --a=10 --b=20
+./build/bin/stdio.drv.calculator.exe --help
+./build/bin/stdio.drv.calculator.exe add --a=10 --b=20
 
 # 运行 JS runtime 综合演示（构建后服务目录会复制到 bin/js_runtime_demo）
 ./build/bin/stdiolink_service.exe ./build/bin/js_runtime_demo/services/basic_demo

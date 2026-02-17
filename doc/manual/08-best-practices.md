@@ -65,7 +65,7 @@ d.terminate();  // 不要忘记
 
 ```js
 // 推荐
-const calc = await openDriver('./calculator_driver');
+const calc = await openDriver('./stdio.drv.calculator');
 const result = await calc.add({ a: 1, b: 2 });
 calc.$close();
 ```

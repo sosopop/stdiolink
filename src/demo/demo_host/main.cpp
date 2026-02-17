@@ -42,8 +42,8 @@ static void printJson(const QJsonObject& obj) {
 static void demoBasicUsage(const QString& path) {
     out() << "\n=== 1. Basic Usage ===\n";
     Driver d;
-    if (!d.start(path + "/calculator_driver.exe")) {
-        out() << "Failed to start calculator_driver\n";
+    if (!d.start(path + "/stdio.drv.calculator.exe")) {
+        out() << "Failed to start stdio.drv.calculator\n";
         return;
     }
 
@@ -60,7 +60,7 @@ static void demoBasicUsage(const QString& path) {
 static void demoEventStream(const QString& path) {
     out() << "\n=== 2. Event Stream ===\n";
     Driver d;
-    d.start(path + "/calculator_driver.exe");
+    d.start(path + "/stdio.drv.calculator.exe");
 
     QJsonArray ops;
     ops.append(QJsonObject{{"type", "add"}, {"a", 1}, {"b", 2}});
@@ -81,8 +81,8 @@ static void demoEventStream(const QString& path) {
 static void demoMultiDriver(const QString& path) {
     out() << "\n=== 3. Multi-Driver (waitAnyNext) ===\n";
     Driver d1, d2;
-    d1.start(path + "/calculator_driver.exe");
-    d2.start(path + "/device_simulator_driver.exe");
+    d1.start(path + "/stdio.drv.calculator.exe");
+    d2.start(path + "/stdio.drv.device-simulator.exe");
 
     QVector<Task> tasks;
     tasks << d1.request("statistics", QJsonObject{{"numbers", QJsonArray{1, 2, 3, 4, 5}}});
@@ -100,7 +100,7 @@ static void demoMultiDriver(const QString& path) {
 static void demoMetaQuery(const QString& path) {
     out() << "\n=== 4. Meta Query ===\n";
     Driver d;
-    d.start(path + "/calculator_driver.exe");
+    d.start(path + "/stdio.drv.calculator.exe");
 
     const auto* meta = d.queryMeta(5000);
     if (meta) {
@@ -118,7 +118,7 @@ static void demoMetaQuery(const QString& path) {
 static void demoFormGenerator(const QString& path) {
     out() << "\n=== 5. Form Generator ===\n";
     Driver d;
-    d.start(path + "/device_simulator_driver.exe");
+    d.start(path + "/stdio.drv.device-simulator.exe");
 
     const auto* meta = d.queryMeta(5000);
     if (meta) {

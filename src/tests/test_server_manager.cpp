@@ -128,7 +128,7 @@ TEST(ServerManagerTest, RescanDriversLoadsMeta) {
 
     const QString metaDriver = testBinaryPath("test_meta_driver");
     ASSERT_TRUE(QFileInfo::exists(metaDriver));
-    ASSERT_TRUE(copyExecutable(metaDriver, root + "/drivers/good/driver_under_test" + exeSuffix()));
+    ASSERT_TRUE(copyExecutable(metaDriver, root + "/drivers/good/stdio.drv.driver_under_test" + exeSuffix()));
 
     ServerConfig cfg;
     cfg.serviceProgram = testBinaryPath("test_service_stub");

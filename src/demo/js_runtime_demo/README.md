@@ -48,4 +48,4 @@ cd build/bin
 - driver_task starts calculator driver, queries meta, receives `batch` events, and prints one error response sample.
 - proxy_scheduler uses `openDriver`, shows parallel calls across two driver instances, and shows same-instance busy protection.
 - wait_any shows asynchronous multi-task event listening with intermediate event preservation.
-- process_types runs `exec` and exports TS declaration via `calculator_driver --export-doc=ts`.
+- process_types runs `exec` and exports TS declaration via `stdio.drv.calculator --export-doc=ts`.

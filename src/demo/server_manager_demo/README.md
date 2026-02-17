@@ -9,10 +9,10 @@ This demo is designed to exercise `stdiolink_server` features from M34-M38.
 - Instance lifecycle and logs (`/api/instances*`)
 - Driver scanning and refresh (`/api/drivers*`)
 - Demo driver staging (copy only, no execution):
-  - `calculator_driver`
-  - `driver_modbusrtu`
-  - `driver_modbustcp`
-  - `driver_3dvision`
+  - `stdio.drv.calculator`
+  - `stdio.drv.modbusrtu`
+  - `stdio.drv.modbustcp`
+  - `stdio.drv.3dvision`
 - Schedule modes:
   - `manual`
   - `fixed_rate`

@@ -14,7 +14,7 @@ import { execAsync, spawn } from "stdiolink/process";
 
 const cfg = getConfig();
 const outputDir = String(cfg.outputDir ?? "./output");
-const spawnDriver = String(cfg.spawnDriver ?? "calculator_driver");
+const spawnDriver = String(cfg.spawnDriver ?? "stdio.drv.calculator");
 
 const logger = createLogger({ service: "process_exec" });
 

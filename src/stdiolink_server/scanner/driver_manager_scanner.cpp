@@ -40,10 +40,16 @@ QString DriverManagerScanner::findDriverExecutable(const QString& dirPath) {
     QStringList filters;
     filters << stdiolink::PlatformUtils::executableFilter();
     const QStringList files = dir.entryList(filters, QDir::Files | QDir::Executable);
-    if (files.isEmpty()) {
-        return {};
+    for (const QString& file : files) {
+        const QString stem = QFileInfo(file).completeBaseName();
+        if (stdiolink::PlatformUtils::isDriverExecutableName(stem)) {
+            return dir.absoluteFilePath(file);
+        }
+        qWarning("Driver executable '%s' in '%s' does not match prefix '%s', skipped",
+                 qUtf8Printable(file), qUtf8Printable(dirPath),
+                 qUtf8Printable(stdiolink::PlatformUtils::driverExecutablePrefix()));
     }
-    return dir.absoluteFilePath(files.first());
+    return {};
 }
 
 QString DriverManagerScanner::computeMetaHash(const QByteArray& data) {
@@ -158,6 +164,13 @@ QHash<QString, stdiolink::DriverConfig> DriverManagerScanner::scan(const QString
         stdiolink::DriverConfig config;
         if (!loadMetaFile(metaPath, config)) {
             qWarning("Invalid driver meta, skip: %s", qUtf8Printable(metaPath));
+            continue;
+        }
+
+        if (config.program.isEmpty()) {
+            qWarning("Driver '%s' has meta but no %s executable, skip",
+                     qUtf8Printable(entry),
+                     qUtf8Printable(stdiolink::PlatformUtils::driverExecutablePrefix()));
             continue;
         }
 

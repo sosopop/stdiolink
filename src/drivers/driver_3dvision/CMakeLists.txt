@@ -11,5 +11,6 @@ target_link_libraries(driver_3dvision PRIVATE
 )
 
 set_target_properties(driver_3dvision PROPERTIES
+    OUTPUT_NAME "stdio.drv.3dvision"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

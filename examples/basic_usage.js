@@ -2,8 +2,8 @@ import { Driver } from "stdiolink";
 
 // Update the binary path for your environment.
 const d = new Driver();
-if (!d.start("./calculator_driver.exe", ["--profile=keepalive"])) {
-    throw new Error("failed to start calculator_driver");
+if (!d.start("./stdio.drv.calculator.exe", ["--profile=keepalive"])) {
+    throw new Error("failed to start stdio.drv.calculator");
 }
 
 const task = d.request("add", { a: 10, b: 20 });

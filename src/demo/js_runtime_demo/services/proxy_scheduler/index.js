@@ -2,8 +2,8 @@ import { openDriver } from "stdiolink";
 import { openDriverAuto } from "../../shared/lib/runtime_utils.js";
 
 (async () => {
-    const a = await openDriverAuto(openDriver, "calculator_driver");
-    const b = await openDriverAuto(openDriver, "calculator_driver");
+    const a = await openDriverAuto(openDriver, "stdio.drv.calculator");
+    const b = await openDriverAuto(openDriver, "stdio.drv.calculator");
 
     const [ra, rb] = await Promise.all([
         a.add({ a: 10, b: 20 }),

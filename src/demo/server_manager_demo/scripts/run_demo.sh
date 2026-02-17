@@ -49,10 +49,10 @@ copy_one_driver() {
 
 prepare_demo_drivers() {
     local bin_dir="$1"
-    copy_one_driver "${bin_dir}" "calculator_driver" "calculator_demo"
-    copy_one_driver "${bin_dir}" "driver_modbusrtu" "modbusrtu_demo"
-    copy_one_driver "${bin_dir}" "driver_modbustcp" "modbustcp_demo"
-    copy_one_driver "${bin_dir}" "driver_3dvision" "vision3d_demo"
+    copy_one_driver "${bin_dir}" "stdio.drv.calculator" "calculator_demo"
+    copy_one_driver "${bin_dir}" "stdio.drv.modbusrtu" "modbusrtu_demo"
+    copy_one_driver "${bin_dir}" "stdio.drv.modbustcp" "modbustcp_demo"
+    copy_one_driver "${bin_dir}" "stdio.drv.3dvision" "vision3d_demo"
 }
 
 BIN_DIR="$(find_bin_dir || true)"

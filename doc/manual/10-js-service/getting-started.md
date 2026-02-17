@@ -5,7 +5,7 @@
 ## 前置条件
 
 - 已构建 `stdiolink_service` 可执行文件
-- 已构建至少一个 Driver（如 `calculator_driver`）
+- 已构建至少一个 Driver（如 `stdio.drv.calculator`）
 
 ## 最小示例
 
@@ -33,7 +33,7 @@
 ```js
 import { openDriver } from 'stdiolink';
 
-const calc = await openDriver('./calculator_driver');
+const calc = await openDriver('./stdio.drv.calculator');
 const result = await calc.add({ a: 10, b: 20 });
 console.log('10 + 20 =', result.result);
 calc.$close();
@@ -79,7 +79,7 @@ calc.$close();
 
 ```bash
 stdiolink_service ./my_calc \
-    --config.driverPath=./calculator_driver \
+    --config.driverPath=./stdio.drv.calculator \
     --config.a=5 --config.b=3
 ```
 
