@@ -14,12 +14,11 @@ Options:
   --with-tests         Include test binaries in bin/
   --skip-build         Skip C++ build (assume build/bin already exists)
   --skip-webui         Skip WebUI build
-  --demo               Seed data_root with demo data (services/projects)
   -h, --help           Show this help
 
 Example:
   tools/publish_release.ps1 --build-dir build --output-dir release
-  tools/publish_release.ps1 --demo --name my_release
+  tools/publish_release.ps1 --name my_release
 "@ | Write-Host
 }
 
@@ -97,7 +96,6 @@ $packageName = ""
 $withTests = $false
 $skipBuild = $false
 $skipWebui = $false
-$seedDemo = $false
 
 for ($i = 0; $i -lt $args.Count; ) {
     $arg = [string]$args[$i]
@@ -144,11 +142,6 @@ for ($i = 0; $i -lt $args.Count; ) {
         }
         "--skip-webui" {
             $skipWebui = $true
-            $i += 1
-            continue
-        }
-        "--demo" {
-            $seedDemo = $true
             $i += 1
             continue
         }
@@ -222,7 +215,6 @@ Write-Host "  output root : $outputDirAbs"
 Write-Host "  package dir : $packageDir"
 Write-Host "  with tests  : $([int][bool]$withTests)"
 Write-Host "  skip webui  : $([int][bool]$skipWebui)"
-Write-Host "  seed demo   : $([int][bool]$seedDemo)"
 
 if (Test-Path -LiteralPath $packageDir) {
     Remove-Item -LiteralPath $packageDir -Recurse -Force
@@ -230,7 +222,6 @@ if (Test-Path -LiteralPath $packageDir) {
 
 $dirsToCreate = @(
     "bin",
-    "demo",
     "doc",
     "data_root/drivers",
     "data_root/services",
@@ -253,11 +244,16 @@ function Should-SkipBinary {
         [bool]$WithTests
     )
 
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($Name)
+
     if (-not $WithTests) {
-        $base = [System.IO.Path]::GetFileNameWithoutExtension($Name)
         if ($base -eq "stdiolink_tests" -or $base.StartsWith("test_") -or $base -eq "gtest") {
             return $true
         }
+    }
+
+    if ($base -eq "demo_host" -or $base -eq "driverlab") {
+        return $true
     }
 
     $lower = $Name.ToLowerInvariant()
@@ -345,35 +341,6 @@ foreach ($dir in $pluginDirs) {
     Write-Host "  + $($dir.Name)/"
 }
 
-Write-Host "Copying demo assets..."
-$binConfigDemo = Join-Path $binDir "config_demo"
-$srcConfigServices = Join-Path $rootDir "src/demo/config_demo/services"
-if (Test-Path -LiteralPath $binConfigDemo -PathType Container) {
-    Copy-DirClean -Source $binConfigDemo -Destination (Join-Path $packageDir "demo/config_demo")
-} elseif (Test-Path -LiteralPath $srcConfigServices -PathType Container) {
-    New-Item -ItemType Directory -Path (Join-Path $packageDir "demo/config_demo") -Force | Out-Null
-    Copy-DirClean -Source $srcConfigServices -Destination (Join-Path $packageDir "demo/config_demo/services")
-}
-
-$binJsRuntimeDemo = Join-Path $binDir "js_runtime_demo"
-$srcJsServices = Join-Path $rootDir "src/demo/js_runtime_demo/services"
-$srcJsShared = Join-Path $rootDir "src/demo/js_runtime_demo/shared"
-if (Test-Path -LiteralPath $binJsRuntimeDemo -PathType Container) {
-    Copy-DirClean -Source $binJsRuntimeDemo -Destination (Join-Path $packageDir "demo/js_runtime_demo")
-} elseif (Test-Path -LiteralPath $srcJsServices -PathType Container) {
-    New-Item -ItemType Directory -Path (Join-Path $packageDir "demo/js_runtime_demo") -Force | Out-Null
-    Copy-DirClean -Source $srcJsServices -Destination (Join-Path $packageDir "demo/js_runtime_demo/services")
-    Copy-DirClean -Source $srcJsShared -Destination (Join-Path $packageDir "demo/js_runtime_demo/shared")
-}
-
-$binServerManagerDemo = Join-Path $binDir "server_manager_demo"
-$srcServerManagerDemo = Join-Path $rootDir "src/demo/server_manager_demo"
-if (Test-Path -LiteralPath $binServerManagerDemo -PathType Container) {
-    Copy-DirClean -Source $binServerManagerDemo -Destination (Join-Path $packageDir "demo/server_manager_demo")
-} elseif (Test-Path -LiteralPath $srcServerManagerDemo -PathType Container) {
-    Copy-DirClean -Source $srcServerManagerDemo -Destination (Join-Path $packageDir "demo/server_manager_demo")
-}
-
 Write-Host "Copying docs..."
 Copy-FileIfExists -Source (Join-Path $rootDir "doc/stdiolink_server.md") -DestinationDir (Join-Path $packageDir "doc")
 Copy-FileIfExists -Source (Join-Path $rootDir "doc/http_api.md") -DestinationDir (Join-Path $packageDir "doc")
@@ -381,43 +348,43 @@ Copy-FileIfExists -Source (Join-Path $rootDir "doc/stdiolink-server-api-requirem
 Copy-FileIfExists -Source (Join-Path $rootDir "doc/milestone/milestone_39_server_manager_demo_and_release.md") -DestinationDir (Join-Path $packageDir "doc")
 
 # ── Seed demo data ───────────────────────────────────────────────────
-if ($seedDemo) {
-    Write-Host "Seeding demo data into data_root..."
-    $demoDataRoot = Join-Path $rootDir "src/demo/server_manager_demo/data_root"
-    if (Test-Path -LiteralPath $demoDataRoot -PathType Container) {
-        # Copy services
-        $demoServices = Join-Path $demoDataRoot "services"
-        if (Test-Path -LiteralPath $demoServices -PathType Container) {
-            Copy-Item -Path (Join-Path $demoServices "*") -Destination (Join-Path $packageDir "data_root/services") -Recurse -Force
-        }
-        # Copy projects
-        $demoProjects = Join-Path $demoDataRoot "projects"
-        if (Test-Path -LiteralPath $demoProjects -PathType Container) {
-            Copy-Item -Path (Join-Path $demoProjects "*") -Destination (Join-Path $packageDir "data_root/projects") -Recurse -Force
-        }
-        Write-Host "  Demo services and projects seeded."
-    } else {
-        Write-Host "  WARNING: Demo data_root not found at $demoDataRoot"
+Write-Host "Seeding demo data into data_root..."
+$demoDataRoot = Join-Path $rootDir "src/demo/server_manager_demo/data_root"
+if (Test-Path -LiteralPath $demoDataRoot -PathType Container) {
+    $demoServices = Join-Path $demoDataRoot "services"
+    if (Test-Path -LiteralPath $demoServices -PathType Container) {
+        Copy-Item -Path (Join-Path $demoServices "*") -Destination (Join-Path $packageDir "data_root/services") -Recurse -Force
     }
-
-    # Copy driver binaries into data_root/drivers/<name>/<name>.exe
-    # Scanner expects each driver in its own subdirectory.
-    # 强制期规则：仅接受 basename 以 "stdio.drv." 开头的 Driver 可执行文件。
-    Write-Host "Copying drivers into data_root/drivers..."
-    $driversDest = Join-Path $packageDir "data_root/drivers"
-    $driversCopied = 0
-    foreach ($file in (Get-ChildItem -LiteralPath $binDir -File -Filter "*.exe")) {
-        $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-        if ($stem.StartsWith("stdio.drv.")) {
-            $driverSubDir = Join-Path $driversDest $stem
-            New-Item -ItemType Directory -Path $driverSubDir -Force | Out-Null
-            Copy-Item -LiteralPath $file.FullName -Destination $driverSubDir -Force
-            Write-Host "  + $stem/$($file.Name)"
-            $driversCopied++
-        }
+    $demoProjects = Join-Path $demoDataRoot "projects"
+    if (Test-Path -LiteralPath $demoProjects -PathType Container) {
+        Copy-Item -Path (Join-Path $demoProjects "*") -Destination (Join-Path $packageDir "data_root/projects") -Recurse -Force
     }
-    Write-Host "  $driversCopied driver(s) copied."
+    Write-Host "  Demo services and projects seeded."
+} else {
+    Write-Host "  WARNING: Demo data_root not found at $demoDataRoot"
 }
+
+# Copy driver binaries into data_root/drivers/<name>/<name>.exe
+# Scanner expects each driver in its own subdirectory.
+Write-Host "Copying drivers into data_root/drivers..."
+$driversDest = Join-Path $packageDir "data_root/drivers"
+$driversCopied = 0
+foreach ($file in (Get-ChildItem -LiteralPath $binDir -File -Filter "*.exe")) {
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+    if ($stem.StartsWith("stdio.drv.")) {
+        $driverSubDir = Join-Path $driversDest $stem
+        New-Item -ItemType Directory -Path $driverSubDir -Force | Out-Null
+        Copy-Item -LiteralPath $file.FullName -Destination $driverSubDir -Force
+        # Remove from bin/ to avoid duplication
+        $binCopy = Join-Path $packageDir "bin/$($file.Name)"
+        if (Test-Path -LiteralPath $binCopy -PathType Leaf) {
+            Remove-Item -LiteralPath $binCopy -Force
+        }
+        Write-Host "  + $stem/$($file.Name)"
+        $driversCopied++
+    }
+}
+Write-Host "  $driversCopied driver(s) copied."
 
 # ── Default config.json ──────────────────────────────────────────────
 $configPath = Join-Path $packageDir "data_root/config.json"
@@ -468,7 +435,6 @@ $manifestLines += "git_commit=$(Get-GitRev -RootDir $rootDir -RevArgs @('HEAD'))
 $manifestLines += "build_dir=$buildDirAbs"
 $manifestLines += "with_tests=$([int][bool]$withTests)"
 $manifestLines += "skip_webui=$([int][bool]$skipWebui)"
-$manifestLines += "seed_demo=$([int][bool]$seedDemo)"
 $manifestLines += ""
 $manifestLines += "[bin]"
 
@@ -476,12 +442,6 @@ $manifestBinEntries = Get-ChildItem -LiteralPath (Join-Path $packageDir "bin") -
     Sort-Object Name |
     ForEach-Object { $_.Name }
 $manifestLines += $manifestBinEntries
-$manifestLines += ""
-$manifestLines += "[demo]"
-$manifestDemoEntries = Get-ChildItem -LiteralPath (Join-Path $packageDir "demo") -Directory -ErrorAction SilentlyContinue |
-    Sort-Object Name |
-    ForEach-Object { $_.Name }
-$manifestLines += $manifestDemoEntries
 $manifestLines += ""
 $manifestLines += "[webui]"
 $webuiIndex = Join-Path $packageDir "data_root/webui/index.html"
