@@ -59,6 +59,7 @@ set(TEST_SOURCES
     test_event_bus.cpp
     test_static_file_server.cpp
     test_process_guard.cpp
+    test_process_tree_guard.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -223,3 +224,25 @@ set_target_properties(test_output_flood_stub PROPERTIES
 )
 
 add_dependencies(stdiolink_tests test_output_flood_stub)
+
+# test_tree_guard_parent_stub (T08/T09 辅助父进程，创建 ProcessTreeGuard + 启动子进程)
+add_executable(test_tree_guard_parent_stub test_tree_guard_parent_stub_main.cpp)
+
+target_link_libraries(test_tree_guard_parent_stub PRIVATE stdiolink Qt6::Core Qt6::Network)
+
+set_target_properties(test_tree_guard_parent_stub PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_tree_guard_parent_stub)
+
+# test_tree_guard_check_stub (T10 辅助 stub，输出自身守护状态)
+add_executable(test_tree_guard_check_stub test_tree_guard_check_stub_main.cpp)
+
+target_link_libraries(test_tree_guard_check_stub PRIVATE Qt6::Core)
+
+set_target_properties(test_tree_guard_check_stub PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+add_dependencies(stdiolink_tests test_tree_guard_check_stub)

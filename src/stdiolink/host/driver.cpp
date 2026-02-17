@@ -27,10 +27,15 @@ bool Driver::start(const QString& program, const QStringList& args) {
     m_proc.setProgram(program);
     m_proc.setArguments(finalArgs);
     m_proc.setProcessChannelMode(QProcess::SeparateChannels);
+    m_treeGuard.prepareProcess(&m_proc);
     m_proc.start();
     if (!m_proc.waitForStarted(3000)) {
         m_guard.reset();
         return false;
+    }
+    if (!m_treeGuard.adoptProcess(&m_proc)) {
+        qWarning("Driver: ProcessTreeGuard::adoptProcess failed for pid %lld",
+                 m_proc.processId());
     }
     return true;
 }

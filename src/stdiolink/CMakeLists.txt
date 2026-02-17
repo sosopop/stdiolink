@@ -43,6 +43,7 @@ set(GUARD_SOURCES
     guard/force_fast_exit.cpp
     guard/process_guard_server.cpp
     guard/process_guard_client.cpp
+    guard/process_tree_guard.cpp
 )
 
 set(PLATFORM_SOURCES

@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <memory>
 #include "stdiolink/guard/process_guard_server.h"
+#include "stdiolink/guard/process_tree_guard.h"
 #include "stdiolink/protocol/jsonl_types.h"
 #include "stdiolink/protocol/meta_types.h"
 #include "stdiolink/stdiolink_export.h"
@@ -57,6 +58,7 @@ private:
     std::shared_ptr<TaskState> m_cur;
     std::shared_ptr<meta::DriverMeta> m_meta;
     std::unique_ptr<ProcessGuardServer> m_guard;
+    ProcessTreeGuard m_treeGuard;
     QString m_guardNameOverride;
 
     bool tryReadLine(QByteArray& outLine);
