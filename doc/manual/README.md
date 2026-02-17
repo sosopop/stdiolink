@@ -65,6 +65,15 @@ stdiolink 是一个基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过
 - [Instance 与调度](11-server/instance-and-schedule.md) - 实例生命周期与三种调度策略
 - [HTTP API 参考](11-server/http-api.md) - 完整的 REST API 接口文档
 
+### WebUI 管理前端
+
+- [WebUI 概述](12-webui/README.md) - 技术栈、设计风格、架构概览
+- [开发与构建](12-webui/getting-started.md) - 环境搭建、开发服务器、生产构建与 Server 集成部署
+- [页面功能](12-webui/pages.md) - Dashboard、Services、Projects、Instances、Drivers
+- [DriverLab 交互调试](12-webui/driverlab.md) - WebSocket 驱动的实时调试工具
+- [实时通信](12-webui/realtime.md) - SSE 事件流与 WebSocket 协议
+- [主题与国际化](12-webui/theme-and-i18n.md) - 双主题系统与多语言支持
+
 ### 参考资料
 
 - [最佳实践](08-best-practices.md) - 设计模式、性能优化、安全建议
