@@ -4,9 +4,10 @@
 
 ## 环境要求
 
-- Qt 5.15 或更高版本
-- CMake 3.16 或更高版本
+- Qt 6.6 或更高版本
+- CMake 3.20 或更高版本
 - C++17 兼容的编译器
+- vcpkg（依赖管理）
 
 ## 构建项目
 
@@ -59,9 +60,8 @@ int main(int argc, char* argv[]) {
     EchoHandler handler;
     stdiolink::DriverCore core;
     core.setHandler(&handler);
-    core.setProfile(stdiolink::DriverCore::Profile::KeepAlive);
 
-    return core.run();
+    return core.run(argc, argv);
 }
 ```
 
@@ -71,6 +71,8 @@ int main(int argc, char* argv[]) {
 add_executable(echo_driver main.cpp)
 target_link_libraries(echo_driver PRIVATE stdiolink)
 ```
+
+> 提示：如果该 Driver 需要被 `stdiolink_server` 自动扫描，建议将可执行文件名设为 `stdio.drv.` 前缀（例如 `stdio.drv.echo`，可通过 CMake `OUTPUT_NAME` 设置）。
 
 ## 创建 Host 程序
 

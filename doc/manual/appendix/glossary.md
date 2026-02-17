@@ -111,6 +111,15 @@ JS Service 的 Driver 工厂函数，启动进程、获取元数据并返回 Pro
 
 ## P
 
+**ProcessGuardServer**
+基于 `QLocalServer` 的进程守护服务端，Host 启动 Driver 时自动创建命名管道，Driver 通过 `ProcessGuardClient` 连接。当连接断开时 Driver 自动退出，防止孤儿进程。
+
+**ProcessGuardClient**
+进程守护客户端，Driver 进程启动后连接到 Host 创建的命名管道。连接断开即触发快速退出。
+
+**ProcessTreeGuard**
+OS 级进程树守护，利用操作系统原生机制（Windows Job Object / Unix prctl）确保父进程退出时子进程树被自动回收。
+
 **ProcessHandle**
 `stdiolink/process` 模块中 `spawn()` 返回的进程句柄，支持 onStdout/onStderr/onExit 回调和 write/kill 操作。
 

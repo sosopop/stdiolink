@@ -21,6 +21,8 @@ public:
     bool tryNext(Message& out);
     bool waitNext(Message& out, int timeoutMs = -1);
     bool hasQueued() const;
+    const TaskState* stateId() const;
+    void forceTerminal(int code, const QString& error);
 
     Driver* owner() const;
 };
@@ -67,6 +69,39 @@ bool waitNext(Message& out, int timeoutMs = -1);
 
 ```cpp
 bool tryNext(Message& out);
+```
+
+### stateId
+
+获取内部状态标识（用于 `waitAnyNext` 等底层调度）：
+
+```cpp
+const TaskState* stateId() const;
+```
+
+> 说明：该接口主要用于框架内部或高级调度场景，普通业务代码通常不需要调用。
+
+### forceTerminal
+
+强制将 Task 标记为终止状态（用于超时或异常处理）：
+
+```cpp
+void forceTerminal(int code, const QString& error);
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| code | int | 错误码 |
+| error | QString | 错误描述 |
+
+> 说明：调用后 Task 会进入终止态；建议仅在明确需要“人工兜底收敛状态”的场景使用。
+
+### owner
+
+获取创建此 Task 的 Driver 实例：
+
+```cpp
+Driver* owner() const;
 ```
 
 ## 使用示例

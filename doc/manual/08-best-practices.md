@@ -12,10 +12,16 @@
 - 自动生成帮助文档
 - 支持 Console 模式
 
-### 合理设置 Profile
+### 选择合适的生命周期
 
-- **OneShot**：适合一次性任务
-- **KeepAlive**：适合需要多次调用的场景
+- **OneShot**：适合一次性任务（默认模式）
+- **KeepAlive**：适合需要多次调用的场景，通过 `--profile=keepalive` 启动参数指定
+
+### 统一 Driver 可执行文件命名（Server 场景）
+
+- 若需要被 `stdiolink_server` 扫描，建议可执行文件 basename 使用 `stdio.drv.` 前缀
+- 例如：`stdio.drv.modbustcp`、`stdio.drv.calculator`
+- 仅 Host 直连（手动 `Driver::start(path)`）场景可不强制此命名
 
 ### 错误处理
 

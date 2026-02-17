@@ -28,6 +28,7 @@ public:
 
     QProcess* process();
     bool isRunning() const;
+    QString exitContext() const;
     bool hasQueued() const;
     bool isCurrentTerminal() const;
 
@@ -64,6 +65,16 @@ bool start(const QString& program, const QStringList& args = {});
 ```cpp
 void terminate();
 ```
+
+### exitContext
+
+获取进程退出上下文信息（退出原因描述）：
+
+```cpp
+QString exitContext() const;
+```
+
+**返回值：** 进程退出时的上下文描述字符串，可用于日志和诊断。
 
 ### request
 

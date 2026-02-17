@@ -22,7 +22,6 @@ public:
 
     DriverCore() = default;
 
-    void setProfile(Profile p);
     void setHandler(ICommandHandler* h);
     void setMetaHandler(IMetaCommandHandler* h);
 
@@ -34,19 +33,6 @@ public:
 ```
 
 ## 方法说明
-
-### setProfile
-
-设置运行配置：
-
-```cpp
-void setProfile(Profile p);
-```
-
-| Profile | 说明 |
-|---------|------|
-| OneShot | 处理一次请求后退出 |
-| KeepAlive | 持续处理请求直到进程终止 |
 
 ### setHandler
 
@@ -75,6 +61,26 @@ int run(int argc, char* argv[]);  // 推荐，支持双模式
 int run();                         // 纯 Stdio 模式
 ```
 
+### Profile 设置方式
+
+`Profile` 不再通过 setter 设置，而是通过命令行参数传入：
+
+```bash
+--profile=oneshot
+--profile=keepalive
+```
+
+说明：
+
+- `oneshot`：处理一次请求后退出（默认）
+- `keepalive`：持续处理请求直到进程终止
+
+示例：
+
+```bash
+./stdio.drv.echo --profile=keepalive
+```
+
 ## 使用示例
 
 ```cpp
@@ -87,7 +93,6 @@ int main(int argc, char* argv[]) {
     MyHandler handler;
     stdiolink::DriverCore core;
     core.setHandler(&handler);
-    core.setProfile(stdiolink::DriverCore::Profile::KeepAlive);
 
     return core.run(argc, argv);
 }
