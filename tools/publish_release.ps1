@@ -278,11 +278,15 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
 
     Push-Location $webuiDir
     try {
+        # Use npm.cmd directly to bypass the npm.ps1 shim which is
+        # incompatible with Set-StrictMode -Version Latest.
+        $npmExe = Join-Path (Split-Path $npmCmd.Source) "npm.cmd"
+
         Write-Host "  npm ci ..."
-        & npm ci --ignore-scripts 2>&1
+        & $npmExe ci --ignore-scripts 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  npm ci failed, retrying with npm install ..."
-            & npm install --ignore-scripts 2>&1
+            & $npmExe install --ignore-scripts 2>&1
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "npm install failed"
                 exit 1
@@ -290,7 +294,7 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
         }
 
         Write-Host "  npm run build ..."
-        & npm run build 2>&1
+        & $npmExe run build 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Error "WebUI build failed"
             exit 1
