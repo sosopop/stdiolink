@@ -69,7 +69,7 @@ describe('DashboardPage', () => {
   it('renders KPI section, instances, and event feed', () => {
     renderDashboard();
     expect(screen.getByTestId('kpi-section')).toBeDefined();
-    expect(screen.getByTestId('active-instances')).toBeDefined();
+    expect(screen.getByText('Live Instances')).toBeDefined();
     expect(screen.getByTestId('event-feed')).toBeDefined();
   });
 

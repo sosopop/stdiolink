@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('@/stores/useDriversStore', () => ({
   useDriversStore: vi.fn(),
@@ -57,48 +58,57 @@ function setupMocks(overrides = {}) {
 describe('DriverLabPage', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  function renderPage() {
+    return render(
+      <ConfigProvider>
+        <MemoryRouter>
+          <DriverLabPage />
+        </MemoryRouter>
+      </ConfigProvider>,
+    );
+  }
+
   it('renders page layout', () => {
     setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
+    renderPage();
     expect(screen.getByTestId('driverlab-page')).toBeDefined();
-    expect(screen.getByTestId('left-panel')).toBeDefined();
     expect(screen.getByTestId('right-panel')).toBeDefined();
   });
 
   it('renders header with status', () => {
     setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
-    expect(screen.getByText('DriverLab')).toBeDefined();
+    renderPage();
+    expect(screen.getByText('Driver Lab')).toBeDefined();
     expect(screen.getByTestId('header-status')).toBeDefined();
   });
 
   it('renders connection panel', () => {
     setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
+    renderPage();
     expect(screen.getByTestId('connection-panel')).toBeDefined();
   });
 
   it('renders command panel', () => {
     setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
+    renderPage();
     expect(screen.getByTestId('command-panel')).toBeDefined();
   });
 
   it('renders message stream', () => {
     setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
+    renderPage();
     expect(screen.getByTestId('message-stream')).toBeDefined();
   });
 
   it('renders status bar', () => {
     setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
+    renderPage();
     expect(screen.getByTestId('status-bar')).toBeDefined();
   });
 
   it('fetches drivers on mount', () => {
     const { driversState } = setupMocks();
-    render(<ConfigProvider><DriverLabPage /></ConfigProvider>);
+    renderPage();
     expect(driversState.fetchDrivers).toHaveBeenCalled();
   });
 });

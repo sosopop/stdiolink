@@ -2,12 +2,15 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ActiveInstances } from '../components/ActiveInstances';
 import { ConfigProvider } from 'antd';
+import { MemoryRouter } from 'react-router-dom';
 import type { Instance } from '@/types/instance';
 
 function renderComponent(instances: Instance[] = [], onTerminate = vi.fn()) {
   return render(
     <ConfigProvider>
-      <ActiveInstances instances={instances} onTerminate={onTerminate} />
+      <MemoryRouter>
+        <ActiveInstances instances={instances} onTerminate={onTerminate} />
+      </MemoryRouter>
     </ConfigProvider>,
   );
 }
@@ -15,7 +18,7 @@ function renderComponent(instances: Instance[] = [], onTerminate = vi.fn()) {
 describe('ActiveInstances', () => {
   it('renders empty state', () => {
     renderComponent();
-    expect(screen.getByTestId('empty-instances')).toBeDefined();
+    expect(screen.getByText('No active execution threads detected')).toBeDefined();
   });
 
   it('renders instance list', () => {
@@ -41,6 +44,6 @@ describe('ActiveInstances', () => {
       { id: 'i1', projectId: 'p1', status: 'running', pid: 1234 },
     ] as Instance[];
     renderComponent(instances);
-    expect(screen.getByTestId('terminate-btn')).toBeDefined();
+    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
   });
 });

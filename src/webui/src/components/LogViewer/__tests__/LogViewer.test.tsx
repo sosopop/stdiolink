@@ -14,22 +14,22 @@ function renderComponent(lines: string[] = []) {
 describe('LogViewer', () => {
   it('renders log lines', () => {
     renderComponent(['[INFO] Server started', '[ERROR] Connection failed']);
-    const logLines = screen.getAllByTestId('log-line');
-    expect(logLines).toHaveLength(2);
+    expect(screen.getByText(/\[INFO\] Server started/)).toBeDefined();
+    expect(screen.getByText(/\[ERROR\] Connection failed/)).toBeDefined();
   });
 
   it('shows empty state when no logs', () => {
     renderComponent([]);
-    expect(screen.getByTestId('empty-logs')).toBeDefined();
+    expect(screen.getByText('No logs available')).toBeDefined();
   });
 
   it('renders level filter', () => {
     renderComponent(['[INFO] test']);
-    expect(screen.getByTestId('log-level-filter')).toBeDefined();
+    expect(screen.getByText('ALL')).toBeDefined();
   });
 
   it('renders search input', () => {
     renderComponent(['[INFO] test']);
-    expect(screen.getByTestId('log-search')).toBeDefined();
+    expect(screen.getByPlaceholderText('Search logs...')).toBeDefined();
   });
 });

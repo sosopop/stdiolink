@@ -26,7 +26,7 @@ describe('StatusBar', () => {
 
   it('shows status tag', () => {
     renderBar();
-    expect(screen.getByTestId('status-tag').textContent).toBe('connected');
+    expect(screen.getByTestId('status-tag').textContent).toBe('Connected');
   });
 
   it('shows PID when available', () => {

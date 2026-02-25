@@ -17,7 +17,7 @@ function renderWithRouter(route = '/dashboard') {
 describe('AppLayout', () => {
   it('renders header with logo', () => {
     renderWithRouter();
-    expect(screen.getByText('stdiolink')).toBeDefined();
+    expect(screen.getByText('STDIOLINK')).toBeDefined();
   });
 
   it('renders sidebar navigation', () => {

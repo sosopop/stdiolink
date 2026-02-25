@@ -1,4 +1,8 @@
 import '@testing-library/jest-dom';
+import i18n from './i18n';
+
+// Use deterministic English translations in tests.
+void i18n.changeLanguage('en');
 
 // Mock window.matchMedia for Ant Design responsive components
 Object.defineProperty(window, 'matchMedia', {

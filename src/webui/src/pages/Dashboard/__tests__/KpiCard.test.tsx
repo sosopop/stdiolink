@@ -16,12 +16,12 @@ describe('KpiCard', () => {
   it('renders title and value', () => {
     renderCard();
     expect(screen.getByText('Services')).toBeDefined();
-    expect(screen.getByTestId('kpi-value').textContent).toBe('12');
+    expect(screen.getByText('12')).toBeDefined();
   });
 
   it('renders value of 0', () => {
     renderCard({ value: 0 });
-    expect(screen.getByTestId('kpi-value').textContent).toBe('0');
+    expect(screen.getByText('0')).toBeDefined();
   });
 
   it('renders subtitle when provided', () => {

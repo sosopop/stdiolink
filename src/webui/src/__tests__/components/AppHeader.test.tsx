@@ -15,12 +15,12 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('AppHeader', () => {
   it('renders logo text', () => {
     renderWithProviders(<AppHeader />);
-    expect(screen.getByText('stdiolink')).toBeDefined();
+    expect(screen.getByText('STDIOLINK')).toBeDefined();
   });
 
-  it('renders toggle sidebar button', () => {
+  it('renders sse status indicator', () => {
     renderWithProviders(<AppHeader />);
-    expect(screen.getByLabelText('Toggle sidebar')).toBeDefined();
+    expect(screen.getByTestId('sse-indicator')).toBeDefined();
   });
 
   it('renders theme toggle', () => {

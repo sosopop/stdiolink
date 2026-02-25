@@ -73,7 +73,7 @@ describe('ProjectsPage (List)', () => {
 
   it('renders project table', () => {
     renderPage();
-    expect(screen.getByTestId('project-table')).toBeDefined();
+    expect(screen.getByRole('table')).toBeDefined();
     expect(screen.getByText('p_alpha')).toBeDefined();
     expect(screen.getByText('p_beta')).toBeDefined();
   });
@@ -103,6 +103,7 @@ describe('ProjectsPage (List)', () => {
 
   it('shows status indicator for running project', () => {
     renderPage();
-    expect(screen.getByTestId('status-p_beta')).toBeDefined();
+    const dots = screen.getAllByTestId('status-dot');
+    expect(dots.some((dot) => dot.getAttribute('data-status') === 'running')).toBe(true);
   });
 });

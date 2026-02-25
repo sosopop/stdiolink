@@ -20,7 +20,7 @@ describe('AppSidebar', () => {
     expect(screen.getByText('Projects')).toBeDefined();
     expect(screen.getByText('Instances')).toBeDefined();
     expect(screen.getByText('Drivers')).toBeDefined();
-    expect(screen.getByText('DriverLab')).toBeDefined();
+    expect(screen.getByText('Driver Lab')).toBeDefined();
   });
 
   it('renders in collapsed mode without text labels visible', () => {

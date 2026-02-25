@@ -46,7 +46,7 @@ describe('ServicesPage (List)', () => {
 
   it('renders service table with all services', () => {
     renderPage();
-    expect(screen.getByTestId('service-table')).toBeDefined();
+    expect(screen.getByRole('table')).toBeDefined();
     expect(screen.getByText('svc_alpha')).toBeDefined();
     expect(screen.getByText('svc_beta')).toBeDefined();
   });
@@ -61,7 +61,7 @@ describe('ServicesPage (List)', () => {
 
   it('shows empty table when no services', () => {
     renderPage({ services: [] });
-    expect(screen.getByTestId('service-table')).toBeDefined();
+    expect(screen.getByRole('table')).toBeDefined();
   });
 
   it('shows loading spinner when loading with no data', () => {
