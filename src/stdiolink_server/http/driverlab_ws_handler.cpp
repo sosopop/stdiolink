@@ -1,6 +1,7 @@
 #include "driverlab_ws_handler.h"
 #include "driverlab_ws_connection.h"
 
+#include <QDateTime>
 #include <QHttpServerWebSocketUpgradeResponse>
 #include <QUrlQuery>
 #include <QWebSocket>
@@ -13,6 +14,10 @@ DriverLabWsHandler::DriverLabWsHandler(stdiolink::DriverCatalog* catalog,
                                        QObject* parent)
     : QObject(parent)
     , m_catalog(catalog) {
+    m_pingTimer.setInterval(kPingIntervalMs);
+    connect(&m_pingTimer, &QTimer::timeout,
+            this, &DriverLabWsHandler::onPingTick);
+    m_pingTimer.start();
 }
 
 DriverLabWsHandler::~DriverLabWsHandler() {
@@ -84,6 +89,11 @@ void DriverLabWsHandler::registerVerifier(QHttpServer& server) {
                 this, &DriverLabWsHandler::onConnectionClosed);
 
         m_connections.append(conn);
+
+        // Restart ping timer if it was stopped (e.g. by closeAll())
+        if (!m_pingTimer.isActive()) {
+            m_pingTimer.start();
+        }
     });
 }
 
@@ -92,6 +102,7 @@ int DriverLabWsHandler::activeConnectionCount() const {
 }
 
 void DriverLabWsHandler::closeAll() {
+    m_pingTimer.stop();
     const auto connections = m_connections;
     for (auto* conn : connections) {
         delete conn;
@@ -128,6 +139,40 @@ DriverLabWsHandler::parseConnectionParams(const QUrl& url) {
     }
 
     return params;
+}
+
+void DriverLabWsHandler::onPingTick() {
+    sweepDeadConnections();
+    for (auto* conn : m_connections) {
+        conn->sendPing();
+    }
+}
+
+void DriverLabWsHandler::sweepDeadConnections() {
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    QVector<DriverLabWsConnection*> dead;
+    for (auto* conn : m_connections) {
+        const qint64 elapsed = conn->lastPongAt().msecsTo(now);
+        if (elapsed > kPongTimeoutMs) {
+            dead.append(conn);
+        }
+    }
+    for (auto* conn : dead) {
+        m_connections.removeOne(conn);
+        conn->closeForPongTimeout();
+        conn->deleteLater();
+    }
+}
+
+void DriverLabWsHandler::setPingIntervalForTest(int ms) {
+    m_pingTimer.setInterval(ms);
+}
+
+DriverLabWsConnection* DriverLabWsHandler::connectionAt(int index) const {
+    if (index < 0 || index >= m_connections.size()) {
+        return nullptr;
+    }
+    return m_connections.at(index);
 }
 
 } // namespace stdiolink_server

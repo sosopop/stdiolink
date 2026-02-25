@@ -22,6 +22,12 @@ public:
 
     QString driverId() const { return m_driverId; }
 
+    void sendPing();
+    void closeForPongTimeout();
+    QDateTime lastPongAt() const { return m_lastPongAt; }
+    // Test-only helper — not for production use
+    void setLastPongAtForTest(const QDateTime& dt) { m_lastPongAt = dt; }
+
 signals:
     void closed(DriverLabWsConnection* conn);
 
@@ -31,6 +37,7 @@ private slots:
     void onDriverStdoutReady();
     void onDriverFinished(int exitCode, QProcess::ExitStatus status);
     void onDriverErrorOccurred(QProcess::ProcessError error);
+    void onPongReceived(quint64 elapsedTime, const QByteArray& payload);
 
 private:
     void startDriver(bool queryMeta = true);
@@ -50,6 +57,7 @@ private:
     QByteArray m_stdoutBuffer;
     bool m_metaSent = false;
     bool m_closing = false;
+    QDateTime m_lastPongAt;
 
     // Output buffer limit
     static constexpr qint64 kMaxOutputBufferBytes = 8 * 1024 * 1024; // 8MB

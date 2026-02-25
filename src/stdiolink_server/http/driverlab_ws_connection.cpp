@@ -20,12 +20,15 @@ DriverLabWsConnection::DriverLabWsConnection(std::unique_ptr<QWebSocket> socket,
     , m_driverId(driverId)
     , m_program(program)
     , m_runMode(runMode)
-    , m_extraArgs(extraArgs) {
+    , m_extraArgs(extraArgs)
+    , m_lastPongAt(QDateTime::currentDateTimeUtc()) {
 
     connect(m_socket.get(), &QWebSocket::textMessageReceived,
             this, &DriverLabWsConnection::onTextMessageReceived);
     connect(m_socket.get(), &QWebSocket::disconnected,
             this, &DriverLabWsConnection::onSocketDisconnected);
+    connect(m_socket.get(), &QWebSocket::pong,
+            this, &DriverLabWsConnection::onPongReceived);
 
     startDriver();
 }
@@ -183,6 +186,28 @@ void DriverLabWsConnection::onSocketDisconnected() {
     m_closing = true;
     stopDriver();
     emit closed(this);
+}
+
+void DriverLabWsConnection::onPongReceived(quint64 /*elapsedTime*/,
+                                            const QByteArray& /*payload*/) {
+    m_lastPongAt = QDateTime::currentDateTimeUtc();
+}
+
+void DriverLabWsConnection::sendPing() {
+    if (m_closing || !m_socket ||
+        m_socket->state() != QAbstractSocket::ConnectedState) {
+        return;
+    }
+    m_socket->ping();
+}
+
+void DriverLabWsConnection::closeForPongTimeout() {
+    m_closing = true;
+    stopDriver();
+    if (m_socket && m_socket->state() != QAbstractSocket::UnconnectedState) {
+        m_socket->close(QWebSocketProtocol::CloseCodeGoingAway,
+                        QStringLiteral("pong timeout"));
+    }
 }
 
 void DriverLabWsConnection::onDriverStdoutReady() {

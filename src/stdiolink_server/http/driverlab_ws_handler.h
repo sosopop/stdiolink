@@ -2,6 +2,7 @@
 
 #include <QHttpServer>
 #include <QObject>
+#include <QTimer>
 #include <QVector>
 
 namespace stdiolink {
@@ -24,6 +25,12 @@ public:
     void closeAll();
 
     static constexpr int kMaxConnections = 10;
+    static constexpr int kPingIntervalMs = 30000;
+    static constexpr int kPongTimeoutMs  = kPingIntervalMs * 2;
+
+    // Test-only helpers — not for production use
+    void setPingIntervalForTest(int ms);
+    DriverLabWsConnection* connectionAt(int index) const;
 
     struct ConnectionParams {
         QString driverId;
@@ -34,11 +41,15 @@ public:
 
 private slots:
     void onConnectionClosed(DriverLabWsConnection* conn);
+    void onPingTick();
 
 private:
+    void sweepDeadConnections();
+
     stdiolink::DriverCatalog* m_catalog;
     QHttpServer* m_server = nullptr;
     QVector<DriverLabWsConnection*> m_connections;
+    QTimer m_pingTimer;
 };
 
 } // namespace stdiolink_server
