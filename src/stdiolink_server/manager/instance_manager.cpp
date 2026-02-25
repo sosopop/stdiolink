@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QUuid>
 
+#include "instance_log_writer.h"
 #include "stdiolink/guard/process_guard_server.h"
 #include "stdiolink_server/utils/process_env_utils.h"
 
@@ -145,14 +146,25 @@ QString InstanceManager::startInstance(const Project& project,
     proc->setProcessEnvironment(env);
 
     const QString logPath = logsDir + "/" + project.id + ".log";
-    proc->setStandardOutputFile(logPath, QIODevice::Append);
-    proc->setStandardErrorFile(logPath, QIODevice::Append);
+
+    auto logWriter = std::make_unique<InstanceLogWriter>(
+        logPath, m_config.logMaxBytes, m_config.logMaxFiles);
 
     inst->workingDirectory = workspaceDir;
     inst->logPath = logPath;
     inst->commandLine = QStringList{program} + proc->arguments();
     inst->process = proc;
     inst->guard = std::move(guard);
+
+    connect(proc, &QProcess::readyReadStandardOutput, this,
+        [proc, w = logWriter.get()]() {
+            w->appendStdout(proc->readAllStandardOutput());
+        });
+    connect(proc, &QProcess::readyReadStandardError, this,
+        [proc, w = logWriter.get()]() {
+            w->appendStderr(proc->readAllStandardError());
+        });
+    inst->logWriter = std::move(logWriter);
 
     connect(proc,
             QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -337,6 +349,22 @@ void InstanceManager::onProcessFinished(const QString& instanceId,
             : QStringLiteral("process exited normally before started signal");
         emit instanceStartFailed(instanceId, projectId, reason);
     }
+
+    // 排空管道尾部数据
+    if (inst->process && inst->logWriter) {
+        const QByteArray tailOut = inst->process->readAllStandardOutput();
+        const QByteArray tailErr = inst->process->readAllStandardError();
+        if (!tailOut.isEmpty()) inst->logWriter->appendStdout(tailOut);
+        if (!tailErr.isEmpty()) inst->logWriter->appendStderr(tailErr);
+    }
+
+    // 先断开 readyRead 信号，关闭悬空指针窗口
+    if (inst->process) {
+        inst->process->disconnect();
+    }
+
+    // 再销毁 logWriter（flush 析构缓冲）
+    inst->logWriter.reset();
 
     // 始终发射 instanceFinished — ScheduleEngine 依赖此信号做 daemon 重启
     emit instanceFinished(instanceId, projectId, exitCode, status);

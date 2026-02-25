@@ -4,8 +4,10 @@ set(STDIOLINK_SERVER_SOURCES
     config/server_config.cpp
     model/schedule.cpp
     model/project.cpp
+    model/instance.cpp
     manager/project_manager.cpp
     manager/instance_manager.cpp
+    manager/instance_log_writer.cpp
     manager/schedule_engine.cpp
     manager/process_monitor.cpp
     scanner/service_scanner.cpp
@@ -13,6 +15,7 @@ set(STDIOLINK_SERVER_SOURCES
     http/api_router.cpp
     http/cors_middleware.cpp
     http/event_bus.cpp
+    http/event_log.cpp
     http/event_stream_handler.cpp
     http/service_file_handler.cpp
     http/static_file_server.cpp
@@ -20,6 +23,7 @@ set(STDIOLINK_SERVER_SOURCES
     http/driverlab_ws_connection.cpp
     server_manager.cpp
     utils/process_env_utils.cpp
+    utils/server_logger.cpp
 )
 
 set(STDIOLINK_SERVER_HEADERS
@@ -30,6 +34,7 @@ set(STDIOLINK_SERVER_HEADERS
     model/project.h
     manager/project_manager.h
     manager/instance_manager.h
+    manager/instance_log_writer.h
     manager/schedule_engine.h
     manager/process_monitor.h
     model/process_info.h
@@ -38,6 +43,7 @@ set(STDIOLINK_SERVER_HEADERS
     http/http_helpers.h
     http/cors_middleware.h
     http/event_bus.h
+    http/event_log.h
     http/event_stream_handler.h
     http/service_file_handler.h
     http/static_file_server.h
@@ -46,6 +52,7 @@ set(STDIOLINK_SERVER_HEADERS
     http/api_router.h
     server_manager.h
     utils/process_env_utils.h
+    utils/server_logger.h
 )
 
 add_executable(stdiolink_server
@@ -61,6 +68,7 @@ target_include_directories(stdiolink_server PRIVATE
 target_link_libraries(stdiolink_server PRIVATE
     stdiolink_service_config
     stdiolink
+    spdlog::spdlog
     Qt6::Core
     Qt6::Network
     Qt6::HttpServer

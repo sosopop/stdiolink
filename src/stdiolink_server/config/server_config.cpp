@@ -43,7 +43,8 @@ ServerConfig ServerConfig::loadFromFile(const QString& filePath, QString& error)
     }
 
     const QJsonObject obj = doc.object();
-    static const QSet<QString> known = {"port", "host", "logLevel", "serviceProgram", "corsOrigin", "webuiDir"};
+    static const QSet<QString> known = {"port", "host", "logLevel", "serviceProgram", "corsOrigin", "webuiDir",
+                                        "logMaxBytes", "logMaxFiles"};
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (!known.contains(it.key())) {
             error = "unknown field in config.json: " + it.key();
@@ -113,6 +114,30 @@ ServerConfig ServerConfig::loadFromFile(const QString& filePath, QString& error)
             return cfg;
         }
         cfg.webuiDir = obj.value("webuiDir").toString();
+    }
+
+    if (obj.contains("logMaxBytes")) {
+        if (!obj.value("logMaxBytes").isDouble()) {
+            error = "config field 'logMaxBytes' must be a number";
+            return cfg;
+        }
+        cfg.logMaxBytes = static_cast<qint64>(obj.value("logMaxBytes").toDouble());
+        if (cfg.logMaxBytes < 1024 * 1024) {
+            error = "config field 'logMaxBytes' must be >= 1048576 (1MB)";
+            return cfg;
+        }
+    }
+
+    if (obj.contains("logMaxFiles")) {
+        if (!obj.value("logMaxFiles").isDouble()) {
+            error = "config field 'logMaxFiles' must be a number";
+            return cfg;
+        }
+        cfg.logMaxFiles = obj.value("logMaxFiles").toInt();
+        if (cfg.logMaxFiles < 1 || cfg.logMaxFiles > 100) {
+            error = "config field 'logMaxFiles' must be between 1 and 100";
+            return cfg;
+        }
     }
 
     error.clear();

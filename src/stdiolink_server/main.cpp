@@ -14,6 +14,7 @@
 #include "http/cors_middleware.h"
 #include "server_manager.h"
 #include "stdiolink/platform/platform_utils.h"
+#include "utils/server_logger.h"
 
 using namespace stdiolink_server;
 
@@ -84,6 +85,25 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    ServerLogger::Config logCfg;
+    logCfg.logLevel = config.logLevel;
+    logCfg.logDir = dataRoot + "/logs";
+    logCfg.maxFileBytes = config.logMaxBytes;
+    logCfg.maxFiles = config.logMaxFiles;
+    QString logError;
+    bool loggerInitialized = false;
+    if (!ServerLogger::init(logCfg, logError)) {
+        std::fprintf(stderr, "Warning: %s\n", qUtf8Printable(logError));
+    } else {
+        loggerInitialized = true;
+    }
+
+    // RAII guard：确保所有退出路径都执行 shutdown
+    struct LoggerGuard {
+        bool& active;
+        ~LoggerGuard() { if (active) ServerLogger::shutdown(); }
+    } loggerGuard{loggerInitialized};
+
     ServerManager manager(dataRoot, config);
     QString initErr;
     if (!manager.initialize(initErr)) {
@@ -126,6 +146,8 @@ int main(int argc, char* argv[]) {
 
     QObject::connect(&app, &QCoreApplication::aboutToQuit, [&]() {
         manager.shutdown();
+        ServerLogger::shutdown();
+        loggerInitialized = false;  // guard 不再重复 shutdown
     });
 
     return app.exec();

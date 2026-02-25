@@ -25,6 +25,7 @@ class QHttpServer;
 namespace stdiolink_server {
 
 class DriverLabWsHandler;
+class EventLog;
 
 class ServerManager : public QObject {
     Q_OBJECT
@@ -95,6 +96,7 @@ public:
     ProcessMonitor* processMonitor() { return &m_processMonitor; }
     EventBus* eventBus() { return m_eventBus; }
     EventStreamHandler* eventStreamHandler() { return m_eventStreamHandler; }
+    EventLog* eventLog() { return m_eventLog; }
     StaticFileServer* staticFileServer() { return m_staticFileServer.get(); }
 
     struct ServiceCreateRequest {
@@ -142,6 +144,7 @@ private:
     ProcessMonitor m_processMonitor;
     EventBus* m_eventBus = nullptr;
     EventStreamHandler* m_eventStreamHandler = nullptr;
+    EventLog* m_eventLog = nullptr;
     QDateTime m_startedAt;
     DriverLabWsHandler* m_driverLabWsHandler = nullptr;
     std::unique_ptr<StaticFileServer> m_staticFileServer;

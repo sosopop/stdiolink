@@ -125,21 +125,12 @@ echo "  skip webui  : ${SKIP_WEBUI}"
 rm -rf "${PACKAGE_DIR}"
 
 mkdir -p "${PACKAGE_DIR}/bin"
-mkdir -p "${PACKAGE_DIR}/doc"
 mkdir -p "${PACKAGE_DIR}/data_root/drivers"
 mkdir -p "${PACKAGE_DIR}/data_root/services"
 mkdir -p "${PACKAGE_DIR}/data_root/projects"
 mkdir -p "${PACKAGE_DIR}/data_root/workspaces"
 mkdir -p "${PACKAGE_DIR}/data_root/logs"
 mkdir -p "${PACKAGE_DIR}/data_root/shared"
-
-copy_file_if_exists() {
-    local src="$1"
-    local dst="$2"
-    if [[ -f "${src}" ]]; then
-        cp -f "${src}" "${dst}"
-    fi
-}
 
 copy_dir_clean() {
     local src="$1"
@@ -232,12 +223,6 @@ while IFS= read -r -d '' dir; do
         done
     echo "  + ${dirname}/"
 done < <(find "${BIN_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
-
-echo "Copying docs..."
-copy_file_if_exists "${ROOT_DIR}/doc/stdiolink_server.md" "${PACKAGE_DIR}/doc/"
-copy_file_if_exists "${ROOT_DIR}/doc/http_api.md" "${PACKAGE_DIR}/doc/"
-copy_file_if_exists "${ROOT_DIR}/doc/stdiolink-server-api-requirements.md" "${PACKAGE_DIR}/doc/"
-copy_file_if_exists "${ROOT_DIR}/doc/milestone/milestone_39_server_manager_demo_and_release.md" "${PACKAGE_DIR}/doc/"
 
 # ── Seed demo data ───────────────────────────────────────────────────
 echo "Seeding demo data into data_root..."

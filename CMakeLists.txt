@@ -28,6 +28,7 @@ set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../vcpkg/scripts/buildsyst
 find_package(qjs CONFIG REQUIRED)
 find_package(Qt6 6.6 REQUIRED COMPONENTS Core Widgets Network WebSockets HttpServer Concurrent)
 find_package(GTest CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # 启用测试
 enable_testing()

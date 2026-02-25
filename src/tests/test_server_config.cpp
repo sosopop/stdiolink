@@ -120,3 +120,99 @@ TEST(ServerConfigTest, CorsOriginDefaultIsStar) {
     EXPECT_TRUE(error.isEmpty());
     EXPECT_EQ(cfg.corsOrigin, "*");
 }
+
+// --- logMaxBytes / logMaxFiles ---
+
+TEST(ServerConfigTest, LogMaxBytesValidValue) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxBytes", 5 * 1024 * 1024}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    const auto cfg = ServerConfig::loadFromFile(filePath, error);
+    EXPECT_TRUE(error.isEmpty()) << qPrintable(error);
+    EXPECT_EQ(cfg.logMaxBytes, 5 * 1024 * 1024);
+}
+
+TEST(ServerConfigTest, LogMaxBytesTooSmallRejected) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxBytes", 512}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    (void)ServerConfig::loadFromFile(filePath, error);
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerConfigTest, LogMaxBytesWrongTypeRejected) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxBytes", "big"}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    (void)ServerConfig::loadFromFile(filePath, error);
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerConfigTest, LogMaxFilesValidValue) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxFiles", 5}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    const auto cfg = ServerConfig::loadFromFile(filePath, error);
+    EXPECT_TRUE(error.isEmpty()) << qPrintable(error);
+    EXPECT_EQ(cfg.logMaxFiles, 5);
+}
+
+TEST(ServerConfigTest, LogMaxFilesZeroRejected) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxFiles", 0}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    (void)ServerConfig::loadFromFile(filePath, error);
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerConfigTest, LogMaxFilesOver100Rejected) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxFiles", 200}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    (void)ServerConfig::loadFromFile(filePath, error);
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerConfigTest, LogMaxFilesWrongTypeRejected) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString filePath = dir.path() + "/config.json";
+    const QJsonObject obj{{"logMaxFiles", "three"}};
+    ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
+    QString error;
+    (void)ServerConfig::loadFromFile(filePath, error);
+    EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ServerConfigTest, LogFieldsDefaultValues) {
+    QString error;
+    const auto cfg = ServerConfig::loadFromFile("/tmp/stdiolink_nonexistent_config.json", error);
+    EXPECT_TRUE(error.isEmpty());
+    EXPECT_EQ(cfg.logMaxBytes, 10 * 1024 * 1024);
+    EXPECT_EQ(cfg.logMaxFiles, 3);
+}

@@ -11,7 +11,11 @@
 
 namespace stdiolink_server {
 
+class InstanceLogWriter;
+
 struct Instance {
+    ~Instance();
+
     QString id;
     QString projectId;
     QString serviceId;
@@ -27,6 +31,7 @@ struct Instance {
 
     std::unique_ptr<QTemporaryFile> tempConfigFile;
     std::unique_ptr<stdiolink::ProcessGuardServer> guard;
+    std::unique_ptr<InstanceLogWriter> logWriter;
 
     bool startFailedEmitted = false;  // 防止 startFailed 事件重复发射
 };

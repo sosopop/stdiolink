@@ -2408,3 +2408,243 @@ TEST(ApiRouterTest, M72_R14_SseConnectionLifecycle) {
     reply->abort();
     reply->deleteLater();
 }
+
+// --- GET /api/events ---
+
+TEST(ApiRouterTest, GetEventsReturnsPublishedEvents) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError)) << qPrintable(initError);
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    // Publish events via EventBus
+    auto* bus = manager.eventBus();
+    ASSERT_NE(bus, nullptr);
+    bus->publish("instance.started", QJsonObject{{"instanceId", "i1"}, {"projectId", "p1"}});
+    bus->publish("schedule.triggered", QJsonObject{{"projectId", "p1"}});
+    bus->publish("instance.finished", QJsonObject{{"instanceId", "i1"}, {"projectId", "p1"}});
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/events"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    const QJsonObject obj = QJsonDocument::fromJson(body).object();
+    EXPECT_EQ(obj.value("count").toInt(), 3);
+
+    const QJsonArray events = obj.value("events").toArray();
+    ASSERT_EQ(events.size(), 3);
+    // Newest first
+    EXPECT_EQ(events[0].toObject().value("type").toString(), "instance.finished");
+    EXPECT_EQ(events[2].toObject().value("type").toString(), "instance.started");
+}
+
+TEST(ApiRouterTest, GetEventsFilterByTypePrefix) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError)) << qPrintable(initError);
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    auto* bus = manager.eventBus();
+    ASSERT_NE(bus, nullptr);
+    bus->publish("instance.started", QJsonObject{{"instanceId", "i1"}, {"projectId", "p1"}});
+    bus->publish("schedule.triggered", QJsonObject{{"projectId", "p1"}});
+    bus->publish("instance.finished", QJsonObject{{"instanceId", "i1"}, {"projectId", "p1"}});
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    // Filter by type prefix "instance"
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/events?type=instance"),
+                            QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    const QJsonObject obj = QJsonDocument::fromJson(body).object();
+    EXPECT_EQ(obj.value("count").toInt(), 2);
+
+    const QJsonArray events = obj.value("events").toArray();
+    ASSERT_EQ(events.size(), 2);
+    for (int i = 0; i < events.size(); ++i) {
+        EXPECT_TRUE(events[i].toObject().value("type").toString().startsWith("instance"));
+    }
+}
+
+TEST(ApiRouterTest, GetEventsLimitParameter) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError)) << qPrintable(initError);
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base =
+        QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    auto* bus = manager.eventBus();
+    ASSERT_NE(bus, nullptr);
+    for (int i = 0; i < 5; ++i) {
+        bus->publish("event.x", QJsonObject{{"i", i}});
+    }
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/events?limit=2"),
+                            QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    const QJsonObject obj = QJsonDocument::fromJson(body).object();
+    EXPECT_EQ(obj.value("count").toInt(), 2);
+
+    const QJsonArray events = obj.value("events").toArray();
+    ASSERT_EQ(events.size(), 2);
+    // Newest first: i=4, i=3
+    EXPECT_EQ(events[0].toObject().value("data").toObject()
+                  .value("i").toInt(), 4);
+    EXPECT_EQ(events[1].toObject().value("data").toObject()
+                  .value("i").toInt(), 3);
+}
+
+TEST(ApiRouterTest, GetEventsFilterByProjectId) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError)) << qPrintable(initError);
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base =
+        QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    auto* bus = manager.eventBus();
+    ASSERT_NE(bus, nullptr);
+    bus->publish("instance.started",
+                 QJsonObject{{"instanceId", "i1"}, {"projectId", "pA"}});
+    bus->publish("instance.started",
+                 QJsonObject{{"instanceId", "i2"}, {"projectId", "pB"}});
+    bus->publish("instance.finished",
+                 QJsonObject{{"instanceId", "i1"}, {"projectId", "pA"}});
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/events?projectId=pA"),
+                            QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+
+    const QJsonObject obj = QJsonDocument::fromJson(body).object();
+    EXPECT_EQ(obj.value("count").toInt(), 2);
+
+    const QJsonArray events = obj.value("events").toArray();
+    ASSERT_EQ(events.size(), 2);
+    for (int i = 0; i < events.size(); ++i) {
+        EXPECT_EQ(events[i].toObject().value("data").toObject()
+                      .value("projectId").toString(), "pA");
+    }
+}

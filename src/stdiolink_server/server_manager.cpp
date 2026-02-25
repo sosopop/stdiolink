@@ -11,6 +11,7 @@
 #include <QFuture>
 
 #include "http/driverlab_ws_handler.h"
+#include "http/event_log.h"
 
 namespace stdiolink_server {
 
@@ -187,6 +188,10 @@ bool ServerManager::initialize(QString& error) {
     qInfo("Projects: %d loaded, %d invalid", projectStats.loaded, projectStats.invalid);
 
     m_startedAt = QDateTime::currentDateTimeUtc();
+
+    // Initialize event log (after data root validated)
+    const QString eventsPath = m_dataRoot + "/logs/events.jsonl";
+    m_eventLog = new EventLog(eventsPath, m_eventBus, 5 * 1024 * 1024, 2, this);
 
     // Initialize static file server
     QString webuiDir = m_config.webuiDir;

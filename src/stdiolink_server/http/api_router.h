@@ -91,6 +91,7 @@ private:
 
     void handleEventStream(const QHttpServerRequest& req,
                            QHttpServerResponder& responder);
+    QHttpServerResponse handleEventList(const QHttpServerRequest& req);
 
     ServerManager* m_manager = nullptr;
     StaticFileServer* m_staticFileServer = nullptr;

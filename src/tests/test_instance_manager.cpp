@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 
 #include <functional>
@@ -259,4 +260,73 @@ TEST(InstanceManagerTest, M72_R01_PathPrependToEmptyPath) {
     QProcessEnvironment env;
     stdiolink_server::prependDirToPath("/my/dir", env);
     EXPECT_EQ(env.value("PATH"), "/my/dir");
+}
+
+TEST(InstanceManagerTest, LogContentHasTimestampAndStderrPrefix) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString dataRoot = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/workspaces"));
+
+    const QString serviceDir = dataRoot + "/services/demo";
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    InstanceManager mgr(dataRoot, cfg);
+
+    int finishedCount = 0;
+    QObject::connect(
+        &mgr, &InstanceManager::instanceFinished,
+        [&finishedCount](const QString&, const QString&, int, QProcess::ExitStatus) {
+            finishedCount++;
+        });
+
+    // Build project with stdout/stderr output
+    Project p = makeProject("logfmt", 0, 100);
+    QJsonObject testObj = p.config.value("_test").toObject();
+    testObj["stdoutText"] = "hello_stdout_marker";
+    testObj["stderrText"] = "hello_stderr_marker";
+    p.config["_test"] = testObj;
+
+    QString error;
+    const QString instanceId = mgr.startInstance(p, serviceDir, error);
+    ASSERT_TRUE(error.isEmpty()) << qPrintable(error);
+
+    ASSERT_TRUE(waitUntil([&]() { return finishedCount == 1; }, 5000));
+
+    const QString logPath = dataRoot + "/logs/logfmt.log";
+    ASSERT_TRUE(QFileInfo::exists(logPath));
+
+    QFile file(logPath);
+    ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+    const QStringList lines = content.split('\n', Qt::SkipEmptyParts);
+
+    // Timestamp pattern: 2026-02-25T06:19:51.123Z | ...
+    const QRegularExpression tsRe(
+        R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z \| .+$)");
+
+    bool foundStdout = false;
+    bool foundStderr = false;
+    for (const QString& line : lines) {
+        const QString trimmed = line.trimmed();
+        if (trimmed.isEmpty()) continue;
+        EXPECT_TRUE(tsRe.match(trimmed).hasMatch())
+            << "Missing timestamp: " << trimmed.toStdString();
+        if (trimmed.contains("hello_stdout_marker")) {
+            foundStdout = true;
+            EXPECT_FALSE(trimmed.contains("[stderr]"));
+        }
+        if (trimmed.contains("hello_stderr_marker")) {
+            foundStderr = true;
+            EXPECT_TRUE(trimmed.contains("[stderr]"));
+        }
+    }
+    EXPECT_TRUE(foundStdout) << "stdout marker not found in log";
+    EXPECT_TRUE(foundStderr) << "stderr marker not found in log";
 }

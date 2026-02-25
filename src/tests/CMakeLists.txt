@@ -60,6 +60,9 @@ set(TEST_SOURCES
     test_static_file_server.cpp
     test_process_guard.cpp
     test_process_tree_guard.cpp
+    test_server_logger.cpp
+    test_instance_log_writer.cpp
+    test_event_log.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -95,8 +98,10 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/config/server_config.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/schedule.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/project.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/instance.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/project_manager.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/instance_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/instance_log_writer.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/schedule_engine.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/manager/process_monitor.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/scanner/service_scanner.cpp
@@ -104,6 +109,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/api_router.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/cors_middleware.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_bus.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_log.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/event_stream_handler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/service_file_handler.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/static_file_server.cpp
@@ -111,6 +117,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/http/driverlab_ws_connection.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/server_manager.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/utils/process_env_utils.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/utils/server_logger.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
@@ -122,6 +129,7 @@ target_include_directories(stdiolink_tests PRIVATE
 target_link_libraries(stdiolink_tests PRIVATE
     stdiolink
     GTest::gtest
+    spdlog::spdlog
     Qt6::Network
     Qt6::HttpServer
     Qt6::WebSockets

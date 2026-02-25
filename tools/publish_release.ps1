@@ -54,19 +54,6 @@ function Get-GitRev {
     return "unknown"
 }
 
-function Copy-FileIfExists {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Source,
-        [Parameter(Mandatory = $true)]
-        [string]$DestinationDir
-    )
-
-    if (Test-Path -LiteralPath $Source -PathType Leaf) {
-        Copy-Item -LiteralPath $Source -Destination $DestinationDir -Force
-    }
-}
-
 function Copy-DirClean {
     param(
         [Parameter(Mandatory = $true)]
@@ -222,7 +209,6 @@ if (Test-Path -LiteralPath $packageDir) {
 
 $dirsToCreate = @(
     "bin",
-    "doc",
     "data_root/drivers",
     "data_root/services",
     "data_root/projects",
@@ -344,12 +330,6 @@ foreach ($dir in $pluginDirs) {
     }
     Write-Host "  + $($dir.Name)/"
 }
-
-Write-Host "Copying docs..."
-Copy-FileIfExists -Source (Join-Path $rootDir "doc/stdiolink_server.md") -DestinationDir (Join-Path $packageDir "doc")
-Copy-FileIfExists -Source (Join-Path $rootDir "doc/http_api.md") -DestinationDir (Join-Path $packageDir "doc")
-Copy-FileIfExists -Source (Join-Path $rootDir "doc/stdiolink-server-api-requirements.md") -DestinationDir (Join-Path $packageDir "doc")
-Copy-FileIfExists -Source (Join-Path $rootDir "doc/milestone/milestone_39_server_manager_demo_and_release.md") -DestinationDir (Join-Path $packageDir "doc")
 
 # ── Seed demo data ───────────────────────────────────────────────────
 Write-Host "Seeding demo data into data_root..."

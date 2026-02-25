@@ -13,6 +13,7 @@
 
 #include "http_helpers.h"
 #include "cors_middleware.h"
+#include "event_log.h"
 #include "event_stream_handler.h"
 #include "service_file_handler.h"
 #include "static_file_server.h"
@@ -356,6 +357,10 @@ void ApiRouter::registerRoutes(QHttpServer& server) {
                  [this](const QHttpServerRequest& req, QHttpServerResponder& responder) {
                      handleEventStream(req, responder);
                  });
+
+    server.route("/api/events", Method::Get, [this](const QHttpServerRequest& req) {
+        return handleEventList(req);
+    });
 
     server.setMissingHandler(this, [this, corsOrigin = m_manager->config().corsOrigin](
                                         const QHttpServerRequest& req, QHttpServerResponder& responder) {
@@ -1783,6 +1788,28 @@ void ApiRouter::handleEventStream(const QHttpServerRequest& req,
     }
 
     handler->addConnection(std::move(responder), filters);
+}
+
+QHttpServerResponse ApiRouter::handleEventList(const QHttpServerRequest& req) {
+    const QUrlQuery query(req.url());
+    const int rawLimit = query.queryItemValue("limit").toInt();
+    const int limit = rawLimit > 0 ? qBound(1, rawLimit, 1000) : 100;
+    const QString typePrefix = query.queryItemValue("type");
+    const QString projectId = query.queryItemValue("projectId");
+
+    auto* eventLog = m_manager->eventLog();
+    if (!eventLog) {
+        return errorResponse(
+            QHttpServerResponse::StatusCode::InternalServerError,
+            "event log not initialized");
+    }
+
+    const QJsonArray events = eventLog->query(limit, typePrefix, projectId);
+
+    QJsonObject result;
+    result["events"] = events;
+    result["count"] = events.size();
+    return jsonResponse(result);
 }
 
 } // namespace stdiolink_server

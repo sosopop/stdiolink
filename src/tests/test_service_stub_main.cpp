@@ -2,6 +2,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QTextStream>
 #include <QTimer>
 
 #include <cstdlib>
@@ -67,6 +68,15 @@ int main(int argc, char* argv[]) {
 #endif
 
     writeMarker(test.value("markerFile").toString(), config);
+
+    const QString stdoutText = test.value("stdoutText").toString();
+    const QString stderrText = test.value("stderrText").toString();
+    if (!stdoutText.isEmpty()) {
+        QTextStream(stdout) << stdoutText << "\n";
+    }
+    if (!stderrText.isEmpty()) {
+        QTextStream(stderr) << stderrText << "\n";
+    }
 
     const int exitCode = test.value("exitCode").toInt(0);
     const int sleepMs = test.value("sleepMs").toInt(0);
