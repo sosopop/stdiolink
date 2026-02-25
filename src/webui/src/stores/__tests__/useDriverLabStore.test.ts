@@ -29,6 +29,7 @@ vi.mock('@/api/driverlab-ws', () => {
 
 describe('useDriverLabStore', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     useDriverLabStore.setState({
       connection: {
         status: 'disconnected',
@@ -49,6 +50,12 @@ describe('useDriverLabStore', () => {
     });
   });
 
+  function emitClientEvent(event: string, data: unknown = {}) {
+    const client = useDriverLabStore.getState()._wsClient as any;
+    expect(client?._listeners).toBeDefined();
+    client._listeners.get(event)?.forEach((cb: (payload: unknown) => void) => cb(data));
+  }
+
   it('connect sets status to connecting', () => {
     const { connect } = useDriverLabStore.getState();
     connect('drv1', 'oneshot');
@@ -56,6 +63,36 @@ describe('useDriverLabStore', () => {
     expect(state.connection.status).toBe('connecting');
     expect(state.connection.driverId).toBe('drv1');
     expect(state.connection.runMode).toBe('oneshot');
+  });
+
+  it('connect transitions to connected and sets connectedAt on ws connected event', () => {
+    vi.useFakeTimers();
+    useDriverLabStore.getState().connect('drv1', 'oneshot');
+    expect(useDriverLabStore.getState().connection.status).toBe('connecting');
+
+    vi.runAllTimers();
+
+    const state = useDriverLabStore.getState();
+    expect(state.connection.status).toBe('connected');
+    expect(state.connection.connectedAt).toBeTypeOf('number');
+    vi.useRealTimers();
+  });
+
+  it('ws error event sets connection error state', () => {
+    useDriverLabStore.getState().connect('drv1', 'oneshot');
+    emitClientEvent('error', {});
+    const state = useDriverLabStore.getState();
+    expect(state.connection.status).toBe('error');
+    expect(state.connection.error).toBe('WebSocket error');
+  });
+
+  it('ws disconnected event resets executing flag', () => {
+    useDriverLabStore.getState().connect('drv1', 'oneshot');
+    useDriverLabStore.setState({ executing: true });
+    emitClientEvent('disconnected', {});
+    const state = useDriverLabStore.getState();
+    expect(state.connection.status).toBe('disconnected');
+    expect(state.executing).toBe(false);
   });
 
   it('handleWsMessage driver.started updates pid', () => {
@@ -106,6 +143,28 @@ describe('useDriverLabStore', () => {
     const { handleWsMessage } = useDriverLabStore.getState();
     handleWsMessage({ type: 'driver.exited', exitCode: 0, exitStatus: 'normal', reason: '' } as unknown as WsMessage);
     expect(useDriverLabStore.getState().connection.status).toBe('disconnected');
+  });
+
+  it('handleWsMessage driver.exited in oneshot keeps status and clears pid', () => {
+    useDriverLabStore.setState({
+      connection: {
+        status: 'connected',
+        driverId: 'drv1',
+        runMode: 'oneshot',
+        pid: 1234,
+        connectedAt: Date.now(),
+        meta: null,
+        error: null,
+      },
+      executing: true,
+    });
+    useDriverLabStore.getState().handleWsMessage(
+      { type: 'driver.exited', exitCode: 0, exitStatus: 'normal', reason: '' } as unknown as WsMessage,
+    );
+    const state = useDriverLabStore.getState();
+    expect(state.connection.status).toBe('connected');
+    expect(state.connection.pid).toBeNull();
+    expect(state.executing).toBe(false);
   });
 
   it('handleWsMessage error updates connection error', () => {

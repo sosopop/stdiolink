@@ -1,20 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const storeSpies = vi.hoisted(() => ({
+  instancesFetchInstances: vi.fn(),
+  dashboardFetchServerStatus: vi.fn(),
+  dashboardFetchInstances: vi.fn(),
+  dashboardAddEvent: vi.fn(),
+  projectsFetchProjects: vi.fn(),
+  projectsFetchRuntimes: vi.fn(),
+  servicesFetchServices: vi.fn(),
+  driversFetchDrivers: vi.fn(),
+}));
+
 // Mock dependent stores BEFORE importing the store under test
 vi.mock('@/stores/useInstancesStore', () => ({
-  useInstancesStore: { getState: () => ({ fetchInstances: vi.fn() }) },
+  useInstancesStore: { getState: () => ({ fetchInstances: storeSpies.instancesFetchInstances }) },
 }));
 vi.mock('@/stores/useDashboardStore', () => ({
-  useDashboardStore: { getState: () => ({ fetchServerStatus: vi.fn(), fetchInstances: vi.fn(), addEvent: vi.fn() }) },
+  useDashboardStore: {
+    getState: () => ({
+      fetchServerStatus: storeSpies.dashboardFetchServerStatus,
+      fetchInstances: storeSpies.dashboardFetchInstances,
+      addEvent: storeSpies.dashboardAddEvent,
+    }),
+  },
 }));
 vi.mock('@/stores/useProjectsStore', () => ({
-  useProjectsStore: { getState: () => ({ fetchProjects: vi.fn(), fetchRuntimes: vi.fn() }) },
+  useProjectsStore: {
+    getState: () => ({
+      fetchProjects: storeSpies.projectsFetchProjects,
+      fetchRuntimes: storeSpies.projectsFetchRuntimes,
+    }),
+  },
 }));
 vi.mock('@/stores/useServicesStore', () => ({
-  useServicesStore: { getState: () => ({ fetchServices: vi.fn() }) },
+  useServicesStore: { getState: () => ({ fetchServices: storeSpies.servicesFetchServices }) },
 }));
 vi.mock('@/stores/useDriversStore', () => ({
-  useDriversStore: { getState: () => ({ fetchDrivers: vi.fn() }) },
+  useDriversStore: { getState: () => ({ fetchDrivers: storeSpies.driversFetchDrivers }) },
 }));
 
 // Mock EventStream
@@ -70,6 +92,46 @@ describe('useEventStreamStore', () => {
     errorCb!({ type: 'error', data: {} });
     expect(useEventStreamStore.getState().status).toBe('reconnecting');
     expect(useEventStreamStore.getState().reconnectAttempts).toBe(1);
+    vi.useRealTimers();
+  });
+
+  it('reconnect success refreshes dashboard/projects state', () => {
+    vi.useFakeTimers();
+    useEventStreamStore.setState({ status: 'connected' });
+    useEventStreamStore.getState().connect();
+
+    const errorCb = mockOnCallbacks.get('error');
+    expect(errorCb).toBeDefined();
+    errorCb!({ type: 'error', data: {} });
+
+    expect(useEventStreamStore.getState().status).toBe('reconnecting');
+    vi.advanceTimersByTime(1000);
+
+    const connectedCb = mockOnCallbacks.get('connected');
+    expect(connectedCb).toBeDefined();
+    connectedCb!({ type: 'connected', data: {} });
+
+    expect(useEventStreamStore.getState().status).toBe('connected');
+    expect(storeSpies.dashboardFetchServerStatus).toHaveBeenCalledTimes(1);
+    expect(storeSpies.dashboardFetchInstances).toHaveBeenCalledTimes(1);
+    expect(storeSpies.instancesFetchInstances).toHaveBeenCalledTimes(1);
+    expect(storeSpies.projectsFetchProjects).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('error callback after intentional disconnect does not schedule reconnect', () => {
+    vi.useFakeTimers();
+    useEventStreamStore.getState().connect();
+    const errorCb = mockOnCallbacks.get('error');
+    expect(errorCb).toBeDefined();
+
+    useEventStreamStore.getState().disconnect();
+    errorCb!({ type: 'error', data: {} });
+
+    const state = useEventStreamStore.getState();
+    expect(state.status).toBe('disconnected');
+    expect(state.reconnectAttempts).toBe(0);
+    expect(state._reconnectTimer).toBeNull();
     vi.useRealTimers();
   });
 
