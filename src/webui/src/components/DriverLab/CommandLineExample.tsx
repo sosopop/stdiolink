@@ -51,7 +51,6 @@ export function buildArgsLine(
 }
 
 export const CommandLineExample: React.FC<CommandLineExampleProps> = ({
-  driverId,
   command,
   params,
 }) => {
