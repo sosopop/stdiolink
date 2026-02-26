@@ -14,6 +14,7 @@ Options:
   --with-tests         Include test binaries in bin/
   --skip-build         Skip C++ build (assume build/bin already exists)
   --skip-webui         Skip WebUI build
+  --skip-tests         Skip test execution before packaging
   -h, --help           Show this help
 
 Example:
@@ -83,6 +84,7 @@ $packageName = ""
 $withTests = $false
 $skipBuild = $false
 $skipWebui = $false
+$skipTests = $false
 
 for ($i = 0; $i -lt $args.Count; ) {
     $arg = [string]$args[$i]
@@ -132,6 +134,11 @@ for ($i = 0; $i -lt $args.Count; ) {
             $i += 1
             continue
         }
+        "--skip-tests" {
+            $skipTests = $true
+            $i += 1
+            continue
+        }
         "-h" {
             Show-Usage
             exit 0
@@ -156,6 +163,16 @@ if ([string]::IsNullOrWhiteSpace($buildDir) -or [string]::IsNullOrWhiteSpace($ou
 $buildDirAbs = Resolve-AbsolutePath -Path $buildDir -RootDir $rootDir
 $outputDirAbs = Resolve-AbsolutePath -Path $outputDir -RootDir $rootDir
 $binDir = Join-Path $buildDirAbs "bin"
+
+# Resolve npm.cmd / npx.cmd early so both WebUI build and test blocks can use them.
+# Using .cmd directly bypasses the npm.ps1 shim which is incompatible with StrictMode.
+$npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+$npmExe = $null
+$npxExe = $null
+if ($npmCmd) {
+    $npmExe = Join-Path (Split-Path $npmCmd.Source) "npm.cmd"
+    $npxExe = Join-Path (Split-Path $npmCmd.Source) "npx.cmd"
+}
 
 # ── C++ build ────────────────────────────────────────────────────────
 if (-not $skipBuild) {
@@ -202,6 +219,7 @@ Write-Host "  output root : $outputDirAbs"
 Write-Host "  package dir : $packageDir"
 Write-Host "  with tests  : $([int][bool]$withTests)"
 Write-Host "  skip webui  : $([int][bool]$skipWebui)"
+Write-Host "  skip tests  : $([int][bool]$skipTests)"
 
 if (Test-Path -LiteralPath $packageDir) {
     Remove-Item -LiteralPath $packageDir -Recurse -Force
@@ -256,18 +274,13 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
     Write-Host "Building WebUI..."
     $webuiDir = Join-Path $rootDir "src/webui"
 
-    $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
-    if (-not $npmCmd) {
+    if (-not $npmExe) {
         Write-Error "npm not found. Install Node.js or use --skip-webui to skip WebUI build."
         exit 1
     }
 
     Push-Location $webuiDir
     try {
-        # Use npm.cmd directly to bypass the npm.ps1 shim which is
-        # incompatible with Set-StrictMode -Version Latest.
-        $npmExe = Join-Path (Split-Path $npmCmd.Source) "npm.cmd"
-
         Write-Host "  npm ci ..."
         & $npmExe ci --ignore-scripts 2>&1
         if ($LASTEXITCODE -ne 0) {
@@ -301,6 +314,69 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
     }
 } elseif (-not $skipWebui) {
     Write-Host "WebUI source not found, skipping WebUI build."
+}
+
+# ── Test execution ────────────────────────────────────────────────────
+if (-not $skipTests) {
+    Write-Host "=== Running test suites ==="
+
+    # 1. GTest (C++)
+    $gtestBin = Join-Path $binDir "stdiolink_tests.exe"
+    if (Test-Path -LiteralPath $gtestBin -PathType Leaf) {
+        Write-Host "--- GTest (C++) ---"
+        & $gtestBin
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "GTest failed (exit code $LASTEXITCODE)"
+            exit 1
+        }
+        Write-Host "  GTest passed."
+    } else {
+        Write-Host "WARNING: GTest binary not found at $gtestBin, skipping C++ tests."
+    }
+
+    # 2. Vitest (WebUI unit tests)
+    $webuiNodeModules = Join-Path $rootDir "src/webui/node_modules"
+    if ($npmExe -and (Test-Path -LiteralPath $webuiNodeModules -PathType Container)) {
+        Write-Host "--- Vitest (WebUI unit tests) ---"
+        Push-Location (Join-Path $rootDir "src/webui")
+        try {
+            & $npmExe run test 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Vitest failed (exit code $LASTEXITCODE)"
+                exit 1
+            }
+        } finally {
+            Pop-Location
+        }
+        Write-Host "  Vitest passed."
+    } else {
+        Write-Host "WARNING: npm or node_modules not available, skipping Vitest."
+    }
+
+    # 3. Playwright (E2E)
+    if ($npxExe -and (Test-Path -LiteralPath $webuiNodeModules -PathType Container)) {
+        Write-Host "--- Playwright (E2E tests) ---"
+        Push-Location (Join-Path $rootDir "src/webui")
+        try {
+            & $npxExe playwright install chromium 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Playwright browser install failed (exit code $LASTEXITCODE)"
+                exit 1
+            }
+            & $npxExe playwright test 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Playwright tests failed (exit code $LASTEXITCODE)"
+                exit 1
+            }
+        } finally {
+            Pop-Location
+        }
+        Write-Host "  Playwright passed."
+    } else {
+        Write-Host "WARNING: npx or node_modules not available, skipping Playwright."
+    }
+
+    Write-Host "=== All test suites passed ==="
 }
 
 # ── Binaries ─────────────────────────────────────────────────────────
@@ -419,6 +495,7 @@ $manifestLines += "git_commit=$(Get-GitRev -RootDir $rootDir -RevArgs @('HEAD'))
 $manifestLines += "build_dir=$buildDirAbs"
 $manifestLines += "with_tests=$([int][bool]$withTests)"
 $manifestLines += "skip_webui=$([int][bool]$skipWebui)"
+$manifestLines += "skip_tests=$([int][bool]$skipTests)"
 $manifestLines += ""
 $manifestLines += "[bin]"
 

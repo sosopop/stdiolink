@@ -13,6 +13,7 @@ Options:
   --with-tests         Include test binaries in bin/
   --skip-build         Skip C++ build (assume build/bin already exists)
   --skip-webui         Skip WebUI build
+  --skip-tests         Skip test execution before packaging
   -h, --help           Show this help
 
 Example:
@@ -30,6 +31,7 @@ PACKAGE_NAME=""
 WITH_TESTS=0
 SKIP_BUILD=0
 SKIP_WEBUI=0
+SKIP_TESTS=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -55,6 +57,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-webui)
             SKIP_WEBUI=1
+            shift
+            ;;
+        --skip-tests)
+            SKIP_TESTS=1
             shift
             ;;
         -h|--help)
@@ -121,6 +127,7 @@ echo "  output root : ${OUTPUT_DIR_ABS}"
 echo "  package dir : ${PACKAGE_DIR}"
 echo "  with tests  : ${WITH_TESTS}"
 echo "  skip webui  : ${SKIP_WEBUI}"
+echo "  skip tests  : ${SKIP_TESTS}"
 
 rm -rf "${PACKAGE_DIR}"
 
@@ -195,6 +202,46 @@ if [[ "${SKIP_WEBUI}" -eq 0 ]] && [[ -f "${ROOT_DIR}/src/webui/package.json" ]];
     popd > /dev/null
 elif [[ "${SKIP_WEBUI}" -eq 0 ]]; then
     echo "WebUI source not found, skipping WebUI build."
+fi
+
+# ── Test execution ────────────────────────────────────────────────────
+if [[ "${SKIP_TESTS}" -eq 0 ]]; then
+    echo "=== Running test suites ==="
+
+    # 1. GTest (C++)
+    GTEST_BIN="${BIN_DIR}/stdiolink_tests"
+    if [[ -f "${GTEST_BIN}" ]]; then
+        echo "--- GTest (C++) ---"
+        "${GTEST_BIN}"
+        echo "  GTest passed."
+    else
+        echo "WARNING: GTest binary not found at ${GTEST_BIN}, skipping C++ tests."
+    fi
+
+    # 2. Vitest (WebUI unit tests)
+    if command -v npm &> /dev/null && [[ -d "${ROOT_DIR}/src/webui/node_modules" ]]; then
+        echo "--- Vitest (WebUI unit tests) ---"
+        pushd "${ROOT_DIR}/src/webui" > /dev/null
+        npm run test
+        popd > /dev/null
+        echo "  Vitest passed."
+    else
+        echo "WARNING: npm or node_modules not available, skipping Vitest."
+    fi
+
+    # 3. Playwright (E2E)
+    if command -v npx &> /dev/null && [[ -d "${ROOT_DIR}/src/webui/node_modules" ]]; then
+        echo "--- Playwright (E2E tests) ---"
+        pushd "${ROOT_DIR}/src/webui" > /dev/null
+        npx playwright install chromium
+        npx playwright test
+        popd > /dev/null
+        echo "  Playwright passed."
+    else
+        echo "WARNING: npx or node_modules not available, skipping Playwright."
+    fi
+
+    echo "=== All test suites passed ==="
 fi
 
 # ── Binaries ─────────────────────────────────────────────────────────
@@ -291,6 +338,7 @@ MANIFEST="${PACKAGE_DIR}/RELEASE_MANIFEST.txt"
     echo "build_dir=${BUILD_DIR_ABS}"
     echo "with_tests=${WITH_TESTS}"
     echo "skip_webui=${SKIP_WEBUI}"
+    echo "skip_tests=${SKIP_TESTS}"
     echo
     echo "[bin]"
     find "${PACKAGE_DIR}/bin" -maxdepth 1 -type f -exec basename {} \; | sort
