@@ -100,78 +100,103 @@ if ($npmCmd) {
 }
 
 $passed = 0
+$failed = 0
+$failedNames = @()
 
 # ── GTest (C++) ───────────────────────────────────────────────────────
 if ($runGtest) {
     Write-Host "=== GTest (C++) ==="
     $gtestBin = Join-Path $binDir "stdiolink_tests.exe"
     if (-not (Test-Path -LiteralPath $gtestBin -PathType Leaf)) {
-        Write-Error "GTest binary not found at $gtestBin. Build the project first or use --build-dir."
-        exit 1
+        Write-Host "SKIP: GTest binary not found at $gtestBin"
+        $failed++
+        $failedNames += "GTest (binary not found)"
+    } else {
+        & $gtestBin
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "FAIL: GTest failed (exit code $LASTEXITCODE)"
+            $failed++
+            $failedNames += "GTest"
+        } else {
+            Write-Host "  GTest passed."
+            $passed++
+        }
     }
-    & $gtestBin
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "GTest failed (exit code $LASTEXITCODE)"
-        exit 1
-    }
-    Write-Host "  GTest passed."
-    $passed++
 }
 
 # ── Vitest (WebUI unit) ──────────────────────────────────────────────
 if ($runVitest) {
     Write-Host "=== Vitest (WebUI unit tests) ==="
     if (-not (Test-Path -LiteralPath (Join-Path $webuiDir "node_modules") -PathType Container)) {
-        Write-Error "node_modules not found in $webuiDir. Run 'npm ci' in src/webui first."
-        exit 1
-    }
-    if (-not $npmExe) {
-        Write-Error "npm not found. Install Node.js to run Vitest."
-        exit 1
-    }
-    Push-Location $webuiDir
-    try {
-        & $npmExe run test 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Vitest failed (exit code $LASTEXITCODE)"
-            exit 1
+        Write-Host "SKIP: node_modules not found in $webuiDir"
+        $failed++
+        $failedNames += "Vitest (node_modules not found)"
+    } elseif (-not $npmExe) {
+        Write-Host "SKIP: npm not found"
+        $failed++
+        $failedNames += "Vitest (npm not found)"
+    } else {
+        Push-Location $webuiDir
+        try {
+            & $npmExe run test
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "FAIL: Vitest failed (exit code $LASTEXITCODE)"
+                $failed++
+                $failedNames += "Vitest"
+            } else {
+                Write-Host "  Vitest passed."
+                $passed++
+            }
+        } finally {
+            Pop-Location
         }
-    } finally {
-        Pop-Location
     }
-    Write-Host "  Vitest passed."
-    $passed++
 }
 
 # ── Playwright (E2E) ─────────────────────────────────────────────────
 if ($runPlaywright) {
     Write-Host "=== Playwright (E2E tests) ==="
     if (-not (Test-Path -LiteralPath (Join-Path $webuiDir "node_modules") -PathType Container)) {
-        Write-Error "node_modules not found in $webuiDir. Run 'npm ci' in src/webui first."
-        exit 1
-    }
-    if (-not $npxExe) {
-        Write-Error "npx not found. Install Node.js to run Playwright."
-        exit 1
-    }
-    Push-Location $webuiDir
-    try {
-        & $npxExe playwright install chromium 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Playwright browser install failed (exit code $LASTEXITCODE)"
-            exit 1
+        Write-Host "SKIP: node_modules not found in $webuiDir"
+        $failed++
+        $failedNames += "Playwright (node_modules not found)"
+    } elseif (-not $npxExe) {
+        Write-Host "SKIP: npx not found"
+        $failed++
+        $failedNames += "Playwright (npx not found)"
+    } else {
+        Push-Location $webuiDir
+        try {
+            & $npxExe playwright install chromium
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "FAIL: Playwright browser install failed (exit code $LASTEXITCODE)"
+                $failed++
+                $failedNames += "Playwright (browser install)"
+            } else {
+                & $npxExe playwright test
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "FAIL: Playwright tests failed (exit code $LASTEXITCODE)"
+                    $failed++
+                    $failedNames += "Playwright"
+                } else {
+                    Write-Host "  Playwright passed."
+                    $passed++
+                }
+            }
+        } finally {
+            Pop-Location
         }
-        & $npxExe playwright test 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Playwright tests failed (exit code $LASTEXITCODE)"
-            exit 1
-        }
-    } finally {
-        Pop-Location
     }
-    Write-Host "  Playwright passed."
-    $passed++
 }
 
 Write-Host ""
-Write-Host "=== All $passed test suite(s) passed ==="
+if ($failed -gt 0) {
+    Write-Host "=== $passed passed, $failed failed ==="
+    Write-Host "Failed suites:"
+    foreach ($name in $failedNames) {
+        Write-Host "  - $name"
+    }
+    exit 1
+} else {
+    Write-Host "=== All $passed test suite(s) passed ==="
+}

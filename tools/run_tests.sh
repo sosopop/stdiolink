@@ -75,19 +75,26 @@ fi
 
 WEBUI_DIR="${ROOT_DIR}/src/webui"
 PASSED=0
+FAILED=0
+FAILED_NAMES=""
 
 # ── GTest (C++) ───────────────────────────────────────────────────────
 if [[ "${RUN_GTEST}" -eq 1 ]]; then
     echo "=== GTest (C++) ==="
     GTEST_BIN="${BIN_DIR}/stdiolink_tests"
     if [[ -f "${GTEST_BIN}" ]]; then
-        "${GTEST_BIN}"
-        echo "  GTest passed."
-        PASSED=$((PASSED + 1))
+        if "${GTEST_BIN}"; then
+            echo "  GTest passed."
+            PASSED=$((PASSED + 1))
+        else
+            echo "FAIL: GTest failed (exit code $?)"
+            FAILED=$((FAILED + 1))
+            FAILED_NAMES="${FAILED_NAMES}  - GTest\n"
+        fi
     else
-        echo "Error: GTest binary not found at ${GTEST_BIN}" >&2
-        echo "Build the project first or use --build-dir to specify the build directory." >&2
-        exit 1
+        echo "SKIP: GTest binary not found at ${GTEST_BIN}"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="${FAILED_NAMES}  - GTest (binary not found)\n"
     fi
 fi
 
@@ -95,32 +102,50 @@ fi
 if [[ "${RUN_VITEST}" -eq 1 ]]; then
     echo "=== Vitest (WebUI unit tests) ==="
     if [[ ! -d "${WEBUI_DIR}/node_modules" ]]; then
-        echo "Error: node_modules not found in ${WEBUI_DIR}" >&2
-        echo "Run 'npm ci' in src/webui first." >&2
-        exit 1
+        echo "SKIP: node_modules not found in ${WEBUI_DIR}"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="${FAILED_NAMES}  - Vitest (node_modules not found)\n"
+    else
+        pushd "${WEBUI_DIR}" > /dev/null
+        if npm run test; then
+            echo "  Vitest passed."
+            PASSED=$((PASSED + 1))
+        else
+            echo "FAIL: Vitest failed (exit code $?)"
+            FAILED=$((FAILED + 1))
+            FAILED_NAMES="${FAILED_NAMES}  - Vitest\n"
+        fi
+        popd > /dev/null
     fi
-    pushd "${WEBUI_DIR}" > /dev/null
-    npm run test
-    popd > /dev/null
-    echo "  Vitest passed."
-    PASSED=$((PASSED + 1))
 fi
 
 # ── Playwright (E2E) ─────────────────────────────────────────────────
 if [[ "${RUN_PLAYWRIGHT}" -eq 1 ]]; then
     echo "=== Playwright (E2E tests) ==="
     if [[ ! -d "${WEBUI_DIR}/node_modules" ]]; then
-        echo "Error: node_modules not found in ${WEBUI_DIR}" >&2
-        echo "Run 'npm ci' in src/webui first." >&2
-        exit 1
+        echo "SKIP: node_modules not found in ${WEBUI_DIR}"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="${FAILED_NAMES}  - Playwright (node_modules not found)\n"
+    else
+        pushd "${WEBUI_DIR}" > /dev/null
+        if npx playwright install chromium && npx playwright test; then
+            echo "  Playwright passed."
+            PASSED=$((PASSED + 1))
+        else
+            echo "FAIL: Playwright failed (exit code $?)"
+            FAILED=$((FAILED + 1))
+            FAILED_NAMES="${FAILED_NAMES}  - Playwright\n"
+        fi
+        popd > /dev/null
     fi
-    pushd "${WEBUI_DIR}" > /dev/null
-    npx playwright install chromium
-    npx playwright test
-    popd > /dev/null
-    echo "  Playwright passed."
-    PASSED=$((PASSED + 1))
 fi
 
 echo ""
-echo "=== All ${PASSED} test suite(s) passed ==="
+if [[ "${FAILED}" -gt 0 ]]; then
+    echo "=== ${PASSED} passed, ${FAILED} failed ==="
+    echo "Failed suites:"
+    printf "${FAILED_NAMES}"
+    exit 1
+else
+    echo "=== All ${PASSED} test suite(s) passed ==="
+fi

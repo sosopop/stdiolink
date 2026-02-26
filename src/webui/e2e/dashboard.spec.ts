@@ -26,6 +26,27 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Demo Project').first()).toBeVisible();
   });
 
+  test('shows project cards with details', async ({ page }) => {
+    // 验证项目卡片中包含关键信息
+    await expect(page.getByText('demo-project').first()).toBeVisible();
+    await expect(page.getByText('demo-service').first()).toBeVisible();
+  });
+
+  test('shows Live Instances table', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /Live Instances/i })).toBeVisible();
+    // 表头列
+    await expect(page.getByRole('columnheader', { name: /Target Project/i })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: /System PID/i })).toBeVisible();
+    // 表格数据
+    await expect(page.getByText('12345').first()).toBeVisible();
+  });
+
+  test('shows Event Feed section', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Event Feed' })).toBeVisible();
+    // 没有事件时应显示空状态
+    await expect(page.getByText('No events recorded')).toBeVisible();
+  });
+
   test('navigates to services via sidebar', async ({ page }) => {
     await page.getByRole('menuitem', { name: /services/i }).click();
     await expect(page).toHaveURL(/\/services/);

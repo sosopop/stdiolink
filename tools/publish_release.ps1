@@ -282,10 +282,10 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
     Push-Location $webuiDir
     try {
         Write-Host "  npm ci ..."
-        & $npmExe ci --ignore-scripts 2>&1
+        & $npmExe ci --ignore-scripts
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  npm ci failed, retrying with npm install ..."
-            & $npmExe install --ignore-scripts 2>&1
+            & $npmExe install --ignore-scripts
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "npm install failed"
                 exit 1
@@ -293,7 +293,7 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
         }
 
         Write-Host "  npm run build ..."
-        & $npmExe run build 2>&1
+        & $npmExe run build
         if ($LASTEXITCODE -ne 0) {
             Write-Error "WebUI build failed"
             exit 1
@@ -340,7 +340,7 @@ if (-not $skipTests) {
         Write-Host "--- Vitest (WebUI unit tests) ---"
         Push-Location (Join-Path $rootDir "src/webui")
         try {
-            & $npmExe run test 2>&1
+            & $npmExe run test
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "Vitest failed (exit code $LASTEXITCODE)"
                 exit 1
@@ -358,12 +358,12 @@ if (-not $skipTests) {
         Write-Host "--- Playwright (E2E tests) ---"
         Push-Location (Join-Path $rootDir "src/webui")
         try {
-            & $npxExe playwright install chromium 2>&1
+            & $npxExe playwright install chromium
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "Playwright browser install failed (exit code $LASTEXITCODE)"
                 exit 1
             }
-            & $npxExe playwright test 2>&1
+            & $npxExe playwright test
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "Playwright tests failed (exit code $LASTEXITCODE)"
                 exit 1
