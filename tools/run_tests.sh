@@ -75,7 +75,6 @@ fi
 
 WEBUI_DIR="${ROOT_DIR}/src/webui"
 PASSED=0
-FAILED=0
 
 # ── GTest (C++) ───────────────────────────────────────────────────────
 if [[ "${RUN_GTEST}" -eq 1 ]]; then
