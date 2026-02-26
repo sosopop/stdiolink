@@ -21,7 +21,7 @@ const sharedComponentConfig = {
     controlHeightLG: 44,
     paddingInline: 16,
     fontWeight: 500,
-    primaryShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.3)', // Glow effect for primary
+    primaryShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.3)',
   },
   Input: {
     borderRadius: 6,
@@ -32,7 +32,13 @@ const sharedComponentConfig = {
     controlHeight: 36,
   },
   Card: {
-    borderRadius: 12, // Keep cards rounded
+    borderRadius: 12,
+  },
+  Modal: {
+    borderRadius: 16,
+  },
+  Dropdown: {
+    borderRadius: 10,
   },
 };
 
@@ -41,7 +47,7 @@ export const darkTheme: ThemeConfig = {
   token: {
     ...commonToken,
     colorBgBase: '#05060A',
-    colorBgContainer: '#14161E', // Matches --surface-card
+    colorBgContainer: '#14161E',
     colorBgElevated: '#1E222D',
     colorBorder: 'rgba(255, 255, 255, 0.1)',
     colorTextBase: '#F1F5F9',
@@ -73,23 +79,31 @@ export const lightTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
   token: {
     ...commonToken,
-    colorBgBase: '#F8F9FA',
+    colorBgBase: '#F4F5F7',
     colorBgContainer: '#FFFFFF',
-    colorBgElevated: '#F1F5F9',
-    colorBorder: 'rgba(0, 0, 0, 0.06)',
+    colorBgElevated: '#FFFFFF',
+    colorBorder: 'rgba(0, 0, 0, 0.08)',
     colorTextBase: '#1E293B',
     colorTextSecondary: '#64748B',
   },
   components: {
     ...sharedComponentConfig,
     Layout: {
-      headerBg: 'rgba(248, 249, 250, 0.8)',
-      siderBg: '#FFFFFF',
+      headerBg: 'rgba(255, 255, 255, 0.72)',
+      siderBg: 'rgba(255, 255, 255, 0.65)',
       bodyBg: 'transparent',
     },
     Menu: {
       itemBg: 'transparent',
-      itemSelectedBg: 'rgba(99, 102, 241, 0.1)',
-    }
+      itemSelectedBg: 'rgba(99, 102, 241, 0.08)',
+      itemSelectedColor: '#4F46E5',
+    },
+    Card: {
+      colorBgContainer: 'rgba(255, 255, 255, 0.85)',
+    },
+    Table: {
+      colorBgContainer: 'transparent',
+      headerBg: 'rgba(0, 0, 0, 0.02)',
+    },
   }
 };

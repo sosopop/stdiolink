@@ -215,7 +215,7 @@
 
 .serviceTag {
   margin: 0;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hover-overlay);
   border-radius: 6px;
   color: var(--text-secondary);
   font-size: 10px;
@@ -296,7 +296,7 @@
 }
 
 .actionBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hover-overlay-strong);
   color: var(--text-primary);
 }
 
@@ -332,8 +332,8 @@
 }
 
 .eventItem:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--hover-overlay);
+  border-color: var(--hover-overlay-strong);
 }
 
 .eventHeader {

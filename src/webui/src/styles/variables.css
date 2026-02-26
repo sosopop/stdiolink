@@ -13,22 +13,25 @@
   --space-xl: 32px;
   --space-2xl: 48px;
 
-  /* Premium Palette - Dark (Default) - TECH UPDATE */
+  /* Premium Palette - Dark (Default) */
   --bg-body: #05060A;
-  /* Deeper black */
   --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
     radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.08) 0%, transparent 40%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
-  /* Subtle top sheen */
 
   --surface-card: rgba(20, 22, 30, 0.6);
   --surface-hover: rgba(255, 255, 255, 0.06);
   --surface-layer2: rgba(255, 255, 255, 0.03);
   --surface-border: rgba(255, 255, 255, 0.1);
   --surface-glass: rgba(10, 10, 16, 0.7);
-  /* Custom glass base */
+  --surface-glass-blur: blur(20px);
   --bg-sidebar: rgba(11, 12, 21, 0.4);
   --bg-code: rgba(0, 0, 0, 0.2);
+
+  /* 交互叠加层 - 取代硬编码 rgba */
+  --hover-overlay: rgba(255, 255, 255, 0.06);
+  --hover-overlay-strong: rgba(255, 255, 255, 0.1);
+  --table-header-bg: rgba(255, 255, 255, 0.04);
 
   --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;
@@ -38,18 +41,24 @@
   --brand-glow: rgba(99, 102, 241, 0.6);
   --brand-gradient: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
 
-  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-elevation: 0 0 0 1px rgba(99, 102, 241, 0.3), 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-elevation: 0 0 0 1px rgba(99, 102, 241, 0.3),
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(99, 102, 241, 0.08);
 
   --logo-gradient: linear-gradient(to right, #fff, #94a3b8);
-  /* Default light gradient for dark mode */
 
-  /* Semantic Colors (Matches AntD Token) */
+  /* 日志终端 */
+  --log-bg: #0d1117;
+  --log-text: #c9d1d9;
+
+  /* Semantic Colors */
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
   --color-info: #3B82F6;
-
 
   /* Typography */
   --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
@@ -57,26 +66,41 @@
 }
 
 [data-theme='light'] {
-  --bg-body: #F8F9FA;
-  --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+  --bg-body: #F4F5F7;
+  --bg-gradient: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%);
 
-  --surface-card: #FFFFFF;
-  --surface-hover: #F1F5F9;
-  --surface-border: rgba(0, 0, 0, 0.06);
-  --surface-glass: rgba(255, 255, 255, 0.7);
-  /* Fixed: color value instead of blur */
-  --bg-sidebar: rgba(255, 255, 255, 0.6);
+  --surface-card: rgba(255, 255, 255, 0.85);
+  --surface-hover: rgba(0, 0, 0, 0.03);
+  --surface-layer2: rgba(0, 0, 0, 0.02);
+  --surface-border: rgba(0, 0, 0, 0.08);
+  --surface-glass: rgba(255, 255, 255, 0.72);
+  --surface-glass-blur: blur(20px);
+  --bg-sidebar: rgba(255, 255, 255, 0.65);
   --bg-code: rgba(0, 0, 0, 0.04);
+
+  /* 交互叠加层 - 亮色版本 */
+  --hover-overlay: rgba(0, 0, 0, 0.04);
+  --hover-overlay-strong: rgba(0, 0, 0, 0.08);
+  --table-header-bg: rgba(0, 0, 0, 0.02);
 
   --text-primary: #1E293B;
   --text-secondary: #64748B;
   --text-tertiary: #94A3B8;
 
   --brand-glow: rgba(99, 102, 241, 0.2);
+  --brand-gradient: linear-gradient(135deg, #4F46E5 0%, #9333EA 100%);
   --logo-gradient: linear-gradient(to right, #4F46E5, #9333EA);
-  /* Darker gradient for light mode */
 
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-elevation: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  /* 日志终端 - 亮色 */
+  --log-bg: #F5F5F7;
+  --log-text: #24292f;
+
+  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-elevation: 0 0 0 1px rgba(99, 102, 241, 0.15),
+    0 12px 32px rgba(0, 0, 0, 0.08),
+    0 0 20px rgba(99, 102, 241, 0.06);
 }
