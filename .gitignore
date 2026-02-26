@@ -1,5 +1,6 @@
 build/
 build_vs/
+build_release/
 vcpkg_installed/
 .vscode/
 .cache

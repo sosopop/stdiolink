@@ -51,8 +51,10 @@ export async function setupApiMocks(page: Page): Promise<void> {
     }),
   );
 
-  // Projects
-  await page.route('**/api/projects', (route) => {
+  // Projects（支持 ?serviceId=xxx 等查询参数）
+  await page.route((url) => {
+    return url.pathname.endsWith('/api/projects');
+  }, (route) => {
     if (route.request().method() === 'GET') {
       return route.fulfill({ json: { projects: mockProjects } });
     }

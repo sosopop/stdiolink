@@ -7,13 +7,24 @@ echo ========================================
 echo Build Script for Windows
 echo ========================================
 
-:: Set build configuration (default to Release)
+:: Parse arguments
 set BUILD_TYPE=Debug
-if not "%1"=="" set BUILD_TYPE=%1
-
-:: Set build directory
 set BUILD_DIR=build
 set INSTALL_DIR=install
+
+:parse_args
+if "%~1"=="" goto args_done
+if "%~1"=="--build-dir" (
+    set BUILD_DIR=%~2
+    shift
+    shift
+    goto parse_args
+)
+:: Positional argument = build type
+set BUILD_TYPE=%~1
+shift
+goto parse_args
+:args_done
 
 echo Build Type: %BUILD_TYPE%
 echo Build Directory: %BUILD_DIR%

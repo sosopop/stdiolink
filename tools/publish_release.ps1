@@ -8,7 +8,7 @@ Usage:
   tools/publish_release.ps1 [options]
 
 Options:
-  --build-dir <dir>    Build directory (default: build)
+  --build-dir <dir>    Build directory (default: build_release)
   --output-dir <dir>   Release output root (default: release)
   --name <name>        Package name (default: stdiolink_<timestamp>_<git>)
   --with-tests         Include test binaries in bin/
@@ -18,7 +18,7 @@ Options:
   -h, --help           Show this help
 
 Example:
-  tools/publish_release.ps1 --build-dir build --output-dir release
+  tools/publish_release.ps1 --build-dir build_release --output-dir release
   tools/publish_release.ps1 --name my_release
 "@ | Write-Host
 }
@@ -78,7 +78,7 @@ function Copy-DirClean {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
 
-$buildDir = "build"
+$buildDir = "build_release"
 $outputDir = "release"
 $packageName = ""
 $withTests = $false
@@ -185,7 +185,7 @@ if (-not $skipBuild) {
 
     Push-Location $rootDir
     try {
-        & cmd /c "call `"$buildBat`" Release"
+        & cmd /c "call `"$buildBat`" Release --build-dir `"$buildDir`""
         if ($LASTEXITCODE -ne 0) {
             Write-Error "C++ build failed (exit code $LASTEXITCODE)"
             exit 1
