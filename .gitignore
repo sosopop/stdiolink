@@ -37,3 +37,4 @@ yarn-error.log*
 src/webui/test-results/
 src/webui/tsconfig.tsbuildinfo
 src/webui/.vitest-report.json
+build_check/

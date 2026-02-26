@@ -63,6 +63,11 @@ set(TEST_SOURCES
     test_server_logger.cpp
     test_instance_log_writer.cpp
     test_event_log.cpp
+    test_modbustcp_server_handler.cpp
+    test_modbusrtu_server_handler.cpp
+    test_modbusrtu_serial_server.cpp
+    test_modbusrtu_serial.cpp
+    test_plc_crane.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -118,13 +123,30 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/server_manager.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/utils/process_env_utils.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/utils/server_logger.cpp
+    # M79-M83 驱动源文件
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu/modbus_types.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp/modbus_client.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp_server/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp_server/modbus_tcp_server.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_server/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_server/modbus_rtu_server.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial_server/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial_server/modbus_rtu_serial_server.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane/handler.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp
+    ${CMAKE_SOURCE_DIR}/src/drivers
 )
+
+find_package(Qt6 COMPONENTS SerialPort REQUIRED)
 
 target_link_libraries(stdiolink_tests PRIVATE
     stdiolink
@@ -134,6 +156,7 @@ target_link_libraries(stdiolink_tests PRIVATE
     Qt6::HttpServer
     Qt6::WebSockets
     Qt6::Concurrent
+    Qt6::SerialPort
 )
 
 if(TARGET qjs)

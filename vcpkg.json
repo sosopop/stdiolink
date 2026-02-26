@@ -5,6 +5,7 @@
     "qtbase",
     "qtwebsockets",
     "qthttpserver",
+    "qtserialport",
     "gtest",
     "quickjs-ng",
     "spdlog"

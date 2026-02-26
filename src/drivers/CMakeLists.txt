@@ -3,3 +3,8 @@
 add_subdirectory(driver_3dvision)
 add_subdirectory(driver_modbustcp)
 add_subdirectory(driver_modbusrtu)
+add_subdirectory(driver_modbustcp_server)
+add_subdirectory(driver_modbusrtu_server)
+add_subdirectory(driver_modbusrtu_serial_server)
+add_subdirectory(driver_modbusrtu_serial)
+add_subdirectory(driver_plc_crane)

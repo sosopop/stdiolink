@@ -359,7 +359,7 @@ private:
 ### 5.3 测试文件
 - `src/tests/test_modbusrtu_serial.cpp` — T3.5 计算 + CRC16 + Handler 命令分发测试
 
-测试构建方式：在 `src/tests/CMakeLists.txt` 中新增独立测试目标 `test_modbusrtu_serial`，编译 `handler.cpp`、`modbus_rtu_serial_client.cpp`、`modbus_types.cpp` 及测试文件，链接 `stdiolink`、`GTest::gtest`、`Qt6::Core`、`Qt6::SerialPort`。不修改 `stdiolink_tests` 主测试目标。
+测试构建方式：在 `src/tests/CMakeLists.txt` 中将测试源文件 `test_modbusrtu_serial.cpp` 及驱动源文件（`handler.cpp`、`modbus_rtu_serial_client.cpp`、`modbus_types.cpp`）合并至 `stdiolink_tests` 主测试目标，通过 `--gtest_filter="*ModbusRtuSerialClient*:*ModbusRtuSerialHandler*"` 筛选运行。（用户确认后由独立测试目标改为合并方案）
 
 ## 6. 测试与验收
 

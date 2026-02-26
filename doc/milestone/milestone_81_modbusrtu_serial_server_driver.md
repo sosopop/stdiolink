@@ -395,7 +395,7 @@ double calculateT35(int baudRate, int dataBits, bool hasParity, double stopBits)
 
 ### 5.2 修改文件
 - `src/drivers/CMakeLists.txt` — 新增 `add_subdirectory(driver_modbusrtu_serial_server)`
-- `src/tests/CMakeLists.txt` — 新增独立测试目标 `test_modbusrtu_serial_server`，编译 `handler.cpp`、`modbus_rtu_serial_server.cpp` 及测试文件，链接 `stdiolink`、`GTest::gtest`、`Qt6::Core`、`Qt6::SerialPort`。不修改 `stdiolink_tests` 主测试目标
+- `src/tests/CMakeLists.txt` — 将测试源文件及驱动源文件合并至 `stdiolink_tests` 主测试目标，通过 `--gtest_filter="*ModbusRtuSerialServer*"` 筛选运行。（用户确认后由独立测试目标改为合并方案）
 
 ### 5.3 测试文件
 - `src/tests/test_modbusrtu_serial_server.cpp` — T3.5 计算 + CRC16 + Handler 命令分发测试
