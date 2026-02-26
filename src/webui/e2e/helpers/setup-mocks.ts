@@ -21,8 +21,8 @@ export async function setupApiMocks(page: Page): Promise<void> {
     route.fulfill({ json: mockServerStatus }),
   );
 
-  // SSE event stream - return empty to avoid hanging
-  await page.route('**/api/events', (route) =>
+  // SSE event stream - 返回空流避免挂起
+  await page.route('**/api/events/stream**', (route) =>
     route.fulfill({ status: 200, body: '', contentType: 'text/event-stream' }),
   );
 
@@ -70,6 +70,18 @@ export async function setupApiMocks(page: Page): Promise<void> {
     route.fulfill({ json: mockProjectRuntime }),
   );
 
+  // Projects runtime batch（列表页获取所有项目运行时状态）
+  await page.route('**/api/projects/runtime**', (route) =>
+    route.fulfill({
+      json: {
+        runtimes: [
+          { id: 'demo-project', status: 'running', runningInstances: 1 },
+          { id: 'test-project', status: 'stopped', runningInstances: 0 },
+        ],
+      },
+    }),
+  );
+
   await page.route('**/api/projects/demo-project/start', (route) =>
     route.fulfill({ json: { success: true } }),
   );
@@ -83,9 +95,10 @@ export async function setupApiMocks(page: Page): Promise<void> {
   );
 
   // Instances
-  await page.route('**/api/instances', (route) =>
-    route.fulfill({ json: { instances: mockInstances } }),
-  );
+  await page.route('**/api/instances', (route) => {
+    if (route.request().url().includes('/instances/')) return route.fallback();
+    return route.fulfill({ json: { instances: mockInstances } });
+  });
 
   await page.route('**/api/instances/inst-001', (route) =>
     route.fulfill({ json: mockInstanceDetail }),
@@ -95,11 +108,11 @@ export async function setupApiMocks(page: Page): Promise<void> {
     route.fulfill({ json: mockProcessTree }),
   );
 
-  await page.route('**/api/instances/inst-001/resources', (route) =>
+  await page.route('**/api/instances/inst-001/resources**', (route) =>
     route.fulfill({ json: mockResources }),
   );
 
-  await page.route('**/api/instances/inst-001/logs', (route) =>
+  await page.route('**/api/instances/inst-001/logs**', (route) =>
     route.fulfill({ json: mockInstanceLogs }),
   );
 

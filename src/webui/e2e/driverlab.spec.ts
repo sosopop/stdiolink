@@ -8,7 +8,8 @@ test.describe('DriverLab', () => {
 
   test('shows driverlab page', async ({ page }) => {
     await page.goto('/driverlab');
-    await expect(page.getByText(/DriverLab/i)).toBeVisible();
+    // 使用 heading 精确匹配页面标题，避免与侧边栏菜单文本冲突
+    await expect(page.getByRole('heading', { name: /Driver\s*Lab/i })).toBeVisible();
   });
 
   test('shows driver selection', async ({ page }) => {

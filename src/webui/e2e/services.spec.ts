@@ -29,15 +29,16 @@ test.describe('Services', () => {
 
   test('shows detail tabs', async ({ page }) => {
     await page.goto('/services/demo-service');
-    await expect(page.getByText('Overview')).toBeVisible();
-    await expect(page.getByText('Files')).toBeVisible();
-    await expect(page.getByText('Schema')).toBeVisible();
-    await expect(page.getByText('Projects')).toBeVisible();
+    // 使用 tab role 精确匹配标签页，避免与内容中 "Has Schema" 冲突
+    await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Files' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Schema' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Projects' })).toBeVisible();
   });
 
   test('switches detail tabs', async ({ page }) => {
     await page.goto('/services/demo-service');
-    await page.getByText('Files').click();
+    await page.getByRole('tab', { name: 'Files' }).click();
     await expect(page.getByText('index.js')).toBeVisible();
   });
 });
