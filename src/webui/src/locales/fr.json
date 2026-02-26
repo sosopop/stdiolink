@@ -326,6 +326,7 @@
             "no_messages": "Aucun message pour l'instant"
         },
         "cmdline": {
+            "label": "Arguments de commande",
             "placeholder": "Sélectionnez une commande pour voir l'exemple CLI",
             "copied": "Copié",
             "copy_failed": "Échec de la copie"

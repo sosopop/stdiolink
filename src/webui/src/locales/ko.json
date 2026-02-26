@@ -326,6 +326,7 @@
             "no_messages": "아직 메시지가 없습니다"
         },
         "cmdline": {
+            "label": "명령 인수",
             "placeholder": "CLI 예시를 보려면 명령어를 선택하세요",
             "copied": "복사됨",
             "copy_failed": "복사 실패"

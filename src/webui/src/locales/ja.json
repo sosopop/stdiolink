@@ -326,6 +326,7 @@
             "no_messages": "メッセージがありません"
         },
         "cmdline": {
+            "label": "コマンド引数",
             "placeholder": "コマンドを選択してCLI例を表示",
             "copied": "コピーしました",
             "copy_failed": "コピーに失敗しました"

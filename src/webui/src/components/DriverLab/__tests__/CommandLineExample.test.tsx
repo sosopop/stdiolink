@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCommandLine } from '../CommandLineExample';
+import { buildCommandLine, buildArgsLine } from '../CommandLineExample';
 import { render, screen } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { CommandLineExample } from '../CommandLineExample';
@@ -46,16 +46,35 @@ describe('buildCommandLine', () => {
   });
 });
 
+describe('buildArgsLine', () => {
+  it('returns empty when no command', () => {
+    expect(buildArgsLine(null, {})).toBe('');
+  });
+
+  it('generates args without driverId', () => {
+    expect(buildArgsLine('add', {})).toBe('--cmd=add');
+  });
+
+  it('appends params as --key=value', () => {
+    expect(buildArgsLine('add', { a: 1, b: 2 })).toBe('--cmd=add --a=1 --b=2');
+  });
+});
+
 describe('CommandLineExample component', () => {
   it('shows placeholder when no command selected', () => {
     render(<ConfigProvider><CommandLineExample driverId="drv" command={null} params={{}} /></ConfigProvider>);
     expect(screen.getByTestId('cmdline-placeholder')).toBeDefined();
   });
 
-  it('shows command line text when command selected', () => {
+  it('shows args only (no driverId) when command selected', () => {
     render(<ConfigProvider><CommandLineExample driverId="calc" command="add" params={{ a: 1 }} /></ConfigProvider>);
     expect(screen.getByTestId('cmdline-text')).toBeDefined();
-    expect(screen.getByTestId('cmdline-text').textContent).toBe('calc --cmd=add --a=1');
+    expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=1');
+  });
+
+  it('renders label above command line', () => {
+    render(<ConfigProvider><CommandLineExample driverId="calc" command="add" params={{}} /></ConfigProvider>);
+    expect(screen.getByTestId('cmdline-label')).toBeDefined();
   });
 
   it('renders copy button', () => {

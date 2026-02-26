@@ -36,17 +36,31 @@ export function buildCommandLine(
   return parts.join(' ');
 }
 
+export function buildArgsLine(
+  command: string | null,
+  params: Record<string, unknown>,
+): string {
+  if (!command) return '';
+  const parts = [`--cmd=${command}`];
+  for (const [key, value] of Object.entries(params)) {
+    const formatted = formatValue(value);
+    if (!formatted) continue;
+    parts.push(`--${key}=${formatted}`);
+  }
+  return parts.join(' ');
+}
+
 export const CommandLineExample: React.FC<CommandLineExampleProps> = ({
   driverId,
   command,
   params,
 }) => {
   const { t } = useTranslation();
-  const cmdLine = buildCommandLine(driverId, command, params);
+  const argsLine = buildArgsLine(command, params);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(cmdLine);
+      await navigator.clipboard.writeText(argsLine);
       message.success(t('driverlab.cmdline.copied'));
     } catch {
       message.error(t('driverlab.cmdline.copy_failed'));
@@ -64,30 +78,39 @@ export const CommandLineExample: React.FC<CommandLineExampleProps> = ({
   }
 
   return (
-    <div data-testid="cmdline-example" style={{ position: 'relative' }}>
-      <pre
-        data-testid="cmdline-text"
-        style={{
-          background: 'var(--surface-layer2, #1a1a2e)',
-          padding: '12px 40px 12px 12px',
-          borderRadius: 6,
-          fontSize: 12,
-          fontFamily: 'monospace',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all',
-          margin: 0,
-        }}
+    <div data-testid="cmdline-example" style={{ marginTop: 16 }}>
+      <Typography.Text
+        type="secondary"
+        data-testid="cmdline-label"
+        style={{ display: 'block', marginBottom: 4, fontSize: 12 }}
       >
-        {cmdLine}
-      </pre>
-      <Button
-        type="text"
-        size="small"
-        icon={<CopyOutlined />}
-        onClick={handleCopy}
-        data-testid="cmdline-copy"
-        style={{ position: 'absolute', top: 4, right: 4 }}
-      />
+        {t('driverlab.cmdline.label')}
+      </Typography.Text>
+      <div style={{ position: 'relative' }}>
+        <pre
+          data-testid="cmdline-text"
+          style={{
+            background: 'var(--surface-layer2, #1a1a2e)',
+            padding: '12px 40px 12px 12px',
+            borderRadius: 6,
+            fontSize: 12,
+            fontFamily: 'monospace',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            margin: 0,
+          }}
+        >
+          {argsLine}
+        </pre>
+        <Button
+          type="text"
+          size="small"
+          icon={<CopyOutlined />}
+          onClick={handleCopy}
+          data-testid="cmdline-copy"
+          style={{ position: 'absolute', top: '50%', right: 4, transform: 'translateY(-50%)' }}
+        />
+      </div>
     </div>
   );
 };

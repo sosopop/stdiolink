@@ -326,6 +326,7 @@
             "no_messages": "Noch keine Nachrichten"
         },
         "cmdline": {
+            "label": "Befehlsargumente",
             "placeholder": "Wählen Sie einen Befehl, um das CLI-Beispiel zu sehen",
             "copied": "Kopiert",
             "copy_failed": "Kopieren fehlgeschlagen"

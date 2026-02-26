@@ -326,6 +326,7 @@
             "no_messages": "尚無訊息"
         },
         "cmdline": {
+            "label": "命令列參數",
             "placeholder": "選擇命令以檢視 CLI 範例",
             "copied": "已複製",
             "copy_failed": "複製失敗"

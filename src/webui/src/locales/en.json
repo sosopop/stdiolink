@@ -326,6 +326,7 @@
             "no_messages": "No messages yet"
         },
         "cmdline": {
+            "label": "Command Arguments",
             "placeholder": "Select a command to see the CLI example",
             "copied": "Copied",
             "copy_failed": "Copy failed"
