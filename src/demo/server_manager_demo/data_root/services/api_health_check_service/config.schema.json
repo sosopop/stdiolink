@@ -1,7 +1,7 @@
 {
   "baseUrl": {
     "type": "string",
-    "default": "http://127.0.0.1:18080",
+    "default": "http://127.0.0.1:6200",
     "description": "stdiolink_server API 基础地址"
   },
   "timeoutMs": {

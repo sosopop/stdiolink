@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${1:-http://127.0.0.1:18080}"
+BASE_URL="${1:-http://127.0.0.1:6200}"
 CURL_COMMON_ARGS=(
     --noproxy "*"
     -sS

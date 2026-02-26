@@ -35,7 +35,7 @@ npm install
 npm run dev
 ```
 
-开发服务器启动在 `http://localhost:3000`，自动将 `/api` 请求代理到 `http://127.0.0.1:18080`（stdiolink_server）。
+开发服务器启动在 `http://localhost:3000`，自动将 `/api` 请求代理到 `http://127.0.0.1:6200`（stdiolink_server）。
 
 WebSocket 请求同样通过代理转发，无需额外配置。
 

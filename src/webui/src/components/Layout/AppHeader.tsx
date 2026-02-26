@@ -1,6 +1,6 @@
 import React from 'react';
-import { Switch, Space } from 'antd';
-import { SunOutlined, MoonOutlined } from '@ant-design/icons';
+import { Switch, Space, Button, Tooltip } from 'antd';
+import { SunOutlined, MoonOutlined, ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useEventStreamStore } from '@/stores/useEventStreamStore';
 import { SseStatusIndicator } from '@/components/Common/SseStatusIndicator';
@@ -10,6 +10,8 @@ import styles from './AppLayout.module.css';
 export const AppHeader: React.FC = () => {
   const themeMode = useLayoutStore((s) => s.themeMode);
   const toggleTheme = useLayoutStore((s) => s.toggleTheme);
+  const zoomLevel = useLayoutStore((s) => s.zoomLevel);
+  const toggleZoom = useLayoutStore((s) => s.toggleZoom);
 
   const sseStatus = useEventStreamStore((s) => s.status);
   const lastEventTime = useEventStreamStore((s) => s.lastEventTime);
@@ -61,7 +63,17 @@ export const AppHeader: React.FC = () => {
             />
             <MoonOutlined style={{ fontSize: 14, opacity: themeMode === 'dark' ? 1 : 0.3 }} />
           </div>
-          <LanguageSwitcher />
+          <Space size={8}>
+            <Tooltip title={zoomLevel === 100 ? '放大到 125%' : '恢复为 100%'}>
+              <Button
+                type="text"
+                icon={zoomLevel === 100 ? <ZoomInOutlined /> : <ZoomOutOutlined />}
+                onClick={toggleZoom}
+                aria-label="Toggle zoom"
+              />
+            </Tooltip>
+            <LanguageSwitcher />
+          </Space>
         </Space>
       </div>
     </header>

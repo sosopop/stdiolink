@@ -61,7 +61,7 @@ WebUI 采用 **Style 06（Premium Glassmorphism）** 设计规范：
 ├──────────────────┬──────────────────────────┤
 │  REST API Client │  SSE / WebSocket Client  │
 ├──────────────────┴──────────────────────────┤
-│  stdiolink_server (HTTP :18080)             │
+│  stdiolink_server (HTTP :6200)             │
 └─────────────────────────────────────────────┘
 ```
 

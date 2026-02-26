@@ -8,7 +8,7 @@
     "maxConcurrent": 1
   },
   "config": {
-    "baseUrl": "http://127.0.0.1:18080",
+    "baseUrl": "http://127.0.0.1:6200",
     "timeoutMs": 5000,
     "checkDrivers": true
   }

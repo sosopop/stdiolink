@@ -192,17 +192,17 @@ logger.info("done", { status: result.msg.status });
 
 ```bash
 # 列出所有服务
-curl http://localhost:18080/api/services
+curl http://localhost:6200/api/services
 
 # 从服务创建项目
-curl -X POST http://localhost:18080/api/projects \
+curl -X POST http://localhost:6200/api/projects \
   -d '{"serviceId":"modbus_tcp","name":"Factory Floor","config":{...}}'
 
 # 启动实例
-curl -X POST http://localhost:18080/api/projects/factory-floor/start
+curl -X POST http://localhost:6200/api/projects/factory-floor/start
 
 # 通过 SSE 接收实时事件
-curl http://localhost:18080/api/events
+curl http://localhost:6200/api/events
 ```
 
 ### 调度引擎

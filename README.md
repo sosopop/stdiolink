@@ -192,17 +192,17 @@ Full HTTP API for programmatic control:
 
 ```bash
 # List all services
-curl http://localhost:18080/api/services
+curl http://localhost:6200/api/services
 
 # Create a project from a service
-curl -X POST http://localhost:18080/api/projects \
+curl -X POST http://localhost:6200/api/projects \
   -d '{"serviceId":"modbus_tcp","name":"Factory Floor","config":{...}}'
 
 # Start an instance
-curl -X POST http://localhost:18080/api/projects/factory-floor/start
+curl -X POST http://localhost:6200/api/projects/factory-floor/start
 
 # Real-time events via SSE
-curl http://localhost:18080/api/events
+curl http://localhost:6200/api/events
 ```
 
 ### Scheduling Engine

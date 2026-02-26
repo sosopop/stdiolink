@@ -11,7 +11,7 @@ import { createLogger } from "stdiolink/log";
 import { nowMs, monotonicMs, sleep } from "stdiolink/time";
 
 const cfg = getConfig();
-const baseUrl = String(cfg.baseUrl ?? "http://127.0.0.1:18080");
+const baseUrl = String(cfg.baseUrl ?? "http://127.0.0.1:6200");
 const timeoutMs = Number(cfg.timeoutMs ?? 5000);
 const checkDrivers = cfg.checkDrivers !== false;
 const loop = Boolean(cfg.loop);

@@ -56,5 +56,5 @@ bash ./build/bin/server_manager_demo/scripts/api_smoke.sh
 Or run directly against custom base URL:
 
 ```bash
-bash ./build/bin/server_manager_demo/scripts/api_smoke.sh http://127.0.0.1:18080
+bash ./build/bin/server_manager_demo/scripts/api_smoke.sh http://127.0.0.1:6200
 ```
