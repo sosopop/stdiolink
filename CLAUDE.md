@@ -46,12 +46,22 @@
 - Unix: `./build.sh [Debug|Release]`
 - 测试: `./build/bin/stdiolink_tests`
 
+### 测试
+
+独立测试脚本支持选择性运行三套测试（GTest / Vitest / Playwright），无参数时全部执行：
+```bash
+tools/run_tests.sh                # 全部执行
+tools/run_tests.sh --gtest        # 仅 C++ 单元测试
+tools/run_tests.ps1 --vitest --playwright  # 仅 WebUI 测试
+```
+
 ### 发布打包
 
 使用 `tools/publish_release.ps1` (Windows) 或 `tools/publish_release.sh` (Unix)。
+发布前默认执行全部测试，可用 `--skip-tests` 跳过。
 ```powershell
-# 典型发布命令 (含 WebUI 构建与 Demo 数据预设)
-.\tools\publish_release.ps1 --demo --name stdiolink_v1.0
+.\tools\publish_release.ps1 --name stdiolink_v1.0
+.\tools\publish_release.ps1 --skip-tests --skip-webui  # 快速打包
 ```
 
 ## 关键模块
