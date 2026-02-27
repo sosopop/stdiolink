@@ -73,6 +73,10 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
             result.configFilePath = arg.mid(14); // len("--config-file=") == 14
             continue;
         }
+        if (arg.startsWith("--data-root=")) {
+            result.dataRoot = arg.mid(QString("--data-root=").length());
+            continue;
+        }
         if (arg.startsWith("--config.")) {
             const int eqPos = arg.indexOf('=');
             if (eqPos < 0) {

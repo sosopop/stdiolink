@@ -11,7 +11,7 @@ import { join, resolve } from "stdiolink/path";
 import { exists, mkdir, writeJson } from "stdiolink/fs";
 import { createLogger } from "stdiolink/log";
 import { nowMs, monotonicMs } from "stdiolink/time";
-import { findDriverPath } from "../../shared/lib/driver_utils.js";
+import { resolveDriver } from "stdiolink/driver";
 
 const cfg = getConfig();
 const iterations = Number(cfg.iterations ?? 3);
@@ -20,10 +20,7 @@ const outputDir = String(cfg.outputDir ?? "./output");
 const logger = createLogger({ service: "driver_pipeline" });
 
 async function openCalc() {
-    const driverPath = findDriverPath("stdio.drv.calculator");
-    if (!driverPath) {
-        throw new Error("stdio.drv.calculator not found");
-    }
+    const driverPath = resolveDriver("stdio.drv.calculator");
     return await openDriver(driverPath);
 }
 

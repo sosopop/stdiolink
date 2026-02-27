@@ -14,6 +14,7 @@
 #include "bindings/js_log.h"
 #include "bindings/js_process_async.h"
 #include "bindings/js_stdiolink_module.h"
+#include "bindings/js_driver_resolve_binding.h"
 #include "bindings/js_wait_any_scheduler.h"
 #include "bindings/js_task_scheduler.h"
 #include "config/service_args.h"
@@ -55,6 +56,7 @@ void printHelp() {
     err << "  -v, --version           Show version\n";
     err << "  --config.key=value      Set config value\n";
     err << "  --config-file=<path>    Load config from JSON file ('-' for stdin)\n";
+    err << "  --data-root=<path>      Set data root directory for driver resolution\n";
     err << "  --dump-config-schema    Dump config schema and exit\n";
     err.flush();
 }
@@ -198,6 +200,8 @@ int main(int argc, char* argv[]) {
     JsTimeBinding::attachRuntime(engine.runtime());
     JsHttpBinding::attachRuntime(engine.runtime());
     JsProcessAsyncBinding::attachRuntime(engine.runtime());
+    QString normalizedDataRoot = normalizeDataRoot(parsed.dataRoot);
+
     JsConstantsBinding::setPathContext(engine.context(), {
         QCoreApplication::applicationFilePath(),
         QCoreApplication::applicationDirPath(),
@@ -206,7 +210,8 @@ int main(int argc, char* argv[]) {
         svcDir.entryPath(),
         QFileInfo(svcDir.entryPath()).absolutePath(),
         QDir::tempPath(),
-        QDir::homePath()
+        QDir::homePath(),
+        normalizedDataRoot
     });
 
     engine.registerModule("stdiolink", jsInitStdiolinkModule);
@@ -217,6 +222,7 @@ int main(int argc, char* argv[]) {
     engine.registerModule("stdiolink/http", JsHttpBinding::initModule);
     engine.registerModule("stdiolink/log", JsLogBinding::initModule);
     engine.registerModule("stdiolink/process", JsProcessAsyncBinding::initModule);
+    engine.registerModule("stdiolink/driver", JsDriverResolveBinding::initModule);
     JsTaskScheduler scheduler(engine.context());
     WaitAnyScheduler waitAnyScheduler(engine.context());
     JsTaskScheduler::installGlobal(engine.context(), &scheduler);

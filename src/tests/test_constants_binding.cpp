@@ -60,7 +60,8 @@ protected:
             "/srv/demo/index.js",
             "/srv/demo",
             "/tmp",
-            "/home/user"
+            "/home/user",
+            "/srv/data"
         });
 
         m_engine->registerModule("stdiolink", jsInitStdiolinkModule);
@@ -200,6 +201,48 @@ TEST_F(JsConstantsTest, AppPathsIsFrozen) {
     int ret = runScript(
         "import { APP_PATHS } from 'stdiolink/constants';\n"
         "globalThis.ok = Object.isFrozen(APP_PATHS) ? 1 : 0;\n"
+    );
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+// M86 T04 — APP_PATHS.dataRoot 非空
+TEST_F(JsConstantsTest, T04_DataRootNonEmpty) {
+    JsConstantsBinding::setPathContext(m_engine->context(), {
+        "/usr/bin/stdiolink_service",
+        "/usr/bin",
+        "/home/user",
+        "/srv/demo",
+        "/srv/demo/index.js",
+        "/srv/demo",
+        "/tmp",
+        "/home/user",
+        "/test/data"
+    });
+    int ret = runScript(
+        "import { APP_PATHS } from 'stdiolink/constants';\n"
+        "globalThis.ok = (APP_PATHS.dataRoot === '/test/data') ? 1 : 0;\n"
+    );
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+// M86 T05 — APP_PATHS.dataRoot 为空
+TEST_F(JsConstantsTest, T05_DataRootEmpty) {
+    JsConstantsBinding::setPathContext(m_engine->context(), {
+        "/usr/bin/stdiolink_service",
+        "/usr/bin",
+        "/home/user",
+        "/srv/demo",
+        "/srv/demo/index.js",
+        "/srv/demo",
+        "/tmp",
+        "/home/user",
+        ""
+    });
+    int ret = runScript(
+        "import { APP_PATHS } from 'stdiolink/constants';\n"
+        "globalThis.ok = (APP_PATHS.dataRoot === '') ? 1 : 0;\n"
     );
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);

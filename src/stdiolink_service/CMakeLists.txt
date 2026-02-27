@@ -19,6 +19,8 @@ set(STDIOLINK_SERVICE_SOURCES
     bindings/js_http.cpp
     bindings/js_log.cpp
     bindings/js_process_async.cpp
+    bindings/js_driver_resolve.cpp
+    bindings/js_driver_resolve_binding.cpp
     config/service_args.cpp
     proxy/driver_proxy.cpp
     proxy/wait_any_wrapper.cpp
@@ -44,6 +46,8 @@ set(STDIOLINK_SERVICE_HEADERS
     bindings/js_http.h
     bindings/js_log.h
     bindings/js_process_async.h
+    bindings/js_driver_resolve.h
+    bindings/js_driver_resolve_binding.h
     config/service_config_schema.h
     config/service_args.h
     config/service_config_validator.h

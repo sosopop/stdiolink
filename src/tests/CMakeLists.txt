@@ -68,6 +68,7 @@ set(TEST_SOURCES
     test_modbusrtu_serial_server.cpp
     test_modbusrtu_serial.cpp
     test_plc_crane.cpp
+    test_driver_resolve.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -92,6 +93,8 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_http.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_log.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_process_async.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_driver_resolve.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service/bindings/js_driver_resolve_binding.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_schema.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_args.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/config/service_config_validator.cpp

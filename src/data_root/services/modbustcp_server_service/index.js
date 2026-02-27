@@ -1,22 +1,22 @@
 /**
- * modbusrtu_server_service — Modbus RTU over TCP 从站服务
+ * modbustcp_server_service — Modbus TCP 从站服务
  *
- * 启动 Modbus RTU Server 驱动，配置 TCP 监听并注册从站 Unit。
+ * 启动 Modbus TCP Server 驱动，配置监听端口并注册从站 Unit。
  * keepalive 模式：驱动进程持续运行，不调用 $close()。
  */
 import { openDriver } from "stdiolink";
 import { getConfig } from "stdiolink";
 import { createLogger } from "stdiolink/log";
 import { sleep } from "stdiolink/time";
-import { findDriverPath } from "../../shared/lib/driver_utils.js";
+import { resolveDriver } from "stdiolink/driver";
 
 const cfg = getConfig();
-const listenPort = Number(cfg.listen_port ?? 5020);
+const listenPort = Number(cfg.listen_port ?? 502);
 const unitIds = String(cfg.unit_ids ?? "1");
 const dataAreaSize = Number(cfg.data_area_size ?? 10000);
 const eventMode = String(cfg.event_mode ?? "write");
 
-const logger = createLogger({ service: "modbusrtu_server" });
+const logger = createLogger({ service: "modbustcp_server" });
 
 function parseUnitIds(str) {
     return str.split(",")
@@ -27,8 +27,7 @@ function parseUnitIds(str) {
 (async () => {
     logger.info("starting", { listenPort, unitIds, dataAreaSize, eventMode });
 
-    const driverPath = findDriverPath("stdio.drv.modbusrtu_server");
-    if (!driverPath) throw new Error("stdio.drv.modbusrtu_server not found");
+    const driverPath = resolveDriver("stdio.drv.modbustcp_server");
 
     const drv = await openDriver(driverPath);
     logger.info("driver opened");

@@ -137,8 +137,12 @@ QString InstanceManager::startInstance(const Project& project,
     auto* proc = new QProcess(this);
     proc->setWorkingDirectory(workspaceDir);
     proc->setProgram(program);
-    proc->setArguments({serviceDir, "--config-file=" + tempConfigPath,
-                        "--guard=" + guard->guardName()});
+    QStringList args = {serviceDir, "--config-file=" + tempConfigPath,
+                        "--guard=" + guard->guardName()};
+    if (!m_dataRoot.isEmpty()) {
+        args << ("--data-root=" + m_dataRoot);
+    }
+    proc->setArguments(args);
 
     // Add server directory to PATH so child process can find Qt DLLs
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();

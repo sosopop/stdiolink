@@ -32,8 +32,7 @@ server_manager_demo/
 │   │   └── daemon_demo.json
 │   ├── drivers/
 │   ├── workspaces/
-│   ├── logs/
-│   └── shared/
+│   └── logs/
 └── scripts/
     ├── run_demo.sh
     └── api_smoke.sh

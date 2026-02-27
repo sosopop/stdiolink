@@ -72,6 +72,7 @@ JSValue buildAppPathsObject(JSContext* ctx) {
     setStr("serviceEntryDir", state.paths.serviceEntryDir);
     setStr("tempDir", state.paths.tempDir);
     setStr("homeDir", state.paths.homeDir);
+    setStr("dataRoot", state.paths.dataRoot);
 
     return deepFreezeObject(ctx, paths);
 }
@@ -105,6 +106,10 @@ void JsConstantsBinding::detachRuntime(JSRuntime* rt) {
 void JsConstantsBinding::setPathContext(JSContext* ctx,
                                          const PathContext& paths) {
     stateFor(ctx).paths = paths;
+}
+
+const PathContext& JsConstantsBinding::getPathContext(JSContext* ctx) {
+    return stateFor(ctx).paths;
 }
 
 JSModuleDef* JsConstantsBinding::initModule(JSContext* ctx,

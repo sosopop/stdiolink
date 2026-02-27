@@ -193,6 +193,43 @@ TEST_F(ServiceArgsTest, VersionFlag) {
     EXPECT_TRUE(result.version);
 }
 
+// M86 T01 — parse() 解析 --data-root 参数
+TEST_F(ServiceArgsTest, T01_ParseDataRoot) {
+    auto r = ServiceArgs::parse({"app", "svcDir", "--data-root=/some/path"});
+    EXPECT_TRUE(r.error.isEmpty()) << r.error.toStdString();
+    EXPECT_EQ(r.dataRoot, "/some/path");
+}
+
+// M86 T02 — parse() 无 --data-root 参数
+TEST_F(ServiceArgsTest, T02_ParseNoDataRoot) {
+    auto r = ServiceArgs::parse({"app", "svcDir", "--guard=test"});
+    EXPECT_TRUE(r.error.isEmpty()) << r.error.toStdString();
+    EXPECT_TRUE(r.dataRoot.isEmpty());
+}
+
+// M86 T03 — parse() --data-root= 空值
+TEST_F(ServiceArgsTest, T03_ParseDataRootEmpty) {
+    auto r = ServiceArgs::parse({"app", "svcDir", "--data-root="});
+    EXPECT_TRUE(r.error.isEmpty()) << r.error.toStdString();
+    EXPECT_TRUE(r.dataRoot.isEmpty());
+}
+
+// M86 T19 — normalizeDataRoot 规范化测试
+TEST_F(ServiceArgsTest, T19_NormalizeDataRoot) {
+    // 空输入返回空
+    EXPECT_TRUE(normalizeDataRoot("").isEmpty());
+
+    // 绝对路径原样返回（已规范化）
+    QString abs = normalizeDataRoot("/abs/path");
+    EXPECT_TRUE(QDir::isAbsolutePath(abs));
+    EXPECT_EQ(abs, QDir("/abs/path").absolutePath());
+
+    // 相对路径规范化为绝对路径，不含 ".." 片段
+    QString rel = normalizeDataRoot("../some/relative");
+    EXPECT_TRUE(QDir::isAbsolutePath(rel));
+    EXPECT_FALSE(rel.contains(".."));
+}
+
 // M72_R16 — loadConfigFile rejects file exceeding 1MB limit
 TEST_F(ServiceArgsTest, M72_R16_LoadConfigFileTooLargeRejected) {
     QTemporaryDir tmpDir;

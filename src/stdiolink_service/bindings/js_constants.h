@@ -15,6 +15,7 @@ struct PathContext {
     QString serviceEntryDir;
     QString tempDir;
     QString homeDir;
+    QString dataRoot;
 };
 
 /// @brief stdiolink/constants 内置模块绑定
@@ -31,6 +32,9 @@ public:
 
     /// 模块初始化回调（注册给 ModuleLoader）
     static JSModuleDef* initModule(JSContext* ctx, const char* name);
+
+    /// 获取当前 PathContext（供其他绑定模块读取 dataRoot、appDir 等）
+    static const PathContext& getPathContext(JSContext* ctx);
 
     /// 重置状态（测试用）
     static void reset(JSContext* ctx);

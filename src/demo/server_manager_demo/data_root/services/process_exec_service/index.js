@@ -11,26 +11,13 @@ import { exists, mkdir, writeJson } from "stdiolink/fs";
 import { createLogger } from "stdiolink/log";
 import { nowMs, monotonicMs } from "stdiolink/time";
 import { execAsync, spawn } from "stdiolink/process";
+import { resolveDriver } from "stdiolink/driver";
 
 const cfg = getConfig();
 const outputDir = String(cfg.outputDir ?? "./output");
 const spawnDriver = String(cfg.spawnDriver ?? "stdio.drv.calculator");
 
 const logger = createLogger({ service: "process_exec" });
-
-// 探测 driver 路径
-function findDriver(baseName) {
-    const ext = SYSTEM.isWindows ? ".exe" : "";
-    const name = baseName + ext;
-    const candidates = [
-        `./${name}`, `./bin/${name}`, `../bin/${name}`,
-        `../../bin/${name}`, `./build/bin/${name}`,
-    ];
-    for (const p of candidates) {
-        if (exists(p)) return p;
-    }
-    return null;
-}
 
 (async () => {
     const t0 = monotonicMs();
@@ -71,64 +58,58 @@ function findDriver(baseName) {
     }
 
     // --- execAsync 演示 3: 运行 driver --export-meta ---
-    const driverPath = findDriver(spawnDriver);
-    if (driverPath) {
-        try {
-            const metaResult = await execAsync(driverPath, ["--export-meta"], { timeoutMs: 5000 });
-            const metaJson = JSON.parse(metaResult.stdout.trim());
-            results.driverMeta = {
-                id: metaJson.id,
-                name: metaJson.name,
-                commandCount: metaJson.commands ? metaJson.commands.length : 0,
-            };
-            logger.info("driver meta exported", results.driverMeta);
-        } catch (e) {
-            results.driverMeta = { error: String(e) };
-            logger.warn("driver meta export failed", { error: String(e) });
-        }
+    const driverPath = resolveDriver(spawnDriver);
+    try {
+        const metaResult = await execAsync(driverPath, ["--export-meta"], { timeoutMs: 5000 });
+        const metaJson = JSON.parse(metaResult.stdout.trim());
+        results.driverMeta = {
+            id: metaJson.id,
+            name: metaJson.name,
+            commandCount: metaJson.commands ? metaJson.commands.length : 0,
+        };
+        logger.info("driver meta exported", results.driverMeta);
+    } catch (e) {
+        results.driverMeta = { error: String(e) };
+        logger.warn("driver meta export failed", { error: String(e) });
+    }
 
-        // --- spawn 演示: 启动 driver 并交互 ---
-        try {
-            results.spawn = await new Promise((resolve, reject) => {
-                const collected = [];
-                const proc = spawn(driverPath, ["--profile", "oneshot"]);
+    // --- spawn 演示: 启动 driver 并交互 ---
+    try {
+        results.spawn = await new Promise((resolve, reject) => {
+            const collected = [];
+            const proc = spawn(driverPath, ["--profile", "oneshot"]);
 
-                proc.onStdout((data) => {
-                    const trimmed = data.trim();
-                    if (trimmed) {
-                        try {
-                            collected.push(JSON.parse(trimmed));
-                        } catch (_) {
-                            collected.push({ raw: trimmed });
-                        }
+            proc.onStdout((data) => {
+                const trimmed = data.trim();
+                if (trimmed) {
+                    try {
+                        collected.push(JSON.parse(trimmed));
+                    } catch (_) {
+                        collected.push({ raw: trimmed });
                     }
-                });
-
-                proc.onExit((info) => {
-                    resolve({
-                        exitCode: info.exitCode,
-                        exitStatus: info.exitStatus,
-                        responses: collected,
-                    });
-                });
-
-                // 发送一个计算请求
-                const request = JSON.stringify({ cmd: "add", data: { a: 42, b: 58 } });
-                proc.write(request + "\n");
-                proc.closeStdin();
+                }
             });
-            logger.info("spawn interaction done", {
-                exitCode: results.spawn.exitCode,
-                responseCount: results.spawn.responses.length,
+
+            proc.onExit((info) => {
+                resolve({
+                    exitCode: info.exitCode,
+                    exitStatus: info.exitStatus,
+                    responses: collected,
+                });
             });
-        } catch (e) {
-            results.spawn = { error: String(e) };
-            logger.warn("spawn failed", { error: String(e) });
-        }
-    } else {
-        results.driverMeta = { skipped: true, reason: `${spawnDriver} not found` };
-        results.spawn = { skipped: true, reason: `${spawnDriver} not found` };
-        logger.warn("driver not found, skipping meta/spawn tests", { driver: spawnDriver });
+
+            // 发送一个计算请求
+            const request = JSON.stringify({ cmd: "add", data: { a: 42, b: 58 } });
+            proc.write(request + "\n");
+            proc.closeStdin();
+        });
+        logger.info("spawn interaction done", {
+            exitCode: results.spawn.exitCode,
+            responseCount: results.spawn.responses.length,
+        });
+    } catch (e) {
+        results.spawn = { error: String(e) };
+        logger.warn("spawn failed", { error: String(e) });
     }
 
     // --- 写结果到文件 ---

@@ -231,8 +231,7 @@ $dirsToCreate = @(
     "data_root/services",
     "data_root/projects",
     "data_root/workspaces",
-    "data_root/logs",
-    "data_root/shared"
+    "data_root/logs"
 )
 
 foreach ($relDir in $dirsToCreate) {
@@ -407,7 +406,23 @@ foreach ($dir in $pluginDirs) {
     Write-Host "  + $($dir.Name)/"
 }
 
-# ── Seed demo data ───────────────────────────────────────────────────
+# ── Seed production + demo data ──────────────────────────────────────
+# 第 1 层: production data_root
+Write-Host "Seeding production data into data_root..."
+$prodDataRoot = Join-Path $rootDir "src/data_root"
+if (Test-Path -LiteralPath $prodDataRoot -PathType Container) {
+    $prodServices = Join-Path $prodDataRoot "services"
+    if (Test-Path -LiteralPath $prodServices -PathType Container) {
+        Copy-Item -Path (Join-Path $prodServices "*") -Destination (Join-Path $packageDir "data_root/services") -Recurse -Force
+    }
+    $prodProjects = Join-Path $prodDataRoot "projects"
+    if (Test-Path -LiteralPath $prodProjects -PathType Container) {
+        Copy-Item -Path (Join-Path $prodProjects "*") -Destination (Join-Path $packageDir "data_root/projects") -Recurse -Force
+    }
+    Write-Host "  Production services and projects seeded."
+}
+
+# 第 2 层: demo data_root（叠加）
 Write-Host "Seeding demo data into data_root..."
 $demoDataRoot = Join-Path $rootDir "src/demo/server_manager_demo/data_root"
 if (Test-Path -LiteralPath $demoDataRoot -PathType Container) {
@@ -517,6 +532,20 @@ if (Test-Path -LiteralPath $webuiIndex -PathType Leaf) {
 }
 
 Set-Content -LiteralPath $manifestPath -Value $manifestLines -Encoding utf8
+
+# ── Duplicate check ──────────────────────────────────────────────────
+Write-Host "Checking for duplicate components..."
+$checkScript = Join-Path $scriptDir "check_duplicates.ps1"
+if (Test-Path -LiteralPath $checkScript -PathType Leaf) {
+    & pwsh -File $checkScript -PackageDir $packageDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Duplicate check failed! See errors above."
+        exit 1
+    }
+} else {
+    Write-Error "check_duplicates.ps1 not found at $checkScript"
+    exit 1
+}
 
 Write-Host ""
 Write-Host "=== Release package created ==="

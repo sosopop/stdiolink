@@ -1,5 +1,6 @@
 import { exec } from "stdiolink";
-import { driverPathCandidates, firstSuccess } from "../../shared/lib/runtime_utils.js";
+import { resolveDriver } from "stdiolink/driver";
+import { firstSuccess } from "../../shared/lib/runtime_utils.js";
 
 function runEcho() {
     return firstSuccess([
@@ -9,10 +10,8 @@ function runEcho() {
 }
 
 function exportTypeScriptDeclaration() {
-    const runners = driverPathCandidates("stdio.drv.calculator").map((program) => {
-        return () => exec(program, ["--export-doc=ts"]);
-    });
-    return firstSuccess(runners);
+    const program = resolveDriver("stdio.drv.calculator");
+    return exec(program, ["--export-doc=ts"]);
 }
 
 (async () => {

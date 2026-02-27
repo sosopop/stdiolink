@@ -8,7 +8,7 @@ import { openDriver } from "stdiolink";
 import { getConfig } from "stdiolink";
 import { createLogger } from "stdiolink/log";
 import { sleep } from "stdiolink/time";
-import { findDriverPath } from "../../shared/lib/driver_utils.js";
+import { resolveDriver } from "stdiolink/driver";
 
 const cfg = getConfig();
 const portName = String(cfg.port_name ?? "COM1");
@@ -32,8 +32,7 @@ function parseUnitIds(str) {
     logger.info("starting", { portName, baudRate, dataBits, stopBits, parity,
                                unitIds, dataAreaSize, eventMode });
 
-    const driverPath = findDriverPath("stdio.drv.modbusrtu_serial_server");
-    if (!driverPath) throw new Error("stdio.drv.modbusrtu_serial_server not found");
+    const driverPath = resolveDriver("stdio.drv.modbusrtu_serial_server");
 
     const drv = await openDriver(driverPath);
     logger.info("driver opened");

@@ -137,7 +137,6 @@ mkdir -p "${PACKAGE_DIR}/data_root/services"
 mkdir -p "${PACKAGE_DIR}/data_root/projects"
 mkdir -p "${PACKAGE_DIR}/data_root/workspaces"
 mkdir -p "${PACKAGE_DIR}/data_root/logs"
-mkdir -p "${PACKAGE_DIR}/data_root/shared"
 
 copy_dir_clean() {
     local src="$1"
@@ -271,7 +270,21 @@ while IFS= read -r -d '' dir; do
     echo "  + ${dirname}/"
 done < <(find "${BIN_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
 
-# ── Seed demo data ───────────────────────────────────────────────────
+# ── Seed production + demo data ──────────────────────────────────────
+# 第 1 层: production data_root
+echo "Seeding production data into data_root..."
+PROD_DATA_ROOT="${ROOT_DIR}/src/data_root"
+if [[ -d "${PROD_DATA_ROOT}" ]]; then
+    if [[ -d "${PROD_DATA_ROOT}/services" ]]; then
+        cp -R "${PROD_DATA_ROOT}/services/"* "${PACKAGE_DIR}/data_root/services/" 2>/dev/null || true
+    fi
+    if [[ -d "${PROD_DATA_ROOT}/projects" ]]; then
+        cp -R "${PROD_DATA_ROOT}/projects/"* "${PACKAGE_DIR}/data_root/projects/" 2>/dev/null || true
+    fi
+    echo "  Production services and projects seeded."
+fi
+
+# 第 2 层: demo data_root（叠加）
 echo "Seeding demo data into data_root..."
 DEMO_DATA_ROOT="${ROOT_DIR}/src/demo/server_manager_demo/data_root"
 if [[ -d "${DEMO_DATA_ROOT}" ]]; then
@@ -293,14 +306,15 @@ DRIVERS_DEST="${PACKAGE_DIR}/data_root/drivers"
 DRIVERS_COPIED=0
 while IFS= read -r -d '' file; do
     base="$(basename "${file}")"
-    stem="${base%.*}"
-    if [[ -z "${stem##stdio.drv.*}" ]]; then
-        driver_sub="${DRIVERS_DEST}/${stem}"
+    if [[ "${base}" == stdio.drv.* ]]; then
+        # Strip platform extension (.exe) if present; use bare name as subdir
+        drv_name="${base%.exe}"
+        driver_sub="${DRIVERS_DEST}/${drv_name}"
         mkdir -p "${driver_sub}"
         cp -f "${file}" "${driver_sub}/${base}"
         # Remove from bin/ to avoid duplication
         rm -f "${PACKAGE_DIR}/bin/${base}"
-        echo "  + ${stem}/${base}"
+        echo "  + ${drv_name}/${base}"
         DRIVERS_COPIED=$((DRIVERS_COPIED + 1))
     fi
 done < <(find "${BIN_DIR}" -maxdepth 1 -type f -print0)
@@ -351,6 +365,19 @@ MANIFEST="${PACKAGE_DIR}/RELEASE_MANIFEST.txt"
         echo "status=not_included"
     fi
 } > "${MANIFEST}"
+
+# ── Duplicate check ──────────────────────────────────────────────────
+echo "Checking for duplicate components..."
+CHECK_SCRIPT="$(dirname "$0")/check_duplicates.sh"
+if [[ -f "${CHECK_SCRIPT}" ]]; then
+    if ! bash "${CHECK_SCRIPT}" "${PACKAGE_DIR}"; then
+        echo "ERROR: Duplicate check failed! See errors above." >&2
+        exit 1
+    fi
+else
+    echo "ERROR: check_duplicates.sh not found at ${CHECK_SCRIPT}" >&2
+    exit 1
+fi
 
 echo ""
 echo "=== Release package created ==="
