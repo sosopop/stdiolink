@@ -31,7 +31,7 @@ protected:
     void createFakeDriver(const QString& dir, const QString& name) {
         QDir().mkpath(dir);
         QFile f(dir + "/" + name + ext());
-        f.open(QIODevice::WriteOnly);
+        ASSERT_TRUE(f.open(QIODevice::WriteOnly));
         f.close();
 #ifndef Q_OS_WIN
         f.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
@@ -189,7 +189,7 @@ protected:
     void createFakeDriver(const QString& dir, const QString& name) {
         QDir().mkpath(dir);
         QFile f(dir + "/" + name + ext());
-        f.open(QIODevice::WriteOnly);
+        ASSERT_TRUE(f.open(QIODevice::WriteOnly));
         f.close();
 #ifndef Q_OS_WIN
         f.setPermissions(QFile::ReadOwner | QFile::WriteOwner
