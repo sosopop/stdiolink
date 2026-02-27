@@ -637,7 +637,7 @@ TEST_F(ModbusTcpServerHandlerTest, T19_GetRegistersBatchCountMismatch) {
 
 ### 6.3 验收标准
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.modbustcp_server.exe`，无编译警告（T01–T19）
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.modbustcp_server.exe`，无编译警告（T01–T19）
 - [ ] `--export-meta` 输出合法 JSON，包含 16 个命令定义
 - [ ] status 命令正确反映服务状态（T01, T02）
 - [ ] start_server / stop_server 正常工作，重复操作返回 error code 3（T03, T04, T12, T13）

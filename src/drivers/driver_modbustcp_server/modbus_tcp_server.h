@@ -66,6 +66,8 @@ signals:
     void clientDisconnected(QString address, quint16 port);
     void dataWritten(quint8 unitId, quint8 functionCode,
                      quint16 address, quint16 quantity);
+    void dataRead(quint8 unitId, quint8 functionCode,
+                  quint16 address, quint16 quantity);
 
 protected:
     void incomingConnection(qintptr socketDescriptor) override;

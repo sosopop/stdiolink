@@ -506,7 +506,7 @@ TEST_F(ModbusRtuSerialHandlerTest, T09_CountMismatch) {
 
 ### 6.3 验收标准
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.modbusrtu_serial.exe`，无编译警告
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.modbusrtu_serial.exe`，无编译警告
 - [ ] `--export-meta` 输出合法 JSON，包含 10 个命令定义
 - [ ] T3.5 计算正确（T01, T02, T03）
 - [ ] CRC16 算法正确（T04, T05）

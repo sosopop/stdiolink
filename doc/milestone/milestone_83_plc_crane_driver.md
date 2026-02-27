@@ -419,7 +419,7 @@ TEST_F(PlcCraneHandlerTest, T07_SetRunInvalidAction) {
 
 ### 6.3 验收标准
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.plc_crane.exe`，无编译警告
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.plc_crane.exe`，无编译警告
 - [ ] `--export-meta` 输出合法 JSON，包含 6 个命令定义
 - [ ] 6 个命令参数 schema 正确，枚举约束完整
 - [ ] status 命令返回 ready（T01）

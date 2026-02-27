@@ -212,7 +212,7 @@
 
 ### 6.1 构建
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.plc_crane.exe`
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.plc_crane.exe`
 - [ ] 无编译警告（/W3 级别）
 
 ### 6.2 元数据

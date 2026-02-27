@@ -50,10 +50,10 @@
 
 ```bash
 # Windows
-build.bat Release
+build.bat
 
 # macOS / Linux
-./build.sh Release
+./build.sh
 
 # 运行测试
 ./build/bin/stdiolink_tests

@@ -74,9 +74,9 @@ protected:
 // T05 — start_server 测试环境无串口
 TEST_F(ModbusRtuSerialServerHandlerTest, T05_StartServerNoSerialPort) {
     handler.handle("start_server",
-        QJsonObject{{"port_name","COM_TEST"},{"baud_rate",9600}}, resp);
+        QJsonObject{{"port_name","__NONEXISTENT_PORT_FOR_TEST__"},{"baud_rate",9600}}, resp);
     EXPECT_EQ(resp.lastCode, 1);
-    EXPECT_TRUE(resp.lastData["message"].toString().contains("COM_TEST"));
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("__NONEXISTENT_PORT_FOR_TEST__"));
 }
 
 // T06 — stop_server 未启动
@@ -120,4 +120,43 @@ TEST_F(ModbusRtuSerialServerHandlerTest, T10_StopServerNotRunning) {
     handler.handle("stop_server", QJsonObject{}, resp);
     EXPECT_EQ(resp.lastCode, 3);
     EXPECT_TRUE(resp.lastData["message"].toString().contains("not running"));
+}
+
+// T11 — 默认 event_mode 为 "write"（未启动时 status 也返回）
+TEST_F(ModbusRtuSerialServerHandlerTest, T11_DefaultEventModeIsWrite) {
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    EXPECT_EQ(resp.lastData["event_mode"].toString(), "write");
+}
+
+// T12 — start_server 失败不改变 event_mode
+TEST_F(ModbusRtuSerialServerHandlerTest, T12_StartFailureKeepsEventMode) {
+    handler.handle("start_server",
+        QJsonObject{{"port_name","__NONEXISTENT_PORT_FOR_TEST__"},{"event_mode","all"}}, resp);
+    EXPECT_EQ(resp.lastCode, 1);  // 启动失败
+    resp.reset();
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastData["event_mode"].toString(), "write");  // 仍为默认值
+}
+
+// T13 — 无效 event_mode 被拒绝
+TEST_F(ModbusRtuSerialServerHandlerTest, T13_InvalidEventModeRejected) {
+    handler.handle("start_server",
+        QJsonObject{{"port_name","COM1"},{"event_mode","bogus"}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("Invalid event_mode"));
+}
+
+// T14 — status 包含 event_mode 字段
+TEST_F(ModbusRtuSerialServerHandlerTest, T14_StatusContainsEventMode) {
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_TRUE(resp.lastData.contains("event_mode"));
+}
+
+// T15 — 非字符串 event_mode 被拒绝
+TEST_F(ModbusRtuSerialServerHandlerTest, T15_NonStringEventModeRejected) {
+    handler.handle("start_server",
+        QJsonObject{{"port_name","COM1"},{"event_mode", 42}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
 }

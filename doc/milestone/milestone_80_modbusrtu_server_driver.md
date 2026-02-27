@@ -510,7 +510,7 @@ TEST_F(ModbusRtuServerHandlerTest, T09_UnitNotFound) {
 
 ### 6.3 验收标准
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.modbusrtu_server.exe`，无编译警告
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.modbusrtu_server.exe`，无编译警告
 - [ ] `--export-meta` 输出合法 JSON，包含 16 个命令定义（T07）
 - [ ] CRC16 算法正确（T01, T02）
 - [ ] CRC 正确的 RTU 帧正常处理并返回响应（T03, T10）

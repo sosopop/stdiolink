@@ -21,4 +21,5 @@ private:
     DriverMeta m_meta;
     ModbusRtuServer m_server;
     StdioResponder m_eventResponder;
+    QString m_eventMode = "write";
 };

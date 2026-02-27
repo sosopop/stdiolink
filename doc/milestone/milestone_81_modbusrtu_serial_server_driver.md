@@ -579,7 +579,7 @@ TEST_F(ModbusRtuSerialServerHandlerTest, T10_StopServerNotRunning) {
 
 ### 6.3 验收标准
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.modbusrtu_serial_server.exe`，无编译警告
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.modbusrtu_serial_server.exe`，无编译警告
 - [ ] `--export-meta` 输出合法 JSON，包含 16 个命令定义
 - [ ] T3.5 计算正确（T01, T02, T03）
 - [ ] CRC16 算法正确（T04）

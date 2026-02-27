@@ -260,6 +260,8 @@ QByteArray ModbusRtuServer::processRtuRequest(const QByteArray& frame) {
             }
             pdu.append(static_cast<char>(byte));
         }
+        locker.unlock();
+        emit dataRead(unitId, fc, startAddr, qty);
         break;
     }
     case READ_DISCRETE_INPUTS: {
@@ -279,6 +281,8 @@ QByteArray ModbusRtuServer::processRtuRequest(const QByteArray& frame) {
             }
             pdu.append(static_cast<char>(byte));
         }
+        locker.unlock();
+        emit dataRead(unitId, fc, startAddr, qty);
         break;
     }
     case READ_HOLDING_REGISTERS: {
@@ -292,6 +296,8 @@ QByteArray ModbusRtuServer::processRtuRequest(const QByteArray& frame) {
         pdu.append(static_cast<char>(qty * 2));
         for (int i = 0; i < qty; i++)
             pdu.append(uint16ToBytes(dataArea->holdingRegisters[startAddr + i]));
+        locker.unlock();
+        emit dataRead(unitId, fc, startAddr, qty);
         break;
     }
     case READ_INPUT_REGISTERS: {
@@ -305,6 +311,8 @@ QByteArray ModbusRtuServer::processRtuRequest(const QByteArray& frame) {
         pdu.append(static_cast<char>(qty * 2));
         for (int i = 0; i < qty; i++)
             pdu.append(uint16ToBytes(dataArea->inputRegisters[startAddr + i]));
+        locker.unlock();
+        emit dataRead(unitId, fc, startAddr, qty);
         break;
     }
     case WRITE_SINGLE_COIL: {

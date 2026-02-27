@@ -50,10 +50,10 @@ This means you can wrap a Python script, a Rust binary, a Node.js tool, or a leg
 
 ```bash
 # Windows
-build.bat Release
+build.bat
 
 # macOS / Linux
-./build.sh Release
+./build.sh
 
 # Run tests
 ./build/bin/stdiolink_tests

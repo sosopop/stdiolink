@@ -271,3 +271,56 @@ TEST_F(ModbusRtuServerHandlerTest, T20_UInt64StringRoundtrip) {
     EXPECT_TRUE(vals[0].isString());
     EXPECT_EQ(vals[0].toString(), "18446744073709551615");
 }
+
+// T21 — 默认 event_mode 为 "write"
+TEST_F(ModbusRtuServerHandlerTest, T21_DefaultEventModeIsWrite) {
+    startServer();
+    resp.reset();
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    EXPECT_EQ(resp.lastData["event_mode"].toString(), "write");
+}
+
+// T22 — event_mode="all" 被接受并反映在 status 中
+TEST_F(ModbusRtuServerHandlerTest, T22_EventModeAll) {
+    resp.reset();
+    handler.handle("start_server",
+        QJsonObject{{"listen_port", 0}, {"event_mode", "all"}}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    resp.reset();
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastData["event_mode"].toString(), "all");
+}
+
+// T23 — stop/restart 可切换 event_mode
+TEST_F(ModbusRtuServerHandlerTest, T23_RestartSwitchesEventMode) {
+    handler.handle("start_server",
+        QJsonObject{{"listen_port", 0}, {"event_mode", "none"}}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    resp.reset();
+    handler.handle("stop_server", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    resp.reset();
+    handler.handle("start_server",
+        QJsonObject{{"listen_port", 0}, {"event_mode", "read"}}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    resp.reset();
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastData["event_mode"].toString(), "read");
+}
+
+// T24 — 无效 event_mode 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T24_InvalidEventModeRejected) {
+    handler.handle("start_server",
+        QJsonObject{{"listen_port", 0}, {"event_mode", "invalid"}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("Invalid event_mode"));
+}
+
+// T25 — 非字符串 event_mode 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T25_NonStringEventModeRejected) {
+    handler.handle("start_server",
+        QJsonObject{{"listen_port", 0}, {"event_mode", true}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
+}

@@ -269,6 +269,8 @@ QByteArray ModbusTcpServer::handleReadCoils(const ModbusTCPHeader& header,
         }
         response.append(static_cast<char>(byte));
     }
+    locker.unlock();
+    emit dataRead(header.unitId, READ_COILS, startAddress, quantity);
     return response;
 }
 
@@ -289,6 +291,8 @@ QByteArray ModbusTcpServer::handleReadDiscreteInputs(const ModbusTCPHeader& head
         }
         response.append(static_cast<char>(byte));
     }
+    locker.unlock();
+    emit dataRead(header.unitId, READ_DISCRETE_INPUTS, startAddress, quantity);
     return response;
 }
 
@@ -303,6 +307,8 @@ QByteArray ModbusTcpServer::handleReadHoldingRegisters(const ModbusTCPHeader& he
     response.append(static_cast<char>(quantity * 2));
     for (int i = 0; i < quantity; i++)
         response.append(uint16ToBytes(dataArea->holdingRegisters[startAddress + i]));
+    locker.unlock();
+    emit dataRead(header.unitId, READ_HOLDING_REGISTERS, startAddress, quantity);
     return response;
 }
 
@@ -317,6 +323,8 @@ QByteArray ModbusTcpServer::handleReadInputRegisters(const ModbusTCPHeader& head
     response.append(static_cast<char>(quantity * 2));
     for (int i = 0; i < quantity; i++)
         response.append(uint16ToBytes(dataArea->inputRegisters[startAddress + i]));
+    locker.unlock();
+    emit dataRead(header.unitId, READ_INPUT_REGISTERS, startAddress, quantity);
     return response;
 }
 

@@ -245,7 +245,7 @@ find_package(Qt6 COMPONENTS Core SerialPort QUIET)
 
 ### 7.1 构建
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.modbusrtu_serial_server.exe`
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.modbusrtu_serial_server.exe`
 - [ ] 无编译警告（/W3 级别）
 - [ ] Qt SerialPort 模块正确链接
 

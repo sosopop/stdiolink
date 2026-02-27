@@ -21,4 +21,5 @@ private:
     DriverMeta m_meta;
     ModbusTcpServer m_server;
     StdioResponder m_eventResponder;
+    QString m_eventMode = "write";
 };

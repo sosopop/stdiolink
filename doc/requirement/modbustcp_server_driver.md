@@ -367,7 +367,7 @@ src/drivers/driver_modbustcp_server/
 
 ### 7.1 构建
 
-- [ ] `build.bat Release` 成功编译，输出 `stdio.drv.modbustcp_server.exe`
+- [ ] `build.bat` 成功编译，输出 `stdio.drv.modbustcp_server.exe`
 - [ ] 无编译警告（/W3 级别）
 
 ### 7.2 元数据

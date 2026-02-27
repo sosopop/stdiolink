@@ -58,6 +58,8 @@ public:
 signals:
     void dataWritten(quint8 unitId, quint8 functionCode,
                      quint16 address, quint16 quantity);
+    void dataRead(quint8 unitId, quint8 functionCode,
+                  quint16 address, quint16 quantity);
 
 private slots:
     void onReadyRead();
