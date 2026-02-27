@@ -1,0 +1,48 @@
+{
+  "port_name": {
+    "type": "string",
+    "default": "COM1",
+    "description": "串口名称（如 COM1、/dev/ttyUSB0）"
+  },
+  "baud_rate": {
+    "type": "int",
+    "default": 9600,
+    "description": "波特率",
+    "enum": [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
+  },
+  "data_bits": {
+    "type": "int",
+    "default": 8,
+    "description": "数据位",
+    "enum": [5, 6, 7, 8]
+  },
+  "stop_bits": {
+    "type": "string",
+    "default": "1",
+    "description": "停止位",
+    "enum": ["1", "1.5", "2"]
+  },
+  "parity": {
+    "type": "string",
+    "default": "none",
+    "description": "校验位",
+    "enum": ["none", "even", "odd"]
+  },
+  "unit_ids": {
+    "type": "string",
+    "default": "1",
+    "description": "从站地址列表，逗号分隔（如 1,2,3），范围 1-247"
+  },
+  "data_area_size": {
+    "type": "int",
+    "default": 10000,
+    "description": "每个 Unit 的数据区大小（寄存器/线圈数量）",
+    "constraints": { "min": 1, "max": 65536 }
+  },
+  "event_mode": {
+    "type": "string",
+    "default": "write",
+    "description": "事件推送模式：write=仅写事件, all=读写事件, read=仅读事件, none=无事件",
+    "enum": ["write", "all", "read", "none"]
+  }
+}

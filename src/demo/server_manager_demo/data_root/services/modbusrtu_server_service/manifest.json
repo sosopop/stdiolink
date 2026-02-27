@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "modbusrtu_server_service",
+  "name": "Modbus RTU Server Service",
+  "version": "1.0.0",
+  "description": "Modbus RTU over TCP 从站服务，启动 TCP 监听以 RTU 帧格式响应主站请求"
+}

@@ -163,6 +163,9 @@ void Driver::pumpStdout() {
                     m_cur->errorText = obj["message"].toString();
                 }
             }
+
+            m_cur.reset();
+            break;
         }
     }
 }

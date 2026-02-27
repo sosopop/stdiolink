@@ -1,0 +1,16 @@
+{
+  "name": "Manual Modbus RTU Serial Server",
+  "serviceId": "modbusrtu_serial_server_service",
+  "enabled": false,
+  "schedule": { "type": "manual" },
+  "config": {
+    "port_name": "COM1",
+    "baud_rate": 9600,
+    "data_bits": 8,
+    "stop_bits": "1",
+    "parity": "none",
+    "unit_ids": "1",
+    "data_area_size": 10000,
+    "event_mode": "write"
+  }
+}

@@ -22,7 +22,9 @@ export function findDriverPath(baseName) {
         `./bin/${name}`,
         `../bin/${name}`,
         `../../bin/${name}`,
+        `../../../bin/${name}`,
         `./build/bin/${name}`,
+        `../../../../../build/bin/${name}`,
     ];
 
     for (const p of candidates) {

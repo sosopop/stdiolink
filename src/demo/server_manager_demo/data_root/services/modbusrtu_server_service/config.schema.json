@@ -1,0 +1,25 @@
+{
+  "listen_port": {
+    "type": "int",
+    "default": 5020,
+    "description": "Modbus RTU over TCP 监听端口",
+    "constraints": { "min": 1, "max": 65535 }
+  },
+  "unit_ids": {
+    "type": "string",
+    "default": "1",
+    "description": "从站地址列表，逗号分隔（如 1,2,3），范围 1-247"
+  },
+  "data_area_size": {
+    "type": "int",
+    "default": 10000,
+    "description": "每个 Unit 的数据区大小（寄存器/线圈数量）",
+    "constraints": { "min": 1, "max": 65536 }
+  },
+  "event_mode": {
+    "type": "string",
+    "default": "write",
+    "description": "事件推送模式：write=仅写事件, all=读写事件, read=仅读事件, none=无事件",
+    "enum": ["write", "all", "read", "none"]
+  }
+}

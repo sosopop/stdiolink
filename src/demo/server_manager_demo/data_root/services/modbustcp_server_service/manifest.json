@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "modbustcp_server_service",
+  "name": "Modbus TCP Server Service",
+  "version": "1.0.0",
+  "description": "Modbus TCP 从站服务，启动 TCP 监听并注册从站 Unit"
+}

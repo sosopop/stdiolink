@@ -1,0 +1,12 @@
+{
+  "name": "Manual Modbus RTU Server",
+  "serviceId": "modbusrtu_server_service",
+  "enabled": false,
+  "schedule": { "type": "manual" },
+  "config": {
+    "listen_port": 5020,
+    "unit_ids": "1",
+    "data_area_size": 10000,
+    "event_mode": "write"
+  }
+}
