@@ -9,6 +9,7 @@ Usage:
 
 Options:
   --build-dir <dir>   Build directory (default: build)
+  --config <type>     Build config: debug or release (default: auto-detect)
   --gtest             Run only GTest (C++) tests
   --vitest            Run only Vitest (WebUI unit) tests
   --playwright        Run only Playwright (E2E) tests
@@ -27,6 +28,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
 
 $buildDir = "build"
+$buildConfig = ""
 $runGtest = $false
 $runVitest = $false
 $runPlaywright = $false
@@ -41,6 +43,16 @@ for ($i = 0; $i -lt $args.Count; ) {
                 exit 1
             }
             $buildDir = [string]$args[$i + 1]
+            $i += 2
+            continue
+        }
+        "--config" {
+            if ($i + 1 -ge $args.Count) {
+                Write-Error "Missing value for --config"
+                Show-Usage
+                exit 1
+            }
+            $buildConfig = [string]$args[$i + 1]
             $i += 2
             continue
         }
@@ -82,10 +94,22 @@ if (-not $runGtest -and -not $runVitest -and -not $runPlaywright) {
     $runPlaywright = $true
 }
 
+# Auto-detect build config if not specified
+if ([string]::IsNullOrEmpty($buildConfig)) {
+    $absBase = if ([System.IO.Path]::IsPathRooted($buildDir)) { $buildDir } else { Join-Path $rootDir $buildDir }
+    if (Test-Path (Join-Path $absBase "runtime_debug")) {
+        $buildConfig = "debug"
+    } elseif (Test-Path (Join-Path $absBase "runtime_release")) {
+        $buildConfig = "release"
+    } else {
+        $buildConfig = "debug"
+    }
+}
+
 if ([System.IO.Path]::IsPathRooted($buildDir)) {
-    $binDir = Join-Path $buildDir "bin"
+    $binDir = Join-Path $buildDir "runtime_$buildConfig/bin"
 } else {
-    $binDir = Join-Path $rootDir (Join-Path $buildDir "bin")
+    $binDir = Join-Path $rootDir (Join-Path $buildDir "runtime_$buildConfig/bin")
 }
 
 $webuiDir = Join-Path $rootDir "src/webui"

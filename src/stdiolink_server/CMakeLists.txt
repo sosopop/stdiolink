@@ -77,5 +77,6 @@ target_link_libraries(stdiolink_server PRIVATE
 )
 
 set_target_properties(stdiolink_server PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS stdiolink_server)

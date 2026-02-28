@@ -44,7 +44,30 @@
 
 - Windows: `build.bat [Release]`
 - Unix: `./build.sh [Debug|Release]`
-- 测试: `./build/bin/stdiolink_tests`
+- 测试: `./build/runtime_debug/bin/stdiolink_tests`
+
+### 目录布局（M89）
+
+构建产物采用 raw + runtime 两级布局：
+
+```
+build/
+├── debug/                  # CMake 原始输出（仅编译产物）
+├── runtime_debug/          # 组装后的运行时目录
+│   ├── bin/                # 核心二进制 + Qt 插件
+│   ├── data_root/
+│   │   ├── drivers/        # 驱动按子目录组织（stdio.drv.*）
+│   │   ├── services/       # Service 模板
+│   │   ├── projects/       # Project 配置
+│   │   └── ...
+│   ├── demos/
+│   └── scripts/
+└── runtime_release/        # Release 构建同构布局
+```
+
+- CMake `RUNTIME_OUTPUT_DIRECTORY` 统一指向 `build/<config>/`（raw dir）
+- `assemble_runtime` target 自动组装 raw → runtime，驱动按 `data_root/drivers/<name>/` 子目录分发
+- 开发环境与发布包目录结构同构（isomorphic layout）
 
 ### 测试
 
@@ -86,6 +109,8 @@ React 18 + TypeScript + Vite 前端。
 - [x] M1-M33: 核心协议、元数据、JS Runtime 及其全量 C++ 绑定。
 - [x] M34-M48: Server 架构、项目生命周期管理、SSE/WebSocket 通讯。
 - [x] M49-M69: WebUI 全量实现、"Style 06" 视觉重构、E2E 测试、发布脚本完善。
+- [x] M70-M85: Modbus 驱动族（TCP/RTU/Serial 主从站）、PLC 升降装置驱动、Service 模板。
+- [x] M86-M89: resolveDriver 绑定、shared 目录移除、统一 runtime 布局与同构目录结构。
 
 ## 开发约束
 

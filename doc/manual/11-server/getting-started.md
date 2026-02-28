@@ -122,16 +122,16 @@ HTTP server listening on 127.0.0.1:8080
 
 ## 构建
 
-`stdiolink_server` 随项目一起构建，产物位于 `build/bin/`：
+`stdiolink_server` 随项目一起构建，产物位于 `build/runtime_debug/bin/`（Debug）或 `build/runtime_release/bin/`（Release）：
 
 ```bash
 # macOS / Linux
 ./build.sh
-./build/bin/stdiolink_server --help
+./build/runtime_debug/bin/stdiolink_server --help
 
 # Windows
 build.bat
-build\bin\stdiolink_server.exe --help
+build\runtime_debug\bin\stdiolink_server.exe --help
 ```
 
 ## 下一步

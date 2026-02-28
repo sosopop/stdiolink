@@ -1,5 +1,8 @@
 #include "driver.h"
+#include <QCoreApplication>
+#include <QDir>
 #include <QJsonDocument>
+#include <QProcessEnvironment>
 #include "meta_cache.h"
 #include "stdiolink/protocol/jsonl_serializer.h"
 
@@ -27,6 +30,21 @@ bool Driver::start(const QString& program, const QStringList& args) {
     m_proc.setProgram(program);
     m_proc.setArguments(finalArgs);
     m_proc.setProcessChannelMode(QProcess::SeparateChannels);
+
+    // Ensure driver subprocesses can find shared libraries in the host's bin/ directory
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QString binDir = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_WIN
+    const QString pathKey = QStringLiteral("PATH");
+#elif defined(Q_OS_MACOS)
+    const QString pathKey = QStringLiteral("DYLD_LIBRARY_PATH");
+#else
+    const QString pathKey = QStringLiteral("LD_LIBRARY_PATH");
+#endif
+    const QString existing = env.value(pathKey);
+    env.insert(pathKey, existing.isEmpty() ? binDir : binDir + QDir::listSeparator() + existing);
+    m_proc.setProcessEnvironment(env);
+
     m_treeGuard.prepareProcess(&m_proc);
     m_proc.start();
     if (!m_proc.waitForStarted(3000)) {

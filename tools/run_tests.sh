@@ -8,6 +8,7 @@ Usage:
 
 Options:
   --build-dir <dir>   Build directory (default: build)
+  --config <type>     Build config: debug or release (default: auto-detect)
   --gtest             Run only GTest (C++) tests
   --vitest            Run only Vitest (WebUI unit) tests
   --playwright        Run only Playwright (E2E) tests
@@ -26,6 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 BUILD_DIR="build"
+BUILD_CONFIG=""
 RUN_GTEST=0
 RUN_VITEST=0
 RUN_PLAYWRIGHT=0
@@ -34,6 +36,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --build-dir)
             BUILD_DIR="${2:-}"
+            shift 2
+            ;;
+        --config)
+            BUILD_CONFIG="${2:-}"
             shift 2
             ;;
         --gtest)
@@ -67,10 +73,26 @@ if [[ "${RUN_GTEST}" -eq 0 && "${RUN_VITEST}" -eq 0 && "${RUN_PLAYWRIGHT}" -eq 0
     RUN_PLAYWRIGHT=1
 fi
 
+# Auto-detect build config if not specified
+if [[ -z "${BUILD_CONFIG}" ]]; then
+    if [[ "${BUILD_DIR}" = /* ]]; then
+        _base="${BUILD_DIR}"
+    else
+        _base="${ROOT_DIR}/${BUILD_DIR}"
+    fi
+    if [[ -d "${_base}/runtime_debug" ]]; then
+        BUILD_CONFIG="debug"
+    elif [[ -d "${_base}/runtime_release" ]]; then
+        BUILD_CONFIG="release"
+    else
+        BUILD_CONFIG="debug"
+    fi
+fi
+
 if [[ "${BUILD_DIR}" = /* ]]; then
-    BIN_DIR="${BUILD_DIR}/bin"
+    BIN_DIR="${BUILD_DIR}/runtime_${BUILD_CONFIG}/bin"
 else
-    BIN_DIR="${ROOT_DIR}/${BUILD_DIR}/bin"
+    BIN_DIR="${ROOT_DIR}/${BUILD_DIR}/runtime_${BUILD_CONFIG}/bin"
 fi
 
 WEBUI_DIR="${ROOT_DIR}/src/webui"

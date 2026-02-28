@@ -11,7 +11,7 @@ Options:
   --output-dir <dir>   Release output root (default: release)
   --name <name>        Package name (default: stdiolink_<timestamp>_<git>)
   --with-tests         Include test binaries in bin/
-  --skip-build         Skip C++ build (assume build/bin already exists)
+  --skip-build         Skip C++ build (assume runtime_release already exists)
   --skip-webui         Skip WebUI build
   --skip-tests         Skip test execution before packaging
   -h, --help           Show this help
@@ -91,10 +91,15 @@ to_abs_path() {
 
 BUILD_DIR_ABS="$(to_abs_path "${BUILD_DIR}")"
 OUTPUT_DIR_ABS="$(to_abs_path "${OUTPUT_DIR}")"
-BIN_DIR="${BUILD_DIR_ABS}/bin"
+RUNTIME_DIR="${BUILD_DIR_ABS}/runtime_release"
 
 # ── C++ build ────────────────────────────────────────────────────────
 if [[ "${SKIP_BUILD}" -eq 0 ]]; then
+    # 清理旧 runtime 目录
+    RUNTIME_CLEAN="${BUILD_DIR_ABS}/runtime_release"
+    if [[ -d "${RUNTIME_CLEAN}" ]]; then
+        rm -rf "${RUNTIME_CLEAN}"
+    fi
     echo "Building C++ project (Release)..."
     BUILD_SCRIPT="${ROOT_DIR}/build.sh"
     if [[ ! -f "${BUILD_SCRIPT}" ]]; then
@@ -106,8 +111,8 @@ if [[ "${SKIP_BUILD}" -eq 0 ]]; then
     popd > /dev/null
 fi
 
-if [[ ! -d "${BIN_DIR}" ]]; then
-    echo "Error: build bin directory not found: ${BIN_DIR}" >&2
+if [[ ! -d "${RUNTIME_DIR}" ]]; then
+    echo "Error: runtime directory not found: ${RUNTIME_DIR}" >&2
     echo "Please build project first, for example: ./build.sh Release" >&2
     exit 1
 fi
@@ -122,7 +127,7 @@ PACKAGE_DIR="${OUTPUT_DIR_ABS}/${PACKAGE_NAME}"
 
 echo "Preparing release package:"
 echo "  root        : ${ROOT_DIR}"
-echo "  build bin   : ${BIN_DIR}"
+echo "  runtime     : ${RUNTIME_DIR}"
 echo "  output root : ${OUTPUT_DIR_ABS}"
 echo "  package dir : ${PACKAGE_DIR}"
 echo "  with tests  : ${WITH_TESTS}"
@@ -208,7 +213,8 @@ if [[ "${SKIP_TESTS}" -eq 0 ]]; then
     echo "=== Running test suites ==="
 
     # 1. GTest (C++)
-    GTEST_BIN="${BIN_DIR}/stdiolink_tests"
+    RUNTIME_BIN_DIR="${RUNTIME_DIR}/bin"
+    GTEST_BIN="${RUNTIME_BIN_DIR}/stdiolink_tests"
     if [[ -f "${GTEST_BIN}" ]]; then
         echo "--- GTest (C++) ---"
         "${GTEST_BIN}"
@@ -244,23 +250,20 @@ if [[ "${SKIP_TESTS}" -eq 0 ]]; then
 fi
 
 # ── Binaries ─────────────────────────────────────────────────────────
-echo "Copying binaries..."
+echo "Copying binaries from runtime..."
+RUNTIME_BIN="${RUNTIME_DIR}/bin"
 while IFS= read -r -d '' file; do
     base="$(basename "${file}")"
     if should_skip_binary "${base}"; then
         continue
     fi
     cp -f "${file}" "${PACKAGE_DIR}/bin/${base}"
-done < <(find "${BIN_DIR}" -maxdepth 1 -type f -print0)
+done < <(find "${RUNTIME_BIN}" -maxdepth 1 -type f -print0)
 
 # Copy Qt plugin subdirectories (tls, platforms, networkinformation, etc.)
 echo "Copying Qt plugin directories..."
-SKIP_DIRS="config_demo|js_runtime_demo|server_manager_demo"
 while IFS= read -r -d '' dir; do
     dirname="$(basename "${dir}")"
-    if [[ "${dirname}" =~ ^(${SKIP_DIRS})$ ]]; then
-        continue
-    fi
     dest="${PACKAGE_DIR}/bin/${dirname}"
     mkdir -p "${dest}"
     find "${dir}" -maxdepth 1 -type f \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \) -print0 |
@@ -268,57 +271,14 @@ while IFS= read -r -d '' dir; do
             cp -f "${lib}" "${dest}/"
         done
     echo "  + ${dirname}/"
-done < <(find "${BIN_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
+done < <(find "${RUNTIME_BIN}" -mindepth 1 -maxdepth 1 -type d -print0)
 
-# ── Seed production + demo data ──────────────────────────────────────
-# 第 1 层: production data_root
-echo "Seeding production data into data_root..."
-PROD_DATA_ROOT="${ROOT_DIR}/src/data_root"
-if [[ -d "${PROD_DATA_ROOT}" ]]; then
-    if [[ -d "${PROD_DATA_ROOT}/services" ]]; then
-        cp -R "${PROD_DATA_ROOT}/services/"* "${PACKAGE_DIR}/data_root/services/" 2>/dev/null || true
-    fi
-    if [[ -d "${PROD_DATA_ROOT}/projects" ]]; then
-        cp -R "${PROD_DATA_ROOT}/projects/"* "${PACKAGE_DIR}/data_root/projects/" 2>/dev/null || true
-    fi
-    echo "  Production services and projects seeded."
+# ── Copy data_root from runtime ──────────────────────────────────────
+echo "Copying data_root from runtime..."
+RUNTIME_DATA_ROOT="${RUNTIME_DIR}/data_root"
+if [[ -d "${RUNTIME_DATA_ROOT}" ]]; then
+    cp -R "${RUNTIME_DATA_ROOT}/"* "${PACKAGE_DIR}/data_root/" 2>/dev/null || true
 fi
-
-# 第 2 层: demo data_root（叠加）
-echo "Seeding demo data into data_root..."
-DEMO_DATA_ROOT="${ROOT_DIR}/src/demo/server_manager_demo/data_root"
-if [[ -d "${DEMO_DATA_ROOT}" ]]; then
-    if [[ -d "${DEMO_DATA_ROOT}/services" ]]; then
-        cp -R "${DEMO_DATA_ROOT}/services/"* "${PACKAGE_DIR}/data_root/services/" 2>/dev/null || true
-    fi
-    if [[ -d "${DEMO_DATA_ROOT}/projects" ]]; then
-        cp -R "${DEMO_DATA_ROOT}/projects/"* "${PACKAGE_DIR}/data_root/projects/" 2>/dev/null || true
-    fi
-    echo "  Demo services and projects seeded."
-else
-    echo "  WARNING: Demo data_root not found at ${DEMO_DATA_ROOT}"
-fi
-
-# Copy driver binaries into data_root/drivers/<name>/<name>
-# Scanner expects each driver in its own subdirectory.
-echo "Copying drivers into data_root/drivers..."
-DRIVERS_DEST="${PACKAGE_DIR}/data_root/drivers"
-DRIVERS_COPIED=0
-while IFS= read -r -d '' file; do
-    base="$(basename "${file}")"
-    if [[ "${base}" == stdio.drv.* ]]; then
-        # Strip platform extension (.exe) if present; use bare name as subdir
-        drv_name="${base%.exe}"
-        driver_sub="${DRIVERS_DEST}/${drv_name}"
-        mkdir -p "${driver_sub}"
-        cp -f "${file}" "${driver_sub}/${base}"
-        # Remove from bin/ to avoid duplication
-        rm -f "${PACKAGE_DIR}/bin/${base}"
-        echo "  + ${drv_name}/${base}"
-        DRIVERS_COPIED=$((DRIVERS_COPIED + 1))
-    fi
-done < <(find "${BIN_DIR}" -maxdepth 1 -type f -print0)
-echo "  ${DRIVERS_COPIED} driver(s) copied."
 
 # ── Default config.json ──────────────────────────────────────────────
 CONFIG_PATH="${PACKAGE_DIR}/data_root/config.json"
@@ -327,7 +287,7 @@ if [[ ! -f "${CONFIG_PATH}" ]]; then
     cat > "${CONFIG_PATH}" <<'CONFIGEOF'
 {
     "host": "127.0.0.1",
-    "port": 18080,
+    "port": 6200,
     "logLevel": "info"
 }
 CONFIGEOF

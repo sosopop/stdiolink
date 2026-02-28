@@ -175,10 +175,17 @@ else()
 endif()
 
 set_target_properties(stdiolink_tests PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS stdiolink_tests)
 
-add_test(NAME stdiolink_tests COMMAND stdiolink_tests)
+add_test(NAME stdiolink_tests
+    COMMAND "${STDIOLINK_RUNTIME_DIR}/bin/stdiolink_tests${CMAKE_EXECUTABLE_SUFFIX}"
+    WORKING_DIRECTORY "${STDIOLINK_RUNTIME_DIR}/bin"
+)
+set_tests_properties(stdiolink_tests PROPERTIES
+    DEPENDS assemble_runtime
+)
 
 target_compile_definitions(stdiolink_tests PRIVATE STDIOLINK_TESTING)
 
@@ -192,8 +199,9 @@ add_executable(test_driver test_driver_main.cpp)
 target_link_libraries(test_driver PRIVATE stdiolink)
 
 set_target_properties(test_driver PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_driver)
 
 # test_meta_driver (支持 --export-meta 的测试 Driver)
 add_executable(test_meta_driver test_meta_driver_main.cpp)
@@ -201,8 +209,9 @@ add_executable(test_meta_driver test_meta_driver_main.cpp)
 target_link_libraries(test_meta_driver PRIVATE stdiolink)
 
 set_target_properties(test_meta_driver PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_meta_driver)
 
 # test_service_stub (用于 server manager / scheduler 测试的服务进程替身)
 add_executable(test_service_stub test_service_stub_main.cpp)
@@ -210,8 +219,9 @@ add_executable(test_service_stub test_service_stub_main.cpp)
 target_link_libraries(test_service_stub PRIVATE Qt6::Core)
 
 set_target_properties(test_service_stub PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_service_stub)
 
 add_dependencies(stdiolink_tests test_service_stub)
 
@@ -221,8 +231,9 @@ add_executable(test_process_async_stub test_process_async_stub_main.cpp)
 target_link_libraries(test_process_async_stub PRIVATE Qt6::Core)
 
 set_target_properties(test_process_async_stub PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_process_async_stub)
 
 add_dependencies(stdiolink_tests test_process_async_stub)
 
@@ -232,8 +243,9 @@ add_executable(test_slow_meta_driver test_slow_meta_driver_main.cpp)
 target_link_libraries(test_slow_meta_driver PRIVATE stdiolink)
 
 set_target_properties(test_slow_meta_driver PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_slow_meta_driver)
 
 add_dependencies(stdiolink_tests test_slow_meta_driver)
 
@@ -243,8 +255,9 @@ add_executable(test_guard_stub test_guard_stub_main.cpp)
 target_link_libraries(test_guard_stub PRIVATE stdiolink Qt6::Core Qt6::Network)
 
 set_target_properties(test_guard_stub PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_guard_stub)
 
 add_dependencies(stdiolink_tests test_guard_stub)
 
@@ -254,8 +267,9 @@ add_executable(test_output_flood_stub test_output_flood_stub_main.cpp)
 target_link_libraries(test_output_flood_stub PRIVATE Qt6::Core)
 
 set_target_properties(test_output_flood_stub PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_output_flood_stub)
 
 add_dependencies(stdiolink_tests test_output_flood_stub)
 
@@ -265,8 +279,9 @@ add_executable(test_tree_guard_parent_stub test_tree_guard_parent_stub_main.cpp)
 target_link_libraries(test_tree_guard_parent_stub PRIVATE stdiolink Qt6::Core Qt6::Network)
 
 set_target_properties(test_tree_guard_parent_stub PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_tree_guard_parent_stub)
 
 add_dependencies(stdiolink_tests test_tree_guard_parent_stub)
 
@@ -276,7 +291,8 @@ add_executable(test_tree_guard_check_stub test_tree_guard_check_stub_main.cpp)
 target_link_libraries(test_tree_guard_check_stub PRIVATE Qt6::Core)
 
 set_target_properties(test_tree_guard_check_stub PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_tree_guard_check_stub)
 
 add_dependencies(stdiolink_tests test_tree_guard_check_stub)

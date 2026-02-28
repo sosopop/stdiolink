@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include "stdiolink/doc/doc_generator.h"
 #include "stdiolink/protocol/meta_types.h"
 #include "stdiolink/platform/platform_utils.h"
@@ -358,11 +359,16 @@ TEST(DocGenerator, TypeScriptEmptyMeta) {
 }
 
 TEST(DocGenerator, TypeScriptExportDocCli) {
+    QString binDir = QCoreApplication::applicationDirPath();
     QString exe = PlatformUtils::executablePath(
-        QCoreApplication::applicationDirPath(), "stdio.drv.calculator");
+        QDir(binDir).filePath("../data_root/drivers/stdio.drv.calculator"), "stdio.drv.calculator");
     ASSERT_TRUE(QFileInfo::exists(exe));
 
     QProcess proc;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QString pathVal = env.value("PATH");
+    env.insert("PATH", pathVal.isEmpty() ? binDir : binDir + QDir::listSeparator() + pathVal);
+    proc.setProcessEnvironment(env);
     proc.start(exe, {"--export-doc=ts"});
     ASSERT_TRUE(proc.waitForFinished(10000));
     EXPECT_EQ(proc.exitCode(), 0);

@@ -83,7 +83,7 @@ src/demo/server_manager_demo/
 - 新建 `server_manager_demo` 目录与 README
 - 创建 `data_root/config.json`，至少配置：
   - `host: "127.0.0.1"`
-  - `port: 18080`（避免与默认 8080 冲突）
+  - `port: 6200`（避免与默认 8080 冲突）
   - `logLevel: "info"`
   - `serviceProgram: "./stdiolink_service"`（由发布目录相对路径解析）
 - 准备一个可稳定执行的 JS Service（快速返回 + 可观测日志）

@@ -32,5 +32,6 @@ target_link_libraries(driver_modbusrtu_serial_server PRIVATE
 )
 set_target_properties(driver_modbusrtu_serial_server PROPERTIES
     OUTPUT_NAME "stdio.drv.modbusrtu_serial_server"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS driver_modbusrtu_serial_server)

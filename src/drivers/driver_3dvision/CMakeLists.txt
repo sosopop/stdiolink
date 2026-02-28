@@ -12,5 +12,6 @@ target_link_libraries(driver_3dvision PRIVATE
 
 set_target_properties(driver_3dvision PROPERTIES
     OUTPUT_NAME "stdio.drv.3dvision"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS driver_3dvision)

@@ -155,4 +155,8 @@ if %errorlevel% neq 0 (
 
 echo ========================================
 echo Build completed successfully!
+set "BT_LOWER=%BUILD_TYPE%"
+if /i "%BUILD_TYPE%"=="Debug" set "BT_LOWER=debug"
+if /i "%BUILD_TYPE%"=="Release" set "BT_LOWER=release"
+echo Runtime directory: %BUILD_DIR%\runtime_!BT_LOWER!
 echo ========================================

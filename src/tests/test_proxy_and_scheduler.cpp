@@ -49,8 +49,9 @@ QString escapeJsString(const QString& s) {
 }
 
 QString calculatorDriverPath() {
+    QString binDir = QCoreApplication::applicationDirPath();
     return stdiolink::PlatformUtils::executablePath(
-        QCoreApplication::applicationDirPath(), "stdio.drv.calculator");
+        QDir(binDir).filePath("../data_root/drivers/stdio.drv.calculator"), "stdio.drv.calculator");
 }
 
 QString slowMetaDriverPath() {

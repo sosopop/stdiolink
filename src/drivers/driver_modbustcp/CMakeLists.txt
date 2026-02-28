@@ -33,5 +33,6 @@ target_link_libraries(driver_modbustcp PRIVATE stdiolink ${QT_LIBRARIES})
 # 设置输出目录
 set_target_properties(driver_modbustcp PROPERTIES
     OUTPUT_NAME "stdio.drv.modbustcp"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS driver_modbustcp)

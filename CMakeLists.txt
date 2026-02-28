@@ -1,8 +1,23 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 project(stdiolink)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ── 目录布局变量 ──
+# 防护：拒绝多配置生成器
+get_property(_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(_is_multi_config)
+    message(FATAL_ERROR "Multi-config generators are not supported. Use -G Ninja.")
+endif()
+
+string(TOLOWER "${CMAKE_BUILD_TYPE}" _build_type_lower)
+if(_build_type_lower STREQUAL "")
+    set(_build_type_lower "debug")
+endif()
+
+set(STDIOLINK_RAW_DIR "${CMAKE_BINARY_DIR}/${_build_type_lower}")
+set(STDIOLINK_RUNTIME_DIR "${CMAKE_BINARY_DIR}/runtime_${_build_type_lower}")
 
 # Qt 自动化工具配置
 set(CMAKE_AUTOMOC ON)
@@ -35,3 +50,6 @@ enable_testing()
 
 # 添加子目录
 add_subdirectory(src)
+
+# 运行时目录组装
+include(cmake/assemble_runtime.cmake)

@@ -12,7 +12,7 @@ Options:
   --output-dir <dir>   Release output root (default: release)
   --name <name>        Package name (default: stdiolink_<timestamp>_<git>)
   --with-tests         Include test binaries in bin/
-  --skip-build         Skip C++ build (assume build/bin already exists)
+  --skip-build         Skip C++ build (assume runtime_release already exists)
   --skip-webui         Skip WebUI build
   --skip-tests         Skip test execution before packaging
   -h, --help           Show this help
@@ -50,7 +50,8 @@ function Get-GitRev {
         if ($LASTEXITCODE -eq 0 -and $value) {
             return $value.Trim()
         }
-    } catch {
+    }
+    catch {
     }
     return "unknown"
 }
@@ -162,7 +163,7 @@ if ([string]::IsNullOrWhiteSpace($buildDir) -or [string]::IsNullOrWhiteSpace($ou
 
 $buildDirAbs = Resolve-AbsolutePath -Path $buildDir -RootDir $rootDir
 $outputDirAbs = Resolve-AbsolutePath -Path $outputDir -RootDir $rootDir
-$binDir = Join-Path $buildDirAbs "bin"
+$runtimeDir = Join-Path $buildDirAbs "runtime_release"
 
 # Resolve npm.cmd / npx.cmd early so both WebUI build and test blocks can use them.
 # Using .cmd directly bypasses the npm.ps1 shim which is incompatible with StrictMode.
@@ -176,6 +177,11 @@ if ($npmCmd) {
 
 # ── C++ build ────────────────────────────────────────────────────────
 if (-not $skipBuild) {
+    # 清理旧 runtime 目录，确保不残留
+    $runtimeClean = Join-Path $buildDirAbs "runtime_release"
+    if (Test-Path -LiteralPath $runtimeClean) {
+        Remove-Item -LiteralPath $runtimeClean -Recurse -Force
+    }
     Write-Host "Building C++ project (Release)..."
     $buildBat = Join-Path $rootDir "build.bat"
     if (-not (Test-Path -LiteralPath $buildBat -PathType Leaf)) {
@@ -190,13 +196,14 @@ if (-not $skipBuild) {
             Write-Error "C++ build failed (exit code $LASTEXITCODE)"
             exit 1
         }
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
 
-if (-not (Test-Path -LiteralPath $binDir -PathType Container)) {
-    Write-Error "Build bin directory not found: $binDir"
+if (-not (Test-Path -LiteralPath $runtimeDir -PathType Container)) {
+    Write-Error "Runtime directory not found: $runtimeDir"
     Write-Error "Please build project first, for example: build.bat Release"
     exit 1
 }
@@ -214,7 +221,7 @@ $packageDir = Join-Path $outputDirAbs $packageName
 
 Write-Host "Preparing release package:"
 Write-Host "  root        : $rootDir"
-Write-Host "  build bin   : $binDir"
+Write-Host "  runtime     : $runtimeDir"
 Write-Host "  output root : $outputDirAbs"
 Write-Host "  package dir : $packageDir"
 Write-Host "  with tests  : $([int][bool]$withTests)"
@@ -308,10 +315,12 @@ if (-not $skipWebui -and (Test-Path -LiteralPath $webuiPackageJson -PathType Lea
         New-Item -ItemType Directory -Path $webuiDest -Force | Out-Null
         Copy-Item -Path (Join-Path $distDir "*") -Destination $webuiDest -Recurse -Force
         Write-Host "  WebUI copied to $webuiDest"
-    } finally {
+    }
+    finally {
         Pop-Location
     }
-} elseif (-not $skipWebui) {
+}
+elseif (-not $skipWebui) {
     Write-Host "WebUI source not found, skipping WebUI build."
 }
 
@@ -320,7 +329,8 @@ if (-not $skipTests) {
     Write-Host "=== Running test suites ==="
 
     # 1. GTest (C++)
-    $gtestBin = Join-Path $binDir "stdiolink_tests.exe"
+    $runtimeBinDir = Join-Path $runtimeDir "bin"
+    $gtestBin = Join-Path $runtimeBinDir "stdiolink_tests.exe"
     if (Test-Path -LiteralPath $gtestBin -PathType Leaf) {
         Write-Host "--- GTest (C++) ---"
         & $gtestBin
@@ -329,7 +339,8 @@ if (-not $skipTests) {
             exit 1
         }
         Write-Host "  GTest passed."
-    } else {
+    }
+    else {
         Write-Host "WARNING: GTest binary not found at $gtestBin, skipping C++ tests."
     }
 
@@ -344,11 +355,13 @@ if (-not $skipTests) {
                 Write-Error "Vitest failed (exit code $LASTEXITCODE)"
                 exit 1
             }
-        } finally {
+        }
+        finally {
             Pop-Location
         }
         Write-Host "  Vitest passed."
-    } else {
+    }
+    else {
         Write-Host "WARNING: npm or node_modules not available, skipping Vitest."
     }
 
@@ -367,11 +380,13 @@ if (-not $skipTests) {
                 Write-Error "Playwright tests failed (exit code $LASTEXITCODE)"
                 exit 1
             }
-        } finally {
+        }
+        finally {
             Pop-Location
         }
         Write-Host "  Playwright passed."
-    } else {
+    }
+    else {
         Write-Host "WARNING: npx or node_modules not available, skipping Playwright."
     }
 
@@ -379,8 +394,9 @@ if (-not $skipTests) {
 }
 
 # ── Binaries ─────────────────────────────────────────────────────────
-Write-Host "Copying binaries..."
-$binFiles = Get-ChildItem -LiteralPath $binDir -File
+Write-Host "Copying binaries from runtime..."
+$runtimeBinDir2 = Join-Path $runtimeDir "bin"
+$binFiles = Get-ChildItem -LiteralPath $runtimeBinDir2 -File
 foreach ($file in $binFiles) {
     if (Should-SkipBinary -Name $file.Name -WithTests $withTests) {
         continue
@@ -390,12 +406,10 @@ foreach ($file in $binFiles) {
 
 # Copy Qt plugin subdirectories (tls, platforms, networkinformation, etc.)
 Write-Host "Copying Qt plugin directories..."
-$pluginDirs = Get-ChildItem -LiteralPath $binDir -Directory -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -notin @("config_demo", "js_runtime_demo", "server_manager_demo") }
+$pluginDirs = Get-ChildItem -LiteralPath $runtimeBinDir2 -Directory -ErrorAction SilentlyContinue
 foreach ($dir in $pluginDirs) {
     $dest = Join-Path $packageDir "bin/$($dir.Name)"
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
-    # Copy only Release DLLs (skip debug 'd' suffix variants)
     foreach ($dll in (Get-ChildItem -LiteralPath $dir.FullName -File -Filter "*.dll")) {
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($dll.Name)
         if ($stem.EndsWith("d") -and (Test-Path -LiteralPath (Join-Path $dir.FullName "$($stem.Substring(0, $stem.Length - 1)).dll"))) {
@@ -406,60 +420,12 @@ foreach ($dir in $pluginDirs) {
     Write-Host "  + $($dir.Name)/"
 }
 
-# ── Seed production + demo data ──────────────────────────────────────
-# 第 1 层: production data_root
-Write-Host "Seeding production data into data_root..."
-$prodDataRoot = Join-Path $rootDir "src/data_root"
-if (Test-Path -LiteralPath $prodDataRoot -PathType Container) {
-    $prodServices = Join-Path $prodDataRoot "services"
-    if (Test-Path -LiteralPath $prodServices -PathType Container) {
-        Copy-Item -Path (Join-Path $prodServices "*") -Destination (Join-Path $packageDir "data_root/services") -Recurse -Force
-    }
-    $prodProjects = Join-Path $prodDataRoot "projects"
-    if (Test-Path -LiteralPath $prodProjects -PathType Container) {
-        Copy-Item -Path (Join-Path $prodProjects "*") -Destination (Join-Path $packageDir "data_root/projects") -Recurse -Force
-    }
-    Write-Host "  Production services and projects seeded."
+# ── Copy data_root from runtime ──────────────────────────────────────
+Write-Host "Copying data_root from runtime..."
+$runtimeDataRoot = Join-Path $runtimeDir "data_root"
+if (Test-Path -LiteralPath $runtimeDataRoot -PathType Container) {
+    Copy-Item -Path (Join-Path $runtimeDataRoot "*") -Destination (Join-Path $packageDir "data_root") -Recurse -Force
 }
-
-# 第 2 层: demo data_root（叠加）
-Write-Host "Seeding demo data into data_root..."
-$demoDataRoot = Join-Path $rootDir "src/demo/server_manager_demo/data_root"
-if (Test-Path -LiteralPath $demoDataRoot -PathType Container) {
-    $demoServices = Join-Path $demoDataRoot "services"
-    if (Test-Path -LiteralPath $demoServices -PathType Container) {
-        Copy-Item -Path (Join-Path $demoServices "*") -Destination (Join-Path $packageDir "data_root/services") -Recurse -Force
-    }
-    $demoProjects = Join-Path $demoDataRoot "projects"
-    if (Test-Path -LiteralPath $demoProjects -PathType Container) {
-        Copy-Item -Path (Join-Path $demoProjects "*") -Destination (Join-Path $packageDir "data_root/projects") -Recurse -Force
-    }
-    Write-Host "  Demo services and projects seeded."
-} else {
-    Write-Host "  WARNING: Demo data_root not found at $demoDataRoot"
-}
-
-# Copy driver binaries into data_root/drivers/<name>/<name>.exe
-# Scanner expects each driver in its own subdirectory.
-Write-Host "Copying drivers into data_root/drivers..."
-$driversDest = Join-Path $packageDir "data_root/drivers"
-$driversCopied = 0
-foreach ($file in (Get-ChildItem -LiteralPath $binDir -File -Filter "*.exe")) {
-    $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-    if ($stem.StartsWith("stdio.drv.")) {
-        $driverSubDir = Join-Path $driversDest $stem
-        New-Item -ItemType Directory -Path $driverSubDir -Force | Out-Null
-        Copy-Item -LiteralPath $file.FullName -Destination $driverSubDir -Force
-        # Remove from bin/ to avoid duplication
-        $binCopy = Join-Path $packageDir "bin/$($file.Name)"
-        if (Test-Path -LiteralPath $binCopy -PathType Leaf) {
-            Remove-Item -LiteralPath $binCopy -Force
-        }
-        Write-Host "  + $stem/$($file.Name)"
-        $driversCopied++
-    }
-}
-Write-Host "  $driversCopied driver(s) copied."
 
 # ── Default config.json ──────────────────────────────────────────────
 $configPath = Join-Path $packageDir "data_root/config.json"
@@ -467,7 +433,7 @@ if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
     Write-Host "Generating default config.json..."
     $defaultConfig = @{
         host     = "127.0.0.1"
-        port     = 18080
+        port     = 6200
         logLevel = "info"
     }
     $defaultConfig | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $configPath -Encoding utf8
@@ -515,8 +481,8 @@ $manifestLines += ""
 $manifestLines += "[bin]"
 
 $manifestBinEntries = Get-ChildItem -LiteralPath (Join-Path $packageDir "bin") -File |
-    Sort-Object Name |
-    ForEach-Object { $_.Name }
+Sort-Object Name |
+ForEach-Object { $_.Name }
 $manifestLines += $manifestBinEntries
 $manifestLines += ""
 $manifestLines += "[webui]"
@@ -524,10 +490,11 @@ $webuiIndex = Join-Path $packageDir "data_root/webui/index.html"
 if (Test-Path -LiteralPath $webuiIndex -PathType Leaf) {
     $manifestLines += "status=bundled"
     $webuiFiles = Get-ChildItem -LiteralPath (Join-Path $packageDir "data_root/webui") -File -Recurse |
-        Sort-Object Name |
-        ForEach-Object { $_.Name }
+    Sort-Object Name |
+    ForEach-Object { $_.Name }
     $manifestLines += $webuiFiles
-} else {
+}
+else {
     $manifestLines += "status=not_included"
 }
 
@@ -542,7 +509,8 @@ if (Test-Path -LiteralPath $checkScript -PathType Leaf) {
         Write-Error "Duplicate check failed! See errors above."
         exit 1
     }
-} else {
+}
+else {
     Write-Error "check_duplicates.ps1 not found at $checkScript"
     exit 1
 }
