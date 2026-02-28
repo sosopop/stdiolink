@@ -43,7 +43,7 @@ export const ActiveInstances: React.FC<ActiveInstancesProps> = ({ instances, onT
       dataIndex: 'pid',
       key: 'pid',
       width: 120,
-      render: (pid: number) => <Text code style={{ fontSize: 12, background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: 4 }}>{pid}</Text>
+      render: (pid: number) => <Text code style={{ fontSize: 12, background: 'var(--bg-code)', padding: '2px 6px', borderRadius: 4, color: 'var(--text-secondary)' }}>{pid}</Text>
     },
     {
       title: t('dashboard.table.uptime'),

@@ -81,9 +81,9 @@
   --bg-code: rgba(0, 0, 0, 0.04);
 
   /* 交互叠加层 - 亮色版本 */
-  --hover-overlay: rgba(0, 0, 0, 0.04);
-  --hover-overlay-strong: rgba(0, 0, 0, 0.08);
-  --table-header-bg: rgba(0, 0, 0, 0.02);
+  --hover-overlay: rgba(99, 102, 241, 0.06);
+  --hover-overlay-strong: rgba(99, 102, 241, 0.12);
+  --table-header-bg: rgba(99, 102, 241, 0.03);
 
   --text-primary: #1E293B;
   --text-secondary: #64748B;

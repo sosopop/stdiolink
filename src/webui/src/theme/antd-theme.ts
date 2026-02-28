@@ -71,6 +71,10 @@ export const darkTheme: ThemeConfig = {
     Table: {
       colorBgContainer: 'transparent',
       headerBg: 'rgba(255, 255, 255, 0.04)',
+      rowHoverBg: 'rgba(255, 255, 255, 0.06)',
+      bodySortBg: 'rgba(255, 255, 255, 0.015)',
+      headerSortHoverBg: 'rgba(255, 255, 255, 0.06)',
+      headerSortActiveBg: 'rgba(255, 255, 255, 0.08)',
     },
   }
 };
@@ -103,7 +107,11 @@ export const lightTheme: ThemeConfig = {
     },
     Table: {
       colorBgContainer: 'transparent',
-      headerBg: 'rgba(0, 0, 0, 0.02)',
+      headerBg: 'rgba(99, 102, 241, 0.03)',
+      rowHoverBg: 'rgba(99, 102, 241, 0.06)',
+      bodySortBg: 'rgba(99, 102, 241, 0.015)',
+      headerSortHoverBg: 'rgba(99, 102, 241, 0.05)',
+      headerSortActiveBg: 'rgba(99, 102, 241, 0.07)',
     },
   }
 };
