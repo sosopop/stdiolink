@@ -251,7 +251,6 @@ stdiolink/
 │   │   └── scanner/          #   服务与驱动自动发现
 │   ├── webui/                # React 前端（Vite + Ant Design）
 │   └── drivers/              # 示例驱动（ModbusTCP、ModbusRTU、3DVision）
-├── examples/                 # JavaScript 使用示例
 ├── doc/
 │   ├── manual/               # 完整用户手册
 │   └── http_api.md           # REST API 参考

@@ -251,7 +251,6 @@ stdiolink/
 │   │   └── scanner/          #   Auto-discovery for services & drivers
 │   ├── webui/                # React frontend (Vite + Ant Design)
 │   └── drivers/              # Example drivers (ModbusTCP, ModbusRTU, 3DVision)
-├── examples/                 # JavaScript usage examples
 ├── doc/
 │   ├── manual/               # Complete user manual
 │   └── http_api.md           # REST API reference
