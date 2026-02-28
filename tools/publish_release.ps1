@@ -8,7 +8,7 @@ Usage:
   tools/publish_release.ps1 [options]
 
 Options:
-  --build-dir <dir>    Build directory (default: build_release)
+  --build-dir <dir>    Build directory (default: build)
   --output-dir <dir>   Release output root (default: release)
   --name <name>        Package name (default: stdiolink_<timestamp>_<git>)
   --with-tests         Include test binaries in bin/
@@ -79,7 +79,7 @@ function Copy-DirClean {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
 
-$buildDir = "build_release"
+$buildDir = "build"
 $outputDir = "release"
 $packageName = ""
 $withTests = $false

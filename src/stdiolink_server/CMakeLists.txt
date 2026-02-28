@@ -80,3 +80,12 @@ set_target_properties(stdiolink_server PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
 set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS stdiolink_server)
+
+if(WIN32 AND TARGET Qt6::windeployqt)
+    add_custom_command(TARGET stdiolink_server POST_BUILD
+        COMMAND Qt6::windeployqt
+            --dir "$<TARGET_FILE_DIR:stdiolink_server>"
+            "$<TARGET_FILE:stdiolink_server>"
+        COMMENT "Deploying Qt runtime/plugins for stdiolink_server"
+    )
+endif()
