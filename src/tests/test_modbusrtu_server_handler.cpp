@@ -324,3 +324,86 @@ TEST_F(ModbusRtuServerHandlerTest, T25_NonStringEventModeRejected) {
     EXPECT_EQ(resp.lastCode, 3);
     EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
 }
+
+// ===== run 命令参数校验测试 =====
+
+// T26 — run: 服务已运行时拒绝
+TEST_F(ModbusRtuServerHandlerTest, T26_RunAlreadyRunning) {
+    startServer();
+    resp.reset();
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0}, {"units", QJsonArray{QJsonObject{{"id", 1}}}}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("already running"));
+}
+
+// T27 — run: 无效 event_mode 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T27_RunInvalidEventMode) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0}, {"units", QJsonArray{QJsonObject{{"id", 1}}}},
+                     {"event_mode", "bogus"}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("Invalid event_mode"));
+}
+
+// T28 — run: 非字符串 event_mode 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T28_RunNonStringEventMode) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0}, {"units", QJsonArray{QJsonObject{{"id", 1}}}},
+                     {"event_mode", 42}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
+}
+
+// T29 — run: 非字符串 listen_address 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T29_RunNonStringListenAddress) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0}, {"listen_address", 12345},
+                     {"units", QJsonArray{QJsonObject{{"id", 1}}}}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("listen_address must be a string"));
+}
+
+// T30 — run: units 缺少 id 字段
+TEST_F(ModbusRtuServerHandlerTest, T30_RunUnitMissingId) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0},
+                     {"units", QJsonArray{QJsonObject{{"size", 100}}}}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("missing or invalid"));
+}
+
+// T31 — run: unit id 为小数被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T31_RunUnitDecimalId) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0},
+                     {"units", QJsonArray{QJsonObject{{"id", 1.8}}}}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("must be an integer"));
+}
+
+// T32 — run: unit id 超出范围 [1,247]
+TEST_F(ModbusRtuServerHandlerTest, T32_RunUnitIdOutOfRange) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0},
+                     {"units", QJsonArray{QJsonObject{{"id", 0}}}}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("out of range"));
+}
+
+// T33 — run: 重复 unit id 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T33_RunDuplicateUnitId) {
+    handler.handle("run",
+        QJsonObject{{"listen_port", 0},
+                     {"units", QJsonArray{QJsonObject{{"id", 1}}, QJsonObject{{"id", 1}}}}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("duplicate"));
+}
+
+// T34 — start_server: 非字符串 listen_address 被拒绝
+TEST_F(ModbusRtuServerHandlerTest, T34_StartServerNonStringListenAddress) {
+    handler.handle("start_server",
+        QJsonObject{{"listen_port", 0}, {"listen_address", 999}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("listen_address must be a string"));
+}

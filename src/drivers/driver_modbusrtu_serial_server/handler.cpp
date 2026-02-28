@@ -1,5 +1,7 @@
 #include "handler.h"
 
+#include <cmath>
+#include <QEventLoop>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -43,6 +45,77 @@ void ModbusRtuSerialServerHandler::handle(const QString& cmd, const QJsonValue& 
             {"port_name", m_server.portName()},
             {"event_mode", m_eventMode},
             {"units", units}});
+        return;
+    }
+
+    if (cmd == "run") {
+        if (m_server.isRunning()) {
+            resp.error(3, QJsonObject{{"message", "Server already running"}});
+            return;
+        }
+        static const QStringList validModes = {"write", "all", "read", "none"};
+        QString eventMode = "write";
+        if (p.contains("event_mode")) {
+            if (!p["event_mode"].isString()) {
+                resp.error(3, QJsonObject{{"message", "event_mode must be a string"}});
+                return;
+            }
+            eventMode = p["event_mode"].toString();
+        }
+        if (!validModes.contains(eventMode)) {
+            resp.error(3, QJsonObject{{"message",
+                QString("Invalid event_mode: %1").arg(eventMode)}});
+            return;
+        }
+        QString portName = p["port_name"].toString();
+        int baudRate = p["baud_rate"].toInt(9600);
+        int dataBits = p["data_bits"].toInt(8);
+        QString stopBits = p["stop_bits"].toString("1");
+        QString parity = p["parity"].toString("none");
+        if (!m_server.startServer(portName, baudRate, dataBits, stopBits, parity)) {
+            resp.error(1, QJsonObject{{"message",
+                QString("Failed to open serial port %1").arg(portName)}});
+            return;
+        }
+        m_eventMode = eventMode;
+        QJsonArray unitsArr = p["units"].toArray();
+        QJsonArray addedUnits;
+        for (int i = 0; i < unitsArr.size(); ++i) {
+            QJsonObject uo = unitsArr[i].toObject();
+            if (!uo.contains("id") || !uo["id"].isDouble()) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: missing or invalid 'id'").arg(i)}});
+                return;
+            }
+            double idVal = uo["id"].toDouble();
+            if (idVal != std::floor(idVal)) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: id must be an integer").arg(i)}});
+                return;
+            }
+            int uid = static_cast<int>(idVal);
+            if (uid < 1 || uid > 247) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: id %2 out of range [1,247]").arg(i).arg(uid)}});
+                return;
+            }
+            int sz = uo.value("size").toInt(10000);
+            if (!m_server.addUnit(static_cast<quint8>(uid), sz)) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: failed to add unit %2 (duplicate?)").arg(i).arg(uid)}});
+                return;
+            }
+            addedUnits.append(uid);
+        }
+        m_eventResponder.event("started", 0, QJsonObject{
+            {"port_name", m_server.portName()},
+            {"units", addedUnits},
+            {"event_mode", m_eventMode}});
+        QEventLoop().exec();
         return;
     }
 
@@ -340,6 +413,27 @@ void ModbusRtuSerialServerHandler::buildMeta() {
               "Modbus RTU 串口从站驱动，监听串口以 RTU 帧格式响应主站请求")
         .vendor("stdiolink")
         .profile("keepalive")
+        .command(CommandBuilder("run")
+            .description("一键启动从站服务并进入事件循环（支持 OneShot 模式）")
+            .param(FieldBuilder("port_name", FieldType::String)
+                .required().description("串口名称（如 COM1、/dev/ttyUSB0）"))
+            .param(FieldBuilder("baud_rate", FieldType::Int)
+                .defaultValue(9600).description("波特率"))
+            .param(FieldBuilder("data_bits", FieldType::Int)
+                .defaultValue(8).enumValues(QStringList{"5","6","7","8"})
+                .description("数据位"))
+            .param(FieldBuilder("stop_bits", FieldType::String)
+                .defaultValue("1").enumValues(QStringList{"1","1.5","2"})
+                .description("停止位"))
+            .param(FieldBuilder("parity", FieldType::String)
+                .defaultValue("none").enumValues(QStringList{"none","even","odd"})
+                .description("校验位"))
+            .param(FieldBuilder("units", FieldType::Array)
+                .required().description("从站 Unit 数组，每项 {id, size?}"))
+            .param(FieldBuilder("event_mode", FieldType::Enum)
+                .defaultValue("write")
+                .enumValues(QStringList{"write", "all", "read", "none"})
+                .description("事件推送模式")))
         .command(CommandBuilder("status")
             .description("获取驱动状态"))
         .command(CommandBuilder("start_server")

@@ -23,9 +23,11 @@ ModbusTcpServer::ModbusTcpServer(QObject* parent) : QTcpServer(parent) {}
 
 ModbusTcpServer::~ModbusTcpServer() { stopServer(); }
 
-bool ModbusTcpServer::startServer(quint16 port) {
+bool ModbusTcpServer::startServer(quint16 port, const QString& address) {
     if (isListening()) return false;
-    if (!listen(QHostAddress::Any, port)) {
+    QHostAddress bindAddr = address.isEmpty() ? QHostAddress::Any
+                                              : QHostAddress(address);
+    if (!listen(bindAddr, port)) {
         qWarning() << "Failed to start server:" << errorString();
         return false;
     }

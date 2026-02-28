@@ -77,9 +77,11 @@ ModbusRtuServer::ModbusRtuServer(QObject* parent) : QTcpServer(parent) {}
 
 ModbusRtuServer::~ModbusRtuServer() { stopServer(); }
 
-bool ModbusRtuServer::startServer(quint16 port) {
+bool ModbusRtuServer::startServer(quint16 port, const QString& address) {
     if (isListening()) return false;
-    if (!listen(QHostAddress::Any, port)) {
+    QHostAddress bindAddr = address.isEmpty() ? QHostAddress::Any
+                                              : QHostAddress(address);
+    if (!listen(bindAddr, port)) {
         qWarning() << "Failed to start RTU server:" << errorString();
         return false;
     }

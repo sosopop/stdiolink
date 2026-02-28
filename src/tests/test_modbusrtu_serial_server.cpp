@@ -160,3 +160,29 @@ TEST_F(ModbusRtuSerialServerHandlerTest, T15_NonStringEventModeRejected) {
     EXPECT_EQ(resp.lastCode, 3);
     EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
 }
+
+// ===== run 命令参数校验测试 =====
+
+// T16 — run: 无效 event_mode 被拒绝
+TEST_F(ModbusRtuSerialServerHandlerTest, T16_RunInvalidEventMode) {
+    handler.handle("run",
+        QJsonObject{{"port_name","COM1"},
+                     {"units", QJsonArray{QJsonObject{{"id", 1}}}},
+                     {"event_mode", "bogus"}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("Invalid event_mode"));
+}
+
+// T17 — run: 非字符串 event_mode 被拒绝
+TEST_F(ModbusRtuSerialServerHandlerTest, T17_RunNonStringEventMode) {
+    handler.handle("run",
+        QJsonObject{{"port_name","COM1"},
+                     {"units", QJsonArray{QJsonObject{{"id", 1}}}},
+                     {"event_mode", 99}}, resp);
+    EXPECT_EQ(resp.lastCode, 3);
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
+}
+
+// NOTE: run 命令的 units 校验（小数 id、越界、重复）发生在 startServer 成功之后，
+// 测试环境无真实串口，无法覆盖这些路径。相关逻辑与 TCP/RTU 驱动完全一致，
+// 已在 test_modbustcp_server_handler 和 test_modbusrtu_server_handler 中充分覆盖。

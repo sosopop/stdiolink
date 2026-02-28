@@ -42,7 +42,7 @@ public:
     explicit ModbusTcpServer(QObject* parent = nullptr);
     ~ModbusTcpServer();
 
-    bool startServer(quint16 port = 502);
+    bool startServer(quint16 port = 502, const QString& address = QString());
     void stopServer();
     bool isRunning() const { return isListening(); }
     quint16 serverPort() const { return isListening() ? QTcpServer::serverPort() : 0; }

@@ -1,5 +1,7 @@
 #include "handler.h"
 
+#include <cmath>
+#include <QEventLoop>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -56,6 +58,84 @@ void ModbusRtuServerHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
+    if (cmd == "run") {
+        if (m_server.isRunning()) {
+            resp.error(3, QJsonObject{{"message", "Server already running"}});
+            return;
+        }
+        static const QStringList validModes = {"write", "all", "read", "none"};
+        QString eventMode = "write";
+        if (p.contains("event_mode")) {
+            if (!p["event_mode"].isString()) {
+                resp.error(3, QJsonObject{{"message", "event_mode must be a string"}});
+                return;
+            }
+            eventMode = p["event_mode"].toString();
+        }
+        if (!validModes.contains(eventMode)) {
+            resp.error(3, QJsonObject{{"message",
+                QString("Invalid event_mode: %1").arg(eventMode)}});
+            return;
+        }
+        // listen_address 显式类型校验
+        QString addr;
+        if (p.contains("listen_address")) {
+            if (!p["listen_address"].isString()) {
+                resp.error(3, QJsonObject{{"message", "listen_address must be a string"}});
+                return;
+            }
+            addr = p["listen_address"].toString();
+        }
+        int port = p["listen_port"].toInt(502);
+        if (!m_server.startServer(static_cast<quint16>(port), addr)) {
+            resp.error(1, QJsonObject{{"message",
+                QString("Failed to listen on %1:%2: %3")
+                    .arg(addr.isEmpty() ? "0.0.0.0" : addr)
+                    .arg(port).arg(m_server.errorString())}});
+            return;
+        }
+        m_eventMode = eventMode;
+        QJsonArray unitsArr = p["units"].toArray();
+        QJsonArray addedUnits;
+        for (int i = 0; i < unitsArr.size(); ++i) {
+            QJsonObject uo = unitsArr[i].toObject();
+            if (!uo.contains("id") || !uo["id"].isDouble()) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: missing or invalid 'id'").arg(i)}});
+                return;
+            }
+            double idVal = uo["id"].toDouble();
+            if (idVal != std::floor(idVal)) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: id must be an integer").arg(i)}});
+                return;
+            }
+            int uid = static_cast<int>(idVal);
+            if (uid < 1 || uid > 247) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: id %2 out of range [1,247]").arg(i).arg(uid)}});
+                return;
+            }
+            int sz = uo.value("size").toInt(10000);
+            if (!m_server.addUnit(static_cast<quint8>(uid), sz)) {
+                m_server.stopServer();
+                resp.error(3, QJsonObject{{"message",
+                    QString("units[%1]: failed to add unit %2 (duplicate?)").arg(i).arg(uid)}});
+                return;
+            }
+            addedUnits.append(uid);
+        }
+        m_eventResponder.event("started", 0, QJsonObject{
+            {"port", m_server.serverPort()},
+            {"units", addedUnits},
+            {"event_mode", m_eventMode}});
+        QEventLoop().exec();
+        return;
+    }
+
     if (cmd == "start_server") {
         if (m_server.isRunning()) {
             resp.error(3, QJsonObject{{"message", "Server already running"}});
@@ -75,10 +155,20 @@ void ModbusRtuServerHandler::handle(const QString& cmd, const QJsonValue& data,
                 QString("Invalid event_mode: %1").arg(eventMode)}});
             return;
         }
+        // listen_address 显式类型校验
+        QString addr;
+        if (p.contains("listen_address")) {
+            if (!p["listen_address"].isString()) {
+                resp.error(3, QJsonObject{{"message", "listen_address must be a string"}});
+                return;
+            }
+            addr = p["listen_address"].toString();
+        }
         int port = p["listen_port"].toInt(502);
-        if (!m_server.startServer(static_cast<quint16>(port))) {
+        if (!m_server.startServer(static_cast<quint16>(port), addr)) {
             resp.error(1, QJsonObject{{"message",
-                QString("Failed to listen on port %1: %2")
+                QString("Failed to listen on %1:%2: %3")
+                    .arg(addr.isEmpty() ? "0.0.0.0" : addr)
                     .arg(port).arg(m_server.errorString())}});
             return;
         }
@@ -356,10 +446,25 @@ void ModbusRtuServerHandler::buildMeta() {
               "Modbus RTU Over TCP 从站驱动，监听 TCP 端口以 RTU 帧格式响应主站请求")
         .vendor("stdiolink")
         .profile("keepalive")
+        .command(CommandBuilder("run")
+            .description("一键启动从站服务并进入事件循环（支持 OneShot 模式）")
+            .param(FieldBuilder("listen_address", FieldType::String)
+                .defaultValue("").description("监听地址（空=所有接口）"))
+            .param(FieldBuilder("listen_port", FieldType::Int)
+                .defaultValue(502).range(1, 65535)
+                .description("监听端口"))
+            .param(FieldBuilder("units", FieldType::Array)
+                .required().description("从站 Unit 数组，每项 {id, size?}"))
+            .param(FieldBuilder("event_mode", FieldType::Enum)
+                .defaultValue("write")
+                .enumValues(QStringList{"write", "all", "read", "none"})
+                .description("事件推送模式")))
         .command(CommandBuilder("status")
             .description("获取驱动状态"))
         .command(CommandBuilder("start_server")
             .description("启动从站服务")
+            .param(FieldBuilder("listen_address", FieldType::String)
+                .defaultValue("").description("监听地址（空=所有接口）"))
             .param(FieldBuilder("listen_port", FieldType::Int)
                 .defaultValue(502).range(1, 65535)
                 .description("监听端口"))
