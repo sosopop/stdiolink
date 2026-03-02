@@ -15,11 +15,11 @@ call_json() {
     local body="${3:-}"
 
     if [[ -n "${body}" ]]; then
-        curl "${CURL_COMMON_ARGS[@]}" -X "${method}" "${BASE_URL}${path}" \
+        curl "${CURL_COMMON_ARGS[@]}" --fail -X "${method}" "${BASE_URL}${path}" \
             -H "Content-Type: application/json" \
             -d "${body}"
     else
-        curl "${CURL_COMMON_ARGS[@]}" -X "${method}" "${BASE_URL}${path}"
+        curl "${CURL_COMMON_ARGS[@]}" --fail -X "${method}" "${BASE_URL}${path}"
     fi
 }
 
@@ -105,6 +105,21 @@ call_json GET /api/drivers
 
 show_step "POST /api/drivers/scan"
 call_json POST /api/drivers/scan '{"refreshMeta":true}'
+
+# ── multi_device_service 演示场景 ─────────────────────────────────────────
+
+show_step "[M91] GET /api/services/multi_device_service"
+resp="$(call_json GET /api/services/multi_device_service)"
+echo "${resp}"
+echo "${resp}" | grep -q '"devices"'
+
+show_step "[M91] POST /api/projects/manual_multi_device/validate - valid"
+call_json POST /api/projects/manual_multi_device/validate \
+  '{"config":{"service_name":"smoke-test","log_level":"info","devices":[{"id":"d1","host":"127.0.0.1","port":2368,"driver":"simulator","enabled":true}]}}'
+
+show_step "[M91] POST /api/projects/manual_multi_device/validate - unknown subfield"
+call_json POST /api/projects/manual_multi_device/validate \
+  '{"config":{"service_name":"smoke-test","log_level":"info","devices":[{"id":"d1","host":"127.0.0.1","port":2368,"driver":"simulator","enabled":true,"bad_key":"x"}]}}'
 
 show_step "Smoke done"
 echo "All major API groups were exercised."

@@ -971,8 +971,12 @@ QHttpServerResponse ApiRouter::handleValidateConfig(const QString& id,
     }
 
     const QJsonObject config = body.value("config").toObject();
-    const auto vr = stdiolink_service::ServiceConfigValidator::validate(
+    auto vr = stdiolink_service::ServiceConfigValidator::rejectUnknownFields(
         svcIt->configSchema, config);
+    if (vr.valid) {
+        vr = stdiolink_service::ServiceConfigValidator::validate(
+            svcIt->configSchema, config);
+    }
 
     if (vr.valid) {
         return jsonResponse(QJsonObject{{"valid", true}});
@@ -986,6 +990,8 @@ QHttpServerResponse ApiRouter::handleValidateConfig(const QString& id,
 
     return jsonResponse(QJsonObject{
         {"valid", false},
+        {"errorField", vr.errorField},
+        {"errorMessage", vr.errorMessage},
         {"errors", errors}
     });
 }

@@ -14,9 +14,10 @@ interface FieldRendererProps {
   onChange: (value: unknown) => void;
   error?: string;
   errors?: Record<string, string>;
+  basePath?: string;
 }
 
-export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, error, errors }) => {
+export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, error, errors, basePath }) => {
   if (field.ui?.readonly) {
     // Still render the field but in readonly mode
   }
@@ -39,6 +40,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onCh
           value={(value as Record<string, unknown>) ?? {}}
           onChange={onChange as (v: Record<string, unknown>) => void}
           errors={errors}
+          basePath={basePath}
         />
       );
     case 'array':
@@ -48,6 +50,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onCh
           value={(value as unknown[]) ?? []}
           onChange={onChange as (v: unknown[]) => void}
           error={error}
+          errors={errors}
+          basePath={basePath}
         />
       );
     default:

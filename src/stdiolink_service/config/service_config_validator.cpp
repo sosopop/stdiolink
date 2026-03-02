@@ -229,6 +229,27 @@ ValidationResult ServiceConfigValidator::rejectUnknownFields(
                 return nestedResult;
             }
         }
+
+        if (field->type == FieldType::Array &&
+            field->items &&
+            !field->items->fields.isEmpty() &&
+            it.value().isArray()) {
+            ServiceConfigSchema itemSchema;
+            itemSchema.fields = field->items->fields;
+            const QJsonArray arr = it.value().toArray();
+            for (int i = 0; i < arr.size(); ++i) {
+                if (!arr.at(i).isObject()) {
+                    continue;
+                }
+                const QString itemPath = QString("%1[%2]").arg(fullPath).arg(i);
+                auto nestedResult = rejectUnknownFields(itemSchema,
+                                                        arr.at(i).toObject(),
+                                                        itemPath);
+                if (!nestedResult.valid) {
+                    return nestedResult;
+                }
+            }
+        }
     }
     return ValidationResult::ok();
 }

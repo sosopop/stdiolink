@@ -48,6 +48,29 @@ void writeService(const QString& root, const QString& id) {
                           "{\"device\":{\"type\":\"object\",\"fields\":{\"host\":{\"type\":\"string\",\"required\":true}}}}"));
 }
 
+void writeArrayObjectService(const QString& root, const QString& id) {
+    const QString serviceDir = root + "/services/" + id;
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+    ASSERT_TRUE(writeText(serviceDir + "/manifest.json",
+                          QString("{\"manifestVersion\":\"1\",\"id\":\"%1\",\"name\":\"ArrayObjectDemo\",\"version\":\"1.0.0\"}")
+                              .arg(id)));
+    ASSERT_TRUE(writeText(serviceDir + "/index.js", "console.log('ok');\n"));
+    ASSERT_TRUE(writeText(serviceDir + "/config.schema.json", R"({
+        "radars": {
+            "type": "array",
+            "required": true,
+            "items": {
+                "type": "object",
+                "fields": {
+                    "id": {"type": "string", "required": true},
+                    "host": {"type": "string", "required": true},
+                    "port": {"type": "int", "required": true}
+                }
+            }
+        }
+    })"));
+}
+
 void writeProject(const QString& root,
                   const QString& id,
                   const QString& serviceId) {
@@ -2040,6 +2063,174 @@ TEST(ApiRouterTest, ValidateConfigViaHttp) {
                             status, body, error))
         << qPrintable(error);
     EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, GET_ServiceDetail_ArrayObject_HasItemsFields) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeArrayObjectService(root, "array_demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    ASSERT_TRUE(sendRequest("GET",
+                            QUrl(base + "/api/services/array_demo"),
+                            QByteArray(),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    ASSERT_TRUE(obj.value("configSchemaFields").isArray());
+    const QJsonArray fields = obj.value("configSchemaFields").toArray();
+    ASSERT_EQ(fields.size(), 1);
+    const QJsonObject radars = fields[0].toObject();
+    EXPECT_EQ(radars.value("name").toString(), "radars");
+    ASSERT_TRUE(radars.value("items").isObject());
+    const QJsonObject items = radars.value("items").toObject();
+    ASSERT_TRUE(items.value("fields").isArray());
+    EXPECT_EQ(items.value("fields").toArray().size(), 3);
+}
+
+TEST(ApiRouterTest, POST_ValidateConfig_ArrayObject_Valid) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeArrayObjectService(root, "array_demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    const QJsonObject payload{
+        {"config", QJsonObject{
+            {"radars", QJsonArray{
+                QJsonObject{{"id", "r1"}, {"host", "127.0.0.1"}, {"port", 2368}}
+            }}
+        }}
+    };
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/array_demo/validate-config"),
+                            QJsonDocument(payload).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_TRUE(obj.value("valid").toBool());
+}
+
+TEST(ApiRouterTest, POST_ValidateConfig_ArrayObject_UnknownSubfield) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeArrayObjectService(root, "array_demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    const QJsonObject payload{
+        {"config", QJsonObject{
+            {"radars", QJsonArray{
+                QJsonObject{
+                    {"id", "r1"},
+                    {"host", "127.0.0.1"},
+                    {"port", 2368},
+                    {"bad_key", "x"}
+                }
+            }}
+        }}
+    };
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/services/array_demo/validate-config"),
+                            QJsonDocument(payload).toJson(QJsonDocument::Compact),
+                            status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_FALSE(obj.value("valid").toBool());
+    EXPECT_EQ(obj.value("errorField").toString(), QString("radars[0].bad_key"));
 }
 
 TEST(ApiRouterTest, ServiceDetailIncludesConfigSchemaFieldsViaHttp) {

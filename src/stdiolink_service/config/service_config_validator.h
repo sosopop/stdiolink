@@ -33,13 +33,15 @@ public:
         const ServiceConfigSchema& schema,
         const QJsonObject& config);
 
+    /// 检查并拒绝未知字段（支持 object 和 array<object> 递归）
+    static ValidationResult rejectUnknownFields(const ServiceConfigSchema& schema,
+                                                const QJsonObject& config,
+                                                const QString& prefix = QString());
+
 private:
     static QJsonObject deepMerge(const QJsonObject& base, const QJsonObject& override);
     static QJsonObject convertRawValues(const ServiceConfigSchema& schema,
                                         const QJsonObject& raw);
-    static ValidationResult rejectUnknownFields(const ServiceConfigSchema& schema,
-                                                const QJsonObject& config,
-                                                const QString& prefix = QString());
 };
 
 } // namespace stdiolink_service

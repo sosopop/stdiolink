@@ -4,35 +4,43 @@ import { Empty } from 'antd';
 import { SchemaForm } from '@/components/SchemaForm/SchemaForm';
 import { useSchemaEditorStore } from '@/stores/useSchemaEditorStore';
 import type { FieldMeta } from '@/types/service';
-import type { SchemaNode } from '@/utils/schemaPath';
+import type { SchemaFieldDescriptor, SchemaNode } from '@/utils/schemaPath';
 
-function nodesToFieldMeta(nodes: SchemaNode[]): FieldMeta[] {
+function descriptorToFieldMeta(name: string, descriptor: SchemaFieldDescriptor): FieldMeta {
+  const meta: FieldMeta = {
+    name,
+    type: descriptor.type ?? 'any',
+    required: descriptor.required,
+    description: descriptor.description,
+    default: descriptor.default,
+    min: descriptor.constraints?.min,
+    max: descriptor.constraints?.max,
+    minLength: descriptor.constraints?.minLength,
+    maxLength: descriptor.constraints?.maxLength,
+    pattern: descriptor.constraints?.pattern,
+    enum: descriptor.constraints?.enumValues,
+    format: descriptor.constraints?.format,
+    minItems: descriptor.constraints?.minItems,
+    maxItems: descriptor.constraints?.maxItems,
+  };
+
+  if (descriptor.fields) {
+    meta.fields = Object.entries(descriptor.fields).map(([fieldName, fieldDesc]) =>
+      descriptorToFieldMeta(fieldName, fieldDesc));
+  }
+
+  if (descriptor.items) {
+    meta.items = descriptorToFieldMeta(name, descriptor.items);
+  }
+
+  return meta;
+}
+
+export function nodesToFieldMeta(nodes: SchemaNode[]): FieldMeta[] {
   return nodes.map((n) => {
-    const meta: FieldMeta = {
-      name: n.name,
-      type: n.descriptor.type ?? 'any',
-      required: n.descriptor.required,
-      description: n.descriptor.description,
-      default: n.descriptor.default,
-      min: n.descriptor.constraints?.min,
-      max: n.descriptor.constraints?.max,
-      minLength: n.descriptor.constraints?.minLength,
-      maxLength: n.descriptor.constraints?.maxLength,
-      pattern: n.descriptor.constraints?.pattern,
-      enum: n.descriptor.constraints?.enumValues,
-      format: n.descriptor.constraints?.format,
-      minItems: n.descriptor.constraints?.minItems,
-      maxItems: n.descriptor.constraints?.maxItems,
-    };
+    const meta = descriptorToFieldMeta(n.name, n.descriptor);
     if (n.children && n.children.length > 0) {
       meta.fields = nodesToFieldMeta(n.children);
-    }
-    if (n.descriptor.items) {
-      meta.items = {
-        name: 'items',
-        type: n.descriptor.items.type ?? 'any',
-        description: n.descriptor.items.description,
-      };
     }
     return meta;
   });

@@ -1,12 +1,36 @@
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <QFile>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
 #include "config/service_config_schema.h"
 
 using namespace stdiolink_service;
 using namespace stdiolink::meta;
+
+namespace {
+
+const char* kArrayObjectSchema = R"({
+  "radars": {
+    "type": "array",
+    "required": true,
+    "description": "激光雷达设备列表",
+    "constraints": { "minItems": 1 },
+    "items": {
+      "type": "object",
+      "description": "单个雷达配置",
+      "fields": {
+        "id":   { "type": "string", "required": true, "description": "雷达唯一标识" },
+        "host": { "type": "string", "required": true, "description": "设备 IP" },
+        "port": { "type": "int",    "required": true, "constraints": { "min": 1, "max": 65535 } }
+      }
+    }
+  }
+})";
+
+} // namespace
 
 TEST(ServiceConfigSchema, ParseBasicTypes) {
     QJsonObject input{
@@ -78,6 +102,94 @@ TEST(ServiceConfigSchema, ParseArrayWithItems) {
     EXPECT_EQ(tags->items->type, FieldType::String);
     ASSERT_TRUE(tags->constraints.maxItems.has_value());
     EXPECT_EQ(*tags->constraints.maxItems, 20);
+}
+
+TEST(ServiceConfigSchema, R_CPP_01_ParseArrayObjectItems_HasFields) {
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(
+        QJsonDocument::fromJson(kArrayObjectSchema).object(), error);
+    ASSERT_TRUE(error.isEmpty()) << error.toStdString();
+    ASSERT_EQ(schema.fields.size(), 1);
+
+    const auto& radars = schema.fields[0];
+    ASSERT_NE(radars.items, nullptr);
+    EXPECT_EQ(radars.items->fields.size(), 3);
+
+    const auto portIt = std::find_if(
+        radars.items->fields.begin(),
+        radars.items->fields.end(),
+        [](const auto& f) { return f.name == "port"; });
+    ASSERT_NE(portIt, radars.items->fields.end());
+    EXPECT_EQ(portIt->type, FieldType::Int);
+    ASSERT_TRUE(portIt->constraints.min.has_value());
+    ASSERT_TRUE(portIt->constraints.max.has_value());
+    EXPECT_DOUBLE_EQ(*portIt->constraints.min, 1.0);
+    EXPECT_DOUBLE_EQ(*portIt->constraints.max, 65535.0);
+}
+
+TEST(ServiceConfigSchema, R_CPP_02_ParseArrayObjectItems_Description) {
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(
+        QJsonDocument::fromJson(kArrayObjectSchema).object(), error);
+    ASSERT_TRUE(error.isEmpty());
+    ASSERT_NE(schema.fields[0].items, nullptr);
+    EXPECT_EQ(schema.fields[0].items->description, QString("单个雷达配置"));
+}
+
+TEST(ServiceConfigSchema, R_CPP_03_ParseArrayObjectItems_Constraints) {
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(
+        QJsonDocument::fromJson(kArrayObjectSchema).object(), error);
+    ASSERT_TRUE(error.isEmpty());
+    ASSERT_TRUE(schema.fields[0].constraints.minItems.has_value());
+    EXPECT_EQ(*schema.fields[0].constraints.minItems, 1);
+}
+
+TEST(ServiceConfigSchema, R_CPP_04_ParseArrayObjectItems_FromJsObject_HasFields) {
+    auto schema = ServiceConfigSchema::fromJsObject(
+        QJsonDocument::fromJson(kArrayObjectSchema).object());
+    ASSERT_EQ(schema.fields.size(), 1);
+    ASSERT_NE(schema.fields[0].items, nullptr);
+    EXPECT_EQ(schema.fields[0].items->fields.size(), 3);
+    EXPECT_EQ(schema.fields[0].items->description, QString("单个雷达配置"));
+}
+
+TEST(ServiceConfigSchema, R_CPP_ERR01_ItemsFieldsNotObject_ReturnsError) {
+    const auto doc = QJsonDocument::fromJson(R"({
+        "f": {
+            "type": "array",
+            "items": { "type": "object", "fields": "invalid_string" }
+        }
+    })");
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(doc.object(), error);
+    EXPECT_FALSE(error.isEmpty());
+    EXPECT_TRUE(schema.fields.isEmpty());
+}
+
+TEST(ServiceConfigSchema, R_CPP_09_ParseNestedArrayObject_TwoLevels) {
+    const auto doc = QJsonDocument::fromJson(R"({
+      "matrix": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": { "value": { "type": "int" } }
+          }
+        }
+      }
+    })");
+
+    QString error;
+    auto schema = ServiceConfigSchema::fromJsonObject(doc.object(), error);
+    ASSERT_TRUE(error.isEmpty()) << error.toStdString();
+    ASSERT_EQ(schema.fields.size(), 1);
+    ASSERT_NE(schema.fields[0].items, nullptr);
+    ASSERT_NE(schema.fields[0].items->items, nullptr);
+    EXPECT_EQ(schema.fields[0].items->items->type, FieldType::Object);
+    EXPECT_EQ(schema.fields[0].items->items->fields.size(), 1);
 }
 
 TEST(ServiceConfigSchema, ParseObjectType) {

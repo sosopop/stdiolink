@@ -1,0 +1,23 @@
+{
+  "name": "多设备演示（守护进程）",
+  "serviceId": "multi_device_service",
+  "enabled": false,
+  "schedule": {
+    "type": "daemon",
+    "restartDelayMs": 3000
+  },
+  "config": {
+    "service_name": "demo-daemon",
+    "log_level": "debug",
+    "devices": [
+      {
+        "id": "device-alpha",
+        "host": "127.0.0.1",
+        "port": 9001,
+        "driver": "simulator",
+        "enabled": true,
+        "timeout_ms": 2000
+      }
+    ]
+  }
+}

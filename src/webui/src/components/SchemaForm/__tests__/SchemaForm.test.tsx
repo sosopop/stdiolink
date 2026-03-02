@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { SchemaForm } from '../SchemaForm';
+import { ArrayField } from '../fields/ArrayField';
+import { getDefaultItem } from '../utils/fieldDefaults';
 import type { FieldMeta } from '@/types/service';
 
 function renderForm(schema: FieldMeta[], value: Record<string, unknown> = {}, props: Record<string, unknown> = {}) {
@@ -99,4 +101,89 @@ describe('SchemaForm', () => {
     fireEvent.change(screen.getByTestId('input-host'), { target: { value: 'newhost' } });
     expect(onChange).toHaveBeenCalledWith({ host: 'newhost' });
   });
+});
+
+describe('SchemaForm array<object> regression (M90)', () => {
+  const radarField: FieldMeta = {
+    name: 'radars',
+    type: 'array',
+    items: {
+      name: 'radar',
+      type: 'object',
+      fields: [
+        { name: 'id', type: 'string' },
+        { name: 'port', type: 'int' },
+      ],
+    },
+  };
+
+  it('R_FE_01 deep initializes array<object> item', () => {
+    const onChange = vi.fn();
+    render(
+      <ConfigProvider>
+        <ArrayField field={radarField} value={[]} onChange={onChange} />
+      </ConfigProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId('add-item-radars'));
+    expect(onChange).toHaveBeenCalledWith([{ id: '', port: 0 }]);
+  });
+
+  it('R_FE_01_NONOBJ keeps shallow default for array<string>', () => {
+    const onChange = vi.fn();
+    render(
+      <ConfigProvider>
+        <ArrayField
+          field={{ name: 'tags', type: 'array', items: { name: 'tag', type: 'string' } }}
+          value={[]}
+          onChange={onChange}
+        />
+      </ConfigProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId('add-item-tags'));
+    expect(onChange).toHaveBeenCalledWith(['']);
+  });
+
+  it('R_FE_01_INT getDefaultItem returns 0 for int', () => {
+    expect(getDefaultItem('int')).toBe(0);
+  });
+
+  it('R_FE_02 renders array item label with name and 1-based index', () => {
+    render(
+      <ConfigProvider>
+        <ArrayField field={radarField} value={[{ id: 'r1', port: 2368 }]} onChange={vi.fn()} />
+      </ConfigProvider>,
+    );
+
+    expect(screen.getByText(/radar 1/i)).toBeDefined();
+  });
+
+  it('R_FE_03 propagates nested error path to array<object> sub-field', () => {
+    render(
+      <ConfigProvider>
+        <ArrayField
+          field={radarField}
+          value={[{ id: 'r1', port: -1 }]}
+          onChange={vi.fn()}
+          errors={{ 'radars[0].port': 'port must be >= 0' }}
+          basePath="radars"
+        />
+      </ConfigProvider>,
+    );
+
+    expect(screen.getByText('port must be >= 0')).toBeDefined();
+  });
+});
+
+describe('getDefaultItem', () => {
+  it('returns {} for object', () => expect(getDefaultItem('object')).toEqual({}));
+  it('returns [] for array', () => expect(getDefaultItem('array')).toEqual([]));
+  it('returns false for bool', () => expect(getDefaultItem('bool')).toBe(false));
+  it('returns 0 for int', () => expect(getDefaultItem('int')).toBe(0));
+  it('returns 0 for int64', () => expect(getDefaultItem('int64')).toBe(0));
+  it('returns 0 for double', () => expect(getDefaultItem('double')).toBe(0));
+  it('returns "" for string', () => expect(getDefaultItem('string')).toBe(''));
+  it('returns "" for enum', () => expect(getDefaultItem('enum')).toBe(''));
+  it('returns "" for undefined', () => expect(getDefaultItem(undefined)).toBe(''));
 });

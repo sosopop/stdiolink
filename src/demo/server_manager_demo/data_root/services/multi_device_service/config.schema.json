@@ -1,0 +1,78 @@
+{
+  "service_name": {
+    "type": "string",
+    "required": true,
+    "default": "multi-device-demo",
+    "description": "服务实例名称"
+  },
+  "log_level": {
+    "type": "enum",
+    "required": false,
+    "default": "info",
+    "description": "日志级别",
+    "constraints": {
+      "enumValues": ["debug", "info", "warn", "error"]
+    }
+  },
+  "devices": {
+    "type": "array",
+    "required": true,
+    "description": "设备列表，每项为一台设备的连接配置",
+    "constraints": {
+      "minItems": 1,
+      "maxItems": 8
+    },
+    "items": {
+      "type": "object",
+      "description": "单台设备配置",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "设备唯一标识，格式：device-xxx"
+        },
+        "host": {
+          "type": "string",
+          "required": true,
+          "default": "127.0.0.1",
+          "description": "设备 IP 地址或主机名"
+        },
+        "port": {
+          "type": "int",
+          "required": true,
+          "default": 2368,
+          "description": "设备通信端口",
+          "constraints": {
+            "min": 1,
+            "max": 65535
+          }
+        },
+        "driver": {
+          "type": "enum",
+          "required": true,
+          "default": "simulator",
+          "description": "使用的 Driver 类型",
+          "constraints": {
+            "enumValues": ["simulator", "modbus", "canbus"]
+          }
+        },
+        "enabled": {
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": "是否启用此设备"
+        },
+        "timeout_ms": {
+          "type": "int",
+          "required": false,
+          "default": 5000,
+          "description": "连接超时（毫秒）",
+          "constraints": {
+            "min": 100,
+            "max": 30000
+          }
+        }
+      }
+    }
+  }
+}

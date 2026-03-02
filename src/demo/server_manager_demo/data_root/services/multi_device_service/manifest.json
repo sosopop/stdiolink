@@ -1,0 +1,8 @@
+{
+  "manifestVersion": "1",
+  "id": "multi_device_service",
+  "name": "多设备接入服务",
+  "version": "1.0.0",
+  "description": "演示 array<object> 配置：支持配置多台设备，每台设备含 host/port/driver/enabled 等子字段",
+  "author": "stdiolink-demo"
+}

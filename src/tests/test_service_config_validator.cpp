@@ -1,11 +1,34 @@
 #include <gtest/gtest.h>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include "config/service_config_validator.h"
 #include "config/service_config_schema.h"
 
 using namespace stdiolink_service;
 using namespace stdiolink::meta;
+
+namespace {
+
+const char* kArrayObjectSchema = R"({
+  "radars": {
+    "type": "array",
+    "required": true,
+    "description": "激光雷达设备列表",
+    "constraints": { "minItems": 1 },
+    "items": {
+      "type": "object",
+      "description": "单个雷达配置",
+      "fields": {
+        "id":   { "type": "string", "required": true },
+        "host": { "type": "string", "required": true },
+        "port": { "type": "int", "required": true, "constraints": { "min": 1, "max": 65535 } }
+      }
+    }
+  }
+})";
+
+} // namespace
 
 class ServiceConfigValidatorTest : public ::testing::Test {
 protected:
@@ -229,4 +252,93 @@ TEST_F(ServiceConfigValidatorTest, RejectUnknownNestedField) {
         schema, QJsonObject{}, rawCli, UnknownFieldPolicy::Reject, merged);
     EXPECT_FALSE(r.valid);
     EXPECT_EQ(r.errorField, "server.bad");
+}
+
+class ValidatorArrayObjectTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        QString error;
+        m_schema = ServiceConfigSchema::fromJsonObject(
+            QJsonDocument::fromJson(kArrayObjectSchema).object(), error);
+        ASSERT_TRUE(error.isEmpty()) << error.toStdString();
+    }
+
+    ServiceConfigSchema m_schema;
+};
+
+TEST_F(ValidatorArrayObjectTest, R_CPP_05_RejectUnknownField_InsideArrayObjectItem_FirstItem) {
+    const QJsonObject config = QJsonDocument::fromJson(R"({
+      "radars": [
+        { "id": "r1", "host": "192.168.1.1", "port": 2368, "bad_key": "value" }
+      ]
+    })").object();
+
+    auto result = ServiceConfigValidator::rejectUnknownFields(m_schema, config, "");
+    EXPECT_FALSE(result.valid);
+    EXPECT_EQ(result.errorField, QString("radars[0].bad_key"));
+}
+
+TEST_F(ValidatorArrayObjectTest, R_CPP_06_RejectUnknownField_InsideArrayObjectItem_SecondItem) {
+    const QJsonObject config = QJsonDocument::fromJson(R"({
+      "radars": [
+        { "id": "r1", "host": "192.168.1.1", "port": 2368 },
+        { "id": "r2", "host": "192.168.1.2", "port": 2369, "bad_key": "x" }
+      ]
+    })").object();
+
+    auto result = ServiceConfigValidator::rejectUnknownFields(m_schema, config, "");
+    EXPECT_FALSE(result.valid);
+    EXPECT_EQ(result.errorField, QString("radars[1].bad_key"));
+}
+
+TEST_F(ValidatorArrayObjectTest, R_CPP_08_RejectUnknownField_ArrayItemNotObject_Skipped) {
+    const QJsonObject config = QJsonDocument::fromJson(R"({
+      "radars": ["not-an-object"]
+    })").object();
+
+    auto result = ServiceConfigValidator::rejectUnknownFields(m_schema, config, "");
+    EXPECT_TRUE(result.valid);
+}
+
+TEST_F(ValidatorArrayObjectTest, R_CPP_ValidArrayObject_AllFieldsKnown) {
+    const QJsonObject config = QJsonDocument::fromJson(R"({
+      "radars": [
+        { "id": "r1", "host": "192.168.1.1", "port": 2368 }
+      ]
+    })").object();
+
+    auto result = ServiceConfigValidator::rejectUnknownFields(m_schema, config, "");
+    EXPECT_TRUE(result.valid);
+}
+
+TEST(ServiceConfigValidatorArrayObject, R_CPP_07_RejectUnknownField_ArrayOfPrimitive_Skipped) {
+    ServiceConfigSchema schema;
+    FieldMeta tagsMeta;
+    tagsMeta.name = "tags";
+    tagsMeta.type = FieldType::Array;
+    auto itemsMeta = std::make_shared<FieldMeta>();
+    itemsMeta->type = FieldType::String;
+    tagsMeta.items = itemsMeta;
+    schema.fields.append(tagsMeta);
+
+    const QJsonObject config = QJsonDocument::fromJson(R"({"tags":["a","b"]})").object();
+    auto result = ServiceConfigValidator::rejectUnknownFields(schema, config, "");
+    EXPECT_TRUE(result.valid);
+}
+
+TEST(ServiceConfigValidatorArrayObject, R_CPP_10_RejectUnknownFields_OuterArrayItemsIsArray_NoRecurseNoCrash) {
+    ServiceConfigSchema schema;
+    FieldMeta outerArr;
+    outerArr.name = "matrix";
+    outerArr.type = FieldType::Array;
+    auto innerArr = std::make_shared<FieldMeta>();
+    innerArr->type = FieldType::Array;
+    outerArr.items = innerArr;
+    schema.fields.append(outerArr);
+
+    const QJsonObject config = QJsonDocument::fromJson(R"({
+      "matrix": [ [{"value": 1}], [{"value": 2, "bad_key": "x"}] ]
+    })").object();
+    auto result = ServiceConfigValidator::rejectUnknownFields(schema, config, "");
+    EXPECT_TRUE(result.valid);
 }

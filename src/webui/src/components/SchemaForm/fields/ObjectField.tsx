@@ -8,10 +8,12 @@ interface ObjectFieldProps {
   value: Record<string, unknown>;
   onChange: (value: Record<string, unknown>) => void;
   errors?: Record<string, string>;
+  basePath?: string;
 }
 
-export const ObjectField: React.FC<ObjectFieldProps> = ({ field, value, onChange, errors }) => {
+export const ObjectField: React.FC<ObjectFieldProps> = ({ field, value, onChange, errors, basePath }) => {
   const val = value ?? {};
+  const currentPath = basePath ?? field.name;
 
   const handleFieldChange = (name: string, fieldValue: unknown) => {
     onChange({ ...val, [name]: fieldValue });
@@ -29,7 +31,9 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({ field, value, onChange
               field={child}
               value={val[child.name]}
               onChange={(v) => handleFieldChange(child.name, v)}
-              error={errors?.[`${field.name}.${child.name}`]}
+              error={errors?.[`${currentPath}.${child.name}`]}
+              errors={errors}
+              basePath={`${currentPath}.${child.name}`}
             />
           ))}
         </div>

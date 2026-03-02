@@ -23,8 +23,89 @@ bool isKnownFieldType(const QString& typeStr) {
     return known.contains(typeStr);
 }
 
+ServiceConfigSchema parseObject(const QJsonObject& obj,
+                                const QString& pathPrefix,
+                                QString& error,
+                                bool strictTypeCheck = true);
+
+FieldMeta parseFieldMeta(const QString& name,
+                         const QJsonObject& desc,
+                         const QString& fieldPath,
+                         QString& error,
+                         bool strictTypeCheck) {
+    FieldMeta field;
+    field.name = name;
+
+    const QString typeStr = desc.value("type").toString("any");
+    if (strictTypeCheck && !isKnownFieldType(typeStr)) {
+        error = QString("unknown field type \"%1\" for field \"%2\"").arg(typeStr, fieldPath);
+        return {};
+    }
+
+    field.type = fieldTypeFromString(typeStr);
+    field.required = desc.value("required").toBool(false);
+    field.description = desc.value("description").toString();
+    field.additionalProperties = desc.value("additionalProperties").toBool(true);
+
+    if (desc.contains("default")) {
+        field.defaultValue = desc.value("default");
+    }
+
+    if (desc.contains("constraints")) {
+        QJsonObject cObj = desc.value("constraints").toObject();
+        if (cObj.contains("enumValues")) {
+            cObj["enum"] = cObj.take("enumValues");
+        }
+        field.constraints = Constraints::fromJson(cObj);
+    }
+
+    if (desc.contains("requiredKeys")) {
+        const QJsonArray requiredKeys = desc.value("requiredKeys").toArray();
+        for (const auto& key : requiredKeys) {
+            if (key.isString()) {
+                field.requiredKeys.append(key.toString());
+            }
+        }
+    }
+
+    if (desc.contains("fields")) {
+        if (!desc.value("fields").isObject()) {
+            error = QString("\"fields\" for field \"%1\" must be a JSON object").arg(fieldPath);
+            return {};
+        }
+        const QJsonObject fieldsObj = desc.value("fields").toObject();
+        ServiceConfigSchema nested = parseObject(fieldsObj, fieldPath, error, strictTypeCheck);
+        if (!error.isEmpty()) {
+            return {};
+        }
+        field.fields = nested.fields;
+    }
+
+    if (desc.contains("items")) {
+        if (!desc.value("items").isObject()) {
+            error = QString("\"items\" for field \"%1\" must be a JSON object").arg(fieldPath);
+            return {};
+        }
+        const QString itemPath = fieldPath + ".items";
+        FieldMeta itemMeta = parseFieldMeta(name,
+                                            desc.value("items").toObject(),
+                                            itemPath,
+                                            error,
+                                            strictTypeCheck);
+        if (!error.isEmpty()) {
+            return {};
+        }
+        field.items = std::make_shared<FieldMeta>(itemMeta);
+    }
+
+    return field;
+}
+
 /// 带错误检查的递归解析（内部实现）
-ServiceConfigSchema parseObject(const QJsonObject& obj, const QString& pathPrefix, QString& error) {
+ServiceConfigSchema parseObject(const QJsonObject& obj,
+                                const QString& pathPrefix,
+                                QString& error,
+                                bool strictTypeCheck) {
     ServiceConfigSchema schema;
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         const QString& fieldName = it.key();
@@ -33,63 +114,13 @@ ServiceConfigSchema parseObject(const QJsonObject& obj, const QString& pathPrefi
             error = QString("field descriptor for \"%1\" must be a JSON object").arg(fieldPath);
             return {};
         }
-        const QJsonObject desc = it.value().toObject();
-
-        // Validate type string
-        const QString typeStr = desc.value("type").toString("any");
-        if (!isKnownFieldType(typeStr)) {
-            error = QString("unknown field type \"%1\" for field \"%2\"").arg(typeStr, fieldPath);
+        FieldMeta field = parseFieldMeta(fieldName,
+                                         it.value().toObject(),
+                                         fieldPath,
+                                         error,
+                                         strictTypeCheck);
+        if (!error.isEmpty()) {
             return {};
-        }
-
-        FieldMeta field;
-        field.name = fieldName;
-        field.type = fieldTypeFromString(typeStr);
-        field.required = desc.value("required").toBool(false);
-        field.description = desc.value("description").toString();
-
-        if (desc.contains("default")) {
-            field.defaultValue = desc.value("default");
-        }
-
-        if (desc.contains("constraints")) {
-            QJsonObject cObj = desc.value("constraints").toObject();
-            if (cObj.contains("enumValues")) {
-                cObj["enum"] = cObj.take("enumValues");
-            }
-            field.constraints = Constraints::fromJson(cObj);
-        }
-
-        if (desc.contains("items")) {
-            if (!desc.value("items").isObject()) {
-                error = QString("\"items\" for field \"%1\" must be a JSON object").arg(fieldPath);
-                return {};
-            }
-            auto itemMeta = std::make_shared<FieldMeta>();
-            const QJsonObject itemObj = desc.value("items").toObject();
-            const QString itemTypeStr = itemObj.value("type").toString("any");
-            if (!isKnownFieldType(itemTypeStr)) {
-                error = QString("unknown item type \"%1\" for field \"%2\"").arg(itemTypeStr, fieldPath);
-                return {};
-            }
-            itemMeta->type = fieldTypeFromString(itemTypeStr);
-            if (itemObj.contains("constraints")) {
-                itemMeta->constraints = Constraints::fromJson(itemObj.value("constraints").toObject());
-            }
-            field.items = itemMeta;
-        }
-
-        if (desc.contains("fields")) {
-            if (!desc.value("fields").isObject()) {
-                error = QString("\"fields\" for field \"%1\" must be a JSON object").arg(fieldPath);
-                return {};
-            }
-            const QJsonObject fieldsObj = desc.value("fields").toObject();
-            ServiceConfigSchema nested = parseObject(fieldsObj, fieldPath, error);
-            if (!error.isEmpty()) {
-                return {};
-            }
-            field.fields = nested.fields;
         }
 
         schema.fields.append(field);
@@ -100,55 +131,14 @@ ServiceConfigSchema parseObject(const QJsonObject& obj, const QString& pathPrefi
 } // namespace
 
 ServiceConfigSchema ServiceConfigSchema::fromJsObject(const QJsonObject& obj) {
-    ServiceConfigSchema schema;
-    for (auto it = obj.begin(); it != obj.end(); ++it) {
-        const QString& fieldName = it.key();
-        const QJsonObject desc = it.value().toObject();
-
-        FieldMeta field;
-        field.name = fieldName;
-        field.type = fieldTypeFromString(desc.value("type").toString("any"));
-        field.required = desc.value("required").toBool(false);
-        field.description = desc.value("description").toString();
-
-        if (desc.contains("default")) {
-            field.defaultValue = desc.value("default");
-        }
-
-        if (desc.contains("constraints")) {
-            QJsonObject cObj = desc.value("constraints").toObject();
-            // JS API uses "enumValues" but Constraints::fromJson expects "enum"
-            if (cObj.contains("enumValues")) {
-                cObj["enum"] = cObj.take("enumValues");
-            }
-            field.constraints = Constraints::fromJson(cObj);
-        }
-
-        if (desc.contains("items")) {
-            auto itemMeta = std::make_shared<FieldMeta>();
-            const QJsonObject itemObj = desc.value("items").toObject();
-            itemMeta->type = fieldTypeFromString(itemObj.value("type").toString("any"));
-            if (itemObj.contains("constraints")) {
-                itemMeta->constraints = Constraints::fromJson(itemObj.value("constraints").toObject());
-            }
-            field.items = itemMeta;
-        }
-
-        if (desc.contains("fields")) {
-            const QJsonObject fieldsObj = desc.value("fields").toObject();
-            ServiceConfigSchema nested = fromJsObject(fieldsObj);
-            field.fields = nested.fields;
-        }
-
-        schema.fields.append(field);
-    }
-    return schema;
+    QString error;
+    return parseObject(obj, QString(), error, /*strictTypeCheck=*/false);
 }
 
 ServiceConfigSchema ServiceConfigSchema::fromJsonObject(const QJsonObject& obj,
                                                           QString& error) {
     error.clear();
-    return parseObject(obj, QString(), error);
+    return parseObject(obj, QString(), error, /*strictTypeCheck=*/true);
 }
 
 ServiceConfigSchema ServiceConfigSchema::fromJsonFile(const QString& filePath, QString& error) {
@@ -172,7 +162,7 @@ ServiceConfigSchema ServiceConfigSchema::fromJsonFile(const QString& filePath, Q
     }
 
     error.clear();
-    return parseObject(doc.object(), QString(), error);
+    return parseObject(doc.object(), QString(), error, /*strictTypeCheck=*/true);
 }
 
 QJsonObject ServiceConfigSchema::toJson() const {

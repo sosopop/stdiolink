@@ -69,6 +69,7 @@ set(TEST_SOURCES
     test_modbusrtu_serial.cpp
     test_plc_crane.cpp
     test_driver_resolve.cpp
+    test_multiscan_driver.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -138,6 +139,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/demo/multiscan_driver/multiscan_driver.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
