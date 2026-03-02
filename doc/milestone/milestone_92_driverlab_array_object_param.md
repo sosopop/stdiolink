@@ -577,8 +577,18 @@ M90 修复后，`ParamForm → FieldRenderer → ArrayField` 调用链对 `array
 - [ ] DriverLab 中 `scan_targets` 参数 `targets` 以内联列表渲染（不降级 JSON textarea）
 - [ ] 点击 Add Item 后，int 子字段 `port` 默认值为 `0`（验证 M90 深度初始化生效）
 - [ ] 执行 `scan_targets` 后消息流面板可见 event 和 ok 消息
-- [ ] 现有测试套件（stdiolink_tests）无回归
+- [ ] 现有测试套件（stdiolink_tests + webui vitest）无回归
 - [ ] **无新增 WebUI React 组件**（对照不变文件列表确认）
+
+**测试执行入口**：
+
+```powershell
+# 全量回归（GTest + Vitest + Playwright）
+tools/run_tests.ps1
+
+# 仅 C++ 单元测试（含 test_multiscan_driver M92_CPP_01–M92_CPP_06）
+tools/run_tests.ps1 --gtest
+```
 
 ---
 
@@ -601,7 +611,9 @@ M90 修复后，`ParamForm → FieldRenderer → ArrayField` 调用链对 `array
 - [ ] `stdio.drv.multiscan` 编译通过，4 个源文件入库
 - [ ] `test_multiscan_driver.cpp` 的 `M92_CPP_01`–`M92_CPP_06` 全部通过
 - [ ] 构建后 `assemble_runtime` 自动将 `stdio.drv.multiscan` 放入 `runtime_*/drivers/`
+- [ ] `stdio.drv.multiscan --help` 正常输出并退出 0
+- [ ] `GET /api/drivers` 返回列表含 `stdio.drv.multiscan`（demo server 启动后）
 - [ ] DriverLab 手工验收：`scan_targets` 参数以内联列表渲染，int 子字段默认值为 `0`，执行后消息流可见
-- [ ] 现有测试套件（stdiolink_tests + webui vitest）无回归
+- [ ] 现有测试套件（stdiolink_tests + webui vitest）无回归（`tools/run_tests.ps1`）
 - [ ] **无新增 WebUI React 组件**（对照不变文件列表逐项确认）
 - [ ] 本里程碑文档入库 `doc/milestone/`

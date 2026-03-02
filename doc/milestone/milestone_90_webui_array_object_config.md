@@ -1064,6 +1064,19 @@ describe('getDefaultItem', () => {
 - [ ] `array<array<object>>` 两层嵌套 schema 解析不崩溃，`rejectUnknownFields` 对外层 items 为 array 类型时不误递归（对应 `R_CPP_09`、`R_CPP_10`）
 - [ ] 新增 20 条测试（C++ 11 + API 3 + 前端 6）全部通过，现有测试套件无回归
 
+**测试执行入口**：
+
+```powershell
+# 全量回归（GTest + Vitest + Playwright）
+tools/run_tests.ps1
+
+# 仅 C++ 单元测试（含 schema 解析 + validator + API 路由）
+tools/run_tests.ps1 --gtest
+
+# 仅前端单元测试（含 ArrayField / PreviewEditor）
+tools/run_tests.ps1 --vitest
+```
+
 ---
 
 ## 7. 风险与控制

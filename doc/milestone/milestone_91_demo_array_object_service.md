@@ -431,6 +431,17 @@ jq . src/demo/server_manager_demo/data_root/projects/daemon_multi_device.json > 
 - [ ] 在任意 device 项添加未知字段后 Validate，错误路径格式为 `"devices[N].bad_key"`（对应 M90 修复验收）
 - [ ] `api_smoke.sh` 新增段全部通过，无非零退出码
 - [ ] 静态 JSON 文件 `jq` 格式校验通过
+- [ ] 现有测试套件无回归
+
+**回归执行入口**：
+
+```powershell
+# 全量回归（确认新增静态文件未影响现有功能）
+tools/run_tests.ps1
+
+# 仅前端单元测试（确认 SchemaForm 渲染无回归）
+tools/run_tests.ps1 --vitest
+```
 
 ---
 
