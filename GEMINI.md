@@ -110,7 +110,7 @@ doc/                   # 设计文档、API 参考与里程碑
 - [x] M75-M78: WebSocket 心跳、spdlog 日志集成、实例结构化日志、事件持久化
 - [x] M79-M85: Modbus 驱动集群 (TCP/RTU Server/Client)、PLC 起重机驱动、事件格式化
 - [x] M86-M89: JS resolveDriver 绑定、消除共享依赖、统一运行与开发发布布局
-- [ ] M90-M92: WebUI array<object> 配置能力改造、Demo Service 资产、stdio.drv.multiscan 演示 Driver (已设计评审通过)
+- [x] M90-M92: WebUI array<object> 配置能力改造、Demo Service 资产、stdio.drv.multiscan 演示 Driver
 
 ## 7. 关键文档索引
 - `doc/stdiolink_ipc_design.md`: 核心 IPC 协议与传输设计。
