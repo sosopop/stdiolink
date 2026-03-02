@@ -97,12 +97,20 @@ doc/                   # 设计文档、API 参考与里程碑
 ### 提交规范
 遵循 Conventional Commits (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`)。
 
+### AI 辅助与 Shell 约定
+- **Shell 环境下的文件读写 (Windows)**: 在 Windows 下使用 shell 命令读写文本类型文件时，必须假设目标文件是 **UTF-8 格式**。请使用适当的参数或命令确保采用 UTF-8 编码读取和写入文件（例如在 PowerShell 中使用 `-Encoding UTF8` 读写文件）。
+
 ## 6. 里程碑状态
 - [x] M1-M6: 基础协议、Driver/Host 核心、Console 模式
 - [x] M7-M11: 元数据系统、校验、Host 查询
 - [x] M12-M33: JS 绑定、异步调度、JS 引擎集成
 - [x] M34-M57: Server 架构、项目管理、SSE 事件流、WebSocket 调试
 - [x] M58-M69: WebUI 全栈实现、"Style 06" UI 重构、E2E 测试与发布自动化
+- [x] M70-M74: 进程守护、鲁棒性修复、异步非阻塞重构、进程树管理
+- [x] M75-M78: WebSocket 心跳、spdlog 日志集成、实例结构化日志、事件持久化
+- [x] M79-M85: Modbus 驱动集群 (TCP/RTU Server/Client)、PLC 起重机驱动、事件格式化
+- [x] M86-M89: JS resolveDriver 绑定、消除共享依赖、统一运行与开发发布布局
+- [ ] M90-M92: WebUI array<object> 配置能力改造、Demo Service 资产、stdio.drv.multiscan 演示 Driver (已设计评审通过)
 
 ## 7. 关键文档索引
 - `doc/stdiolink_ipc_design.md`: 核心 IPC 协议与传输设计。

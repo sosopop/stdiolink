@@ -53,6 +53,10 @@
 - Public protocol/meta changes should be aligned with docs under `doc/manual/` and relevant milestone docs under `doc/milestone/`.
 - Web dashboard-oriented API backlog is tracked in `doc/todolist.md`; when adding/removing server endpoints, keep this file in sync.
 
+## PowerShell Encoding Notes
+
+- When using PowerShell commands to read or write text files, assume target text files are UTF-8 encoded.
+
 
 ## Skills
 A skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.
