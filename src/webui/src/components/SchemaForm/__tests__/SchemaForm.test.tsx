@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { SchemaForm } from '../SchemaForm';
 import { ArrayField } from '../fields/ArrayField';
@@ -157,7 +157,9 @@ describe('SchemaForm array<object> regression (M90)', () => {
       </ConfigProvider>,
     );
 
-    expect(screen.getByText(/radar 1/i)).toBeDefined();
+    const firstItem = screen.getByTestId('array-item-0');
+    expect(within(firstItem).getByText(/^radar$/i)).toBeDefined();
+    expect(within(firstItem).getByText(/^1$/)).toBeDefined();
   });
 
   it('R_FE_03 propagates nested error path to array<object> sub-field', () => {

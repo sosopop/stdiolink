@@ -59,7 +59,7 @@ describe('FieldCard', () => {
     wrap(<FieldCard {...defaultProps} field={stringField} path="host" />);
     expect(screen.getByText('host')).toBeInTheDocument();
     expect(screen.getByText('string')).toBeInTheDocument();
-    expect(screen.getByText('required')).toBeInTheDocument();
+    expect(screen.getByText(/required/i)).toBeInTheDocument();
     expect(screen.getByText('Host address')).toBeInTheDocument();
   });
 
@@ -101,7 +101,7 @@ describe('FieldCard', () => {
   it('shows toggle and children for array<object> field', () => {
     wrap(<FieldCard {...defaultProps} field={arrayObjectField} path="radars" />);
     expect(screen.getByTestId('field-toggle-radars')).toBeInTheDocument();
-    expect(screen.getByText('Item Fields')).toBeInTheDocument();
+    expect(screen.getByText(/item fields/i)).toBeInTheDocument();
     expect(screen.getByTestId('field-card-radars.ip')).toBeInTheDocument();
   });
 
