@@ -382,7 +382,7 @@ void ModbusRtuSerialServerHandler::handle(const QString& cmd, const QJsonValue& 
             case DataType::Int32:   values.append(conv.toInt32(raw, i)); break;
             case DataType::UInt32:  values.append(static_cast<qint64>(conv.toUInt32(raw, i))); break;
             case DataType::Float32: values.append(conv.toFloat32(raw, i)); break;
-            case DataType::Int64:   values.append(conv.toInt64(raw, i)); break;
+            case DataType::Int64:   values.append(static_cast<qint64>(conv.toInt64(raw, i))); break;
             case DataType::UInt64:  values.append(static_cast<qint64>(conv.toUInt64(raw, i))); break;
             case DataType::Float64: values.append(conv.toFloat64(raw, i)); break;
             }

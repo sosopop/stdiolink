@@ -127,7 +127,7 @@ QJsonArray ModbusTcpHandler::registersToJson(const QVector<uint16_t>& regs,
             arr.append(conv.toFloat32(regs, i));
             break;
         case DataType::Int64:
-            arr.append(conv.toInt64(regs, i));
+            arr.append(static_cast<qint64>(conv.toInt64(regs, i)));
             break;
         case DataType::UInt64:
             arr.append(static_cast<qint64>(conv.toUInt64(regs, i)));

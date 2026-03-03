@@ -130,7 +130,7 @@ QJsonArray ModbusRtuSerialHandler::registersToJson(const QVector<uint16_t>& regs
         case DataType::Int32:   arr.append(conv.toInt32(regs, i)); break;
         case DataType::UInt32:  arr.append(static_cast<qint64>(conv.toUInt32(regs, i))); break;
         case DataType::Float32: arr.append(conv.toFloat32(regs, i)); break;
-        case DataType::Int64:   arr.append(conv.toInt64(regs, i)); break;
+        case DataType::Int64:   arr.append(static_cast<qint64>(conv.toInt64(regs, i))); break;
         case DataType::UInt64:  arr.append(QString::number(conv.toUInt64(regs, i))); break;
         case DataType::Float64: arr.append(conv.toFloat64(regs, i)); break;
         }

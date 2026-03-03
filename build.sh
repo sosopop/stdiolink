@@ -4,7 +4,7 @@
 export LANG=en_US.UTF-8
 
 echo "========================================"
-echo "Build Script for macOS"
+echo "Build Script"
 echo "========================================"
 
 # 1. 设置构建配置 (默认为 Debug) [cite: 1]
@@ -79,13 +79,36 @@ echo "Configuring project with CMake..."
 echo "========================================"
 
 # 5. 使用 CMake 配置项目 [cite: 8, 9, 10]
-# 注意：macOS 下 triplet 通常为 arm64-osx 或 x64-osx
-# 这里尝试自动检测架构
+# 根据系统与架构自动选择 vcpkg triplet
+OS_NAME=$(uname -s)
 ARCH=$(uname -m)
-if [ "$ARCH" = "arm64" ]; then
-    TRIPLET="arm64-osx"
-else
-    TRIPLET="x64-osx"
+
+case "$OS_NAME" in
+    Darwin)
+        if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+            TRIPLET="arm64-osx"
+        else
+            TRIPLET="x64-osx"
+        fi
+        ;;
+    Linux)
+        if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+            TRIPLET="arm64-linux"
+        else
+            TRIPLET="x64-linux"
+        fi
+        ;;
+    *)
+        echo "Error: Unsupported OS '$OS_NAME'. Please set VCPKG_TARGET_TRIPLET manually."
+        exit 1
+        ;;
+esac
+
+echo "Detected OS: $OS_NAME, Arch: $ARCH, vcpkg triplet: $TRIPLET"
+
+OVERLAY_PORTS_DIR="$(pwd)/vcpkg-overlay-ports"
+if [ -d "$OVERLAY_PORTS_DIR" ]; then
+    echo "Using vcpkg overlay ports: $OVERLAY_PORTS_DIR"
 fi
 
 cmake -S . \
@@ -95,6 +118,7 @@ cmake -S . \
     -DCMAKE_INSTALL_PREFIX="$(pwd)/$INSTALL_DIR" \
     -DVCPKG_TARGET_TRIPLET="$TRIPLET" \
     -DVCPKG_INSTALLED_DIR="$(pwd)/vcpkg_installed" \
+    -DVCPKG_OVERLAY_PORTS="$OVERLAY_PORTS_DIR" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -G "Ninja" 
 
