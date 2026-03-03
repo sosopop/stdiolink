@@ -120,7 +120,7 @@ cmake -S . -B "%BUILD_DIR%" ^
     -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
     -DCMAKE_INSTALL_PREFIX="%CD%\%INSTALL_DIR%" ^
     -DVCPKG_TARGET_TRIPLET=x64-windows ^
-    -DVCPKG_INSTALLED_DIR="%CD%\..\vcpkg_installed" ^
+    -DVCPKG_INSTALLED_DIR="%CD%\vcpkg_installed" ^
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
     -G "Ninja"
 

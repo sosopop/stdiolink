@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Form, Input, Select, Switch, Collapse, Row, Col, Divider, Typography } from 'antd';
+import { Modal, Form, Input, Select, Switch, Collapse, Row, Col, Typography } from 'antd';
 import type { SchemaNode, SchemaFieldDescriptor } from '@/utils/schemaPath';
 
 const { Text } = Typography;

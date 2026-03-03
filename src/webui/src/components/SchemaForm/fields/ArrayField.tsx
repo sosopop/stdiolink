@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Form, Typography, Tag, Tooltip, Empty } from 'antd';
-import { PlusOutlined, DeleteOutlined, HolderOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { FieldMeta } from '@/types/service';
 import { FieldRenderer } from '../FieldRenderer';
@@ -55,9 +55,10 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({ field, value, onChange, 
   };
 
   // 尝试获取该项的摘要（显示第一个字段的值）
-  const getItemSummary = (item: any, index: number) => {
+  const getItemSummary = (item: Record<string, unknown>) => {
     if (!isObjectItem || !item || typeof item !== 'object') return null;
     const firstKey = Object.keys(item)[0];
+    if (!firstKey) return null;
     const val = item[firstKey];
     if (val !== undefined && val !== null && val !== '') {
       return (
@@ -143,7 +144,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({ field, value, onChange, 
                   <Text strong style={{ fontSize: 13 }}>
                     {field.items?.name || t('schema.item', 'Item')}
                   </Text>
-                  {getItemSummary(item, i)}
+                  {getItemSummary(item as Record<string, unknown>)}
                 </div>
 
                 <div style={{ display: 'flex', gap: 4 }}>
