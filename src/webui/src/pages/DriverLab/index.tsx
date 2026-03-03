@@ -64,7 +64,7 @@ export const DriverLabPage: React.FC = () => {
   };
 
   return (
-    <div data-testid="driverlab-page" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
+    <div data-testid="driverlab-page" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 136px)' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <Space size={16} align="center">
