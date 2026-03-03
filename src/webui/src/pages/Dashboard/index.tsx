@@ -81,8 +81,8 @@ export const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div data-testid="page-dashboard">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+    <div data-testid="page-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
         <div>
           <Typography.Title level={2} style={{ margin: 0, letterSpacing: '-1px' }}>{t('dashboard.title')}</Typography.Title>
           <Typography.Text type="secondary" style={{ fontSize: 14 }}>{t('dashboard.subtitle')}</Typography.Text>
@@ -95,12 +95,12 @@ export const DashboardPage: React.FC = () => {
           type="error"
           message={error}
           showIcon
-          style={{ marginBottom: 24, borderRadius: 'var(--radius-md)' }}
+          style={{ marginBottom: 24, borderRadius: 'var(--radius-md)', flexShrink: 0 }}
           data-testid="dashboard-error"
         />
       )}
 
-      <div className={styles.grid}>
+      <div className={styles.grid} style={{ flex: 1, minHeight: 0 }}>
         <div className={styles.mainPanel}>
           <KpiCards status={serverStatus} />
 

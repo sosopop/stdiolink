@@ -92,7 +92,7 @@ export const DriverLabPage: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, overflow: 'hidden', padding: 4 }}>
 
         {/* Top: Session Config */}
         <div className="glass-panel" style={{ padding: 16, flexShrink: 0 }}>
@@ -107,10 +107,10 @@ export const DriverLabPage: React.FC = () => {
         </div>
 
         {/* Bottom: Split View */}
-        <div style={{ flex: 1, display: 'flex', gap: 16, minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', gap: 16, minHeight: 0, overflow: 'hidden', padding: 4 }}>
 
           {/* Left: Command Palette */}
-          <div className="glass-panel" style={{ width: 320, display: 'flex', flexDirection: 'column', padding: 16 }}>
+          <div className="glass-panel" style={{ width: 420, display: 'flex', flexDirection: 'column', padding: 16 }}>
             <div style={{ marginBottom: 12 }}>
               <Title level={5} style={{ margin: 0 }}>{t('driverlab.command_palette')}</Title>
             </div>

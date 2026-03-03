@@ -127,12 +127,17 @@
 .bodyContainer {
   flex: 1;
   display: flex;
-  overflow: hidden;
+  overflow: clip;
+  /* clip 阻止溢出但不裁剪子元素的 box-shadow */
 }
 
 .content {
   padding: 32px;
+  padding-bottom: 40px;
+  /* 额外底部空间容纳最后一个 glass-panel 的阴影 */
   flex: 1;
+  overflow-x: clip;
+  /* 水平方向阻止溢出但不裁剪阴影 */
   overflow-y: auto;
   scroll-behavior: smooth;
   height: calc(100vh - 64px);

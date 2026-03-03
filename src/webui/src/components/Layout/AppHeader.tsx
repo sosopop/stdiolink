@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Switch, Space, Button, Tooltip } from 'antd';
 import { SunOutlined, MoonOutlined, ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons';
 import { useLayoutStore } from '@/stores/useLayoutStore';
@@ -20,7 +21,7 @@ export const AppHeader: React.FC = () => {
   return (
     <header className={styles.header}>
       <div className={styles.headerLeft}>
-        <div className={styles.brand}>
+        <Link to="/" className={styles.brand} style={{ textDecoration: 'none', userSelect: 'none' }}>
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.brandLogo}>
             <path d="M16 2L2 9L16 16L30 9L16 2Z" fill="url(#paint0_linear)" fillOpacity="0.8" />
             <path d="M2 23L16 30L30 23V9L16 16L2 9V23Z" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinejoin="round" />
@@ -43,7 +44,7 @@ export const AppHeader: React.FC = () => {
             </defs>
           </svg>
           <span className={styles.logoText}>STDIOLINK</span>
-        </div>
+        </Link>
       </div>
 
       <div className={styles.headerRight}>

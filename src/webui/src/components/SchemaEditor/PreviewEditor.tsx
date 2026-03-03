@@ -60,8 +60,14 @@ export function nodesToFieldMeta(nodes: SchemaNode[]): FieldMeta[] {
 export const PreviewEditor: React.FC = () => {
   const { t } = useTranslation();
   const { nodes } = useSchemaEditorStore();
+  const [value, setValue] = React.useState<Record<string, unknown>>({});
 
   const fields = useMemo(() => nodesToFieldMeta(nodes), [nodes]);
+
+  // 当 schema 发生重大变化（如字段数量或名称变化）时，重置 preview 值，避免残留数据导致渲染错误。
+  React.useEffect(() => {
+    setValue({});
+  }, [nodes.length]);
 
   if (fields.length === 0) {
     return <Empty description={t('schema.no_preview')} data-testid="preview-empty" />;
@@ -71,8 +77,8 @@ export const PreviewEditor: React.FC = () => {
     <div data-testid="preview-editor">
       <SchemaForm
         schema={fields}
-        value={{}}
-        onChange={() => {}}
+        value={value}
+        onChange={setValue}
       />
     </div>
   );

@@ -26,8 +26,14 @@ export const DriversPage: React.FC = () => {
 
   return (
     <div data-testid="page-drivers">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>{t('drivers.title')}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Search
+          placeholder={t('drivers.search_placeholder')}
+          allowClear
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ width: 300 }}
+          data-testid="driver-search"
+        />
         <Space>
           <Button icon={<ScanOutlined />} onClick={() => scanDrivers()} loading={loading} data-testid="scan-btn">
             {t('drivers.scan')}
@@ -36,15 +42,6 @@ export const DriversPage: React.FC = () => {
             {t('drivers.refresh')}
           </Button>
         </Space>
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <Search
-          placeholder={t('drivers.search_placeholder')}
-          allowClear
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 300 }}
-          data-testid="driver-search"
-        />
       </div>
       <DriversTable drivers={filtered} />
     </div>

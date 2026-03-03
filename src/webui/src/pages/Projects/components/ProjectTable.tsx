@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Table, Tag, Button, Space, Switch, Popconfirm, Typography } from 'antd';
-import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined, ClockCircleOutlined, ThunderboltOutlined, SyncOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined, ClockCircleOutlined, ThunderboltOutlined, SyncOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
@@ -34,11 +34,16 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
       title: t('projects.table.details'),
       key: 'details',
       render: (_: unknown, record: Project) => (
-        <Space direction="vertical" size={0}>
-          <Text strong style={{ color: 'var(--brand-primary)', cursor: 'pointer', fontSize: 15 }} onClick={() => navigate(`/projects/${record.id}`)}>
-            {record.name}
-          </Text>
-          <Text type="secondary" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{record.id}</Text>
+        <Space size={12}>
+          <div style={{ width: 36, height: 36, background: 'rgba(99, 102, 241, 0.1)', borderRadius: 10, display: 'grid', placeItems: 'center' }}>
+            <DatabaseOutlined style={{ color: 'var(--brand-primary)', fontSize: 18 }} />
+          </div>
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ color: 'var(--brand-primary)', cursor: 'pointer', fontSize: 15 }} onClick={() => navigate(`/projects/${record.id}`)}>
+              {record.name}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{record.id}</Text>
+          </Space>
         </Space>
       ),
     },

@@ -123,6 +123,11 @@ pre {
   background: var(--hover-overlay) !important;
 }
 
+.ant-form-item-explain {
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
 /* Service File Tree Style Overrides */
 [data-testid="file-tree"] .ant-tree,
 [data-testid="file-tree"] .ant-tree .ant-tree-list-holder-inner,

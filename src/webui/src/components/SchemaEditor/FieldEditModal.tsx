@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Form, Input, Select, Switch, Collapse } from 'antd';
+import { Modal, Form, Input, Select, Switch, Collapse, Row, Col, Divider, Typography } from 'antd';
 import type { SchemaNode, SchemaFieldDescriptor } from '@/utils/schemaPath';
+
+const { Text } = Typography;
 import { ConstraintsSection } from './ConstraintsSection';
 import { UiHintsSection } from './UiHintsSection';
 
@@ -92,16 +94,13 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
       return;
     }
 
-    // 编辑模式下以原 descriptor 为基底，避免未暴露键被覆盖丢失。
     const base: SchemaFieldDescriptor = isEdit && field ? { ...field.descriptor } : {};
     const descriptor: SchemaFieldDescriptor = {
       ...base,
       type: type as SchemaFieldDescriptor['type'],
     };
 
-    if (type !== 'array') {
-      delete descriptor.items;
-    }
+    if (type !== 'array') delete descriptor.items;
     if (type !== 'object') {
       delete descriptor.fields;
       delete descriptor.requiredKeys;
@@ -114,16 +113,12 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
     if (description) descriptor.description = description;
     else delete descriptor.description;
 
-    // 区分“未修改 default”与“主动清空 default”，避免编辑时误删既有默认值。
     if (defaultTouched) {
       if (defaultValue === '') {
         delete descriptor.default;
       } else {
-        try {
-          descriptor.default = JSON.parse(defaultValue);
-        } catch {
-          descriptor.default = defaultValue;
-        }
+        try { descriptor.default = JSON.parse(defaultValue); }
+        catch { descriptor.default = defaultValue; }
       }
     }
 
@@ -132,18 +127,14 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
     );
     if (Object.keys(cleanConstraints).length > 0) {
       descriptor.constraints = cleanConstraints as SchemaFieldDescriptor['constraints'];
-    } else {
-      delete descriptor.constraints;
-    }
+    } else delete descriptor.constraints;
 
     const cleanHints = Object.fromEntries(
       Object.entries(uiHints).filter(([, v]) => v !== undefined && v !== null && v !== ''),
     );
     if (Object.keys(cleanHints).length > 0) {
       descriptor.ui = cleanHints as NonNullable<SchemaFieldDescriptor['ui']>;
-    } else {
-      delete descriptor.ui;
-    }
+    } else delete descriptor.ui;
 
     if (type === 'array' && itemsType) {
       const nextItems: SchemaFieldDescriptor = {
@@ -151,7 +142,6 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
         type: itemsType as SchemaFieldDescriptor['type'],
       };
       if (itemsType !== 'object') {
-        // itemsType 从 object 切走时清理对象专属键，避免残留的 fields 等结构污染非对象数组元素。
         delete nextItems.fields;
         delete nextItems.requiredKeys;
         delete nextItems.additionalProperties;
@@ -171,7 +161,7 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
   const collapseItems = [
     {
       key: 'constraints',
-      label: t('schema.constraints'),
+      label: <span style={{ fontSize: 13, fontWeight: 600 }}>{t('schema.constraints')}</span>,
       children: (
         <ConstraintsSection
           type={type}
@@ -182,7 +172,7 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
     },
     {
       key: 'uiHints',
-      label: t('schema.ui_hints'),
+      label: <span style={{ fontSize: 13, fontWeight: 600 }}>{t('schema.ui_hints')}</span>,
       children: (
         <UiHintsSection
           hints={uiHints}
@@ -194,73 +184,122 @@ export const FieldEditModal: React.FC<FieldEditModalProps> = ({
 
   return (
     <Modal
-      title={isEdit ? t('schema.edit_field') : t('schema.add_field')}
+      title={
+        <div style={{ paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)', marginBottom: 16 }}>
+          <Text strong style={{ fontSize: 16 }}>{isEdit ? t('schema.edit_field') : t('schema.add_field')}</Text>
+        </div>
+      }
       open={visible}
       onOk={handleOk}
       onCancel={onCancel}
       data-testid="field-edit-modal"
       destroyOnClose
-      width={520}
+      width={600}
+      centered
+      bodyStyle={{ padding: '0 4px' }}
     >
-      <Form layout="vertical">
-        <Form.Item
-          label={t('schema.field_name')}
-          validateStatus={nameError ? 'error' : undefined}
-          help={nameError}
-        >
-          <Input
-            value={name}
-            onChange={(e) => { setName(e.target.value); setNameError(null); }}
-            placeholder={t('schema.field_name_placeholder')}
-            data-testid="field-name-input"
-          />
-        </Form.Item>
-        <Form.Item label={t('schema.type')}>
-          <Select
-            value={type}
-            onChange={(v) => { setType(v); setConstraints({}); }}
-            data-testid="field-type-select"
-            options={FIELD_TYPES.map((ft) => ({ label: ft, value: ft }))}
-          />
-        </Form.Item>
-        <Form.Item label={t('schema.required_label')}>
-          <Switch
-            checked={required}
-            onChange={setRequired}
-            data-testid="field-required-switch"
-          />
-        </Form.Item>
-        <Form.Item label={t('schema.description')}>
-          <Input.TextArea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            data-testid="field-description-input"
-          />
-        </Form.Item>
-        <Form.Item label={t('schema.default_value')}>
-          <Input
-            value={defaultValue}
-            onChange={(e) => {
-              setDefaultValue(e.target.value);
-              setDefaultTouched(true);
-            }}
-            placeholder={t('schema.default_placeholder')}
-            data-testid="field-default-input"
-          />
-        </Form.Item>
+      <Form layout="vertical" requiredMark={false}>
+        <Row gutter={24}>
+          <Col span={14}>
+            <Form.Item
+              label={<Text strong style={{ fontSize: 12, opacity: 0.8 }}>{t('schema.field_name').toUpperCase()}</Text>}
+              validateStatus={nameError ? 'error' : undefined}
+              help={nameError}
+            >
+              <Input
+                value={name}
+                onChange={(e) => { setName(e.target.value); setNameError(null); }}
+                placeholder={t('schema.field_name_placeholder')}
+                data-testid="field-name-input"
+                style={{ borderRadius: 8 }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={10}>
+            <Form.Item label={<Text strong style={{ fontSize: 12, opacity: 0.8 }}>{t('schema.type').toUpperCase()}</Text>}>
+              <Select
+                value={type}
+                onChange={(v) => { setType(v); setConstraints({}); }}
+                data-testid="field-type-select"
+                options={FIELD_TYPES.map((ft) => ({ label: ft, value: ft }))}
+                style={{ width: '100%' }}
+                dropdownStyle={{ borderRadius: 8 }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={24} align="middle">
+          <Col span={14}>
+            <Form.Item label={<Text strong style={{ fontSize: 12, opacity: 0.8 }}>{t('schema.default_value').toUpperCase()}</Text>}>
+              <Input
+                value={defaultValue}
+                onChange={(e) => { setDefaultValue(e.target.value); setDefaultTouched(true); }}
+                placeholder={t('schema.default_placeholder')}
+                data-testid="field-default-input"
+                style={{ borderRadius: 8 }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={10}>
+            <Form.Item label={<Text strong style={{ fontSize: 12, opacity: 0.8 }}>{t('schema.required_label').toUpperCase()}</Text>}>
+              <div style={{
+                background: 'var(--surface-layer2)',
+                padding: '4px 12px',
+                borderRadius: 8,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                height: 32
+              }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>{required ? t('common.yes') : t('common.no')}</Text>
+                <Switch
+                  size="small"
+                  checked={required}
+                  onChange={setRequired}
+                  data-testid="field-required-switch"
+                />
+              </div>
+            </Form.Item>
+          </Col>
+        </Row>
+
         {type === 'array' && (
-          <Form.Item label={t('schema.items_type')}>
+          <Form.Item
+            label={<Text strong style={{ fontSize: 12, opacity: 0.8 }}>{t('schema.items_type').toUpperCase()}</Text>}
+            style={{ background: 'var(--primary-dim)', padding: '12px', borderRadius: 12, border: '1px solid var(--primary-color)', opacity: 0.9 }}
+          >
             <Select
               value={itemsType}
               onChange={setItemsType}
               data-testid="field-items-type-select"
               options={ITEM_TYPES.map((ft) => ({ label: ft, value: ft }))}
+              dropdownStyle={{ borderRadius: 8 }}
             />
           </Form.Item>
         )}
+
+        <Form.Item label={<Text strong style={{ fontSize: 12, opacity: 0.8 }}>{t('schema.description').toUpperCase()}</Text>}>
+          <Input.TextArea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="..."
+            data-testid="field-description-input"
+            style={{ borderRadius: 8 }}
+          />
+        </Form.Item>
       </Form>
-      <Collapse items={collapseItems} size="small" />
+
+      <div style={{ marginTop: 20 }}>
+        <Collapse
+          items={collapseItems}
+          size="small"
+          ghost
+          expandIconPosition="end"
+          style={{ background: 'var(--surface-layer1)', borderRadius: 12, border: '1px solid var(--border-subtle)' }}
+        />
+      </div>
     </Modal>
   );
 };

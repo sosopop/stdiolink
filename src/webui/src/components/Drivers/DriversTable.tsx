@@ -31,7 +31,7 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
     {
       title: t('drivers.table.driver'),
       key: 'driver',
-      width: 260,
+      width: 360,
       render: (_: unknown, record: DriverListItem) => (
         <Space size={12}>
           <div style={{ width: 36, height: 36, background: 'rgba(99, 102, 241, 0.1)', borderRadius: 8, display: 'grid', placeItems: 'center', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
@@ -98,14 +98,13 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
   ];
 
   return (
-    <div className="glass-panel" style={{ padding: '0 0 8px 0', overflow: 'hidden' }}>
+    <div className="glass-panel" style={{ padding: '0 0 16px 0', overflow: 'hidden' }}>
       <Table
         data-testid="drivers-table"
         dataSource={drivers}
         columns={columns}
         rowKey="id"
-        size="small"
-        pagination={{ pageSize: 20, style: { marginRight: 24 } }}
+        pagination={{ pageSize: 20, style: { marginRight: 24, marginTop: 24 } }}
         onRow={(record) => ({
           onClick: () => navigate(`/drivers/${record.id}`),
           className: 'hover-row',

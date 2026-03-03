@@ -13,9 +13,11 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('AppHeader', () => {
-  it('renders logo text', () => {
+  it('renders logo text wrapped in link', () => {
     renderWithProviders(<AppHeader />);
-    expect(screen.getByText('STDIOLINK')).toBeDefined();
+    const link = screen.getByRole('link', { name: /STDIOLINK/i });
+    expect(link).toBeDefined();
+    expect(link.getAttribute('href')).toBe('/');
   });
 
   it('renders sse status indicator', () => {
