@@ -386,7 +386,11 @@
         "advanced": "Advanced",
         "read_only": "Read Only",
         "placeholder": "Placeholder",
-        "unit": "Unit"
+        "unit": "Unit",
+        "items_type": "Items Type",
+        "array_item_fields": "Item Fields",
+        "field_name_no_dot": "Field name cannot contain '.'",
+        "add_item": "Add Item"
     },
     "sse": {
         "live": "Live",

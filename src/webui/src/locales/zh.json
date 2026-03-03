@@ -386,7 +386,11 @@
         "advanced": "高级",
         "read_only": "只读",
         "placeholder": "占位符",
-        "unit": "单位"
+        "unit": "单位",
+        "items_type": "元素类型",
+        "array_item_fields": "元素字段",
+        "field_name_no_dot": "字段名不能包含 '.'",
+        "add_item": "添加项"
     },
     "sse": {
         "live": "实时",

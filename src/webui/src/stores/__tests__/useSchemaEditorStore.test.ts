@@ -170,4 +170,39 @@ describe('useSchemaEditorStore', () => {
     useSchemaEditorStore.getState().addField({ name: 'x', descriptor: { type: 'string' } });
     expect(useSchemaEditorStore.getState().dirty).toBe(true);
   });
+
+  // R07
+  it('blocks mode switch when syncFromJson fails', () => {
+    useSchemaEditorStore.setState({
+      activeMode: 'json',
+      jsonText: 'invalid json!!!',
+      jsonError: null,
+    });
+    useSchemaEditorStore.getState().setActiveMode('visual');
+    expect(useSchemaEditorStore.getState().activeMode).toBe('json');
+    expect(useSchemaEditorStore.getState().jsonError).not.toBeNull();
+  });
+
+  // R08
+  it('switches mode when JSON is valid', () => {
+    useSchemaEditorStore.setState({
+      activeMode: 'json',
+      jsonText: '{"host":{"type":"string"}}',
+      jsonError: null,
+    });
+    useSchemaEditorStore.getState().setActiveMode('visual');
+    expect(useSchemaEditorStore.getState().activeMode).toBe('visual');
+    expect(useSchemaEditorStore.getState().jsonError).toBeNull();
+  });
+
+  // R16
+  it('serializes nodes when switching from visual to json', () => {
+    useSchemaEditorStore.setState({
+      activeMode: 'visual',
+      nodes: [{ name: 'port', descriptor: { type: 'int' } }],
+    });
+    useSchemaEditorStore.getState().setActiveMode('json');
+    expect(useSchemaEditorStore.getState().activeMode).toBe('json');
+    expect(useSchemaEditorStore.getState().jsonText).toContain('port');
+  });
 });

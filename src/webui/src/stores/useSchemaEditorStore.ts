@@ -98,7 +98,8 @@ export const useSchemaEditorStore = create<SchemaEditorState>()((set, get) => ({
   setActiveMode: (mode) => {
     const prev = get().activeMode;
     if (prev === 'json' && mode !== 'json') {
-      get().syncFromJson();
+      const ok = get().syncFromJson();
+      if (!ok) return;
     }
     if (prev !== 'json' && mode === 'json') {
       get().syncToJson();

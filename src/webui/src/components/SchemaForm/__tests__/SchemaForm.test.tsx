@@ -5,6 +5,7 @@ import { SchemaForm } from '../SchemaForm';
 import { ArrayField } from '../fields/ArrayField';
 import { getDefaultItem } from '../utils/fieldDefaults';
 import type { FieldMeta } from '@/types/service';
+import i18n from '@/i18n';
 
 function renderForm(schema: FieldMeta[], value: Record<string, unknown> = {}, props: Record<string, unknown> = {}) {
   const onChange = vi.fn();
@@ -173,6 +174,22 @@ describe('SchemaForm array<object> regression (M90)', () => {
     );
 
     expect(screen.getByText('port must be >= 0')).toBeDefined();
+  });
+
+  // R18
+  it('uses i18n text for add item button under zh locale', async () => {
+    const previousLanguage = i18n.resolvedLanguage ?? i18n.language;
+    await i18n.changeLanguage('zh');
+    try {
+      render(
+        <ConfigProvider>
+          <ArrayField field={radarField} value={[]} onChange={vi.fn()} />
+        </ConfigProvider>,
+      );
+      expect(screen.getByTestId('add-item-radars')).toHaveTextContent('添加项');
+    } finally {
+      await i18n.changeLanguage(previousLanguage);
+    }
   });
 });
 

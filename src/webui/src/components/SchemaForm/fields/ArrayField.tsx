@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Form, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { FieldMeta } from '@/types/service';
 import { FieldRenderer } from '../FieldRenderer';
 import { getDefaultItem } from '../utils/fieldDefaults';
@@ -15,6 +16,7 @@ interface ArrayFieldProps {
 }
 
 export const ArrayField: React.FC<ArrayFieldProps> = ({ field, value, onChange, error, errors, basePath }) => {
+  const { t } = useTranslation();
   const arr = value ?? [];
   const canAdd = field.maxItems === undefined || arr.length < field.maxItems;
   const canRemove = field.minItems === undefined || arr.length > field.minItems;
@@ -97,7 +99,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({ field, value, onChange, 
         data-testid={`add-item-${field.name}`}
         block
       >
-        Add Item
+        {t('schema.add_item')}
       </Button>
     </Form.Item>
   );

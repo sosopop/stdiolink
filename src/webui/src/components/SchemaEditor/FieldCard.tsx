@@ -42,8 +42,9 @@ export const FieldCard: React.FC<FieldCardProps> = ({
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const desc = field.descriptor;
-  const hasChildren = desc.type === 'object' && field.children && field.children.length > 0;
-  const isObject = desc.type === 'object';
+  const isArrayObject = desc.type === 'array' && desc.items?.type === 'object';
+  const isContainer = desc.type === 'object' || isArrayObject;
+  const hasChildren = isContainer && field.children && field.children.length > 0;
 
   const constraintSummary = () => {
     const parts: string[] = [];
@@ -68,7 +69,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
             <Space>
-              {isObject && (
+              {isContainer && (
                 <Button
                   type="text"
                   size="small"
@@ -130,8 +131,13 @@ export const FieldCard: React.FC<FieldCardProps> = ({
         </div>
       </Card>
 
-      {isObject && expanded && (
+      {isContainer && expanded && (
         <div data-testid={`field-children-${path}`}>
+          {isArrayObject && (
+            <Tag color="blue" style={{ marginLeft: (level + 1) * 24, marginBottom: 4 }}>
+              {t('schema.array_item_fields')}
+            </Tag>
+          )}
           {field.children?.map((child, idx) => (
             <FieldCard
               key={child.name}

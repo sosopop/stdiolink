@@ -92,7 +92,7 @@ doc/                   # 设计文档、API 参考与里程碑
 - **文件 I/O**: 必须使用 `QFile`。
 - **文本流**: 使用 `QTextStream` 逐行读取以避免 Windows 管道阻塞。
 - **JSON**: 使用 `QJsonDocument` / `QJsonObject`。
-- **WebUI 风格**: 遵循 "Style 06" 规范，使用 Glassmorphism (Bento Grid) 布局。
+- **WebUI 风格**: 遵循 "Style 06" 规范，使用 Glassmorphism (Bento Grid) 布局。支持 **Dark (默认) / Light** 双主题切换，开发组件时必须确保两种模式下的视觉表现与一致性。
 
 ### 提交规范
 遵循 Conventional Commits (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`)。

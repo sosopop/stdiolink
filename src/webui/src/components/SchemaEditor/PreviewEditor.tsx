@@ -22,6 +22,9 @@ function descriptorToFieldMeta(name: string, descriptor: SchemaFieldDescriptor):
     format: descriptor.constraints?.format,
     minItems: descriptor.constraints?.minItems,
     maxItems: descriptor.constraints?.maxItems,
+    ui: descriptor.ui,
+    requiredKeys: descriptor.requiredKeys,
+    additionalProperties: descriptor.additionalProperties,
   };
 
   if (descriptor.fields) {
@@ -40,7 +43,15 @@ export function nodesToFieldMeta(nodes: SchemaNode[]): FieldMeta[] {
   return nodes.map((n) => {
     const meta = descriptorToFieldMeta(n.name, n.descriptor);
     if (n.children && n.children.length > 0) {
-      meta.fields = nodesToFieldMeta(n.children);
+      if (n.descriptor.type === 'array' && n.descriptor.items?.type === 'object') {
+        // 仅 array<object> 允许 children 回填 items.fields，避免把 array<string> 等类型静默改写为 object 结构。
+        meta.items = {
+          ...(meta.items ?? { name: n.name, type: n.descriptor.items?.type ?? 'object' }),
+          fields: nodesToFieldMeta(n.children),
+        };
+      } else if (n.descriptor.type !== 'array') {
+        meta.fields = nodesToFieldMeta(n.children);
+      }
     }
     return meta;
   });

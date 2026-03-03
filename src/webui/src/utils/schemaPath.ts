@@ -18,6 +18,19 @@ export interface SchemaFieldDescriptor {
   };
   fields?: Record<string, SchemaFieldDescriptor>;
   items?: SchemaFieldDescriptor;
+  requiredKeys?: string[];
+  additionalProperties?: boolean;
+  ui?: {
+    widget?: string;
+    group?: string;
+    order?: number;
+    placeholder?: string;
+    advanced?: boolean;
+    readonly?: boolean;
+    visibleIf?: string;
+    unit?: string;
+    step?: number;
+  };
 }
 
 export interface SchemaNode {
@@ -29,7 +42,9 @@ export interface SchemaNode {
 export function schemaToNodes(schema: ServiceConfigSchema): SchemaNode[] {
   return Object.entries(schema).map(([name, desc]) => {
     const node: SchemaNode = { name, descriptor: desc };
-    if (desc.fields) {
+    if (desc.type === 'array' && desc.items?.type === 'object' && desc.items?.fields) {
+      node.children = schemaToNodes(desc.items.fields);
+    } else if (desc.fields) {
       node.children = schemaToNodes(desc.fields);
     }
     return node;
@@ -41,7 +56,13 @@ export function nodesToSchema(nodes: SchemaNode[]): ServiceConfigSchema {
   for (const node of nodes) {
     const desc = { ...node.descriptor };
     if (node.children && node.children.length > 0) {
-      desc.fields = nodesToSchema(node.children);
+      // 仅 array<object> 允许把 children 回写到 items.fields，避免静默类型改写。
+      if (desc.type === 'array' && desc.items?.type === 'object') {
+        desc.items = { ...desc.items, fields: nodesToSchema(node.children) };
+      } else if (desc.type === 'object') {
+        // 仅 object 允许回写到 fields，避免出现 type=string + fields 的无效组合。
+        desc.fields = nodesToSchema(node.children);
+      }
     }
     schema[node.name] = desc;
   }

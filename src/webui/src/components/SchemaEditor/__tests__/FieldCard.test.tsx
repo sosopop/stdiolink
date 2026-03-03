@@ -36,6 +36,14 @@ const enumField: SchemaNode = {
   descriptor: { type: 'enum', constraints: { enumValues: ['fast', 'slow'] } },
 };
 
+const arrayObjectField: SchemaNode = {
+  name: 'radars',
+  descriptor: { type: 'array', items: { type: 'object' } },
+  children: [
+    { name: 'ip', descriptor: { type: 'string' } },
+  ],
+};
+
 describe('FieldCard', () => {
   const defaultProps = {
     level: 0,
@@ -89,6 +97,14 @@ describe('FieldCard', () => {
     expect(screen.getByText(/2 child field/)).toBeInTheDocument();
   });
 
+  // R06
+  it('shows toggle and children for array<object> field', () => {
+    wrap(<FieldCard {...defaultProps} field={arrayObjectField} path="radars" />);
+    expect(screen.getByTestId('field-toggle-radars')).toBeInTheDocument();
+    expect(screen.getByText('Item Fields')).toBeInTheDocument();
+    expect(screen.getByTestId('field-card-radars.ip')).toBeInTheDocument();
+  });
+
   it('triggers onEdit', () => {
     const onEdit = vi.fn();
     wrap(<FieldCard {...defaultProps} field={stringField} path="host" onEdit={onEdit} />);
@@ -118,5 +134,11 @@ describe('FieldCard', () => {
   it('disables down button when isLast', () => {
     wrap(<FieldCard {...defaultProps} field={stringField} path="host" isLast={true} />);
     expect(screen.getByTestId('field-down-host')).toBeDisabled();
+  });
+
+  // R15
+  it('does not render toggle for non-container string field', () => {
+    wrap(<FieldCard {...defaultProps} field={stringField} path="host" />);
+    expect(screen.queryByTestId('field-toggle-host')).toBeNull();
   });
 });

@@ -172,4 +172,67 @@ describe('schemaPath', () => {
       expect(result[2].children![1].name).toBe('timeout');
     });
   });
+
+  describe('array<object> round-trip (M93)', () => {
+    const arrayObjectSchema: ServiceConfigSchema = {
+      radars: {
+        type: 'array',
+        items: {
+          type: 'object',
+          fields: {
+            ip: { type: 'string', required: true },
+            port: { type: 'int', default: 502 },
+          },
+        },
+      },
+    };
+
+    // R01
+    it('expands array.items.fields into children', () => {
+      const nodes = schemaToNodes(arrayObjectSchema);
+      expect(nodes[0].children).toHaveLength(2);
+      expect(nodes[0].children![0].name).toBe('ip');
+      expect(nodes[0].children![1].name).toBe('port');
+    });
+
+    // R02
+    it('keeps array<object> lossless through schemaToNodes -> nodesToSchema', () => {
+      const nodes = schemaToNodes(arrayObjectSchema);
+      const back = nodesToSchema(nodes);
+      expect(back).toEqual(arrayObjectSchema);
+    });
+
+    // R11
+    it('does not create children for array<string> without items.fields', () => {
+      const schema: ServiceConfigSchema = {
+        tags: { type: 'array', items: { type: 'string' } },
+      };
+      const nodes = schemaToNodes(schema);
+      expect(nodes[0].children).toBeUndefined();
+    });
+
+    // R19
+    it('ignores children when array items.type is not object', () => {
+      const nodes: SchemaNode[] = [{
+        name: 'tags',
+        descriptor: { type: 'array', items: { type: 'string' } },
+        children: [{ name: 'x', descriptor: { type: 'string' } }],
+      }];
+      const back = nodesToSchema(nodes);
+      expect(back.tags.items?.type).toBe('string');
+      expect(back.tags.items?.fields).toBeUndefined();
+    });
+
+    it('ignores children for non-container scalar types', () => {
+      const nodes: SchemaNode[] = [{
+        name: 'host',
+        descriptor: { type: 'string' },
+        children: [{ name: 'x', descriptor: { type: 'string' } }],
+      }];
+      const back = nodesToSchema(nodes);
+      expect(back.host.type).toBe('string');
+      expect(back.host.fields).toBeUndefined();
+      expect(back.host.items).toBeUndefined();
+    });
+  });
 });
