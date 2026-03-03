@@ -94,7 +94,7 @@ cmake -S . \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DCMAKE_INSTALL_PREFIX="$(pwd)/$INSTALL_DIR" \
     -DVCPKG_TARGET_TRIPLET="$TRIPLET" \
-    -DVCPKG_INSTALLED_DIR="$(pwd)/../vcpkg_installed" \
+    -DVCPKG_INSTALLED_DIR="$(pwd)/vcpkg_installed" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -G "Ninja" 
 
