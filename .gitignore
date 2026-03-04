@@ -38,3 +38,5 @@ src/webui/test-results/
 src/webui/tsconfig.tsbuildinfo
 src/webui/.vitest-report.json
 src/demo/server_manager_demo/data_root/logs/
+
+tmp/
