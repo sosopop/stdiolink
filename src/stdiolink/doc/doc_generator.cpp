@@ -267,7 +267,6 @@ QString DocGenerator::toMarkdown(const meta::DriverMeta& meta) {
                     const QString desc =
                         ex.value("description").toString(QString("Example %1").arg(i + 1));
                     const QString mode = ex.value("mode").toString();
-                    const QJsonObject params = ex.value("params").toObject();
 
                     md += QString("%1. %2\n\n").arg(i + 1).arg(desc);
                     if (!mode.isEmpty()) {
@@ -277,11 +276,6 @@ QString DocGenerator::toMarkdown(const meta::DriverMeta& meta) {
                     if (mode == "stdio") {
                         md += "- Stdin: `" + formatExampleStdinLine(cmd.name, ex) + "`\n";
                     }
-                    md += "- Params:\n";
-                    md += "```json\n";
-                    md += QString::fromUtf8(
-                        QJsonDocument(params).toJson(QJsonDocument::Indented));
-                    md += "```\n";
                     if (ex.contains("expectedOutput")) {
                         md += "- Expected Output:\n";
                         md += "```json\n";
@@ -882,8 +876,6 @@ QString DocGenerator::toHtml(const meta::DriverMeta& meta) {
                     const QString mode = ex.value("mode").toString();
                     const QString cli = formatExampleCli(cmd.name, ex);
                     const QString stdinLine = formatExampleStdinLine(cmd.name, ex);
-                    const QString paramsJson = QString::fromUtf8(
-                        QJsonDocument(ex.value("params").toObject()).toJson(QJsonDocument::Indented));
                     html += "          <div class=\"example-item\">\n";
                     html += "            <p><strong>" + escapeHtml(desc) + "</strong></p>\n";
                     if (!mode.isEmpty()) {
@@ -893,7 +885,6 @@ QString DocGenerator::toHtml(const meta::DriverMeta& meta) {
                     if (mode == "stdio") {
                         html += "            <p>Stdin: <code>" + escapeHtml(stdinLine) + "</code></p>\n";
                     }
-                    html += "            <pre>" + escapeHtml(paramsJson) + "</pre>\n";
                     if (ex.contains("expectedOutput")) {
                         const QString expected = jsonValueToIndented(ex.value("expectedOutput"));
                         html += "            <p>Expected Output:</p>\n";

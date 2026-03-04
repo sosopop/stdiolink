@@ -308,7 +308,7 @@
             "execute": "执行",
             "no_params": "此命令无参数",
             "examples_title": "示例",
-            "apply_example": "应用示例"
+            "apply_example": "应用示例参数"
         },
         "toolbar": {
             "clear": "清除",

@@ -18,6 +18,11 @@ const mockCommands = [
         mode: 'console',
         params: { a: 1, b: 2 },
       },
+      {
+        description: 'quick add stdio',
+        mode: 'stdio',
+        params: { a: 11, b: 22 },
+      },
     ],
   },
   {
@@ -92,6 +97,7 @@ describe('CommandPanel', () => {
     const { props } = renderPanel({ selectedCommand: 'add' });
     fireEvent.click(screen.getByTestId('apply-example-0'));
     expect(props.onParamsChange).toHaveBeenCalledWith({ a: 1, b: 2 });
+    expect(screen.queryByTestId('apply-example-1')).toBeNull();
   });
 
   it('does not render examples block when command has no examples', () => {

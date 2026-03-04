@@ -308,7 +308,7 @@
             "execute": "Execute",
             "no_params": "No parameters for this command",
             "examples_title": "Examples",
-            "apply_example": "Apply Example"
+            "apply_example": "Apply Example Params"
         },
         "toolbar": {
             "clear": "Clear",

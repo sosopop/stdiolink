@@ -50,6 +50,15 @@ pre {
   font-family: var(--font-mono);
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* 滚动条美化 */
 ::-webkit-scrollbar {
   width: 6px;

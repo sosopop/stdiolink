@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Space, Tag, Typography } from 'antd';
+import { Button, Typography } from 'antd';
 import type { CommandExampleMeta } from '@/types/driver';
 
 interface CommandExamplesProps {
@@ -8,72 +8,68 @@ interface CommandExamplesProps {
   onApply: (params: Record<string, unknown>) => void;
 }
 
-function previewParams(params: Record<string, unknown>): string {
-  try {
-    const text = JSON.stringify(params);
-    if (text.length > 100) {
-      return `${text.slice(0, 97)}...`;
-    }
-    return text;
-  } catch {
-    return '{}';
-  }
-}
-
 export const CommandExamples: React.FC<CommandExamplesProps> = ({ examples, onApply }) => {
   const { t } = useTranslation();
   if (!examples || examples.length === 0) {
     return null;
   }
+  const displayExamples = examples.slice(0, 1);
+  const handleParamsWheel: React.WheelEventHandler<HTMLElement> = (event) => {
+    const target = event.currentTarget;
+    if (event.deltaY !== 0) {
+      target.scrollLeft += event.deltaY;
+      event.preventDefault();
+    }
+  };
 
   return (
     <div data-testid="command-examples" style={{ marginBottom: 12 }}>
-      <Typography.Text
-        type="secondary"
-        style={{
-          display: 'block',
-          marginBottom: 8,
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-        }}
-      >
-        {t('driverlab.command.examples_title')}
-      </Typography.Text>
-      <Space direction="vertical" style={{ width: '100%' }} size={8}>
-        {examples.map((ex, index) => (
+      {displayExamples.map((ex, index) => {
+        const paramsLine = JSON.stringify(ex.params);
+        return (
           <div
-            key={`${ex.mode}-${index}`}
+            key={index}
             data-testid={`example-item-${index}`}
             style={{
               border: '1px solid var(--surface-border)',
               borderRadius: 8,
-              padding: 10,
+              padding: 8,
               background: 'rgba(255,255,255,0.02)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <Typography.Text strong>{ex.description}</Typography.Text>
-              <Tag>{ex.mode}</Tag>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Typography.Text
+                data-testid={`example-params-${index}`}
+                title={paramsLine}
+                className="hide-scrollbar"
+                onWheel={handleParamsWheel}
+                style={{
+                  flex: 1,
+                  margin: 0,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  borderRadius: 6,
+                  border: '1px dashed var(--surface-border)',
+                  background: 'rgba(255,255,255,0.03)',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  whiteSpace: 'nowrap',
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                }}
+              >
+                {paramsLine}
+              </Typography.Text>
+              <Button
+                size="small"
+                onClick={() => onApply(ex.params)}
+                data-testid={`apply-example-${index}`}
+              >
+                {t('driverlab.command.apply_example')}
+              </Button>
             </div>
-            <Typography.Paragraph
-              type="secondary"
-              style={{ margin: '6px 0', fontSize: 12, fontFamily: 'monospace' }}
-            >
-              {previewParams(ex.params)}
-            </Typography.Paragraph>
-            <Button
-              size="small"
-              onClick={() => onApply(ex.params)}
-              data-testid={`apply-example-${index}`}
-            >
-              {t('driverlab.command.apply_example')}
-            </Button>
           </div>
-        ))}
-      </Space>
+        );
+      })}
     </div>
   );
 };
-

@@ -25,6 +25,11 @@ function normalizeOne(item: unknown): CommandExampleMeta | null {
 
 export function normalizeCommandExamples(input: unknown): CommandExampleMeta[] {
   if (!Array.isArray(input)) return [];
-  return input.map(normalizeOne).filter((v): v is CommandExampleMeta => v !== null);
+  for (const item of input) {
+    const normalized = normalizeOne(item);
+    if (normalized !== null) {
+      return [normalized];
+    }
+  }
+  return [];
 }
-
