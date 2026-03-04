@@ -10,11 +10,12 @@ Options:
   --build-dir <dir>   Build directory (default: build)
   --config <type>     Build config: debug or release (default: auto-detect)
   --gtest             Run only GTest (C++) tests
+  --smoke             Run only smoke tests (Python)
   --vitest            Run only Vitest (WebUI unit) tests
   --playwright        Run only Playwright (E2E) tests
   -h, --help          Show this help
 
-If no test filter is specified, all three suites are executed.
+If no test filter is specified, all four suites are executed.
 
 Example:
   tools/run_tests.sh
@@ -23,12 +24,13 @@ Example:
 EOF
 }
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 BUILD_DIR="build"
 BUILD_CONFIG=""
 RUN_GTEST=0
+RUN_SMOKE=0
 RUN_VITEST=0
 RUN_PLAYWRIGHT=0
 
@@ -44,6 +46,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --gtest)
             RUN_GTEST=1
+            shift
+            ;;
+        --smoke)
+            RUN_SMOKE=1
             shift
             ;;
         --vitest)
@@ -67,8 +73,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 # If no filter specified, run all
-if [[ "${RUN_GTEST}" -eq 0 && "${RUN_VITEST}" -eq 0 && "${RUN_PLAYWRIGHT}" -eq 0 ]]; then
+if [[ "${RUN_GTEST}" -eq 0 && "${RUN_SMOKE}" -eq 0 && "${RUN_VITEST}" -eq 0 && "${RUN_PLAYWRIGHT}" -eq 0 ]]; then
     RUN_GTEST=1
+    RUN_SMOKE=1
     RUN_VITEST=1
     RUN_PLAYWRIGHT=1
 fi
@@ -91,11 +98,14 @@ fi
 
 if [[ "${BUILD_DIR}" = /* ]]; then
     BIN_DIR="${BUILD_DIR}/runtime_${BUILD_CONFIG}/bin"
+    RAW_BIN_DIR="${BUILD_DIR}/${BUILD_CONFIG}"
 else
     BIN_DIR="${ROOT_DIR}/${BUILD_DIR}/runtime_${BUILD_CONFIG}/bin"
+    RAW_BIN_DIR="${ROOT_DIR}/${BUILD_DIR}/${BUILD_CONFIG}"
 fi
 
 WEBUI_DIR="${ROOT_DIR}/src/webui"
+SMOKE_RUNNER="${ROOT_DIR}/src/smoke_tests/run_smoke.py"
 PASSED=0
 FAILED=0
 FAILED_NAMES=""
@@ -117,6 +127,37 @@ if [[ "${RUN_GTEST}" -eq 1 ]]; then
         echo "SKIP: GTest binary not found at ${GTEST_BIN}"
         FAILED=$((FAILED + 1))
         FAILED_NAMES="${FAILED_NAMES}  - GTest (binary not found)\n"
+    fi
+fi
+
+# ── Smoke (Python) ────────────────────────────────────────────────────
+if [[ "${RUN_SMOKE}" -eq 1 ]]; then
+    echo "=== Smoke (Python) ==="
+    if [[ ! -f "${SMOKE_RUNNER}" ]]; then
+        echo "SKIP: smoke runner not found at ${SMOKE_RUNNER}"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="${FAILED_NAMES}  - Smoke (runner not found)\n"
+    else
+        PYTHON_BIN=""
+        if command -v python3 >/dev/null 2>&1; then
+            PYTHON_BIN="python3"
+        elif command -v python >/dev/null 2>&1; then
+            PYTHON_BIN="python"
+        fi
+        if [[ -z "${PYTHON_BIN}" ]]; then
+            echo "SKIP: python interpreter not found"
+            FAILED=$((FAILED + 1))
+            FAILED_NAMES="${FAILED_NAMES}  - Smoke (python not found)\n"
+        else
+            if STDIOLINK_BIN_DIR="${RAW_BIN_DIR}" "${PYTHON_BIN}" "${SMOKE_RUNNER}" --plan all; then
+                echo "  Smoke passed."
+                PASSED=$((PASSED + 1))
+            else
+                echo "FAIL: Smoke failed (exit code $?)"
+                FAILED=$((FAILED + 1))
+                FAILED_NAMES="${FAILED_NAMES}  - Smoke\n"
+            fi
+        fi
     fi
 fi
 

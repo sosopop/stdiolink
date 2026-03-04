@@ -183,6 +183,19 @@ TEST_F(ModbusRtuSerialServerHandlerTest, T17_RunNonStringEventMode) {
     EXPECT_TRUE(resp.lastData["message"].toString().contains("must be a string"));
 }
 
+// T18 — run: 启动失败路径应立即返回错误（不阻塞）
+TEST_F(ModbusRtuSerialServerHandlerTest, T18_RunStartFailureNoSerialPort) {
+    handler.handle("run",
+        QJsonObject{
+            {"port_name","__NONEXISTENT_PORT_FOR_TEST__"},
+            {"units", QJsonArray{QJsonObject{{"id", 1}}}}
+        },
+        resp);
+    EXPECT_EQ(resp.lastCode, 1);
+    EXPECT_EQ(resp.lastStatus, "error");
+    EXPECT_TRUE(resp.lastData["message"].toString().contains("Failed to open serial port"));
+}
+
 // NOTE: run 命令的 units 校验（小数 id、越界、重复）发生在 startServer 成功之后，
 // 测试环境无真实串口，无法覆盖这些路径。相关逻辑与 TCP/RTU 驱动完全一致，
 // 已在 test_modbustcp_server_handler 和 test_modbusrtu_server_handler 中充分覆盖。

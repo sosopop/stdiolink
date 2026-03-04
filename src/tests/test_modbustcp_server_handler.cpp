@@ -423,3 +423,28 @@ TEST_F(ModbusTcpServerHandlerTest, T35_StartServerNonStringListenAddress) {
     EXPECT_EQ(resp.lastCode, 3);
     EXPECT_TRUE(resp.lastData["message"].toString().contains("listen_address must be a string"));
 }
+
+// T36 — run: 启动成功后应立即返回（不再阻塞）
+TEST_F(ModbusTcpServerHandlerTest, T36_RunStartsServerAndReturnsWithoutBlocking) {
+    resp.reset();
+    handler.handle("run",
+        QJsonObject{
+            {"listen_port", 0},
+            {"units", QJsonArray{QJsonObject{{"id", 1}}}}
+        },
+        resp);
+
+    // run 成功路径只输出 event，不应写入调用方 resp 的 done/error。
+    EXPECT_TRUE(resp.lastStatus.isEmpty());
+    EXPECT_EQ(resp.lastCode, -1);
+
+    resp.reset();
+    handler.handle("status", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    EXPECT_TRUE(resp.lastData["listening"].toBool());
+
+    resp.reset();
+    handler.handle("stop_server", QJsonObject{}, resp);
+    EXPECT_EQ(resp.lastCode, 0);
+    EXPECT_TRUE(resp.lastData["stopped"].toBool());
+}

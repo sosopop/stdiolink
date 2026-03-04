@@ -84,7 +84,21 @@ doc/                   # 设计文档、API 参考与里程碑
 ```powershell
 # 运行 C++ 单元测试
 .\build\bin\stdiolink_tests.exe
+
+# 运行 CTest（推荐统一入口）
+ctest --test-dir build --output-on-failure
+
+# 仅运行 smoke 标签
+ctest --test-dir build -L smoke --output-on-failure
+
+# 运行冒烟测试方案
+python src/smoke_tests/run_smoke.py --plan m94_server_run_oneshot
+python src/smoke_tests/run_smoke.py --plan all
 ```
+
+里程碑新增功能时，需补充 `src/smoke_tests/mXX_*.py` 并同时更新：
+- `src/smoke_tests/run_smoke.py`（统一入口注册）
+- `src/smoke_tests/CMakeLists.txt`（CTest 注册）
 
 ## 5. 开发规范与约定
 

@@ -39,6 +39,14 @@
 - For `stdiolink_service` changes, add/extend tests covering config validation, JS engine bindings, and proxy/scheduler behavior.
 - For `src/stdiolink/host/` request lifecycle changes, add/extend regression tests that cover driver early-exit during `waitNext/waitAnyNext` (see `test_host_driver.cpp`, `test_wait_any.cpp`).
 - Prefer focused tests with clear assertions; cover edge cases (invalid input, boundary values).
+- Use CTest as the unified test entry when possible:
+  - List tests: `ctest --test-dir build -N`
+  - Run all registered tests: `ctest --test-dir build --output-on-failure`
+  - Run smoke label only: `ctest --test-dir build -L smoke --output-on-failure`
+- Smoke tests are maintained under `src/smoke_tests/`:
+  - Run by test plan: `python src/smoke_tests/run_smoke.py --plan <PLAN_NAME>`
+  - Run all smoke plans: `python src/smoke_tests/run_smoke.py --plan all`
+- For each new milestone feature, add/update a smoke script and register it in both `src/smoke_tests/run_smoke.py` and `src/smoke_tests/CMakeLists.txt`.
 
 ## Commit & Pull Request Guidelines
 

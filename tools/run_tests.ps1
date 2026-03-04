@@ -11,11 +11,12 @@ Options:
   --build-dir <dir>   Build directory (default: build)
   --config <type>     Build config: debug or release (default: auto-detect)
   --gtest             Run only GTest (C++) tests
+  --smoke             Run only smoke tests (Python)
   --vitest            Run only Vitest (WebUI unit) tests
   --playwright        Run only Playwright (E2E) tests
   -h, --help          Show this help
 
-If no test filter is specified, all three suites are executed.
+If no test filter is specified, all four suites are executed.
 
 Example:
   tools/run_tests.ps1
@@ -30,6 +31,7 @@ $rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $buildDir = "build"
 $buildConfig = ""
 $runGtest = $false
+$runSmoke = $false
 $runVitest = $false
 $runPlaywright = $false
 
@@ -61,6 +63,11 @@ for ($i = 0; $i -lt $args.Count; ) {
             $i += 1
             continue
         }
+        "--smoke" {
+            $runSmoke = $true
+            $i += 1
+            continue
+        }
         "--vitest" {
             $runVitest = $true
             $i += 1
@@ -88,8 +95,9 @@ for ($i = 0; $i -lt $args.Count; ) {
 }
 
 # If no filter specified, run all
-if (-not $runGtest -and -not $runVitest -and -not $runPlaywright) {
+if (-not $runGtest -and -not $runSmoke -and -not $runVitest -and -not $runPlaywright) {
     $runGtest = $true
+    $runSmoke = $true
     $runVitest = $true
     $runPlaywright = $true
 }
@@ -108,11 +116,14 @@ if ([string]::IsNullOrEmpty($buildConfig)) {
 
 if ([System.IO.Path]::IsPathRooted($buildDir)) {
     $binDir = Join-Path $buildDir "runtime_$buildConfig/bin"
+    $rawBinDir = Join-Path $buildDir $buildConfig
 } else {
     $binDir = Join-Path $rootDir (Join-Path $buildDir "runtime_$buildConfig/bin")
+    $rawBinDir = Join-Path $rootDir (Join-Path $buildDir $buildConfig)
 }
 
 $webuiDir = Join-Path $rootDir "src/webui"
+$smokeRunner = Join-Path $rootDir "src/smoke_tests/run_smoke.py"
 
 # Resolve npm.cmd / npx.cmd to bypass the npm.ps1 shim
 $npmExe = $null
@@ -144,6 +155,53 @@ if ($runGtest) {
         } else {
             Write-Host "  GTest passed."
             $passed++
+        }
+    }
+}
+
+# ── Smoke (Python) ────────────────────────────────────────────────────
+if ($runSmoke) {
+    Write-Host "=== Smoke (Python) ==="
+    if (-not (Test-Path -LiteralPath $smokeRunner -PathType Leaf)) {
+        Write-Host "SKIP: smoke runner not found at $smokeRunner"
+        $failed++
+        $failedNames += "Smoke (runner not found)"
+    } else {
+        $pythonExe = $null
+        $python3Cmd = Get-Command python3 -ErrorAction SilentlyContinue
+        if ($python3Cmd) {
+            $pythonExe = $python3Cmd.Source
+        } else {
+            $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+            if ($pythonCmd) {
+                $pythonExe = $pythonCmd.Source
+            }
+        }
+
+        if (-not $pythonExe) {
+            Write-Host "SKIP: python interpreter not found"
+            $failed++
+            $failedNames += "Smoke (python not found)"
+        } else {
+            $oldBinDirEnv = $env:STDIOLINK_BIN_DIR
+            $env:STDIOLINK_BIN_DIR = $rawBinDir
+            try {
+                & $pythonExe $smokeRunner --plan all
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "FAIL: Smoke failed (exit code $LASTEXITCODE)"
+                    $failed++
+                    $failedNames += "Smoke"
+                } else {
+                    Write-Host "  Smoke passed."
+                    $passed++
+                }
+            } finally {
+                if ($null -eq $oldBinDirEnv) {
+                    Remove-Item Env:STDIOLINK_BIN_DIR -ErrorAction SilentlyContinue
+                } else {
+                    $env:STDIOLINK_BIN_DIR = $oldBinDirEnv
+                }
+            }
         }
     }
 }

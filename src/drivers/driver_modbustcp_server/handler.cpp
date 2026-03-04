@@ -1,7 +1,6 @@
 #include "handler.h"
 
 #include <cmath>
-#include <QEventLoop>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -130,11 +129,12 @@ void ModbusTcpServerHandler::handle(const QString& cmd, const QJsonValue& data,
             }
             addedUnits.append(uid);
         }
-        m_eventResponder.event("started", 0, QJsonObject{
+        const QJsonObject startedData{
             {"port", m_server.serverPort()},
             {"units", addedUnits},
-            {"event_mode", m_eventMode}});
-        QEventLoop().exec();
+            {"event_mode", m_eventMode}
+        };
+        m_eventResponder.event("started", 0, startedData);
         return;
     }
 
@@ -449,7 +449,7 @@ void ModbusTcpServerHandler::buildMeta() {
         .vendor("stdiolink")
         .profile("keepalive")
         .command(CommandBuilder("run")
-            .description("一键启动从站服务并进入事件循环（支持 OneShot 模式）")
+            .description("一键启动从站服务（支持 OneShot 模式）")
             .param(FieldBuilder("listen_address", FieldType::String)
                 .defaultValue("").description("监听地址（空=所有接口）"))
             .param(FieldBuilder("listen_port", FieldType::Int)

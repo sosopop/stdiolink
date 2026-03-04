@@ -1,7 +1,6 @@
 #include "handler.h"
 
 #include <cmath>
-#include <QEventLoop>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -111,11 +110,12 @@ void ModbusRtuSerialServerHandler::handle(const QString& cmd, const QJsonValue& 
             }
             addedUnits.append(uid);
         }
-        m_eventResponder.event("started", 0, QJsonObject{
+        const QJsonObject startedData{
             {"port_name", m_server.portName()},
             {"units", addedUnits},
-            {"event_mode", m_eventMode}});
-        QEventLoop().exec();
+            {"event_mode", m_eventMode}
+        };
+        m_eventResponder.event("started", 0, startedData);
         return;
     }
 
@@ -414,7 +414,7 @@ void ModbusRtuSerialServerHandler::buildMeta() {
         .vendor("stdiolink")
         .profile("keepalive")
         .command(CommandBuilder("run")
-            .description("一键启动从站服务并进入事件循环（支持 OneShot 模式）")
+            .description("一键启动从站服务（支持 OneShot 模式）")
             .param(FieldBuilder("port_name", FieldType::String)
                 .required().description("串口名称（如 COM1、/dev/ttyUSB0）"))
             .param(FieldBuilder("baud_rate", FieldType::Int)

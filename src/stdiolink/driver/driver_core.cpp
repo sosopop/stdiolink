@@ -1,8 +1,15 @@
 #include "driver_core.h"
+#include <QCoreApplication>
+#include <QDebug>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMetaObject>
 #include <QTextStream>
+#include <QThread>
+#include <QTimer>
+#include <cstdio>
+#include <atomic>
 #include "help_generator.h"
 #include "log_redirector.h"
 #include "meta_command_handler.h"
@@ -17,6 +24,44 @@
 
 namespace stdiolink {
 
+namespace {
+
+// Console 模式专用响应器：仅在收到 done/error 时请求退出事件循环。
+class TerminalAwareConsoleResponder final : public ConsoleResponder {
+public:
+    explicit TerminalAwareConsoleResponder(QCoreApplication* app) : m_app(app) {}
+
+    void done(int code, const QJsonValue& payload) override {
+        ConsoleResponder::done(code, payload);
+        requestQuitOnce();
+    }
+
+    void error(int code, const QJsonValue& payload) override {
+        ConsoleResponder::error(code, payload);
+        requestQuitOnce();
+    }
+
+private:
+    void requestQuitOnce() {
+        if (m_quitScheduled.exchange(true, std::memory_order_relaxed)) {
+            return;
+        }
+        if (m_app == nullptr) {
+            return;
+        }
+        if (QThread::currentThread() == m_app->thread()) {
+            m_app->quit();
+            return;
+        }
+        QMetaObject::invokeMethod(m_app, &QCoreApplication::quit, Qt::QueuedConnection);
+    }
+
+    QCoreApplication* m_app = nullptr;
+    std::atomic_bool m_quitScheduled{false};
+};
+
+} // namespace
+
 int DriverCore::run() {
     PlatformUtils::initConsoleEncoding();
     return runStdioMode();
@@ -27,25 +72,121 @@ int DriverCore::runStdioMode() {
         return 1;
     }
 
-    QFile input;
-    (void)input.open(stdin, QIODevice::ReadOnly);
-    QTextStream in(&input);
-
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        if (line.isEmpty())
-            continue;
-
-        if (!processOneLine(line.toUtf8())) {
-            // 处理失败，继续下一行
-        }
-
-        if (m_profile == Profile::OneShot) {
-            break;
-        }
+    auto* app = QCoreApplication::instance();
+    if (app == nullptr) {
+        QFile err;
+        (void)err.open(stderr, QIODevice::WriteOnly);
+        err.write("DriverCore: QCoreApplication not created\n");
+        err.flush();
+        return 1;
     }
 
-    return 0;
+    // 重置本次运行的状态，避免重复调用 run 时残留旧状态。
+    m_stdioStopRequested.store(false, std::memory_order_relaxed);
+    m_stdioAcceptLines.store(true, std::memory_order_relaxed);
+    m_stdioQuitScheduled = false;
+
+    m_stdinReaderThread = QThread::create([this, app]() {
+        QFile input;
+        if (!input.open(stdin, QIODevice::ReadOnly)) {
+            QMetaObject::invokeMethod(
+                app,
+                [this]() {
+                    m_stdioStopRequested.store(true, std::memory_order_relaxed);
+                    scheduleStdioQuit();
+                },
+                Qt::QueuedConnection);
+            return;
+        }
+
+        QTextStream in(&input);
+        while (!m_stdioStopRequested.load(std::memory_order_relaxed) && !in.atEnd()) {
+            const QString line = in.readLine();
+            if (line.isNull()) {
+                break;
+            }
+
+            const QByteArray data = line.toUtf8();
+            QMetaObject::invokeMethod(
+                app,
+                [this, data]() { handleStdioLineOnMainThread(data); },
+                Qt::QueuedConnection);
+        }
+
+        QMetaObject::invokeMethod(
+            app,
+            [this]() {
+                m_stdioStopRequested.store(true, std::memory_order_relaxed);
+                scheduleStdioQuit();
+            },
+            Qt::QueuedConnection);
+    });
+
+    if (m_stdinReaderThread == nullptr) {
+        QFile err;
+        (void)err.open(stderr, QIODevice::WriteOnly);
+        err.write("DriverCore: failed to create stdin reader thread\n");
+        err.flush();
+        return 1;
+    }
+    m_stdinReaderThread->start();
+
+    const bool oldQuitLock = QCoreApplication::isQuitLockEnabled();
+    QCoreApplication::setQuitLockEnabled(false);
+    const int exitCode = app->exec();
+    QCoreApplication::setQuitLockEnabled(oldQuitLock);
+
+    m_stdioStopRequested.store(true, std::memory_order_relaxed);
+
+    if (m_stdinReaderThread != nullptr) {
+        // KeepAlive 允许更长的协作退出窗口；OneShot 保持较短窗口，避免影响快速失败链路时延。
+        const unsigned long kReaderJoinTimeoutMs =
+            (m_profile == Profile::KeepAlive) ? 2000UL : 200UL;
+        constexpr unsigned long kReaderTerminateWaitMs = 200;
+        if (!m_stdinReaderThread->wait(kReaderJoinTimeoutMs)) {
+            qWarning("DriverCore: stdin reader thread did not exit promptly, forcing terminate");
+            m_stdinReaderThread->terminate();
+            m_stdinReaderThread->wait(kReaderTerminateWaitMs);
+        }
+        delete m_stdinReaderThread;
+        m_stdinReaderThread = nullptr;
+    }
+
+    return exitCode;
+}
+
+void DriverCore::handleStdioLineOnMainThread(const QByteArray& line) {
+    if (!m_stdioAcceptLines.load(std::memory_order_relaxed)) {
+        return;
+    }
+    if (line.trimmed().isEmpty()) {
+        return;
+    }
+
+    (void)processOneLine(line);
+
+    if (m_profile == Profile::OneShot) {
+        m_stdioAcceptLines.store(false, std::memory_order_relaxed);
+        m_stdioStopRequested.store(true, std::memory_order_relaxed);
+        scheduleStdioQuit();
+    }
+}
+
+void DriverCore::scheduleStdioQuit() {
+    if (m_stdioQuitScheduled) {
+        return;
+    }
+    m_stdioQuitScheduled = true;
+
+    auto* app = QCoreApplication::instance();
+    if (app == nullptr) {
+        return;
+    }
+    if (QThread::currentThread() == app->thread()) {
+        app->quit();
+        return;
+    }
+    QMetaObject::invokeMethod(app, &QCoreApplication::quit, Qt::QueuedConnection);
 }
 
 int DriverCore::run(int argc, char* argv[]) {
@@ -222,34 +363,55 @@ int DriverCore::runConsoleMode(const ConsoleArgs& args) {
         return 1;
     }
 
-    ConsoleResponder responder;
+    auto* app = QCoreApplication::instance();
+    if (app == nullptr) {
+        QFile err;
+        (void)err.open(stderr, QIODevice::WriteOnly);
+        err.write("DriverCore: QCoreApplication not created\n");
+        err.flush();
+        return 1;
+    }
 
-    // 处理 meta 命令
-    if (handleMetaCommand(args.cmd, args.data, responder)) {
+    TerminalAwareConsoleResponder responder(app);
+
+    // 通过事件循环投递命令执行，确保异步场景与 runStdioMode 一致。
+    QTimer::singleShot(0, app, [this, args, &responder]() {
+        // 处理 meta 命令
+        if (handleMetaCommand(args.cmd, args.data, responder)) {
+            return;
+        }
+
+        // 自动参数验证
+        QJsonValue data = args.data;
+        if (m_metaHandler && m_metaHandler->autoValidateParams()) {
+            const auto* cmdMeta = m_metaHandler->driverMeta().findCommand(args.cmd);
+            if (cmdMeta) {
+                QJsonObject filledData = meta::DefaultFiller::fillDefaults(
+                    args.data, *cmdMeta);
+                auto result = meta::MetaValidator::validateParams(filledData, *cmdMeta);
+                if (!result.valid) {
+                    responder.error(400, QJsonObject{
+                        {"name", "ValidationFailed"},
+                        {"message", result.toString()}
+                    });
+                    return;
+                }
+                data = filledData;
+            }
+        }
+
+        m_handler->handle(args.cmd, data, responder);
+    });
+
+    const bool oldQuitLock = QCoreApplication::isQuitLockEnabled();
+    QCoreApplication::setQuitLockEnabled(false);
+    const int loopExitCode = app->exec();
+    QCoreApplication::setQuitLockEnabled(oldQuitLock);
+
+    if (responder.hasResult()) {
         return responder.exitCode();
     }
-
-    // 自动参数验证
-    QJsonValue data = args.data;
-    if (m_metaHandler && m_metaHandler->autoValidateParams()) {
-        const auto* cmdMeta = m_metaHandler->driverMeta().findCommand(args.cmd);
-        if (cmdMeta) {
-            QJsonObject filledData = meta::DefaultFiller::fillDefaults(
-                args.data, *cmdMeta);
-            auto result = meta::MetaValidator::validateParams(filledData, *cmdMeta);
-            if (!result.valid) {
-                responder.error(400, QJsonObject{
-                    {"name", "ValidationFailed"},
-                    {"message", result.toString()}
-                });
-                return responder.exitCode();
-            }
-            data = filledData;
-        }
-    }
-
-    m_handler->handle(args.cmd, data, responder);
-    return responder.exitCode();
+    return loopExitCode;
 }
 
 void DriverCore::printHelp() {

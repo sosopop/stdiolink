@@ -78,6 +78,23 @@ tools/run_tests.sh --gtest        # 仅 C++ 单元测试
 tools/run_tests.ps1 --vitest --playwright  # 仅 WebUI 测试
 ```
 
+推荐同时使用 CTest 统一入口管理测试：
+```bash
+ctest --test-dir build --output-on-failure        # 运行全部已注册测试
+ctest --test-dir build -L smoke --output-on-failure  # 仅运行 smoke 标签
+```
+
+冒烟测试脚本位于 `src/smoke_tests/`：
+```bash
+python src/smoke_tests/run_smoke.py --plan m94_server_run_oneshot
+python src/smoke_tests/run_smoke.py --plan all
+```
+
+里程碑新增功能时，需同步：
+- 新增/更新 `src/smoke_tests/mXX_*.py`
+- 在 `src/smoke_tests/run_smoke.py` 注册
+- 在 `src/smoke_tests/CMakeLists.txt` 注册对应 CTest
+
 ### 发布打包
 
 使用 `tools/publish_release.ps1` (Windows) 或 `tools/publish_release.sh` (Unix)。

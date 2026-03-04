@@ -6,6 +6,7 @@ set(TEST_SOURCES
     test_jsonl_parser.cpp
     test_jsonl_stream_parser.cpp
     test_driver_core.cpp
+    test_driver_core_async.cpp
     test_host_driver.cpp
     test_wait_any.cpp
     test_console.cpp

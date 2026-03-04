@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <QThread>
 #include "icommand_handler.h"
 #include "stdiolink/protocol/jsonl_parser.h"
 #include "stdiolink/stdiolink_export.h"
@@ -52,8 +54,14 @@ private:
     ICommandHandler* m_handler = nullptr;
     IMetaCommandHandler* m_metaHandler = nullptr;
     JsonlParser m_parser;
+    QThread* m_stdinReaderThread = nullptr;
+    std::atomic_bool m_stdioStopRequested{false};
+    std::atomic_bool m_stdioAcceptLines{true};
+    bool m_stdioQuitScheduled = false;
 
     int runStdioMode();
+    void handleStdioLineOnMainThread(const QByteArray& line);
+    void scheduleStdioQuit();
     int runConsoleMode(const ConsoleArgs& args);
     RunMode detectMode(const ConsoleArgs& args);
     void printHelp();
