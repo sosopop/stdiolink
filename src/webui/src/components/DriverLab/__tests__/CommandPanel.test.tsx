@@ -12,6 +12,13 @@ const mockCommands = [
       { name: 'b', type: 'double' as const, required: true, description: 'Second' },
     ],
     returns: { type: 'double' },
+    examples: [
+      {
+        description: 'quick add',
+        mode: 'console',
+        params: { a: 1, b: 2 },
+      },
+    ],
   },
   {
     name: 'ping',
@@ -79,5 +86,16 @@ describe('CommandPanel', () => {
     expect(btn.closest('button')?.disabled).toBe(false);
     fireEvent.click(btn);
     expect(props.onCancel).toHaveBeenCalled();
+  });
+
+  it('applies selected example params', () => {
+    const { props } = renderPanel({ selectedCommand: 'add' });
+    fireEvent.click(screen.getByTestId('apply-example-0'));
+    expect(props.onParamsChange).toHaveBeenCalledWith({ a: 1, b: 2 });
+  });
+
+  it('does not render examples block when command has no examples', () => {
+    renderPanel({ selectedCommand: 'ping' });
+    expect(screen.queryByTestId('command-examples')).toBeNull();
   });
 });

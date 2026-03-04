@@ -205,3 +205,41 @@ TEST(HelpGeneratorSystemOptions, GenerateHelpIncludesSystemOptions) {
     EXPECT_TRUE(output.contains("--export-meta"));
     EXPECT_TRUE(output.contains("--export-doc"));
 }
+
+TEST(HelpGeneratorCommandHelp, IncludesExamplesSection) {
+    meta::CommandMeta cmd;
+    cmd.name = "read_holding_registers";
+    cmd.description = "Read registers";
+    cmd.examples.append(QJsonObject{
+        {"description", "读取寄存器"},
+        {"mode", "stdio"},
+        {"params",
+         QJsonObject{{"host", "127.0.0.1"},
+                     {"port", 502},
+                     {"unit_id", 1},
+                     {"address", 1},
+                     {"count", 1}}}
+    });
+
+    const QString output = HelpGenerator::generateCommandHelp(cmd);
+    EXPECT_TRUE(output.contains("Examples:"));
+    EXPECT_TRUE(output.contains("mode: stdio"));
+    EXPECT_TRUE(output.contains("echo '<jsonl>' | <program> --mode=stdio"));
+    EXPECT_TRUE(output.contains("stdin: {\"cmd\":\"read_holding_registers\""));
+}
+
+TEST(HelpGeneratorCommandHelp, OmitsDefaultModeAndProfileInConsoleExample) {
+    meta::CommandMeta cmd;
+    cmd.name = "status";
+    cmd.examples.append(QJsonObject{
+        {"description", "查看状态"},
+        {"mode", "console"},
+        {"params", QJsonObject{{"host", "127.0.0.1"}, {"profile", "oneshot"}}}
+    });
+
+    const QString output = HelpGenerator::generateCommandHelp(cmd);
+    EXPECT_TRUE(output.contains("Examples:"));
+    EXPECT_TRUE(output.contains("--cmd=status"));
+    EXPECT_FALSE(output.contains("--mode=console"));
+    EXPECT_FALSE(output.contains("--profile=oneshot"));
+}

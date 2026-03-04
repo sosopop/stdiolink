@@ -5,6 +5,8 @@ import { PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 import type { CommandMeta } from '@/types/driver';
 import { ParamForm } from './ParamForm';
 import { CommandLineExample } from './CommandLineExample';
+import { normalizeCommandExamples } from './exampleMeta';
+import { CommandExamples } from './CommandExamples';
 
 interface CommandPanelProps {
   commands: CommandMeta[];
@@ -44,6 +46,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
   }
 
   const currentCmd = commands.find((c) => c.name === selectedCommand);
+  const examples = normalizeCommandExamples(currentCmd?.examples);
 
   return (
     <div data-testid="command-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -75,6 +78,10 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
               </Typography.Paragraph>
             </div>
           )}
+          <CommandExamples
+            examples={examples}
+            onApply={(params) => onParamsChange(params)}
+          />
           <ParamForm
             params={currentCmd.params}
             values={commandParams}

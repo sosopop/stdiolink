@@ -2,6 +2,7 @@
 
 #include <QJsonObject>
 
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 
 using namespace modbus;
@@ -223,4 +224,5 @@ void PlcCraneHandler::buildMeta() {
                                          .enumValues(QStringList{"manual", "auto"})
                                          .description("模式: manual, auto")))
                  .build();
+    stdiolink::meta::ensureCommandExamples(m_meta);
 }

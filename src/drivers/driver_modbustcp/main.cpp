@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 #include "modbus_client.h"
@@ -505,6 +506,7 @@ void ModbusTcpHandler::buildMeta()
                 .enumValues(byteOrderEnum())
                 .description("字节序")))
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 int main(int argc, char* argv[])

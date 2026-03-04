@@ -420,28 +420,13 @@ void DriverCore::printHelp() {
     QTextStream ts(&err);
 
     if (m_metaHandler) {
-        const auto& meta = m_metaHandler->driverMeta();
-        ts << meta.info.name << " v" << meta.info.version << "\n";
-        if (!meta.info.description.isEmpty()) {
-            ts << meta.info.description << "\n";
-        }
-        ts << "\n";
-    }
-
-    ts << "Usage:\n";
-    ts << "  <program> [options]\n";
-    ts << "  <program> --cmd=<command> [params...]\n\n";
-
-    ts << HelpGenerator::generateSystemOptions();
-
-    if (m_metaHandler) {
-        const auto& meta = m_metaHandler->driverMeta();
-        if (!meta.commands.isEmpty()) {
-            ts << "Commands:\n";
-            for (const auto& cmd : meta.commands) {
-                ts << "  " << cmd.name.leftJustified(18) << cmd.description.left(50) << "\n";
-            }
-        }
+        ts << HelpGenerator::generateHelp(m_metaHandler->driverMeta());
+    } else {
+        ts << "stdiolink driver\n\n";
+        ts << "Usage:\n";
+        ts << "  <program> [options]\n";
+        ts << "  <program> --cmd=<command> [params...]\n\n";
+        ts << HelpGenerator::generateSystemOptions();
     }
 
     ts.flush();

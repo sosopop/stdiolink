@@ -82,6 +82,119 @@ QString qjsonValueCompactString(const QJsonValue& v) {
     return "null";
 }
 
+QString formatCliValue(const QJsonValue& value) {
+    if (value.isNull() || value.isUndefined()) {
+        return QString();
+    }
+    if (value.isBool()) {
+        return value.toBool() ? "true" : "false";
+    }
+    if (value.isDouble()) {
+        return QString::number(value.toDouble(), 'g', 15);
+    }
+    if (value.isString()) {
+        const QString s = value.toString();
+        if (s.isEmpty()) {
+            return QString();
+        }
+        if (s.contains(QRegularExpression(R"([\s"'\\|&;<>()$`!])"))) {
+            QString escaped = s;
+            escaped.replace("\\", "\\\\");
+            escaped.replace("\"", "\\\"");
+            return "\"" + escaped + "\"";
+        }
+        return s;
+    }
+    QString json;
+    if (value.isObject()) {
+        json = QString::fromUtf8(QJsonDocument(value.toObject()).toJson(QJsonDocument::Compact));
+    } else if (value.isArray()) {
+        json = QString::fromUtf8(QJsonDocument(value.toArray()).toJson(QJsonDocument::Compact));
+    }
+    if (json.isEmpty()) {
+        return QString();
+    }
+    QString escaped = json;
+    escaped.replace("\\", "\\\\");
+    escaped.replace("\"", "\\\"");
+    return "\"" + escaped + "\"";
+}
+
+QString formatExampleCli(const QString& cmdName, const QJsonObject& ex) {
+    const QString mode = ex.value("mode").toString();
+    const QJsonObject params = ex.value("params").toObject();
+
+    if (mode == "stdio") {
+        return "echo '<jsonl>' | <program> --mode=stdio";
+    }
+
+    QStringList parts;
+    parts << "<program>" << ("--cmd=" + cmdName);
+
+    if (!mode.isEmpty() && mode != "console") {
+        parts << ("--mode=" + mode);
+    }
+
+    const QJsonValue profileValue = params.value("profile");
+    const QString profile = profileValue.isString() ? profileValue.toString() : QString();
+    if (!profile.isEmpty() && profile != "oneshot") {
+        parts << ("--profile=" + profile);
+    }
+
+    QStringList keys = params.keys();
+    keys.sort(Qt::CaseSensitive);
+    for (const QString& key : keys) {
+        if (key == "mode" || key == "profile") {
+            continue;
+        }
+        const QString formatted = formatCliValue(params.value(key));
+        if (formatted.isEmpty()) {
+            continue;
+        }
+        parts << ("--" + key + "=" + formatted);
+    }
+    return parts.join(' ');
+}
+
+QString formatExampleStdinLine(const QString& cmdName, const QJsonObject& ex) {
+    const QJsonObject req{
+        {"cmd", cmdName},
+        {"data", ex.value("params").toObject()},
+    };
+    return QString::fromUtf8(QJsonDocument(req).toJson(QJsonDocument::Compact));
+}
+
+QString jsonValueToIndented(const QJsonValue& value) {
+    if (value.isObject()) {
+        return QString::fromUtf8(QJsonDocument(value.toObject()).toJson(QJsonDocument::Indented));
+    }
+    if (value.isArray()) {
+        return QString::fromUtf8(QJsonDocument(value.toArray()).toJson(QJsonDocument::Indented));
+    }
+    return qjsonValueCompactString(value) + "\n";
+}
+
+QJsonObject pickTsExample(const stdiolink::meta::CommandMeta& cmd) {
+    for (const auto& ex : cmd.examples) {
+        if (ex.value("mode").toString() == "console") {
+            return ex;
+        }
+    }
+    if (!cmd.examples.isEmpty()) {
+        return cmd.examples.first();
+    }
+    return QJsonObject();
+}
+
+QString escapeHtml(const QString& text) {
+    QString out = text;
+    out.replace("&", "&amp;");
+    out.replace("<", "&lt;");
+    out.replace(">", "&gt;");
+    out.replace("\"", "&quot;");
+    return out;
+}
+
 } // namespace
 
 namespace stdiolink {
@@ -145,6 +258,38 @@ QString DocGenerator::toMarkdown(const meta::DriverMeta& meta) {
             } else {
                 QString type = meta::fieldTypeToString(cmd.returns.type);
                 md += "**Type:** `" + type + "`\n\n";
+            }
+
+            if (!cmd.examples.isEmpty()) {
+                md += "#### Examples\n\n";
+                for (int i = 0; i < cmd.examples.size(); ++i) {
+                    const QJsonObject ex = cmd.examples[i];
+                    const QString desc =
+                        ex.value("description").toString(QString("Example %1").arg(i + 1));
+                    const QString mode = ex.value("mode").toString();
+                    const QJsonObject params = ex.value("params").toObject();
+
+                    md += QString("%1. %2\n\n").arg(i + 1).arg(desc);
+                    if (!mode.isEmpty()) {
+                        md += "- Mode: `" + mode + "`\n";
+                    }
+                    md += "- CLI: `" + formatExampleCli(cmd.name, ex) + "`\n";
+                    if (mode == "stdio") {
+                        md += "- Stdin: `" + formatExampleStdinLine(cmd.name, ex) + "`\n";
+                    }
+                    md += "- Params:\n";
+                    md += "```json\n";
+                    md += QString::fromUtf8(
+                        QJsonDocument(params).toJson(QJsonDocument::Indented));
+                    md += "```\n";
+                    if (ex.contains("expectedOutput")) {
+                        md += "- Expected Output:\n";
+                        md += "```json\n";
+                        md += jsonValueToIndented(ex.value("expectedOutput"));
+                        md += "```\n";
+                    }
+                    md += "\n";
+                }
             }
         }
     }
@@ -312,6 +457,14 @@ QJsonObject DocGenerator::toOpenAPI(const meta::DriverMeta& meta) {
         responses["200"] = response200;
         post["responses"] = responses;
 
+        if (!cmd.examples.isEmpty()) {
+            QJsonArray examples;
+            for (const auto& ex : cmd.examples) {
+                examples.append(ex);
+            }
+            post["x-stdiolink-examples"] = examples;
+        }
+
         pathItem["post"] = post;
         paths[path] = pathItem;
     }
@@ -450,6 +603,16 @@ QString DocGenerator::toTypeScript(const meta::DriverMeta& meta) {
         const QString base = toPascalCase(cmd.name);
         const QString paramsName = base + "Params";
         const QString resultName = base + "Result";
+        const QJsonObject ex = pickTsExample(cmd);
+        if (!ex.isEmpty()) {
+            ts += "    /**\n";
+            const QString desc = ex.value("description").toString();
+            if (!desc.isEmpty()) {
+                ts += "     * " + desc + "\n";
+            }
+            ts += "     * @example " + formatExampleCli(cmd.name, ex) + "\n";
+            ts += "     */\n";
+        }
         ts += "    " + tsMemberName(cmd.name) + "(params?: " + paramsName + "): Promise<" + resultName + ">;\n";
     }
     ts += "    readonly $driver: Driver;\n";
@@ -708,6 +871,36 @@ QString DocGenerator::toHtml(const meta::DriverMeta& meta) {
                 QString type = meta::fieldTypeToString(cmd.returns.type);
                 html += "          <p>Type: <span class=\"type-badge " + type.toLower() + "\">" +
                         type + "</span></p>\n";
+            }
+
+            if (!cmd.examples.isEmpty()) {
+                html += "          <h4>Examples</h4>\n";
+                for (int i = 0; i < cmd.examples.size(); ++i) {
+                    const QJsonObject ex = cmd.examples[i];
+                    const QString desc =
+                        ex.value("description").toString(QString("Example %1").arg(i + 1));
+                    const QString mode = ex.value("mode").toString();
+                    const QString cli = formatExampleCli(cmd.name, ex);
+                    const QString stdinLine = formatExampleStdinLine(cmd.name, ex);
+                    const QString paramsJson = QString::fromUtf8(
+                        QJsonDocument(ex.value("params").toObject()).toJson(QJsonDocument::Indented));
+                    html += "          <div class=\"example-item\">\n";
+                    html += "            <p><strong>" + escapeHtml(desc) + "</strong></p>\n";
+                    if (!mode.isEmpty()) {
+                        html += "            <p>Mode: <code>" + escapeHtml(mode) + "</code></p>\n";
+                    }
+                    html += "            <p>CLI: <code>" + escapeHtml(cli) + "</code></p>\n";
+                    if (mode == "stdio") {
+                        html += "            <p>Stdin: <code>" + escapeHtml(stdinLine) + "</code></p>\n";
+                    }
+                    html += "            <pre>" + escapeHtml(paramsJson) + "</pre>\n";
+                    if (ex.contains("expectedOutput")) {
+                        const QString expected = jsonValueToIndented(ex.value("expectedOutput"));
+                        html += "            <p>Expected Output:</p>\n";
+                        html += "            <pre>" + escapeHtml(expected) + "</pre>\n";
+                    }
+                    html += "          </div>\n";
+                }
             }
 
             html += "        </div>\n"; // End card-body

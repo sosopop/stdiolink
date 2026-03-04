@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "modbus_types.h"
 
@@ -456,7 +457,13 @@ void ModbusTcpServerHandler::buildMeta() {
                 .defaultValue(502).range(1, 65535)
                 .description("监听端口"))
             .param(FieldBuilder("units", FieldType::Array)
-                .required().description("从站 Unit 数组，每项 {id, size?}"))
+                .required()
+                .description("从站 Unit 数组，每项 {id, size?}")
+                .items(FieldBuilder("unit", FieldType::Object)
+                    .addField(FieldBuilder("id", FieldType::Int)
+                        .required().range(1, 247).description("从站地址"))
+                    .addField(FieldBuilder("size", FieldType::Int)
+                        .defaultValue(10000).range(1, 65536).description("数据区大小"))))
             .param(FieldBuilder("event_mode", FieldType::Enum)
                 .defaultValue("write")
                 .enumValues(QStringList{"write", "all", "read", "none"})
@@ -584,4 +591,5 @@ void ModbusTcpServerHandler::buildMeta() {
                 .defaultValue("big_endian").enumValues(byteOrderEnum())
                 .description("字节序")))
         .build();
+    stdiolink::meta::ensureCommandExamples(m_meta);
 }

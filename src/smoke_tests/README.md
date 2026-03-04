@@ -19,6 +19,7 @@ From repository root:
 
 ```bash
 python src/smoke_tests/run_smoke.py --plan m94_server_run_oneshot
+python src/smoke_tests/run_smoke.py --plan m95_driver_examples
 ```
 
 Run a single case:

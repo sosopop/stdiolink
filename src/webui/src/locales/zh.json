@@ -306,7 +306,9 @@
             "select_command": "选择命令",
             "select_placeholder": "选择命令",
             "execute": "执行",
-            "no_params": "此命令无参数"
+            "no_params": "此命令无参数",
+            "examples_title": "示例",
+            "apply_example": "应用示例"
         },
         "toolbar": {
             "clear": "清除",

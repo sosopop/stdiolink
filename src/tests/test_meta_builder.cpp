@@ -163,6 +163,67 @@ TEST_F(CommandBuilderTest, CommandWithUIHints) {
     EXPECT_EQ(cmd.ui.order, 5);
 }
 
+TEST_F(CommandBuilderTest, CommandExampleSingle) {
+    auto cmd = CommandBuilder("scan")
+                   .example("读取 5 个线圈",
+                            "stdio",
+                            QJsonObject{{"host", "127.0.0.1"}, {"port", 502}, {"count", 5}})
+                   .build();
+
+    ASSERT_EQ(cmd.examples.size(), 1);
+    const QJsonObject ex = cmd.examples[0];
+    EXPECT_EQ(ex["description"].toString(), "读取 5 个线圈");
+    EXPECT_EQ(ex["mode"].toString(), "stdio");
+    EXPECT_TRUE(ex["params"].isObject());
+}
+
+TEST_F(CommandBuilderTest, CommandExampleMultipleOrder) {
+    auto cmd = CommandBuilder("scan")
+                   .example("stdio 示例", "stdio", QJsonObject{{"count", 5}})
+                   .example("console 示例", "console", QJsonObject{{"count", 5}})
+                   .build();
+
+    ASSERT_EQ(cmd.examples.size(), 2);
+    EXPECT_EQ(cmd.examples[0]["mode"].toString(), "stdio");
+    EXPECT_EQ(cmd.examples[1]["mode"].toString(), "console");
+}
+
+TEST_F(CommandBuilderTest, CommandExampleExpectedOutputOptional) {
+    auto cmd = CommandBuilder("ping")
+                   .example("无输出断言", "stdio", QJsonObject{})
+                   .example("有输出断言", "stdio", QJsonObject{}, QJsonObject{{"ok", true}})
+                   .build();
+
+    ASSERT_EQ(cmd.examples.size(), 2);
+    EXPECT_FALSE(cmd.examples[0].contains("expectedOutput"));
+    EXPECT_TRUE(cmd.examples[1].contains("expectedOutput"));
+    EXPECT_TRUE(cmd.examples[1]["expectedOutput"].toObject()["ok"].toBool());
+}
+
+TEST_F(CommandBuilderTest, CommandExampleChainingCompat) {
+    auto cmd = CommandBuilder("read")
+                   .param(FieldBuilder("address", FieldType::Int).required())
+                   .returns(FieldType::Object, "读返回")
+                   .example("读取示例", "stdio", QJsonObject{{"address", 1}})
+                   .build();
+
+    ASSERT_EQ(cmd.params.size(), 1);
+    EXPECT_EQ(cmd.returns.type, FieldType::Object);
+    ASSERT_EQ(cmd.examples.size(), 1);
+    EXPECT_EQ(cmd.examples[0]["params"].toObject()["address"].toInt(), 1);
+}
+
+TEST_F(CommandBuilderTest, CommandExampleDefaultModeProfileCanBeOmitted) {
+    auto cmd = CommandBuilder("status")
+                   .example("console 最小参数", "console", QJsonObject{{"host", "127.0.0.1"}})
+                   .build();
+
+    ASSERT_EQ(cmd.examples.size(), 1);
+    const QJsonObject params = cmd.examples[0]["params"].toObject();
+    EXPECT_FALSE(params.contains("mode"));
+    EXPECT_FALSE(params.contains("profile"));
+}
+
 // DriverMetaBuilder 测试
 class DriverMetaBuilderTest : public ::testing::Test {};
 

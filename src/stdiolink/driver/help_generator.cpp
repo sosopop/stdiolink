@@ -1,5 +1,7 @@
 #include "help_generator.h"
 #include "stdiolink/console/system_options.h"
+#include <QJsonDocument>
+#include <QRegularExpression>
 #include <QStringList>
 
 namespace stdiolink {
@@ -40,7 +42,7 @@ QString HelpGenerator::generateHelp(const meta::DriverMeta& meta) {
             result += "  " + name + desc.left(50) + "\n";
         }
         result += "\n";
-        result += "Use '--cmd=<command> --help' for command details.\n";
+        result += "Use '--cmd=<command> --help' for command details and examples.\n";
     }
 
     return result;
@@ -77,6 +79,24 @@ QString HelpGenerator::generateCommandHelp(const meta::CommandMeta& cmd) {
                 result += " - " + field.description;
             }
             result += "\n";
+        }
+    }
+
+    if (!cmd.examples.isEmpty()) {
+        result += "\nExamples:\n";
+        for (int i = 0; i < cmd.examples.size(); ++i) {
+            const QJsonObject ex = cmd.examples[i];
+            const QString desc =
+                ex.value("description").toString(QString("Example %1").arg(i + 1));
+            result += "  " + QString::number(i + 1) + ". " + desc + "\n";
+            const QString mode = ex.value("mode").toString();
+            if (!mode.isEmpty()) {
+                result += "     mode: " + mode + "\n";
+            }
+            result += "     cli : " + formatExampleCli(cmd, ex) + "\n";
+            if (mode == "stdio") {
+                result += "     stdin: " + formatExampleStdinLine(cmd, ex) + "\n";
+            }
         }
     }
 
@@ -161,6 +181,88 @@ QString HelpGenerator::formatConstraints(const meta::Constraints& c) {
 
 QString HelpGenerator::fieldTypeToString(meta::FieldType type) {
     return meta::fieldTypeToString(type);
+}
+
+QString HelpGenerator::formatCliValue(const QJsonValue& value) {
+    if (value.isNull() || value.isUndefined()) {
+        return QString();
+    }
+    if (value.isBool()) {
+        return value.toBool() ? "true" : "false";
+    }
+    if (value.isDouble()) {
+        return QString::number(value.toDouble(), 'g', 15);
+    }
+    if (value.isString()) {
+        const QString str = value.toString();
+        if (str.isEmpty()) {
+            return QString();
+        }
+        if (str.contains(QRegularExpression(R"([\s"'\\|&;<>()$`!])"))) {
+            QString escaped = str;
+            escaped.replace("\\", "\\\\");
+            escaped.replace("\"", "\\\"");
+            return "\"" + escaped + "\"";
+        }
+        return str;
+    }
+    QString json;
+    if (value.isObject()) {
+        json = QString::fromUtf8(QJsonDocument(value.toObject()).toJson(QJsonDocument::Compact));
+    } else if (value.isArray()) {
+        json = QString::fromUtf8(QJsonDocument(value.toArray()).toJson(QJsonDocument::Compact));
+    }
+    if (json.isEmpty()) {
+        return QString();
+    }
+    QString escaped = json;
+    escaped.replace("\\", "\\\\");
+    escaped.replace("\"", "\\\"");
+    return "\"" + escaped + "\"";
+}
+
+QString HelpGenerator::formatExampleCli(const meta::CommandMeta& cmd, const QJsonObject& ex) {
+    const QString mode = ex.value("mode").toString();
+    const QJsonObject params = ex.value("params").toObject();
+
+    if (mode == "stdio") {
+        return "echo '<jsonl>' | <program> --mode=stdio";
+    }
+
+    QStringList parts;
+    parts << "<program>" << ("--cmd=" + cmd.name);
+
+    if (!mode.isEmpty() && mode != "console") {
+        parts << ("--mode=" + mode);
+    }
+
+    const QString profile = params.value("profile").toString();
+    if (!profile.isEmpty() && profile != "oneshot") {
+        parts << ("--profile=" + profile);
+    }
+
+    QStringList keys = params.keys();
+    keys.sort(Qt::CaseSensitive);
+    for (const QString& key : keys) {
+        if (key == "mode" || key == "profile") {
+            continue;
+        }
+        const QString val = formatCliValue(params.value(key));
+        if (val.isEmpty()) {
+            continue;
+        }
+        parts << ("--" + key + "=" + val);
+    }
+    return parts.join(' ');
+}
+
+QString HelpGenerator::formatExampleStdinLine(const meta::CommandMeta& cmd, const QJsonObject& ex) {
+    const QJsonObject params = ex.value("params").toObject();
+    const QJsonObject req{
+        {"cmd", cmd.name},
+        {"data", params},
+    };
+    return QString::fromUtf8(QJsonDocument(req).toJson(QJsonDocument::Compact));
 }
 
 QString HelpGenerator::generateSystemOptions() {

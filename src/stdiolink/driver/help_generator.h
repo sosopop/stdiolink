@@ -40,6 +40,9 @@ public:
 private:
     static QString formatConstraints(const meta::Constraints& c);
     static QString fieldTypeToString(meta::FieldType type);
+    static QString formatCliValue(const QJsonValue& value);
+    static QString formatExampleCli(const meta::CommandMeta& cmd, const QJsonObject& ex);
+    static QString formatExampleStdinLine(const meta::CommandMeta& cmd, const QJsonObject& ex);
 };
 
 } // namespace stdiolink

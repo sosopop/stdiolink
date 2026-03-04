@@ -79,6 +79,12 @@ public:
     // 事件
     CommandBuilder& event(const QString& name, const QString& desc = {});
 
+    // 示例
+    CommandBuilder& example(const QString& description,
+                            const QString& mode,
+                            const QJsonObject& params,
+                            const QJsonValue& expectedOutput = QJsonValue());
+
     // UI
     CommandBuilder& group(const QString& g);
     CommandBuilder& order(int o);

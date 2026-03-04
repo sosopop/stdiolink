@@ -14,3 +14,18 @@ set_tests_properties(
         LABELS "smoke;m94"
         TIMEOUT 240
 )
+
+add_test(
+    NAME smoke_m95_driver_examples
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m95_driver_examples
+)
+
+set_tests_properties(
+    smoke_m95_driver_examples
+    PROPERTIES
+        LABELS "smoke;m95"
+        TIMEOUT 480
+)

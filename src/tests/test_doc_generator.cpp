@@ -41,6 +41,17 @@ meta::DriverMeta createTestMeta() {
     retField.type = meta::FieldType::Array;
     retField.description = "List of devices";
     cmd.returns.fields.append(retField);
+    cmd.examples.append(QJsonObject{
+        {"description", "扫描示例"},
+        {"mode", "console"},
+        {"params", QJsonObject{{"timeout", 500}}},
+        {"expectedOutput", QJsonObject{{"devices", QJsonArray{}}}}
+    });
+    cmd.examples.append(QJsonObject{
+        {"description", "stdio 扫描示例"},
+        {"mode", "stdio"},
+        {"params", QJsonObject{{"timeout", 500}}}
+    });
 
     meta.commands.append(cmd);
 
@@ -83,6 +94,14 @@ TEST(DocGenerator, MarkdownParameters) {
     QString md = DocGenerator::toMarkdown(meta);
     EXPECT_TRUE(md.contains("#### Parameters"));
     EXPECT_TRUE(md.contains("| timeout |"));
+}
+
+TEST(DocGenerator, MarkdownExamplesSection) {
+    auto meta = createTestMeta();
+    QString md = DocGenerator::toMarkdown(meta);
+    EXPECT_TRUE(md.contains("#### Examples"));
+    EXPECT_TRUE(md.contains("CLI: `<program> --cmd=scan --timeout=500`"));
+    EXPECT_TRUE(md.contains("Stdin: `{\"cmd\":\"scan\",\"data\":{\"timeout\":500}}`"));
 }
 
 TEST(DocGenerator, MarkdownConstraints) {
@@ -146,6 +165,15 @@ TEST(DocGenerator, OpenAPISchema) {
     EXPECT_TRUE(props.contains("timeout"));
 }
 
+TEST(DocGenerator, OpenAPIExamplesExtension) {
+    auto meta = createTestMeta();
+    QJsonObject api = DocGenerator::toOpenAPI(meta);
+    auto post =
+        api["paths"].toObject()["/scan"].toObject()["post"].toObject();
+    EXPECT_TRUE(post.contains("x-stdiolink-examples"));
+    EXPECT_EQ(post["x-stdiolink-examples"].toArray().size(), 2);
+}
+
 // ============================================
 // HTML 生成测试
 // ============================================
@@ -181,6 +209,13 @@ TEST(DocGenerator, HtmlTable) {
     QString html = DocGenerator::toHtml(meta);
     EXPECT_TRUE(html.contains("<table>"));
     EXPECT_TRUE(html.contains("<th>Name</th>"));
+}
+
+TEST(DocGenerator, HtmlExamplesBlock) {
+    auto meta = createTestMeta();
+    QString html = DocGenerator::toHtml(meta);
+    EXPECT_TRUE(html.contains("<h4>Examples</h4>"));
+    EXPECT_TRUE(html.contains("scan --timeout=500"));
 }
 
 // ============================================
@@ -269,6 +304,12 @@ TEST(DocGenerator, TypeScriptCommandInterfaces) {
     EXPECT_TRUE(ts.contains("timeout: number;"));
     EXPECT_TRUE(ts.contains("export interface ScanResult"));
     EXPECT_TRUE(ts.contains("devices?: any[];"));
+}
+
+TEST(DocGenerator, TypeScriptMethodJSDocExample) {
+    auto meta = createTestMeta();
+    QString ts = DocGenerator::toTypeScript(meta);
+    EXPECT_TRUE(ts.contains("@example <program> --cmd=scan --timeout=500"));
 }
 
 TEST(DocGenerator, TypeScriptComplexTypeMapping) {

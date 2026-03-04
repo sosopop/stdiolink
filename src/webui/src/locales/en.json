@@ -306,7 +306,9 @@
             "select_command": "Select Command",
             "select_placeholder": "Select command",
             "execute": "Execute",
-            "no_params": "No parameters for this command"
+            "no_params": "No parameters for this command",
+            "examples_title": "Examples",
+            "apply_example": "Apply Example"
         },
         "toolbar": {
             "clear": "Clear",

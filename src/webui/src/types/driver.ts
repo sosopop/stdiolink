@@ -35,7 +35,7 @@ export interface DriverMeta {
   commands: CommandMeta[];
   types?: Record<string, FieldMeta>;
   errors?: Record<string, unknown>[];
-  examples?: Record<string, unknown>[];
+  examples?: CommandExampleMeta[];
 }
 
 export interface ConfigSchema {
@@ -50,6 +50,13 @@ export interface ConfigApply {
   fileName?: string;
 }
 
+export interface CommandExampleMeta {
+  description: string;
+  mode: 'stdio' | 'console' | string;
+  params: Record<string, unknown>;
+  expectedOutput?: unknown;
+}
+
 export interface CommandMeta {
   name: string;
   description?: string;
@@ -59,7 +66,7 @@ export interface CommandMeta {
   returns: ReturnMeta;
   events?: EventMeta[];
   errors?: Record<string, unknown>[];
-  examples?: Record<string, unknown>[];
+  examples?: CommandExampleMeta[];
   ui?: UIHint;
 }
 

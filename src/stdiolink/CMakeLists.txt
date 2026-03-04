@@ -13,6 +13,7 @@ set(DRIVER_SOURCES
     driver/stdio_responder.cpp
     driver/driver_core.cpp
     driver/meta_builder.cpp
+    driver/example_auto_fill.cpp
     driver/help_generator.cpp
     driver/meta_exporter.cpp
     driver/log_redirector.cpp

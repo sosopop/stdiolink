@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "modbus_types.h"
 
@@ -459,4 +460,5 @@ void ModbusRtuSerialHandler::buildMeta() {
             .param(FieldBuilder("values", FieldType::Array)
                 .required().description("寄存器值数组")))
         .build();
+    stdiolink::meta::ensureCommandExamples(m_meta);
 }

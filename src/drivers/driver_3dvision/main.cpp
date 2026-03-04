@@ -11,6 +11,7 @@
 #include <QUrl>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 
@@ -580,6 +581,7 @@ void Vision3DHandler::buildMeta()
             .returns(FieldType::Object, "断开状态"))
 
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 void Vision3DHandler::handle(const QString& cmd, const QJsonValue& data,

@@ -105,6 +105,14 @@ TEST(ConsoleArgs, ParseHelp) {
     EXPECT_TRUE(args.showHelp);
 }
 
+TEST(ConsoleArgs, ParseCommandHelp) {
+    const char* argv[] = {"prog", "--cmd=scan", "--help"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
+    EXPECT_TRUE(args.showHelp);
+    EXPECT_EQ(args.cmd, "scan");
+}
+
 TEST(ConsoleArgs, ParseVersion) {
     const char* argv[] = {"prog", "--version"};
     ConsoleArgs args;

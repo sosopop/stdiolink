@@ -188,6 +188,21 @@ CommandBuilder& CommandBuilder::event(const QString& name, const QString& desc) 
     return *this;
 }
 
+CommandBuilder& CommandBuilder::example(const QString& description,
+                                        const QString& mode,
+                                        const QJsonObject& params,
+                                        const QJsonValue& expectedOutput) {
+    QJsonObject ex;
+    ex["description"] = description;
+    ex["mode"] = mode;
+    ex["params"] = params;
+    if (!expectedOutput.isNull() && !expectedOutput.isUndefined()) {
+        ex["expectedOutput"] = expectedOutput;
+    }
+    m_cmd.examples.append(ex);
+    return *this;
+}
+
 CommandBuilder& CommandBuilder::group(const QString& g) {
     m_cmd.ui.group = g;
     return *this;
