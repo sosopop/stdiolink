@@ -14,6 +14,7 @@
 #include <QRandomGenerator>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 
@@ -110,6 +111,7 @@ void DeviceSimulatorHandler::buildMeta()
                 .range(1, 20))
             .event("device", "发现设备"))
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 int main(int argc, char* argv[])

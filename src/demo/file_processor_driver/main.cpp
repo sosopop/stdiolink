@@ -17,6 +17,7 @@
 #include <QTextStream>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 
@@ -98,6 +99,7 @@ void FileProcessorHandler::buildMeta()
             .description("获取文件信息")
             .param(FieldBuilder("path", FieldType::String).required()))
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 void FileProcessorHandler::handleListFiles(const QJsonObject& params,

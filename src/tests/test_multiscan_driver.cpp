@@ -107,3 +107,21 @@ TEST_F(MultiscanDriverTest, M92_CPP_06_DriverMeta_ScanTargets_ItemsFieldsCorrect
     EXPECT_EQ(targetsParam.items->fields[2].name, QString("timeout_ms"));
     EXPECT_EQ(targetsParam.items->fields[2].type, FieldType::Int);
 }
+
+TEST_F(MultiscanDriverTest, M95_CPP_01_DriverMeta_ExamplesContainDescription) {
+    const auto& meta = driver.driverMeta();
+    ASSERT_FALSE(meta.commands.isEmpty());
+
+    for (const auto& cmd : meta.commands) {
+        bool hasStdioExample = false;
+        for (const auto& ex : cmd.examples) {
+            const QString mode = ex.value("mode").toString();
+            const QString desc = ex.value("description").toString().trimmed();
+            if (mode == "stdio") {
+                hasStdioExample = true;
+                EXPECT_FALSE(desc.isEmpty());
+            }
+        }
+        EXPECT_TRUE(hasStdioExample);
+    }
+}

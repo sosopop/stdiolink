@@ -14,6 +14,7 @@
 #include <QThread>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 
@@ -90,6 +91,7 @@ void HeartbeatHandler::buildMeta()
             .description("返回 driver 运行状态")
             .returns(FieldType::Object, "{requestsHandled, uptimeMs}"))
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 void HeartbeatHandler::handleMonitor(const QJsonObject& params, IResponder& resp)

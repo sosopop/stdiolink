@@ -14,6 +14,7 @@
 #include <QJsonObject>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 
@@ -120,6 +121,7 @@ void KvStoreHandler::buildMeta()
             .description("清空所有键值")
             .returns(FieldType::Object, "{cleared}"))
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 void KvStoreHandler::handleSet(const QJsonObject& params, IResponder& resp)

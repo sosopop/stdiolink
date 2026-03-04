@@ -3,6 +3,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include "stdiolink/driver/example_auto_fill.h"
+
 using stdiolink::IResponder;
 using namespace stdiolink::meta;
 
@@ -206,4 +208,5 @@ void MultiscanDriver::buildMeta() {
     configureChannels.params = {channelsParam};
 
     m_meta.commands = {scanTargets, configureChannels};
+    ensureCommandExamples(m_meta);
 }

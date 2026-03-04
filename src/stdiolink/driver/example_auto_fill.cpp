@@ -93,9 +93,29 @@ QJsonObject buildExampleParams(const QVector<FieldMeta>& params) {
     return obj;
 }
 
+QString exampleBaseDescription(const CommandMeta& cmd) {
+    const QString description = cmd.description.trimmed();
+    if (!description.isEmpty()) {
+        return description;
+    }
+    const QString title = cmd.title.trimmed();
+    if (!title.isEmpty()) {
+        return title;
+    }
+    return cmd.name.trimmed();
+}
+
+QString buildExampleDescription(const CommandMeta& cmd, const QString& mode) {
+    const QString base = exampleBaseDescription(cmd);
+    if (mode.trimmed().isEmpty()) {
+        return base + " 示例";
+    }
+    return QString("%1 示例（%2）").arg(base, mode);
+}
+
 QJsonObject buildExample(const CommandMeta& cmd, const QString& mode) {
     return QJsonObject{
-        {"description", QString("自动示例（%1）").arg(mode)},
+        {"description", buildExampleDescription(cmd, mode)},
         {"mode", mode},
         {"params", buildExampleParams(cmd.params)},
     };
@@ -114,6 +134,13 @@ bool hasModeExample(const CommandMeta& cmd, const QString& mode) {
 
 void ensureCommandExamples(DriverMeta& meta, bool addConsoleExamples) {
     for (auto& cmd : meta.commands) {
+        for (auto& exRef : cmd.examples) {
+            const QString desc = exRef.value("description").toString().trimmed();
+            if (desc.isEmpty()) {
+                exRef["description"] =
+                    buildExampleDescription(cmd, exRef.value("mode").toString());
+            }
+        }
         if (!hasModeExample(cmd, "stdio")) {
             cmd.examples.append(buildExample(cmd, "stdio"));
         }
@@ -124,4 +151,3 @@ void ensureCommandExamples(DriverMeta& meta, bool addConsoleExamples) {
 }
 
 } // namespace stdiolink::meta
-

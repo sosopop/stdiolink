@@ -13,6 +13,7 @@ set(TEST_SOURCES
     test_meta_types.cpp
     test_meta_describe.cpp
     test_meta_builder.cpp
+    test_example_auto_fill.cpp
     test_meta_validator.cpp
     test_meta_host.cpp
     test_doc_generator.cpp

@@ -15,6 +15,7 @@
 #include <cmath>
 
 #include "stdiolink/driver/driver_core.h"
+#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 
@@ -124,6 +125,7 @@ void CalculatorHandler::buildMeta()
                 .maxItems(100)
                 .items(FieldBuilder("n", FieldType::Double))))
         .build();
+    ensureCommandExamples(m_meta);
 }
 
 void CalculatorHandler::handleAdd(const QJsonObject& params, IResponder& resp)
