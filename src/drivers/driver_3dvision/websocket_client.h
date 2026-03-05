@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QObject>
-#include <QWebSocket>
-#include <QTimer>
-#include <QSet>
 #include <QJsonObject>
+#include <QObject>
+#include <QSet>
+#include <QTimer>
+#include <QWebSocket>
 
 class WebSocketClient : public QObject {
     Q_OBJECT
@@ -19,6 +19,7 @@ public:
     void subscribe(const QString& topic);
     void unsubscribe(const QString& topic);
     QSet<QString> subscriptions() const { return m_subscriptions; }
+    QString currentUrl() const { return m_currentUrl; }
 
     void sendPing();
 
@@ -41,5 +42,6 @@ private:
     QWebSocket* m_socket;
     QTimer* m_heartbeatTimer;
     QSet<QString> m_subscriptions;
+    QString m_currentUrl;
     bool m_connected = false;
 };

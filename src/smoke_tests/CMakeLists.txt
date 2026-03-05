@@ -29,3 +29,18 @@ set_tests_properties(
         LABELS "smoke;m95"
         TIMEOUT 480
 )
+
+add_test(
+    NAME smoke_m96_3dvision_ws
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m96_3dvision_ws
+)
+
+set_tests_properties(
+    smoke_m96_3dvision_ws
+    PROPERTIES
+        LABELS "smoke;m96"
+        TIMEOUT 120
+)

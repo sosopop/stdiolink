@@ -11,10 +11,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PLAN_SCRIPTS = {
     "m94_server_run_oneshot": SCRIPT_DIR / "m94_server_run_oneshot_smoke.py",
     "m95_driver_examples": SCRIPT_DIR / "m95_driver_examples.py",
+    "m96_3dvision_ws": SCRIPT_DIR / "m96_3dvision_ws.py",
 }
 LEGACY_MILESTONE_ALIASES = {
     "94": "m94_server_run_oneshot",
     "95": "m95_driver_examples",
+    "96": "m96_3dvision_ws",
 }
 
 

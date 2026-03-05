@@ -72,6 +72,7 @@ set(TEST_SOURCES
     test_plc_crane.cpp
     test_driver_resolve.cpp
     test_multiscan_driver.cpp
+    test_3dvision_websocket.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -142,6 +143,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/demo/multiscan_driver/multiscan_driver.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3dvision/websocket_client.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
@@ -153,7 +155,7 @@ target_include_directories(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers
 )
 
-find_package(Qt6 COMPONENTS SerialPort REQUIRED)
+find_package(Qt6 COMPONENTS SerialPort Test REQUIRED)
 
 target_link_libraries(stdiolink_tests PRIVATE
     stdiolink
@@ -164,6 +166,7 @@ target_link_libraries(stdiolink_tests PRIVATE
     Qt6::WebSockets
     Qt6::Concurrent
     Qt6::SerialPort
+    Qt6::Test
 )
 
 if(TARGET qjs)

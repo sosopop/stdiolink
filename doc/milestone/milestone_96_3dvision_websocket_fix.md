@@ -746,7 +746,7 @@ private:
 | `src/smoke_tests/CMakeLists.txt` | CTest 注册 `smoke_m96_3dvision_ws` |
 
 ### 5.3 测试文件
-- `src/tests/test_3dvision_websocket.cpp` — 15 条用例（白盒 T01–T10 + 黑盒 H01–H05）
+- `src/tests/test_3dvision_websocket.cpp` — 15 条用例（白盒 T02-T11 共 9 条 + 黑盒 H01/H02/H03a/H03b/H04/H05 共 6 条）
 
 ---
 
