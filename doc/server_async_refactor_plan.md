@@ -471,7 +471,7 @@ startInstance()
 1. **启动/停止验证**: 启动实例，确认 HTTP 立即返回 `status:"starting"`；通过 SSE 确认收到 `instance.started` 事件（含 PID）或 `instance.startFailed` 事件。
 2. **DriverLab 验证**: WebUI 连接 driver，确认 `driver.started` 消息通过 WebSocket 正确送达。
 3. **Scanner 验证**: 调用 `POST /api/drivers/scan`，同时请求其他 API，确认不被阻塞。
-4. **回归测试**: `build/bin/stdiolink_tests` 全部通过。
+4. **回归测试**: `build/runtime_debug/bin/stdiolink_tests` 全部通过。
 5. **并发验证**: 同时发起多个 startInstance + SSE 连接 + 普通查询，确认服务器无卡顿。
 6. **FailedToStart 回归**: 构造启动失败场景（如不存在的可执行文件），验证：仅收到一次 `instance.startFailed` 事件；收到一次 `instance.finished`（exitCode=-1, CrashExit）；ScheduleEngine daemon 重启逻辑正常触发。
 7. **前端兼容性**: 确认 WebUI 对 `exitCode=-1` 的展示（实例列表、日志面板）和统计逻辑（失败计数、重启次数）符合预期，无异常渲染或 NaN 等问题。

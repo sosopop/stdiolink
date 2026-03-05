@@ -21,7 +21,7 @@
 
 - `build.bat` or `build.bat Release`: configure/build with CMake + Ninja (Windows).
 - `./build.sh` or `./build.sh Release`: configure/build with CMake + Ninja (macOS/Linux).
-- `./build/bin/stdiolink_tests`: run all tests (Windows binary may be `stdiolink_tests.exe`).
+- `./build/runtime_debug/bin/stdiolink_tests`: run all tests (Windows binary may be `stdiolink_tests.exe`).
 - `python ./tools/run-clang-tidy.py -p build -j 8 -quiet -config-file .clang-tidy`: static analysis.
 - `./tools/publish_release.sh --build-dir build --output-dir release`: package compiled artifacts and demo assets into a release directory.
 

@@ -18,8 +18,8 @@
 
 ```bash
 # 运行全部测试
-./build/bin/stdiolink_tests.exe
+./build/runtime_debug/bin/stdiolink_tests.exe
 
 # 运行指定测试
-./build/bin/stdiolink_tests.exe --gtest_filter=TestName.*
+./build/runtime_debug/bin/stdiolink_tests.exe --gtest_filter=TestName.*
 ```

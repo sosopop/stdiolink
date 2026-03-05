@@ -83,7 +83,7 @@ doc/                   # 设计文档、API 参考与里程碑
 ### 运行测试
 ```powershell
 # 运行 C++ 单元测试
-.\build\bin\stdiolink_tests.exe
+.\build\runtime_debug\bin\stdiolink_tests.exe
 
 # 运行 CTest（推荐统一入口）
 ctest --test-dir build --output-on-failure

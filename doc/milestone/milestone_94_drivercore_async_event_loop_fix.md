@@ -666,7 +666,7 @@ TEST_F(DriverCoreAsyncTest, R08_OneShot_TrailingCommandIgnored) {
 运行失败测试命令：
 
 ```powershell
-.\build\bin\stdiolink_tests.exe --gtest_filter="DriverCoreAsyncTest.*"
+.\build\runtime_debug\bin\stdiolink_tests.exe --gtest_filter="DriverCoreAsyncTest.*"
 ```
 
 ---
@@ -758,7 +758,7 @@ set(TEST_SOURCES
 
 ```powershell
 .\build.bat
-.\build\bin\stdiolink_tests.exe
+.\build\runtime_debug\bin\stdiolink_tests.exe
 ```
 
 确认 `R01`–`R08` 全部通过（Green），现有测试套件无回归。

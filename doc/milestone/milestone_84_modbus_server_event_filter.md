@@ -625,7 +625,7 @@ TEST_F(ModbusRtuSerialServerHandlerTest, T14_StatusContainsEventMode) {
 
 - [ ] 构建通过：`build.bat` 成功编译受影响的 6 个驱动目标
 - [ ] Meta 验证：`build/bin/stdio.drv.modbustcp_server.exe --export-meta`、`build/bin/stdio.drv.modbusrtu_server.exe --export-meta`、`build/bin/stdio.drv.modbusrtu_serial_server.exe --export-meta` 输出中 `start_server` 命令均包含 `event_mode` 参数定义
-- [ ] 单元测试通过：`build/bin/stdiolink_tests --gtest_filter="ModbusTcpServerHandler*:ModbusRtuServerHandler*:ModbusRtuSerialServer*"` 全部通过
+- [ ] 单元测试通过：`build/runtime_debug/bin/stdiolink_tests --gtest_filter="ModbusTcpServerHandler*:ModbusRtuServerHandler*:ModbusRtuSerialServer*"` 全部通过
 - [ ] 新增测试用例通过：TCP T22–T25、RTU T21–T24、Serial T11–T14
 - [ ] 既有测试无回归：TCP T01–T21、RTU T01–T20、Serial T01–T10 全部通过
 - [ ] 非法 `event_mode` 值被拒绝（T25, T24, T13）

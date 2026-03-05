@@ -12,6 +12,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QSignalSpy>
 #include <QTcpServer>
 #include <QTimer>
@@ -343,6 +344,15 @@ protected:
         proc->setProgram(m_driverExe);
         if (!extraArgs.isEmpty())
             proc->setArguments(extraArgs);
+        // 关键：黑盒子进程依赖 runtime/bin 下的 Qt/stdiolink 动态库。
+        // 当用户从仓库根目录直接运行 stdiolink_tests 时，默认 PATH 不含 runtime/bin，
+        // 会触发子进程加载失败（Windows 常见 0xC0000135）。
+        const QString binDir = QCoreApplication::applicationDirPath();
+        proc->setWorkingDirectory(binDir);
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        const QString oldPath = env.value("PATH");
+        env.insert("PATH", oldPath.isEmpty() ? binDir : (binDir + QDir::listSeparator() + oldPath));
+        proc->setProcessEnvironment(env);
         proc->start();
         proc->waitForStarted(5000);
         return proc;

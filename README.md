@@ -56,7 +56,7 @@ build.bat
 ./build.sh
 
 # Run tests
-./build/bin/stdiolink_tests
+./build/runtime_debug/bin/stdiolink_tests
 ```
 
 ### Your First Driver (JavaScript)

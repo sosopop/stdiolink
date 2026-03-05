@@ -56,7 +56,7 @@ build.bat
 ./build.sh
 
 # 运行测试
-./build/bin/stdiolink_tests
+./build/runtime_debug/bin/stdiolink_tests
 ```
 
 ### 第一个驱动调用（JavaScript）

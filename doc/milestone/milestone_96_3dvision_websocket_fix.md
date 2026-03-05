@@ -600,7 +600,7 @@ TEST_F(WebSocketClientTest, T10_DisconnectIdempotent) {
 运行命令：
 ```powershell
 .\build.bat
-.\build\bin\stdiolink_tests.exe --gtest_filter="WebSocketClientTest.*:Vision3DHandlerBlackBoxTest.*"
+.\build\runtime_debug\bin\stdiolink_tests.exe --gtest_filter="WebSocketClientTest.*:Vision3DHandlerBlackBoxTest.*"
 ```
 
 ---
@@ -709,7 +709,7 @@ private:
 
 ```powershell
 .\build.bat
-.\build\bin\stdiolink_tests.exe
+.\build\runtime_debug\bin\stdiolink_tests.exe
 ```
 
 确认白盒层 `T01`–`T10` 与黑盒层 `H01`–`H05` 全部通过（Green），现有测试套件无回归。
