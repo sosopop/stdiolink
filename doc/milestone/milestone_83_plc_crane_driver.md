@@ -36,7 +36,7 @@
 
 | 命令 | Modbus 操作 | 地址 | 值映射 |
 |------|-------------|------|--------|
-| `read_status` | FC 0x02 读离散输入 | 9, 10, 13, 14 | cylinder_up/down, valve_open/closed |
+| `read_status` | FC 0x03 读保持寄存器 | 9-14（取 9/10/13/14） | cylinder_up/down, valve_open/closed |
 | `set_mode` | FC 0x06 写单寄存器 | 3 | manual→0, auto→1 |
 | `set_run` | FC 0x06 写单寄存器 | 2 | start→1, stop→0 |
 | `cylinder_control` | FC 0x06 写单寄存器 | 0 | up→1, down→2, stop→0 |
@@ -56,7 +56,7 @@
                                       └──────────────────────────┘
 ```
 
-- Handler 直接调用 `ModbusClient` 的 `readDiscreteInputs()` 和 `writeSingleRegister()` 方法
+- Handler 直接调用 `ModbusClient` 的 `readHoldingRegisters()` 和 `writeSingleRegister()` 方法
 - Handler 内部维护连接缓存，复用 `ModbusClient` 的 TCP 连接
 
 ### 3.3 错误码策略
@@ -141,20 +141,20 @@
         // 分发到具体命令...
     }
     ```
-  - `read_status` 命令：一次读取地址 9-14 并映射为语义字段：
+  - `read_status` 命令：一次读取地址 9-14（6 个保持寄存器）并映射为语义字段：
     ```cpp
     if (cmd == "read_status") {
-        // 一次读取地址 9-14（6 个离散输入），覆盖气缸和阀门状态
-        auto result = client->readDiscreteInputs(9, 6);
+        // 一次读取地址 9-14（6 个保持寄存器），覆盖气缸和阀门状态
+        auto result = client->readHoldingRegisters(9, 6);
         if (!result.success) {
             resp.error(2, QJsonObject{{"message", result.errorMessage}});
             return;
         }
         resp.done(0, QJsonObject{
-            {"cylinder_up", result.coils[0]},     // 地址 9
-            {"cylinder_down", result.coils[1]},   // 地址 10
-            {"valve_open", result.coils[4]},      // 地址 13
-            {"valve_closed", result.coils[5]}});  // 地址 14
+            {"cylinder_up", result.registers[0] != 0},     // 地址 9
+            {"cylinder_down", result.registers[1] != 0},   // 地址 10
+            {"valve_open", result.registers[4] != 0},      // 地址 13
+            {"valve_closed", result.registers[5] != 0}});  // 地址 14
     }
     ```
   - 写命令统一模式（以 `cylinder_control` 为例）：
@@ -453,4 +453,3 @@ TEST_F(PlcCraneHandlerTest, T07_SetRunInvalidAction) {
 - [ ] 全量既有测试无回归
 - [ ] 文档同步完成
 - [ ] 向后兼容确认（不修改任何现有功能代码（构建配置变更除外））
-

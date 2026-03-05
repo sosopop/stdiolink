@@ -227,48 +227,6 @@ std::vector<quint16> readHoldingRegisters(const QString& host, quint16 port, qui
     return out;
 }
 
-std::vector<bool> readDiscreteInputs(const QString& host, quint16 port, quint8 unitId,
-                                     quint16 address, quint16 count, QString& err) {
-    QByteArray pdu;
-    {
-        QDataStream ds(&pdu, QIODevice::WriteOnly);
-        ds.setByteOrder(QDataStream::BigEndian);
-        ds << address << count;
-    }
-
-    quint8 fc = 0;
-    QByteArray data;
-    if (!modbusRequest(host, port, unitId, 0x02, pdu, fc, data, err)) {
-        return {};
-    }
-
-    if (fc != 0x02 || data.isEmpty()) {
-        err = QString("unexpected fc in read discrete response: %1").arg(fc);
-        return {};
-    }
-
-    const int byteCount = static_cast<int>(static_cast<quint8>(data.at(0)));
-    if (data.size() < 1 + byteCount) {
-        err = "invalid read discrete payload";
-        return {};
-    }
-
-    std::vector<bool> bits;
-    bits.reserve(count);
-    const QByteArray payload = data.mid(1, byteCount);
-    for (int i = 0; i < count; ++i) {
-        const int byteIndex = i / 8;
-        const int bitIndex = i % 8;
-        if (byteIndex >= payload.size()) {
-            bits.push_back(false);
-            continue;
-        }
-        const quint8 byte = static_cast<quint8>(payload.at(byteIndex));
-        bits.push_back(((byte >> bitIndex) & 0x01) == 0x01);
-    }
-    return bits;
-}
-
 quint16 allocateLocalPort() {
     QTcpServer server;
     if (!server.listen(QHostAddress::LocalHost, 0)) {
@@ -283,7 +241,6 @@ QJsonObject makeFastRunData() {
         {"listen_address", "127.0.0.1"},
         {"listen_port", static_cast<int>(port)},
         {"unit_id", 1},
-        {"tick_ms", 10},
         {"heartbeat_ms", 100},
         {"cylinder_up_delay", 40},
         {"cylinder_down_delay", 40},
@@ -296,6 +253,15 @@ bool startHandler(SimPlcCraneHandler& handler, const QJsonObject& runData, stdio
     resp.clear();
     handler.handle("run", runData, resp);
     return handler.isRunning();
+}
+
+bool readHoldingBitForTest(SimPlcCraneHandler& handler, quint16 address, bool& value) {
+    quint16 raw = 0;
+    if (!handler.readHoldingRegisterForTest(address, raw)) {
+        return false;
+    }
+    value = raw != 0;
+    return true;
 }
 
 } // namespace
@@ -324,6 +290,55 @@ TEST_F(PlcCraneSimHandlerTest, T01_RunStartsAndEmitsStartedEvent) {
     EXPECT_EQ(countStatus(resp.responses, "error"), 0);
 }
 
+// T01A - heartbeat_ms 默认值为 0（关闭）
+TEST_F(PlcCraneSimHandlerTest, T01A_MetaHeartbeatDefaultIsZero) {
+    SimPlcCraneHandler handler;
+    const auto* runCmd = handler.driverMeta().findCommand("run");
+    ASSERT_NE(runCmd, nullptr);
+
+    bool found = false;
+    for (const auto& param : runCmd->params) {
+        if (param.name != "heartbeat_ms") {
+            continue;
+        }
+        found = true;
+        EXPECT_EQ(param.defaultValue.toInt(), 0);
+        break;
+    }
+    EXPECT_TRUE(found);
+
+    bool hasTickMs = false;
+    for (const auto& param : runCmd->params) {
+        if (param.name == "tick_ms") {
+            hasTickMs = true;
+            break;
+        }
+    }
+    EXPECT_FALSE(hasTickMs);
+}
+
+// T01B - 默认状态为阀门关闭、气缸上到位
+TEST_F(PlcCraneSimHandlerTest, T01B_DefaultStateIsValveClosedAndCylinderUp) {
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
+    stdiolink::MockResponder resp;
+    ASSERT_TRUE(startHandler(handler, runData, resp));
+
+    bool diUp = false;
+    bool diDown = false;
+    bool diOpen = false;
+    bool diClosed = false;
+    ASSERT_TRUE(readHoldingBitForTest(handler, 9, diUp));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 10, diDown));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 13, diOpen));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 14, diClosed));
+
+    EXPECT_TRUE(diUp);
+    EXPECT_FALSE(diDown);
+    EXPECT_FALSE(diOpen);
+    EXPECT_TRUE(diClosed);
+}
+
 // T02 - run 重复调用失败
 TEST_F(PlcCraneSimHandlerTest, T02_RunDuplicateReturnsError3) {
     SimPlcCraneHandler handler;
@@ -350,8 +365,8 @@ TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
     QTest::qWait(120);
     bool diUp = false;
     bool diDown = false;
-    ASSERT_TRUE(handler.readDiscreteInputForTest(9, diUp));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(10, diDown));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 9, diUp));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 10, diDown));
     EXPECT_TRUE(diUp);
     EXPECT_FALSE(diDown);
     quint16 hrUp = 0;
@@ -363,8 +378,8 @@ TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
 
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(0, 2, err)) << err.toStdString();
     QTest::qWait(120);
-    ASSERT_TRUE(handler.readDiscreteInputForTest(9, diUp));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(10, diDown));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 9, diUp));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 10, diDown));
     EXPECT_FALSE(diUp);
     EXPECT_TRUE(diDown);
     ASSERT_TRUE(handler.readHoldingRegisterForTest(9, hrUp));
@@ -376,8 +391,8 @@ TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
     QTest::qWait(10);
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(0, 0, err)) << err.toStdString();
     QTest::qWait(30);
-    ASSERT_TRUE(handler.readDiscreteInputForTest(9, diUp));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(10, diDown));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 9, diUp));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 10, diDown));
     EXPECT_FALSE(diUp);
     EXPECT_FALSE(diDown);
 }
@@ -394,8 +409,8 @@ TEST_F(PlcCraneSimHandlerTest, T04_HoldingRegister1DrivesValveState) {
     QTest::qWait(120);
     bool diOpen = false;
     bool diClosed = false;
-    ASSERT_TRUE(handler.readDiscreteInputForTest(13, diOpen));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(14, diClosed));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 13, diOpen));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 14, diClosed));
     EXPECT_TRUE(diOpen);
     EXPECT_FALSE(diClosed);
     quint16 hrOpen = 0;
@@ -407,8 +422,8 @@ TEST_F(PlcCraneSimHandlerTest, T04_HoldingRegister1DrivesValveState) {
 
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(1, 2, err)) << err.toStdString();
     QTest::qWait(120);
-    ASSERT_TRUE(handler.readDiscreteInputForTest(13, diOpen));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(14, diClosed));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 13, diOpen));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 14, diClosed));
     EXPECT_FALSE(diOpen);
     EXPECT_TRUE(diClosed);
     ASSERT_TRUE(handler.readHoldingRegisterForTest(13, hrOpen));
@@ -433,6 +448,48 @@ TEST_F(PlcCraneSimHandlerTest, T05_HoldingRegister2And3AcceptValidValues) {
     ASSERT_TRUE(handler.readHoldingRegisterForTest(3, modeValue));
     EXPECT_EQ(runValue, 1);
     EXPECT_EQ(modeValue, 1);
+}
+
+// T12 - 自动模式触发组合动作，手动模式恢复独立控制
+TEST_F(PlcCraneSimHandlerTest, T12_AutoModeChainsValveOpenThenCylinderDown) {
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
+    stdiolink::MockResponder resp;
+    ASSERT_TRUE(startHandler(handler, runData, resp));
+
+    QString err;
+    ASSERT_TRUE(handler.writeHoldingRegisterForTest(3, 1, err)) << err.toStdString();
+    QTest::qWait(140);
+
+    bool diUp = false;
+    bool diDown = false;
+    bool diOpen = false;
+    bool diClosed = false;
+    ASSERT_TRUE(readHoldingBitForTest(handler, 9, diUp));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 10, diDown));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 13, diOpen));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 14, diClosed));
+    EXPECT_FALSE(diUp);
+    EXPECT_TRUE(diDown);
+    EXPECT_TRUE(diOpen);
+    EXPECT_FALSE(diClosed);
+
+    quint16 hrCylinder = 0;
+    quint16 hrValve = 0;
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(0, hrCylinder));
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(1, hrValve));
+    EXPECT_EQ(hrCylinder, 2);
+    EXPECT_EQ(hrValve, 1);
+
+    err.clear();
+    ASSERT_TRUE(handler.writeHoldingRegisterForTest(1, 2, err)) << err.toStdString();
+    quint16 valveAfterRejectedWrite = 0;
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(1, valveAfterRejectedWrite));
+    EXPECT_EQ(valveAfterRejectedWrite, 1);
+
+    err.clear();
+    ASSERT_TRUE(handler.writeHoldingRegisterForTest(3, 0, err)) << err.toStdString();
+    ASSERT_TRUE(handler.writeHoldingRegisterForTest(1, 2, err)) << err.toStdString();
 }
 
 // T06 - 非法地址被拒绝
@@ -592,7 +649,6 @@ TEST_F(PlcCraneSimHandlerTest, R01_RunOnlyThenModbusControlPathWorks) {
         "--listen_address=127.0.0.1",
         QString("--listen_port=%1").arg(port),
         "--unit_id=1",
-        "--tick_ms=10",
         "--cylinder_up_delay=40"
     });
     proc.setProcessEnvironment(childProcessEnv());
@@ -631,10 +687,10 @@ TEST_F(PlcCraneSimHandlerTest, R01_RunOnlyThenModbusControlPathWorks) {
     ASSERT_TRUE(writeSingleRegister("127.0.0.1", port, 1, 0, 1, err)) << err.toStdString();
     QTest::qWait(120);
 
-    const auto bits = readDiscreteInputs("127.0.0.1", port, 1, 9, 2, err);
-    ASSERT_EQ(bits.size(), 2U) << err.toStdString();
-    EXPECT_TRUE(bits[0]);
-    EXPECT_FALSE(bits[1]);
+    const auto regs = readHoldingRegisters("127.0.0.1", port, 1, 9, 2, err);
+    ASSERT_EQ(regs.size(), 2U) << err.toStdString();
+    EXPECT_EQ(regs[0], 1);
+    EXPECT_EQ(regs[1], 0);
 
     proc.kill();
     (void)proc.waitForFinished(3000);
@@ -656,10 +712,10 @@ TEST_F(PlcCraneSimHandlerTest, T13_CylinderAndValveCanMoveConcurrently) {
     bool diDown = false;
     bool diOpen = false;
     bool diClosed = false;
-    ASSERT_TRUE(handler.readDiscreteInputForTest(9, diUp));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(10, diDown));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(13, diOpen));
-    ASSERT_TRUE(handler.readDiscreteInputForTest(14, diClosed));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 9, diUp));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 10, diDown));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 13, diOpen));
+    ASSERT_TRUE(readHoldingBitForTest(handler, 14, diClosed));
 
     EXPECT_TRUE(diUp);
     EXPECT_FALSE(diDown);

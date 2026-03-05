@@ -69,7 +69,7 @@ public:
     // Modbus 写 HR 回调入口
     bool writeHoldingRegister(quint16 address, quint16 value, QString& err);
 
-    // Modbus 读寄存器/离散量快照
+    // Modbus 读寄存器快照
     QJsonObject snapshot() const;
 
 private:
@@ -88,10 +88,10 @@ private:
 | HR[1] | holding | 阀门控制 | `0=stop,1=open,2=close` |
 | HR[2] | holding | 运行控制 | `0=stop,1=start` |
 | HR[3] | holding | 模式 | `0=manual,1=auto` |
-| DI[9] | discrete | 气缸上到位 | 只读 |
-| DI[10] | discrete | 气缸下到位 | 只读 |
-| DI[13] | discrete | 阀门开到位 | 只读 |
-| DI[14] | discrete | 阀门关到位 | 只读 |
+| HR[9] | holding | 气缸上到位 | 只读 |
+| HR[10] | holding | 气缸下到位 | 只读 |
+| HR[13] | holding | 阀门开到位 | 只读 |
+| HR[14] | holding | 阀门关到位 | 只读 |
 
 状态机（气缸）流程：
 
@@ -384,7 +384,7 @@ add_subdirectory(driver_plc_crane_sim)
 - 前置条件: 运行中
 - 输入: `writeHoldingRegister(1, 1)`
 - 预期: 阀门状态 `MOVING_OPEN -> OPEN`
-- 断言: 到位后 `DI[13]==true`
+- 断言: 到位后 `HR[13]==1`
 
 **T05 — HR[2]/HR[3] 写入合法值**
 - 前置条件: 运行中
@@ -430,7 +430,7 @@ add_subdirectory(driver_plc_crane_sim)
 
 **R01 — 单命令回归路径**
 - 前置条件: 启动 Service，调用一次 `run`
-- 输入: 通过 ModbusTCP 客户端执行 HR 写入/DI 读取
+- 输入: 通过 ModbusTCP 客户端执行 HR 写入/HR 读取
 - 预期: 无需任何额外 stdio 命令即可完成控制与反馈
 - 断言: 读写链路全部成功
 
@@ -468,7 +468,7 @@ TEST(PlcCraneSimHandler, T09_UnknownCommand404) {
 - 用例清单:
   - `S01`: `--export-meta` 仅包含 `run` 命令 -> 断言命令数量为 1
   - `S02`: 启动并发送 `run` -> 断言收到 `started`，且无 `done`
-  - `S03`: 用 Modbus 客户端写 `HR[0]=1`，读 `DI[9]` -> 断言状态变化生效
+  - `S03`: 用 Modbus 客户端写 `HR[0]=1`，读 `HR[9]` -> 断言状态变化生效
   - `S04`: 非法 `run` 参数（`--listen_port=70000`）-> 断言退出码 `3` 或 `400`
   - `S05`: 端口冲突 -> 断言 `run` 返回 `error(1)`
 - 失败输出规范: 打印 stdout/stderr、退出码、超时点位

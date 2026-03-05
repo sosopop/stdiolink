@@ -20,6 +20,10 @@ SimPlcCraneDevice::SimPlcCraneDevice(const Config& cfg, QObject* parent)
     QObject::connect(&m_valveTimer, &QTimer::timeout, this, [this]() {
         if (m_valveState == ValveState::MovingOpen) {
             m_valveState = ValveState::Open;
+            if (m_hrMode == 1) {
+                QString ignored;
+                (void)stepAutoSequence(ignored);
+            }
             return;
         }
         if (m_valveState == ValveState::MovingClose) {
@@ -31,9 +35,9 @@ SimPlcCraneDevice::SimPlcCraneDevice(const Config& cfg, QObject* parent)
 bool SimPlcCraneDevice::writeHoldingRegister(quint16 address, quint16 value, QString& err) {
     switch (address) {
     case 0:
-        return applyCylinderAction(value, err);
+        return applyCylinderAction(value, err, false);
     case 1:
-        return applyValveAction(value, err);
+        return applyValveAction(value, err, false);
     case 2:
         return applyRunAction(value, err);
     case 3:
@@ -108,9 +112,13 @@ QString SimPlcCraneDevice::valveStateName(ValveState state) {
     return "unknown";
 }
 
-bool SimPlcCraneDevice::applyCylinderAction(quint16 value, QString& err) {
+bool SimPlcCraneDevice::applyCylinderAction(quint16 value, QString& err, bool internalAuto) {
     if (value > 2) {
         err = QString("Invalid cylinder action: %1, expected 0/1/2").arg(value);
+        return false;
+    }
+    if (!internalAuto && m_hrMode == 1) {
+        err = "Manual cylinder action is disabled in auto mode";
         return false;
     }
 
@@ -146,9 +154,13 @@ bool SimPlcCraneDevice::applyCylinderAction(quint16 value, QString& err) {
     return true;
 }
 
-bool SimPlcCraneDevice::applyValveAction(quint16 value, QString& err) {
+bool SimPlcCraneDevice::applyValveAction(quint16 value, QString& err, bool internalAuto) {
     if (value > 2) {
         err = QString("Invalid valve action: %1, expected 0/1/2").arg(value);
+        return false;
+    }
+    if (!internalAuto && m_hrMode == 1) {
+        err = "Manual valve action is disabled in auto mode";
         return false;
     }
 
@@ -199,6 +211,25 @@ bool SimPlcCraneDevice::applyModeAction(quint16 value, QString& err) {
         return false;
     }
     m_hrMode = value;
+    if (m_hrMode == 1) {
+        return stepAutoSequence(err);
+    }
+    return true;
+}
+
+bool SimPlcCraneDevice::stepAutoSequence(QString& err) {
+    if (m_hrMode != 1) {
+        return true;
+    }
+
+    if (m_valveState != ValveState::Open && m_valveState != ValveState::MovingOpen) {
+        return applyValveAction(1, err, true);
+    }
+
+    if (m_cylinderState != CylinderState::AtBottom &&
+        m_cylinderState != CylinderState::MovingDown) {
+        return applyCylinderAction(2, err, true);
+    }
     return true;
 }
 

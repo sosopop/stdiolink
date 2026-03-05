@@ -32,10 +32,11 @@ public:
     static QString valveStateName(ValveState state);
 
 private:
-    bool applyCylinderAction(quint16 value, QString& err);
-    bool applyValveAction(quint16 value, QString& err);
+    bool applyCylinderAction(quint16 value, QString& err, bool internalAuto = false);
+    bool applyValveAction(quint16 value, QString& err, bool internalAuto = false);
     bool applyRunAction(quint16 value, QString& err);
     bool applyModeAction(quint16 value, QString& err);
+    bool stepAutoSequence(QString& err);
 
     bool diCylinderUp() const;
     bool diCylinderDown() const;
@@ -47,7 +48,7 @@ private:
     QTimer m_cylinderTimer;
     QTimer m_valveTimer;
 
-    CylinderState m_cylinderState = CylinderState::AtBottom;
+    CylinderState m_cylinderState = CylinderState::AtTop;
     ValveState m_valveState = ValveState::Closed;
 
     quint16 m_hrCylinder = 0;

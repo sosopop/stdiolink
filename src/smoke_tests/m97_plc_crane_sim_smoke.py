@@ -109,21 +109,20 @@ def write_single_register(host: str, port: int, unit_id: int, address: int, valu
     return fc == 0x06 and data == struct.pack(">HH", address, value)
 
 
-def read_discrete_inputs(host: str, port: int, unit_id: int, address: int, count: int) -> list[bool]:
-    fc, data = modbus_request(host, port, unit_id, 0x02, struct.pack(">HH", address, count))
-    if fc != 0x02 or not data:
+def read_holding_registers(host: str, port: int, unit_id: int, address: int, count: int) -> list[int]:
+    fc, data = modbus_request(host, port, unit_id, 0x03, struct.pack(">HH", address, count))
+    if fc != 0x03 or not data:
         return []
+    expected_bytes = count * 2
     byte_count = data[0]
+    if byte_count != expected_bytes or len(data) < 1 + expected_bytes:
+        return []
     payload = data[1:1 + byte_count]
-    bits: list[bool] = []
+    regs: list[int] = []
     for i in range(count):
-        byte_index = i // 8
-        bit_index = i % 8
-        if byte_index >= len(payload):
-            bits.append(False)
-            continue
-        bits.append(((payload[byte_index] >> bit_index) & 0x01) == 0x01)
-    return bits
+        offset = i * 2
+        regs.append((payload[offset] << 8) | payload[offset + 1])
+    return regs
 
 
 def has_started_event(rows: list[dict]) -> bool:
@@ -202,7 +201,6 @@ def case_s03_modbus_rw_path() -> CaseResult:
             f"--listen_port={port}",
             "--unit_id=1",
             "--cylinder_up_delay=20",
-            "--tick_ms=10",
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -229,9 +227,9 @@ def case_s03_modbus_rw_path() -> CaseResult:
             return CaseResult("S03_modbus_rw", "fail", "write HR[0]=1 failed")
 
         time.sleep(0.15)
-        bits = read_discrete_inputs("127.0.0.1", port, 1, 9, 2)
-        if len(bits) < 2 or bits[0] is not True or bits[1] is not False:
-            return CaseResult("S03_modbus_rw", "fail", f"unexpected DI[9..10] bits: {bits}")
+        regs = read_holding_registers("127.0.0.1", port, 1, 9, 2)
+        if len(regs) < 2 or regs[0] != 1 or regs[1] != 0:
+            return CaseResult("S03_modbus_rw", "fail", f"unexpected HR[9..10] values: {regs}")
 
         return CaseResult("S03_modbus_rw", "pass", "modbus write/read main path works")
     finally:

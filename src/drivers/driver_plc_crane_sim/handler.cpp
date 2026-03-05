@@ -19,11 +19,6 @@ constexpr quint16 kHrCylinderDown = 10;
 constexpr quint16 kHrValveOpen = 13;
 constexpr quint16 kHrValveClosed = 14;
 
-constexpr quint16 kDiCylinderUp = 9;
-constexpr quint16 kDiCylinderDown = 10;
-constexpr quint16 kDiValveOpen = 13;
-constexpr quint16 kDiValveClosed = 14;
-
 SimPlcCraneDevice::Config toDeviceConfig(const SimRunConfig& cfg) {
     SimPlcCraneDevice::Config dc;
     dc.cylinderUpDelayMs = cfg.cylinderUpDelayMs;
@@ -149,14 +144,10 @@ void SimPlcCraneHandler::buildMeta() {
                                          .defaultValue(1200)
                                          .range(0, 30000)
                                          .description("阀门关闭延迟(ms)"))
-                              .param(FieldBuilder("tick_ms", FieldType::Int)
-                                         .defaultValue(50)
-                                         .range(10, 1000)
-                                         .description("状态刷新周期(ms)"))
                               .param(FieldBuilder("heartbeat_ms", FieldType::Int)
-                                         .defaultValue(1000)
-                                         .range(100, 10000)
-                                         .description("心跳事件周期(ms)"))
+                                         .defaultValue(0)
+                                         .range(0, 10000)
+                                         .description("心跳事件周期(ms)，0=关闭"))
                               .event("started", "启动完成事件")
                               .event("sim_heartbeat", "运行心跳事件"))
                  .build();
@@ -178,8 +169,7 @@ void SimPlcCraneHandler::handleRun(const QJsonObject& data, stdiolink::IResponde
     cfg.cylinderDownDelayMs = data.value("cylinder_down_delay").toInt(2000);
     cfg.valveOpenDelayMs = data.value("valve_open_delay").toInt(1500);
     cfg.valveCloseDelayMs = data.value("valve_close_delay").toInt(1200);
-    cfg.tickMs = data.value("tick_ms").toInt(50);
-    cfg.heartbeatMs = data.value("heartbeat_ms").toInt(1000);
+    cfg.heartbeatMs = data.value("heartbeat_ms").toInt(0);
     cfg.eventMode = data.value("event_mode").toString("write").trimmed();
 
     m_cfg = cfg;
@@ -209,7 +199,11 @@ void SimPlcCraneHandler::handleRun(const QJsonObject& data, stdiolink::IResponde
     m_uptimeClock.restart();
     syncDataAreaFromDevice();
     m_refreshTimer.start();
-    m_heartbeatTimer.start();
+    if (m_cfg.heartbeatMs > 0) {
+        m_heartbeatTimer.start();
+    } else {
+        m_heartbeatTimer.stop();
+    }
 
     m_eventResponder.event("started", 0,
                            QJsonObject{{"listen_address", m_cfg.listenAddress},
@@ -234,11 +228,6 @@ void SimPlcCraneHandler::syncDataAreaFromDevice() {
     m_server.setHoldingRegister(unitId, kHrCylinderDown, snap["di_cylinder_down"].toBool() ? 1 : 0);
     m_server.setHoldingRegister(unitId, kHrValveOpen, snap["di_valve_open"].toBool() ? 1 : 0);
     m_server.setHoldingRegister(unitId, kHrValveClosed, snap["di_valve_closed"].toBool() ? 1 : 0);
-
-    m_server.setDiscreteInput(unitId, kDiCylinderUp, snap["di_cylinder_up"].toBool());
-    m_server.setDiscreteInput(unitId, kDiCylinderDown, snap["di_cylinder_down"].toBool());
-    m_server.setDiscreteInput(unitId, kDiValveOpen, snap["di_valve_open"].toBool());
-    m_server.setDiscreteInput(unitId, kDiValveClosed, snap["di_valve_closed"].toBool());
 }
 
 void SimPlcCraneHandler::onDataWritten(quint8 unitId, quint8 functionCode, quint16 address,
@@ -314,9 +303,5 @@ bool SimPlcCraneHandler::writeHoldingRegisterForTest(quint16 address, quint16 va
 
 bool SimPlcCraneHandler::readHoldingRegisterForTest(quint16 address, quint16& value) {
     return m_server.getHoldingRegister(m_cfg.unitId, address, value);
-}
-
-bool SimPlcCraneHandler::readDiscreteInputForTest(quint16 address, bool& value) {
-    return m_server.getDiscreteInput(m_cfg.unitId, address, value);
 }
 #endif
