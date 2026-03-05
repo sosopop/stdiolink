@@ -2,29 +2,48 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent.parent
 PLAN_SCRIPTS = {
     "m94_server_run_oneshot": SCRIPT_DIR / "m94_server_run_oneshot_smoke.py",
     "m95_driver_examples": SCRIPT_DIR / "m95_driver_examples.py",
     "m96_3dvision_ws": SCRIPT_DIR / "m96_3dvision_ws.py",
+    "m97_plc_crane_sim": SCRIPT_DIR / "m97_plc_crane_sim_smoke.py",
 }
 LEGACY_MILESTONE_ALIASES = {
     "94": "m94_server_run_oneshot",
     "95": "m95_driver_examples",
     "96": "m96_3dvision_ws",
+    "97": "m97_plc_crane_sim",
 }
+
+
+def _inject_dll_paths() -> dict[str, str]:
+    """将所有候选 bin 目录注入 PATH，确保子进程能找到 Qt/依赖 DLL。"""
+    env = os.environ.copy()
+    candidate_dirs = [
+        PROJECT_ROOT / "build" / "runtime_debug" / "bin",
+        PROJECT_ROOT / "build" / "runtime_release" / "bin",
+        PROJECT_ROOT / "build" / "debug",
+        PROJECT_ROOT / "build" / "release",
+    ]
+    extra = os.pathsep.join(str(d) for d in candidate_dirs if d.exists())
+    if extra:
+        env["PATH"] = extra + os.pathsep + env.get("PATH", "")
+    return env
 
 
 def resolve_plan_name(raw_plan: str) -> str:
     return LEGACY_MILESTONE_ALIASES.get(raw_plan, raw_plan)
 
 
-def run_plan(plan_name: str, case: str | None) -> int:
+def run_plan(plan_name: str, case: str | None, env: dict[str, str]) -> int:
     resolved = resolve_plan_name(plan_name)
     script = PLAN_SCRIPTS.get(resolved)
     if script is None:
@@ -37,7 +56,7 @@ def run_plan(plan_name: str, case: str | None) -> int:
         cmd.extend(["--case", case])
 
     print(f"[INFO] Running plan {resolved}: {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False)
+    result = subprocess.run(cmd, check=False, env=env)
     return result.returncode
 
 
@@ -55,6 +74,8 @@ def main() -> int:
     parser.add_argument("--case", help="Run a single case in the selected test plan script")
     args = parser.parse_args()
 
+    env = _inject_dll_paths()
+
     selected = args.plan
     if selected is None:
         selected = args.milestone
@@ -63,12 +84,12 @@ def main() -> int:
     if selected == "all":
         exit_code = 0
         for plan_name in sorted(PLAN_SCRIPTS.keys()):
-            rc = run_plan(plan_name, None)
+            rc = run_plan(plan_name, None, env)
             if rc != 0:
                 exit_code = rc
         return exit_code
 
-    return run_plan(selected, args.case)
+    return run_plan(selected, args.case, env)
 
 
 if __name__ == "__main__":

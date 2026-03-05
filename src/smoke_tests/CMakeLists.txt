@@ -44,3 +44,18 @@ set_tests_properties(
         LABELS "smoke;m96"
         TIMEOUT 120
 )
+
+add_test(
+    NAME smoke_m97_plc_crane_sim
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m97_plc_crane_sim
+)
+
+set_tests_properties(
+    smoke_m97_plc_crane_sim
+    PROPERTIES
+        LABELS "smoke;m97"
+        TIMEOUT 180
+)

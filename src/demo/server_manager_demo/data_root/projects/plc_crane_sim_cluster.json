@@ -1,0 +1,22 @@
+{
+  "name": "PLC Crane Sim Cluster Node A",
+  "serviceId": "plc_crane_sim",
+  "enabled": true,
+  "schedule": {
+    "type": "manual"
+  },
+  "config": {
+    "listenAddress": "127.0.0.1",
+    "listenPort": 1512,
+    "unitId": 2,
+    "eventMode": "all",
+    "dataAreaSize": 256,
+    "cylinderUpDelayMs": 2200,
+    "cylinderDownDelayMs": 1800,
+    "valveOpenDelayMs": 1300,
+    "valveCloseDelayMs": 1100,
+    "tickMs": 50,
+    "heartbeatMs": 1000
+  }
+}
+

@@ -1,0 +1,22 @@
+{
+  "name": "PLC Crane Sim Single",
+  "serviceId": "plc_crane_sim",
+  "enabled": true,
+  "schedule": {
+    "type": "manual"
+  },
+  "config": {
+    "listenAddress": "127.0.0.1",
+    "listenPort": 1502,
+    "unitId": 1,
+    "eventMode": "write",
+    "dataAreaSize": 256,
+    "cylinderUpDelayMs": 2500,
+    "cylinderDownDelayMs": 2000,
+    "valveOpenDelayMs": 1500,
+    "valveCloseDelayMs": 1200,
+    "tickMs": 50,
+    "heartbeatMs": 1000
+  }
+}
+

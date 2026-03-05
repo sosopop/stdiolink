@@ -70,6 +70,7 @@ set(TEST_SOURCES
     test_modbusrtu_serial_server.cpp
     test_modbusrtu_serial.cpp
     test_plc_crane.cpp
+    test_plc_crane_sim.cpp
     test_driver_resolve.cpp
     test_multiscan_driver.cpp
     test_3dvision_websocket.cpp
@@ -142,6 +143,8 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane_sim/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane_sim/sim_device.cpp
     ${CMAKE_SOURCE_DIR}/src/demo/multiscan_driver/multiscan_driver.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3dvision/websocket_client.cpp
 )

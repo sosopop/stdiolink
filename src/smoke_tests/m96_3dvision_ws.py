@@ -37,26 +37,10 @@ def find_driver() -> tuple[Path | None, str | None]:
     return None, None
 
 
-def build_runtime_env(driver: Path, layout: str) -> dict[str, str]:
-    """为子进程注入运行时 PATH，确保能找到 Qt/依赖 DLL。"""
-    env = os.environ.copy()
-    if layout.startswith("runtime_"):
-        # .../runtime_xxx/data_root/drivers/<drv>/<exe>
-        runtime_root = driver.parents[3]
-        runtime_bin = runtime_root / "bin"
-        if runtime_bin.exists():
-            env["PATH"] = str(runtime_bin) + os.pathsep + env.get("PATH", "")
-    else:
-        # raw build：优先本目录
-        env["PATH"] = str(driver.parent) + os.pathsep + env.get("PATH", "")
-    return env
-
-
-def run_s01(driver: Path, layout: str) -> bool:
+def run_s01(driver: Path) -> bool:
     """S01: --cmd=meta.describe 输出含 ws.connect"""
     result = subprocess.run(
         [str(driver), "--cmd=meta.describe"],
-        env=build_runtime_env(driver, layout),
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
     )
     if result.returncode != 0:
@@ -71,11 +55,10 @@ def run_s01(driver: Path, layout: str) -> bool:
     return True
 
 
-def run_s02(driver: Path, layout: str) -> bool:
+def run_s02(driver: Path) -> bool:
     """S02: --help 退出码 0"""
     result = subprocess.run(
         [str(driver), "--help"],
-        env=build_runtime_env(driver, layout),
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
     )
     if result.returncode != 0:
@@ -86,7 +69,7 @@ def run_s02(driver: Path, layout: str) -> bool:
     return True
 
 
-def run_s03(driver: Path, layout: str) -> bool:
+def run_s03(driver: Path) -> bool:
     """S03: 启动 mock WS server + ws.connect/subscribe/event/disconnect 全链路"""
     try:
         import asyncio
@@ -141,7 +124,6 @@ def run_s03(driver: Path, layout: str) -> bool:
     # 启动 driver 子进程
     proc = subprocess.Popen(
         [str(driver)],
-        env=build_runtime_env(driver, layout),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, encoding="utf-8", errors="replace",
     )
@@ -216,13 +198,13 @@ def run_s03(driver: Path, layout: str) -> bool:
         proc.wait()
 
 
-def run_case(case_name: str, driver: Path, layout: str) -> bool:
+def run_case(case_name: str, driver: Path) -> bool:
     cases = {"S01": run_s01, "S02": run_s02, "S03": run_s03}
     func = cases.get(case_name)
     if func is None:
         print(f"[FAIL] Unknown case: {case_name}")
         return False
-    return func(driver, layout)
+    return func(driver)
 
 
 def main() -> int:
@@ -246,7 +228,7 @@ def main() -> int:
     failed = 0
     for case in cases:
         try:
-            if run_case(case, driver, layout):
+            if run_case(case, driver):
                 passed += 1
             else:
                 failed += 1
