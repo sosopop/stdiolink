@@ -75,6 +75,7 @@ export const MessageEntryComponent: React.FC<MessageEntryProps> = ({ entry, onTo
       </div>
       {entry.expanded && entry.payload != null && (
         <pre
+          onClick={(e) => e.stopPropagation()}
           data-testid="msg-payload"
           style={{
             marginTop: 6,
