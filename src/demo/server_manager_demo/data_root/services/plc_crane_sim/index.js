@@ -6,48 +6,30 @@ import { sleep } from "stdiolink/time";
 const cfg = getConfig();
 const logger = createLogger({ service: "plc_crane_sim" });
 
-const listenAddress = String(cfg.listenAddress ?? "127.0.0.1");
-const listenPort = Number(cfg.listenPort ?? 1502);
-const unitId = Number(cfg.unitId ?? 1);
-const eventMode = String(cfg.eventMode ?? "write");
-const dataAreaSize = Number(cfg.dataAreaSize ?? 256);
-const cylinderUpDelayMs = Number(cfg.cylinderUpDelayMs ?? 2500);
-const cylinderDownDelayMs = Number(cfg.cylinderDownDelayMs ?? 2000);
-const valveOpenDelayMs = Number(cfg.valveOpenDelayMs ?? 1500);
-const valveCloseDelayMs = Number(cfg.valveCloseDelayMs ?? 1200);
-const tickMs = Number(cfg.tickMs ?? 50);
-const heartbeatMs = Number(cfg.heartbeatMs ?? 1000);
-
-function buildDriverArgs() {
-    return [
-        `--listen-address=${listenAddress}`,
-        `--listen-port=${listenPort}`,
-        `--unit-id=${unitId}`,
-        `--event-mode=${eventMode}`,
-        `--data-area-size=${dataAreaSize}`,
-        `--cylinder-up-delay=${cylinderUpDelayMs}`,
-        `--cylinder-down-delay=${cylinderDownDelayMs}`,
-        `--valve-open-delay=${valveOpenDelayMs}`,
-        `--valve-close-delay=${valveCloseDelayMs}`,
-        `--tick-ms=${tickMs}`,
-        `--heartbeat-ms=${heartbeatMs}`,
-    ];
-}
+const runParams = {
+    listen_address: String(cfg.listen_address ?? "127.0.0.1"),
+    listen_port: Number(cfg.listen_port ?? 1502),
+    unit_id: Number(cfg.unit_id ?? 1),
+    event_mode: String(cfg.event_mode ?? "write"),
+    data_area_size: Number(cfg.data_area_size ?? 256),
+    cylinder_up_delay: Number(cfg.cylinder_up_delay ?? 2500),
+    cylinder_down_delay: Number(cfg.cylinder_down_delay ?? 2000),
+    valve_open_delay: Number(cfg.valve_open_delay ?? 1500),
+    valve_close_delay: Number(cfg.valve_close_delay ?? 1200),
+    tick_ms: Number(cfg.tick_ms ?? 50),
+    heartbeat_ms: Number(cfg.heartbeat_ms ?? 1000),
+};
 
 (async () => {
     const driverPath = resolveDriver("stdio.drv.plc_crane_sim");
-    const args = buildDriverArgs();
 
     logger.info("starting plc_crane_sim service", {
         driverPath,
-        listenAddress,
-        listenPort,
-        unitId,
-        eventMode
+        runParams
     });
 
-    const driver = await openDriver(driverPath, args, { profilePolicy: "preserve" });
-    const runTask = driver.$rawRequest("run", {});
+    const driver = await openDriver(driverPath, [], { profilePolicy: "preserve" });
+    const runTask = driver.$rawRequest("run", runParams);
 
     while (true) {
         const next = await waitAny([runTask], 60000);
@@ -75,4 +57,3 @@ function buildDriverArgs() {
         break;
     }
 })();
-

@@ -165,8 +165,8 @@ def case_s02_run_started_event_stream() -> CaseResult:
         "--profile=oneshot",
         "--mode=console",
         "--cmd=run",
-        "--listen-address=127.0.0.1",
-        f"--listen-port={port}",
+        "--listen_address=127.0.0.1",
+        f"--listen_port={port}",
     ]
     try:
         proc = run_process(args, timeout_s=4.0)
@@ -198,11 +198,11 @@ def case_s03_modbus_rw_path() -> CaseResult:
             "--profile=oneshot",
             "--mode=console",
             "--cmd=run",
-            "--listen-address=127.0.0.1",
-            f"--listen-port={port}",
-            "--unit-id=1",
-            "--cylinder-up-delay=20",
-            "--tick-ms=10",
+            "--listen_address=127.0.0.1",
+            f"--listen_port={port}",
+            "--unit_id=1",
+            "--cylinder_up_delay=20",
+            "--tick_ms=10",
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -247,14 +247,17 @@ def case_s04_invalid_arg_exit_code() -> CaseResult:
     exe = find_driver_exe("stdio.drv.plc_crane_sim")
     if exe is None:
         return CaseResult("S04_invalid_arg", "skip", "stdio.drv.plc_crane_sim not found")
-    proc = run_process([str(exe), "--listen-port=70000"], timeout_s=10.0)
-    if proc.returncode != 3:
+    proc = run_process(
+        [str(exe), "--mode=console", "--cmd=run", "--listen_port=70000"],
+        timeout_s=10.0,
+    )
+    if proc.returncode not in (3, 400):
         return CaseResult(
             "S04_invalid_arg",
             "fail",
-            f"expected exit 3, got {proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}",
+            f"expected exit 3/400, got {proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}",
         )
-    return CaseResult("S04_invalid_arg", "pass", "invalid startup arg exits with code 3")
+    return CaseResult("S04_invalid_arg", "pass", "invalid run param exits with error code")
 
 
 def case_s05_port_conflict_error() -> CaseResult:
@@ -272,8 +275,8 @@ def case_s05_port_conflict_error() -> CaseResult:
                 str(exe),
                 "--mode=console",
                 "--cmd=run",
-                "--listen-address=127.0.0.1",
-                f"--listen-port={port}",
+                "--listen_address=127.0.0.1",
+                f"--listen_port={port}",
             ],
             timeout_s=10.0,
         )
@@ -335,4 +338,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

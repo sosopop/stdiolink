@@ -18,6 +18,8 @@ public:
 
     explicit SimPlcCraneDevice(const Config& cfg, QObject* parent = nullptr);
 
+    void setConfig(const Config& cfg) { m_cfg = cfg; }
+
     bool writeHoldingRegister(quint16 address, quint16 value, QString& err);
 
     QJsonObject snapshot() const;

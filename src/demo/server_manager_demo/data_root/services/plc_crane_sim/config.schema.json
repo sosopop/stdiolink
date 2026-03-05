@@ -1,10 +1,10 @@
 {
-  "listenAddress": {
+  "listen_address": {
     "type": "string",
     "default": "127.0.0.1",
-    "description": "ModbusTCP 监听地址"
+    "description": "ModbusTCP 监听地址（空=所有网卡）"
   },
-  "listenPort": {
+  "listen_port": {
     "type": "int",
     "default": 1502,
     "description": "ModbusTCP 监听端口",
@@ -13,7 +13,7 @@
       "max": 65535
     }
   },
-  "unitId": {
+  "unit_id": {
     "type": "int",
     "default": 1,
     "description": "Modbus 从站地址",
@@ -22,7 +22,7 @@
       "max": 247
     }
   },
-  "eventMode": {
+  "event_mode": {
     "type": "enum",
     "default": "write",
     "description": "事件模式",
@@ -30,7 +30,7 @@
       "enumValues": ["write", "read", "all", "none"]
     }
   },
-  "dataAreaSize": {
+  "data_area_size": {
     "type": "int",
     "default": 256,
     "description": "寄存器区大小",
@@ -39,7 +39,7 @@
       "max": 65536
     }
   },
-  "cylinderUpDelayMs": {
+  "cylinder_up_delay": {
     "type": "int",
     "default": 2500,
     "description": "气缸上升延迟(ms)",
@@ -48,7 +48,7 @@
       "max": 30000
     }
   },
-  "cylinderDownDelayMs": {
+  "cylinder_down_delay": {
     "type": "int",
     "default": 2000,
     "description": "气缸下降延迟(ms)",
@@ -57,7 +57,7 @@
       "max": 30000
     }
   },
-  "valveOpenDelayMs": {
+  "valve_open_delay": {
     "type": "int",
     "default": 1500,
     "description": "阀门打开延迟(ms)",
@@ -66,7 +66,7 @@
       "max": 30000
     }
   },
-  "valveCloseDelayMs": {
+  "valve_close_delay": {
     "type": "int",
     "default": 1200,
     "description": "阀门关闭延迟(ms)",
@@ -75,7 +75,7 @@
       "max": 30000
     }
   },
-  "tickMs": {
+  "tick_ms": {
     "type": "int",
     "default": 50,
     "description": "状态刷新周期(ms)",
@@ -84,7 +84,7 @@
       "max": 1000
     }
   },
-  "heartbeatMs": {
+  "heartbeat_ms": {
     "type": "int",
     "default": 1000,
     "description": "心跳事件周期(ms)",
@@ -94,4 +94,3 @@
     }
   }
 }
-

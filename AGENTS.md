@@ -25,6 +25,14 @@
 - `python ./tools/run-clang-tidy.py -p build -j 8 -quiet -config-file .clang-tidy`: static analysis.
 - `./tools/publish_release.sh --build-dir build --output-dir release`: package compiled artifacts and demo assets into a release directory.
 
+## Driver Standalone Run (Windows)
+
+- Driver executables depend on runtime DLLs in `build\runtime_debug\bin`; add this directory to `PATH` before launching a driver directly.
+- Use the driver binary under `build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`.
+- Example:
+  - `set PATH=%CD%\build\runtime_debug\bin;%PATH%`
+  - `build\runtime_debug\data_root\drivers\stdio.drv.modbustcp_server\stdio.drv.modbustcp_server.exe --export-meta`
+
 ## Coding Style & Naming Conventions
 
 - Use Qt types for IO and JSON: `QFile`, `QTextStream`, `QString`, `QJsonObject`, `QJsonArray`.

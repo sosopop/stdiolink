@@ -1,7 +1,7 @@
 # 里程碑 97：PLC 升降装置仿真驱动（单命令版）
 
 > **前置条件**: M79（`driver_modbustcp_server` 的 `run` 命令语义与事件流）
-> **目标**: 实现 `driver_plc_crane_sim`，仅保留一条 `run` 命令；其余行为由启动参数配置，启动后只通过 ModbusTCP 通讯
+> **目标**: 实现 `driver_plc_crane_sim`，仅保留一条 `run` 命令；其余行为由 `run` 参数配置，启动后只通过 ModbusTCP 通讯
 
 ## 1. 目标
 
@@ -15,7 +15,7 @@
 
 - 新增 `driver_plc_crane_sim` 驱动，输出可执行文件 `stdio.drv.plc_crane_sim`
 - 驱动仅暴露一条 stdio 命令：`run`
-- 运行参数（端口、unit id、延迟、初始状态、事件模式）全部通过启动参数传入
+- 运行参数（端口、unit id、延迟、事件模式）全部通过 `run` 命令参数传入
 - `run` 语义对齐 `driver_modbustcp_server`：启动后不返回 `done`，改为持续事件输出
 - 启动后不再依赖 stdio 业务接口；外部仅通过 ModbusTCP 读写寄存器通讯
 - 单元测试、冒烟测试覆盖 `run` 生命周期、参数校验、Modbus 寄存器映射与跨进程通信主链路
@@ -29,9 +29,9 @@
 **范围**:
 - `sim_device.h/cpp`：状态机、寄存器模型、寄存器写入到状态转换逻辑
 - `handler.h/cpp`：仅实现 `run` 命令与事件流
-- `main.cpp`：启动参数解析与校验
+- `main.cpp`：标准 `DriverCore` 入口
 - `modbus_tcp_server` 对接：监听、读写回调、事件上报
-- `services/plc_crane_sim/`：Service 启动参数透传 + 一次性 `run`
+- `services/plc_crane_sim/`：Service 组装 `run` 参数并一次性调用 `run`
 - `demo/projects/`：Project 配置模板
 - 单元测试 + 冒烟测试 + 集成测试
 
@@ -62,8 +62,6 @@ public:
         int cylinderDownDelayMs = 2000;
         int valveOpenDelayMs = 1500;
         int valveCloseDelayMs = 1200;
-        int tickMs = 50;
-        quint8 unitId = 1;
     };
 
     explicit SimPlcCraneDevice(const Config& cfg, QObject* parent = nullptr);
@@ -78,7 +76,7 @@ private:
     void applyCylinderAction(quint16 value);  // HR[0]
     void applyValveAction(quint16 value);     // HR[1]
     void applyRunAction(quint16 value);       // HR[2]
-    void applyMode(quint16 value);            // HR[3]
+    void applyModeAction(quint16 value);      // HR[3]
 };
 ```
 
@@ -111,20 +109,20 @@ MOVING_*  --(HR0=0)--> IDLE
 |--------|------|----------|
 | 0 | 成功 | `run` 成功启动（通过 `event` 上报） |
 | 1 | 启动失败 | 端口监听失败/初始化失败 |
-| 3 | 参数错误 | `run` 重复调用、非法参数 |
+| 3 | 参数错误 | `run` 重复调用、Driver 侧参数检查失败 |
+| 400 | 参数校验失败 | Meta 自动校验失败（越界/类型不匹配） |
 | 404 | 未知命令 | 非 `run` 命令 |
 
 Handler 分发（仅 `run`）：
 
 ```cpp
-void SimPlcCraneHandler::handle(const QString& cmd, const QJsonValue& data,
-        IResponder& resp) {
-    Q_UNUSED(data);
+void SimPlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IResponder& resp) {
+    QJsonObject p = data.toObject();
     if (cmd != "run") {
         resp.error(404, QJsonObject{{"message", "Unknown command: " + cmd}});
         return;
     }
-    handleRun(resp);
+    handleRun(p, resp);
 }
 ```
 
@@ -143,34 +141,31 @@ void SimPlcCraneHandler::handle(const QString& cmd, const QJsonValue& data,
 {"event":{"code":0,"data":{"event":"sim_heartbeat","data":{"uptime_s":3}}}}
 ```
 
-### 3.3 启动参数解析与校验
+### 3.3 `run` 参数契约与校验
 
-`main.cpp` 解析启动参数（不通过命令请求传参）：
+`run` 参数通过 meta 定义并由框架自动填默认值；调用侧通过 `driver.$rawRequest("run", runParams)` 传入：
 
 | 参数 | 默认值 | 校验 |
 |------|--------|------|
-| `--listen-address` | `0.0.0.0` | 非空字符串 |
-| `--listen-port` | `1502` | `1..65535` |
-| `--unit-id` | `1` | `1..247` |
-| `--cylinder-up-delay` | `2500` | `0..30000` |
-| `--cylinder-down-delay` | `2000` | `0..30000` |
-| `--valve-open-delay` | `1500` | `0..30000` |
-| `--valve-close-delay` | `1200` | `0..30000` |
-| `--tick-ms` | `50` | `10..1000` |
-| `--event-mode` | `write` | `write/read/all/none` |
+| `listen_address` | `""` | 字符串 |
+| `listen_port` | `1502` | `1..65535` |
+| `unit_id` | `1` | `1..247` |
+| `data_area_size` | `256` | `32..65536` |
+| `cylinder_up_delay` | `2500` | `0..30000` |
+| `cylinder_down_delay` | `2000` | `0..30000` |
+| `valve_open_delay` | `1500` | `0..30000` |
+| `valve_close_delay` | `1200` | `0..30000` |
+| `tick_ms` | `50` | `10..1000` |
+| `heartbeat_ms` | `1000` | `100..10000` |
+| `event_mode` | `write` | `write/read/all/none` |
 
 关键入口：
 
 ```cpp
 int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
-    SimConfig cfg;
-    if (!parseArgs(argc, argv, cfg)) {
-        return 3;
-    }
-
-    SimPlcCraneHandler handler(cfg);
-    DriverCore core;
+    SimPlcCraneHandler handler;
+    stdiolink::DriverCore core;
     core.setMetaHandler(&handler);
     return core.run(argc, argv);
 }
@@ -180,8 +175,8 @@ int main(int argc, char* argv[]) {
 
 ```text
 Service 启动实例
-  -> openDriver(driverPath, startupArgs)
-  -> rawRequest("run", {})
+  -> openDriver(driverPath, [])
+  -> rawRequest("run", runParams)
   -> 驱动启动 ModbusTCP server 并输出 started event
   -> 外部系统仅通过 ModbusTCP 读写
   -> 驱动按 event_mode 输出读写事件/心跳
@@ -197,7 +192,7 @@ Service 启动实例
 
 - 新增独立驱动与 Service，不破坏现有 `driver_plc_crane` 与 `driver_modbustcp_server`
 - 对外协议变化限定在新 Service `plc_crane_sim`，老项目不受影响
-- 文档与配置模板升级为“单命令 + 启动参数”模式
+- 文档与配置模板升级为“单命令 + run 参数”模式
 
 ## 4. 实现步骤
 
@@ -218,7 +213,7 @@ bool SimPlcCraneDevice::writeHoldingRegister(quint16 address, quint16 value, QSt
     case 0: applyCylinderAction(value); return true;
     case 1: applyValveAction(value); return true;
     case 2: applyRunAction(value); return true;
-    case 3: applyMode(value); return true;
+    case 3: applyModeAction(value); return true;
     default:
         err = QString("Unsupported holding register address: %1").arg(address);
         return false;
@@ -244,15 +239,15 @@ bool SimPlcCraneDevice::writeHoldingRegister(quint16 address, quint16 value, QSt
 ```cpp
 class SimPlcCraneHandler : public IMetaCommandHandler {
 public:
-    explicit SimPlcCraneHandler(const SimConfig& cfg);
+    SimPlcCraneHandler();
     const DriverMeta& driverMeta() const override { return m_meta; }
     void handle(const QString& cmd, const QJsonValue& data, IResponder& resp) override;
 private:
-    void handleRun(IResponder& resp);
+    void handleRun(const QJsonObject& data, IResponder& resp);
     void buildMeta();
 
     DriverMeta m_meta;
-    SimConfig m_cfg;
+    SimRunConfig m_cfg;
     SimPlcCraneDevice m_device;
     ModbusTcpServer m_server;
     StdioResponder m_eventResponder;
@@ -264,15 +259,14 @@ private:
 改动理由：与需求“单命令、启动后只走 ModbusTCP”完全一致。
 验收方式：T01-T03、T09-T10、S01-S03。
 
-### 4.3 新增 `main.cpp`（参数解析）
+### 4.3 新增 `main.cpp`（DriverCore 入口）
 
 - 新增 `src/drivers/driver_plc_crane_sim/main.cpp`
 - 关键改动：
-  - 解析并校验全部启动参数
-  - 校验失败输出错误并返回 `3`
-  - 构造 `SimPlcCraneHandler(cfg)` 后进入 `DriverCore::run`
+  - 不做业务参数解析，仅作为 `DriverCore` 标准入口
+  - 构造 `SimPlcCraneHandler()` 后进入 `DriverCore::run(argc, argv)`
 
-改动理由：将运行期参数约束前置到进程启动阶段，避免运行后热配置复杂性。
+改动理由：参数定义与校验统一收敛到 `run` meta + `handleRun`，对齐同类驱动模式。
 验收方式：S04、T11。
 
 ### 4.4 新增 `CMakeLists.txt` 与驱动注册
@@ -296,9 +290,10 @@ add_subdirectory(driver_plc_crane_sim)
 - 新增 `src/demo/server_manager_demo/data_root/projects/plc_crane_sim_cluster.json`
 
 `index.js` 约束：
-- 仅在启动时调用一次 `driver.$rawRequest("run", {})`
+- 仅在启动时调用一次 `driver.$rawRequest("run", runParams)`
 - 不暴露业务命令调用（无 `driver.status()/driver.cylinder_control()` 等）
 - 所有设备行为通过 ModbusTCP 客户端访问驱动监听地址
+- `config.schema.json` 与 project 配置使用 snake_case 字段，直接映射 `run` 参数名
 
 改动理由：确保 Service 行为与驱动接口严格一致，避免“文档支持但实现不支持”的漂移。
 验收方式：S02、S03、E2E-01。
@@ -312,7 +307,7 @@ add_subdirectory(driver_plc_crane_sim)
 - `src/drivers/driver_plc_crane_sim/sim_device.cpp` - 仿真设备实现
 - `src/drivers/driver_plc_crane_sim/handler.h` - 单命令 Handler 声明
 - `src/drivers/driver_plc_crane_sim/handler.cpp` - 单命令 Handler 实现
-- `src/drivers/driver_plc_crane_sim/main.cpp` - 启动参数解析 + DriverCore 入口
+- `src/drivers/driver_plc_crane_sim/main.cpp` - DriverCore 入口
 - `src/demo/server_manager_demo/data_root/services/plc_crane_sim/manifest.json` - Service 描述
 - `src/demo/server_manager_demo/data_root/services/plc_crane_sim/config.schema.json` - Service 参数 Schema
 - `src/demo/server_manager_demo/data_root/services/plc_crane_sim/index.js` - Service 运行脚本（一次性 run）
@@ -354,7 +349,7 @@ add_subdirectory(driver_plc_crane_sim)
 | `writeHoldingRegister` | 地址 `0..3` 合法 | T03-T05 |
 | `writeHoldingRegister` | 地址越界 -> false + err | T06 |
 | `applyCylinderAction` | 值非法 -> 拒绝并保持状态 | T07 |
-| `main` 参数校验 | 参数越界 -> 退出码 3 | T11 |
+| `run` 参数校验 | 参数越界 -> 进程错误退出（3/400） | T11 |
 | 心跳事件 | 运行中周期输出 | T08 |
 | 回归：无额外 stdio 命令依赖 | 仅 `run` 后 Modbus 可用 | R01 |
 
@@ -369,13 +364,13 @@ add_subdirectory(driver_plc_crane_sim)
 
 **T01 — run 首次启动成功**
 - 前置条件: 使用空闲端口构造 Handler
-- 输入: `handle("run", {}, resp)`
+- 输入: `handle("run", runData, resp)`
 - 预期: 输出 `started` 事件；不返回 `done`
 - 断言: `resp.events` 包含 `started`；`resp.doneCalled == false`
 
 **T02 — run 重复调用失败**
 - 前置条件: 已执行 T01
-- 输入: 再次 `handle("run", {}, resp)`
+- 输入: 再次 `handle("run", runData, resp)`
 - 预期: 返回 `error(3, "Server already running")`
 - 断言: `resp.lastErrorCode == 3`
 
@@ -423,15 +418,15 @@ add_subdirectory(driver_plc_crane_sim)
 
 **T10 — 端口占用导致 run 失败**
 - 前置条件: 本地先占用目标端口
-- 输入: `handle("run", {}, resp)`
+- 输入: `handle("run", runData, resp)`
 - 预期: `error(1)`
 - 断言: `resp.lastErrorCode == 1`
 
-**T11 — 启动参数越界返回 3**
+**T11 — run 参数越界返回错误退出码**
 - 前置条件: 子进程模式运行驱动
-- 输入: `--listen-port=70000`
-- 预期: 进程退出码 `3`
-- 断言: exit code 精确匹配
+- 输入: `--mode=console --cmd=run --listen_port=70000`
+- 预期: 进程退出码为参数错误（`3` 或 `400`）
+- 断言: exit code 命中允许集合
 
 **R01 — 单命令回归路径**
 - 前置条件: 启动 Service，调用一次 `run`
@@ -443,20 +438,18 @@ add_subdirectory(driver_plc_crane_sim)
 
 ```cpp
 TEST(PlcCraneSimHandler, T01_RunStartsAndStreamsEvents) {
-    SimConfig cfg;
-    cfg.listenPort = findFreePort();
-    SimPlcCraneHandler handler(cfg);
+    SimPlcCraneHandler handler;
     MockResponder resp;
+    QJsonObject runData{{"listen_port", findFreePort()}, {"unit_id", 1}};
 
-    handler.handle("run", QJsonObject{}, resp);
+    handler.handle("run", runData, resp);
 
     EXPECT_FALSE(resp.doneCalled);
     EXPECT_TRUE(resp.hasEvent("started"));
 }
 
 TEST(PlcCraneSimHandler, T09_UnknownCommand404) {
-    SimConfig cfg;
-    SimPlcCraneHandler handler(cfg);
+    SimPlcCraneHandler handler;
     MockResponder resp;
 
     handler.handle("status", QJsonObject{}, resp);
@@ -476,11 +469,11 @@ TEST(PlcCraneSimHandler, T09_UnknownCommand404) {
   - `S01`: `--export-meta` 仅包含 `run` 命令 -> 断言命令数量为 1
   - `S02`: 启动并发送 `run` -> 断言收到 `started`，且无 `done`
   - `S03`: 用 Modbus 客户端写 `HR[0]=1`，读 `DI[9]` -> 断言状态变化生效
-  - `S04`: 非法参数 `--unit-id=0` -> 断言退出码 3
+  - `S04`: 非法 `run` 参数（`--listen_port=70000`）-> 断言退出码 `3` 或 `400`
   - `S05`: 端口冲突 -> 断言 `run` 返回 `error(1)`
 - 失败输出规范: 打印 stdout/stderr、退出码、超时点位
 - 环境约束与跳过策略: 无公网依赖；若本地缺少可执行文件则直接 FAIL
-- 产物定位契约: `build/runtime_debug/bin/stdio.drv.plc_crane_sim(.exe)`
+- 产物定位契约: `build/debug/` 或 `build/runtime_debug/data_root/drivers/stdio.drv.plc_crane_sim/`
 - 跨平台运行契约: UTF-8 编码，路径通过构建目录动态拼接
 
 ### 6.3 集成/端到端测试
@@ -496,7 +489,7 @@ TEST(PlcCraneSimHandler, T09_UnknownCommand404) {
 - [ ] `run` 重复调用返回 `error(3)`（T02）
 - [ ] 启动后仅通过 ModbusTCP 读写即可驱动状态机（T03-T05, R01, S03）
 - [ ] 非法寄存器地址和非法动作值被拒绝并可观测（T06, T07）
-- [ ] 参数越界返回退出码 3（T11, S04）
+- [ ] 非法 `run` 参数返回错误退出码（T11, S04）
 - [ ] 端口冲突时 `run` 返回 `error(1)`（T10, S05）
 
 ### 6.5 回归测试
@@ -520,7 +513,7 @@ TEST(PlcCraneSimHandler, T09_UnknownCommand404) {
 
 - [ ] 驱动构建成功并产出 `stdio.drv.plc_crane_sim`
 - [ ] Meta 导出仅含 `run` 命令
-- [ ] 启动参数校验完整，非法输入按约定失败
+- [ ] `run` 参数校验完整，非法输入按约定失败
 - [ ] `run` 行为与 `driver_modbustcp_server` 对齐（启动事件 + 持续运行）
 - [ ] 启动后仅通过 ModbusTCP 完成设备交互
 - [ ] 单元测试与冒烟测试全部通过
@@ -531,7 +524,7 @@ TEST(PlcCraneSimHandler, T09_UnknownCommand404) {
 ### 9.1 已确认决策
 
 - **D01**：仿真驱动对外 stdio 接口仅保留 `run`（A）
-- **D02**：除 `run` 外的行为配置全部通过启动参数传入（A）
+- **D02**：除 `run` 外的行为配置全部通过 `run` 参数传入（A）
 - **D03**：`run` 语义参考 `driver_modbustcp_server`，启动成功后发送事件并保持持续输出，不返回 `done`（A）
 - **D04**：驱动启动后不再进行其他 stdio 接口交互，外部仅通过 ModbusTCP 通讯（A）
 

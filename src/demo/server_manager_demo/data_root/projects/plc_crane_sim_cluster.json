@@ -6,17 +6,16 @@
     "type": "manual"
   },
   "config": {
-    "listenAddress": "127.0.0.1",
-    "listenPort": 1512,
-    "unitId": 2,
-    "eventMode": "all",
-    "dataAreaSize": 256,
-    "cylinderUpDelayMs": 2200,
-    "cylinderDownDelayMs": 1800,
-    "valveOpenDelayMs": 1300,
-    "valveCloseDelayMs": 1100,
-    "tickMs": 50,
-    "heartbeatMs": 1000
+    "listen_address": "127.0.0.1",
+    "listen_port": 1512,
+    "unit_id": 2,
+    "event_mode": "all",
+    "data_area_size": 256,
+    "cylinder_up_delay": 2200,
+    "cylinder_down_delay": 1800,
+    "valve_open_delay": 1300,
+    "valve_close_delay": 1100,
+    "tick_ms": 50,
+    "heartbeat_ms": 1000
   }
 }
-

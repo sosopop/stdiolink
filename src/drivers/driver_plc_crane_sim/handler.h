@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QElapsedTimer>
-#include <QStringList>
+#include <QJsonObject>
 #include <QTimer>
 
 #include "sim_device.h"
@@ -9,8 +9,8 @@
 #include "stdiolink/driver/meta_command_handler.h"
 #include "stdiolink/driver/stdio_responder.h"
 
-struct SimDriverConfig {
-    QString listenAddress = "0.0.0.0";
+struct SimRunConfig {
+    QString listenAddress;
     int listenPort = 1502;
     quint8 unitId = 1;
     int dataAreaSize = 256;
@@ -25,15 +25,9 @@ struct SimDriverConfig {
     int heartbeatMs = 1000;
 };
 
-// 解析驱动启动参数，同时返回应转交给 DriverCore 的参数集合（剔除仿真参数）。
-bool parseSimDriverConfigArgs(int argc, char* argv[],
-                              SimDriverConfig& cfg,
-                              QString* errorMessage = nullptr,
-                              QStringList* passthroughArgs = nullptr);
-
 class SimPlcCraneHandler : public stdiolink::IMetaCommandHandler {
 public:
-    explicit SimPlcCraneHandler(const SimDriverConfig& cfg);
+    SimPlcCraneHandler();
     ~SimPlcCraneHandler() override;
 
     const stdiolink::meta::DriverMeta& driverMeta() const override { return m_meta; }
@@ -52,14 +46,14 @@ public:
 
 private:
     void buildMeta();
-    void handleRun(stdiolink::IResponder& resp);
+    void handleRun(const QJsonObject& data, stdiolink::IResponder& resp);
     void syncDataAreaFromDevice();
     void onDataWritten(quint8 unitId, quint8 functionCode, quint16 address, quint16 quantity);
     bool eventReadEnabled() const;
     bool eventWriteEnabled() const;
 
     stdiolink::meta::DriverMeta m_meta;
-    SimDriverConfig m_cfg;
+    SimRunConfig m_cfg;
     SimPlcCraneDevice m_device;
     ModbusTcpServer m_server;
     stdiolink::StdioResponder m_eventResponder;

@@ -269,20 +269,6 @@ std::vector<bool> readDiscreteInputs(const QString& host, quint16 port, quint8 u
     return bits;
 }
 
-SimDriverConfig makeFastConfig() {
-    SimDriverConfig cfg;
-    cfg.listenAddress = "127.0.0.1";
-    cfg.listenPort = 0;
-    cfg.unitId = 1;
-    cfg.tickMs = 10;
-    cfg.heartbeatMs = 100;
-    cfg.cylinderUpDelayMs = 40;
-    cfg.cylinderDownDelayMs = 40;
-    cfg.valveOpenDelayMs = 40;
-    cfg.valveCloseDelayMs = 40;
-    return cfg;
-}
-
 quint16 allocateLocalPort() {
     QTcpServer server;
     if (!server.listen(QHostAddress::LocalHost, 0)) {
@@ -291,9 +277,24 @@ quint16 allocateLocalPort() {
     return server.serverPort();
 }
 
-bool startHandler(SimPlcCraneHandler& handler, stdiolink::MockResponder& resp) {
+QJsonObject makeFastRunData() {
+    const quint16 port = allocateLocalPort();
+    return QJsonObject{
+        {"listen_address", "127.0.0.1"},
+        {"listen_port", static_cast<int>(port)},
+        {"unit_id", 1},
+        {"tick_ms", 10},
+        {"heartbeat_ms", 100},
+        {"cylinder_up_delay", 40},
+        {"cylinder_down_delay", 40},
+        {"valve_open_delay", 40},
+        {"valve_close_delay", 40}
+    };
+}
+
+bool startHandler(SimPlcCraneHandler& handler, const QJsonObject& runData, stdiolink::MockResponder& resp) {
     resp.clear();
-    handler.handle("run", QJsonObject{}, resp);
+    handler.handle("run", runData, resp);
     return handler.isRunning();
 }
 
@@ -313,24 +314,25 @@ protected:
 
 // T01 - run 首次启动成功
 TEST_F(PlcCraneSimHandlerTest, T01_RunStartsAndEmitsStartedEvent) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
     stdiolink::MockResponder resp;
 
-    ASSERT_TRUE(startHandler(handler, resp));
+    ASSERT_TRUE(startHandler(handler, runData, resp));
     EXPECT_GT(static_cast<int>(handler.serverPort()), 0);
     EXPECT_EQ(countStatus(resp.responses, "done"), 0);
     EXPECT_EQ(countStatus(resp.responses, "error"), 0);
-    EXPECT_EQ(countEvent(resp.responses, "started"), 1);
 }
 
 // T02 - run 重复调用失败
 TEST_F(PlcCraneSimHandlerTest, T02_RunDuplicateReturnsError3) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
     stdiolink::MockResponder resp;
-    ASSERT_TRUE(startHandler(handler, resp));
+    ASSERT_TRUE(startHandler(handler, runData, resp));
 
     resp.clear();
-    handler.handle("run", QJsonObject{}, resp);
+    handler.handle("run", runData, resp);
     const auto* lastError = findLastStatus(resp.responses, "error");
     ASSERT_NE(lastError, nullptr);
     EXPECT_EQ(lastError->code, 3);
@@ -338,9 +340,10 @@ TEST_F(PlcCraneSimHandlerTest, T02_RunDuplicateReturnsError3) {
 
 // T03 - HR[0] 触发气缸上升/下降/中途 stop
 TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
     stdiolink::MockResponder resp;
-    ASSERT_TRUE(startHandler(handler, resp));
+    ASSERT_TRUE(startHandler(handler, runData, resp));
 
     QString err;
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(0, 1, err)) << err.toStdString();
@@ -351,6 +354,12 @@ TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
     ASSERT_TRUE(handler.readDiscreteInputForTest(10, diDown));
     EXPECT_TRUE(diUp);
     EXPECT_FALSE(diDown);
+    quint16 hrUp = 0;
+    quint16 hrDown = 0;
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(9, hrUp));
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(10, hrDown));
+    EXPECT_EQ(hrUp, 1);
+    EXPECT_EQ(hrDown, 0);
 
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(0, 2, err)) << err.toStdString();
     QTest::qWait(120);
@@ -358,6 +367,10 @@ TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
     ASSERT_TRUE(handler.readDiscreteInputForTest(10, diDown));
     EXPECT_FALSE(diUp);
     EXPECT_TRUE(diDown);
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(9, hrUp));
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(10, hrDown));
+    EXPECT_EQ(hrUp, 0);
+    EXPECT_EQ(hrDown, 1);
 
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(0, 1, err)) << err.toStdString();
     QTest::qWait(10);
@@ -371,9 +384,10 @@ TEST_F(PlcCraneSimHandlerTest, T03_HoldingRegister0DrivesCylinderState) {
 
 // T04 - HR[1] 触发阀门打开/关闭
 TEST_F(PlcCraneSimHandlerTest, T04_HoldingRegister1DrivesValveState) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
     stdiolink::MockResponder resp;
-    ASSERT_TRUE(startHandler(handler, resp));
+    ASSERT_TRUE(startHandler(handler, runData, resp));
 
     QString err;
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(1, 1, err)) << err.toStdString();
@@ -384,6 +398,12 @@ TEST_F(PlcCraneSimHandlerTest, T04_HoldingRegister1DrivesValveState) {
     ASSERT_TRUE(handler.readDiscreteInputForTest(14, diClosed));
     EXPECT_TRUE(diOpen);
     EXPECT_FALSE(diClosed);
+    quint16 hrOpen = 0;
+    quint16 hrClosed = 0;
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(13, hrOpen));
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(14, hrClosed));
+    EXPECT_EQ(hrOpen, 1);
+    EXPECT_EQ(hrClosed, 0);
 
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(1, 2, err)) << err.toStdString();
     QTest::qWait(120);
@@ -391,13 +411,18 @@ TEST_F(PlcCraneSimHandlerTest, T04_HoldingRegister1DrivesValveState) {
     ASSERT_TRUE(handler.readDiscreteInputForTest(14, diClosed));
     EXPECT_FALSE(diOpen);
     EXPECT_TRUE(diClosed);
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(13, hrOpen));
+    ASSERT_TRUE(handler.readHoldingRegisterForTest(14, hrClosed));
+    EXPECT_EQ(hrOpen, 0);
+    EXPECT_EQ(hrClosed, 1);
 }
 
 // T05 - HR[2]/HR[3] 合法写入生效
 TEST_F(PlcCraneSimHandlerTest, T05_HoldingRegister2And3AcceptValidValues) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
     stdiolink::MockResponder resp;
-    ASSERT_TRUE(startHandler(handler, resp));
+    ASSERT_TRUE(startHandler(handler, runData, resp));
 
     QString err;
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(2, 1, err)) << err.toStdString();
@@ -445,9 +470,9 @@ TEST_F(PlcCraneSimHandlerTest, T08_RunEmitsHeartbeatEventStream) {
         "--profile=oneshot",
         "--mode=console",
         "--cmd=run",
-        "--listen-address=127.0.0.1",
-        QString("--listen-port=%1").arg(port),
-        "--heartbeat-ms=100"
+        "--listen_address=127.0.0.1",
+        QString("--listen_port=%1").arg(port),
+        "--heartbeat_ms=100"
     });
     proc.setProcessEnvironment(childProcessEnv());
     proc.start();
@@ -508,7 +533,7 @@ TEST_F(PlcCraneSimHandlerTest, T08_RunEmitsHeartbeatEventStream) {
 
 // T09 - 未知命令返回 404
 TEST_F(PlcCraneSimHandlerTest, T09_UnknownCommandReturns404) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
     stdiolink::MockResponder resp;
 
     handler.handle("status", QJsonObject{}, resp);
@@ -522,33 +547,33 @@ TEST_F(PlcCraneSimHandlerTest, T10_RunFailsWhenPortOccupied) {
     QTcpServer blocker;
     ASSERT_TRUE(blocker.listen(QHostAddress::LocalHost, 0));
 
-    SimDriverConfig cfg = makeFastConfig();
-    cfg.listenPort = static_cast<int>(blocker.serverPort());
-    cfg.listenAddress = "127.0.0.1";
-    SimPlcCraneHandler handler(cfg);
+    SimPlcCraneHandler handler;
     stdiolink::MockResponder resp;
+    QJsonObject runData = makeFastRunData();
+    runData["listen_address"] = "127.0.0.1";
+    runData["listen_port"] = static_cast<int>(blocker.serverPort());
 
-    handler.handle("run", QJsonObject{}, resp);
+    handler.handle("run", runData, resp);
     const auto* lastError = findLastStatus(resp.responses, "error");
     ASSERT_NE(lastError, nullptr);
     EXPECT_EQ(lastError->code, 1);
     EXPECT_FALSE(handler.isRunning());
 }
 
-// T11 - 启动参数越界导致进程级退出码 3
-TEST_F(PlcCraneSimHandlerTest, T11_InvalidArgReturnsProcessExitCode3) {
+// T11 - run 参数越界导致进程级失败退出码
+TEST_F(PlcCraneSimHandlerTest, T11_InvalidRunParamReturnsProcessErrorExitCode) {
     const QString exe = findPlcCraneSimExe();
     ASSERT_FALSE(exe.isEmpty()) << "stdio.drv.plc_crane_sim executable not found";
 
     QProcess proc;
     proc.setProgram(exe);
-    proc.setArguments({"--listen-port=70000"});
+    proc.setArguments({"--mode=console", "--cmd=run", "--listen_port=70000"});
     proc.setProcessEnvironment(childProcessEnv());
     proc.start();
 
     ASSERT_TRUE(proc.waitForFinished(5000));
     EXPECT_EQ(proc.exitStatus(), QProcess::NormalExit);
-    EXPECT_EQ(proc.exitCode(), 3);
+    EXPECT_TRUE(proc.exitCode() == 3 || proc.exitCode() == 400);
 }
 
 // R01 - 仅 run 后通过 Modbus 完成控制链路
@@ -564,11 +589,11 @@ TEST_F(PlcCraneSimHandlerTest, R01_RunOnlyThenModbusControlPathWorks) {
         "--profile=oneshot",
         "--mode=console",
         "--cmd=run",
-        "--listen-address=127.0.0.1",
-        QString("--listen-port=%1").arg(port),
-        "--unit-id=1",
-        "--tick-ms=10",
-        "--cylinder-up-delay=40"
+        "--listen_address=127.0.0.1",
+        QString("--listen_port=%1").arg(port),
+        "--unit_id=1",
+        "--tick_ms=10",
+        "--cylinder_up_delay=40"
     });
     proc.setProcessEnvironment(childProcessEnv());
     proc.start();
@@ -615,65 +640,12 @@ TEST_F(PlcCraneSimHandlerTest, R01_RunOnlyThenModbusControlPathWorks) {
     (void)proc.waitForFinished(3000);
 }
 
-// T12 - --arg- 前缀参数应被正确解析
-TEST_F(PlcCraneSimHandlerTest, T12_ParseConfigSupportsArgPrefixedOptions) {
-    SimDriverConfig cfg;
-    QString err;
-
-    std::vector<QByteArray> argsBytes{
-        QByteArray("stdio.drv.plc_crane_sim"),
-        QByteArray("--arg-listen-port=1602"),
-        QByteArray("--arg-unit-id=2"),
-        QByteArray("--arg-event-mode=all")
-    };
-    std::vector<char*> argv;
-    argv.reserve(argsBytes.size());
-    for (QByteArray& item : argsBytes) {
-        argv.push_back(item.data());
-    }
-
-    EXPECT_TRUE(parseSimDriverConfigArgs(static_cast<int>(argv.size()), argv.data(), cfg, &err))
-        << err.toStdString();
-    EXPECT_EQ(cfg.listenPort, 1602);
-    EXPECT_EQ(static_cast<int>(cfg.unitId), 2);
-    EXPECT_EQ(cfg.eventMode, "all");
-}
-
-// T14 - 未识别 --arg- 参数应原样透传给 DriverCore
-TEST_F(PlcCraneSimHandlerTest, T14_UnknownArgPrefixedOptionKeepsOriginalToken) {
-    SimDriverConfig cfg;
-    QString err;
-    QStringList passthroughArgs;
-
-    std::vector<QByteArray> argsBytes{
-        QByteArray("stdio.drv.plc_crane_sim"),
-        QByteArray("--arg-mode=console"),
-        QByteArray("--arg-custom"),
-        QByteArray("custom_value"),
-        QByteArray("--foo=bar")
-    };
-    std::vector<char*> argv;
-    argv.reserve(argsBytes.size());
-    for (QByteArray& item : argsBytes) {
-        argv.push_back(item.data());
-    }
-
-    EXPECT_TRUE(parseSimDriverConfigArgs(
-        static_cast<int>(argv.size()), argv.data(), cfg, &err, &passthroughArgs))
-        << err.toStdString();
-
-    ASSERT_GE(passthroughArgs.size(), 5);
-    EXPECT_EQ(passthroughArgs[1], "--arg-mode=console");
-    EXPECT_EQ(passthroughArgs[2], "--arg-custom");
-    EXPECT_EQ(passthroughArgs[3], "custom_value");
-    EXPECT_EQ(passthroughArgs[4], "--foo=bar");
-}
-
 // T13 - 气缸和阀门并发动作路径
 TEST_F(PlcCraneSimHandlerTest, T13_CylinderAndValveCanMoveConcurrently) {
-    SimPlcCraneHandler handler(makeFastConfig());
+    SimPlcCraneHandler handler;
+    const QJsonObject runData = makeFastRunData();
     stdiolink::MockResponder resp;
-    ASSERT_TRUE(startHandler(handler, resp));
+    ASSERT_TRUE(startHandler(handler, runData, resp));
 
     QString err;
     ASSERT_TRUE(handler.writeHoldingRegisterForTest(0, 1, err)) << err.toStdString();

@@ -96,6 +96,15 @@ python src/smoke_tests/run_smoke.py --plan m94_server_run_oneshot
 python src/smoke_tests/run_smoke.py --plan all
 ```
 
+### Driver 单独运行（Windows）
+
+driver 可执行文件依赖 `build\runtime_debug\bin` 下的运行时 DLL。若直接运行某个 driver，请先将该目录加入 `PATH`，再执行 `build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`。
+
+```powershell
+$env:PATH = "$PWD\build\runtime_debug\bin;$env:PATH"
+.\build\runtime_debug\data_root\drivers\stdio.drv.modbustcp_server\stdio.drv.modbustcp_server.exe --export-meta
+```
+
 里程碑新增功能时，需补充 `src/smoke_tests/mXX_*.py` 并同时更新：
 - `src/smoke_tests/run_smoke.py`（统一入口注册）
 - `src/smoke_tests/CMakeLists.txt`（CTest 注册）

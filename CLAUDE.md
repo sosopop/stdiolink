@@ -46,6 +46,16 @@
 - Unix: `./build.sh [Debug|Release]`
 - 测试: `./build/runtime_debug/bin/stdiolink_tests`
 
+### Driver 单独运行（Windows）
+
+- driver 可执行文件依赖 `build\runtime_debug\bin` 下的运行时 DLL；单独运行前需先将该目录加入 `PATH`。
+- driver 实际路径位于 `build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`。
+- 示例：
+```powershell
+$env:PATH = "$PWD\build\runtime_debug\bin;$env:PATH"
+.\build\runtime_debug\data_root\drivers\stdio.drv.modbustcp_server\stdio.drv.modbustcp_server.exe --export-meta
+```
+
 ### 目录布局（M89）
 
 构建产物采用 raw + runtime 两级布局：
