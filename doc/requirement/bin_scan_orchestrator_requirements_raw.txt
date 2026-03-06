@@ -1,0 +1,30 @@
+"""
+新建一个服务Service，这个服务将调用 3DVision API Driver 和 PLC Crane Controller 这两个驱动，大概流程如下：
+将crane设置set_mode，切换模式为 auto，这时候crane会下降放出雷达，然后发送 read_status 读取是否已经到位，支持填写多个crane，当多个crane状态都到位了，开始给3dvision driver发送扫描命令，开始扫描，直到扫描完成（参考后面的参考文件中协议流文件），其中websocket可以单独实例化一个3dvision驱动来获取数据事件。
+本 service 支持运行以上需求所有的必要参数配置。
+再新建一个项目Project，实例化以上Service的配置。
+"""
+参考文件：
+src\drivers 目录下可参考相关的plc_crane的驱动实现和3dvision的驱动实现
+src\data_root 目录下可参考相关的service和project
+3dvision driver 的一次料仓扫描的websocket和其他命令接口的协议流保存如下：
+"D:\code\stdiolink\tmp\driverlab_3dvision.api_1772693232592_websocket_event.json"
+"D:\code\stdiolink\tmp\driverlab_3dvision.api_1772693258361_cmd_list.json"
+
+根据以上需求描述，写一份详细的功能需求文档。 内容要专业、严谨，包含：功能概述、使用场景、详细功能说明、接口约定、边界条件与异常处理、验收标准。 对于撰写过程中无法确认的设计决策，在文档末尾增加「待确认决策」章节，每项以选择题形式列出：背景说明、各选项优缺点、建议选项及原因，供用户决策后再推进。
+
+决策 D-01：扫描完成确认机制 — WS 事件 vs. 命令轮询兜底
+D-01 选择 C: WS 为主 + 命令轮询强制开启
+决策 D-02：多 Crane 中某一台故障时的处理策略
+D-02 选择 A: 强一致性 — 任一 Crane 故障立即中止全部
+决策 D-03：3DVision WebSocket 与命令驱动是否必须为独立实例
+D-03 选择 A: 强制要求两个独立实例（log last cmd + ws cmd）
+决策 D-04：Crane 复位（阶段 ⑦）的默认行为
+D-04 选择 B: 默认不自动复位
+决策 D-05：ERROR/TIMEOUT 状态的自动恢复策略
+D-05 选择 A: 仅支持手动 reset（外部命令）
+
+补充信息：
+1. 另外注意 ws为广播所有料仓信息，你需要通过id过滤出你关心的料仓。
+2. 3dvision 是通过雷达扫描料仓料面成像，并统计料位体积的一个模块。
+3. crane是吊在料仓顶部，当需要扫描料仓的时候，crane会打开阀门将雷达向下down送出。

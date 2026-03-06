@@ -468,6 +468,173 @@ Write-Host "  args      : `$args"
 & `$server --data-root="`$dataRoot" @args
 "@ | Set-Content -LiteralPath $startPs1 -Encoding utf8
 
+# ── Development environment launcher ─────────────────────────────────
+Write-Host "Generating dev.bat..."
+
+$devBat = Join-Path $packageDir "dev.bat"
+$devBatContent = @"
+@echo off
+setlocal
+set SCRIPT_DIR=%~dp0
+
+REM Add bin directory to PATH
+set PATH=%SCRIPT_DIR%bin;%PATH%
+
+REM Discover and create doskey aliases for all drivers
+"@
+
+$driversDir = Join-Path $packageDir "data_root/drivers"
+if (Test-Path -LiteralPath $driversDir -PathType Container) {
+    $driverDirs = Get-ChildItem -LiteralPath $driversDir -Directory | Sort-Object Name
+    foreach ($driverDir in $driverDirs) {
+        $exeFiles = Get-ChildItem -LiteralPath $driverDir.FullName -Filter "*.exe" -File
+        foreach ($exe in $exeFiles) {
+            $aliasName = [System.IO.Path]::GetFileNameWithoutExtension($exe.Name)
+            $relativePath = "data_root\drivers\$($driverDir.Name)\$($exe.Name)"
+            $devBatContent += "`ndoskey $aliasName=`"%SCRIPT_DIR%$relativePath`" `$*"
+        }
+    }
+}
+
+$devBatContent += @"
+
+
+echo.
+echo ========================================
+echo stdiolink Development Environment
+echo ========================================
+echo.
+echo Environment configured:
+echo   - bin\ added to PATH
+echo   - Driver aliases created
+echo.
+echo To list all drivers:
+echo   doskey /macros
+echo.
+echo To run a driver:
+echo   [driver-name] --export-meta
+echo   [driver-name] [args...]
+echo.
+echo To start the server:
+echo   stdiolink_server --data-root="%SCRIPT_DIR%data_root"
+echo.
+
+cmd /k
+"@
+
+Set-Content -LiteralPath $devBat -Value $devBatContent -Encoding ascii
+
+# ── Development environment launcher (PowerShell) ────────────────────
+Write-Host "Generating dev.ps1..."
+
+$devPs1 = Join-Path $packageDir "dev.ps1"
+$devPs1Content = @"
+#!/usr/bin/env pwsh
+`$script:scriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
+`$binDir = Join-Path `$script:scriptDir "bin"
+`$driversDir = Join-Path `$script:scriptDir "data_root/drivers"
+
+# Add bin directory to PATH for current session
+`$env:PATH = "`$binDir;`$env:PATH"
+
+# Set Qt plugin path
+`$env:QT_PLUGIN_PATH = `$binDir
+
+# Discover and create function aliases for all drivers
+"@
+
+if (Test-Path -LiteralPath $driversDir -PathType Container) {
+    $driverDirs = Get-ChildItem -LiteralPath $driversDir -Directory | Sort-Object Name
+    foreach ($driverDir in $driverDirs) {
+        $exeFiles = Get-ChildItem -LiteralPath $driverDir.FullName -Filter "*.exe" -File
+        foreach ($exe in $exeFiles) {
+            $aliasName = [System.IO.Path]::GetFileNameWithoutExtension($exe.Name)
+            $driverPath = "data_root/drivers/$($driverDir.Name)/$($exe.Name)"
+            $devPs1Content += @"
+
+function global:$aliasName {
+    `$scriptDir = Split-Path -Parent `$PSCommandPath
+    if (-not `$scriptDir) {
+        `$scriptDir = Split-Path -Parent (Get-Variable -Name PSScriptRoot -ValueOnly -ErrorAction SilentlyContinue)
+    }
+    if (-not `$scriptDir) {
+        `$scriptDir = `$PWD.Path
+    }
+    & (Join-Path `$scriptDir "$driverPath") @args
+}
+"@
+        }
+    }
+}
+
+$devPs1Content += @"
+
+
+# Helper function to list all available drivers
+function global:drivers {
+    Write-Host ""
+    Write-Host "Available drivers:"
+    Write-Host ""
+    Get-Command -CommandType Function | Where-Object {
+        `$_.Source -eq '' -and `$_.Name -ne 'drivers' -and `$_.Name -like 'stdio.drv.*'
+    } | ForEach-Object {
+        Write-Host "  `$(`$_.Name)" -ForegroundColor Cyan
+    }
+    Write-Host ""
+}
+
+# Helper function to list all available services
+function global:services {
+    `$scriptDir = Split-Path -Parent `$PSCommandPath
+    if (-not `$scriptDir) {
+        `$scriptDir = Split-Path -Parent (Get-Variable -Name PSScriptRoot -ValueOnly -ErrorAction SilentlyContinue)
+    }
+    if (-not `$scriptDir) {
+        `$scriptDir = `$PWD.Path
+    }
+    Write-Host ""
+    Write-Host "Available services:"
+    Write-Host ""
+    `$servicesDir = Join-Path `$scriptDir "data_root/services"
+    if (Test-Path -LiteralPath `$servicesDir -PathType Container) {
+        Get-ChildItem -LiteralPath `$servicesDir -Directory | Sort-Object Name | ForEach-Object {
+            Write-Host "  `$(`$_.Name)" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "  (no services found)" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "Example usage:"
+    Write-Host "  stdiolink_service --service-dir=`"data_root/services/[service-name]`" --project-dir=`"data_root/projects/[project-name]`"" -ForegroundColor Gray
+    Write-Host ""
+}
+
+Write-Host ""
+Write-Host "========================================"
+Write-Host "stdiolink Development Environment"
+Write-Host "========================================"
+Write-Host ""
+Write-Host "Environment configured:"
+Write-Host "  - bin\ added to PATH"
+Write-Host "  - Driver aliases created"
+Write-Host ""
+Write-Host "To list all drivers:"
+Write-Host "  drivers"
+Write-Host ""
+Write-Host "To list all services:"
+Write-Host "  services"
+Write-Host ""
+Write-Host "To run a driver:"
+Write-Host "  [driver-name] --export-meta"
+Write-Host "  [driver-name] [args...]"
+Write-Host ""
+Write-Host "To start the server:"
+Write-Host "  stdiolink_server --data-root=`"`$script:scriptDir\data_root`""
+Write-Host ""
+"@
+
+Set-Content -LiteralPath $devPs1 -Value $devPs1Content -Encoding utf8
+
 $manifestPath = Join-Path $packageDir "RELEASE_MANIFEST.txt"
 $manifestLines = @()
 $manifestLines += "package_name=$packageName"
@@ -525,3 +692,7 @@ Write-Host "  cd $packageDir"
 Write-Host "  .\start.bat              (cmd)"
 Write-Host "  .\start.ps1              (PowerShell)"
 Write-Host "  .\start.bat --port=8080  (custom port)"
+Write-Host ""
+Write-Host "For development (with driver aliases):"
+Write-Host "  .\dev.bat                (opens cmd with configured environment)"
+Write-Host "  .\dev.ps1                (PowerShell with configured environment)"
