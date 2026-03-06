@@ -227,14 +227,29 @@ Service 是 JS 脚本，用于编排多个 Driver 完成复杂业务流程。
 **目录结构**：
 ```
 src/data_root/services/my_service/
-├── index.js          # 服务主逻辑
-└── meta.json         # 服务元数据（可选）
+├── manifest.json       # 服务元数据（必需）
+├── config.schema.json  # 配置 schema（必需）
+└── index.js            # 服务主逻辑（必需）
+```
+
+`manifest.json`：
+```json
+{
+  "manifestVersion": "1",
+  "id": "my_service",
+  "name": "My Service",
+  "version": "1.0.0"
+}
+```
+
+`config.schema.json`：
+```json
+{}
 ```
 
 **index.js 示例**：
 ```js
-import { openDriver } from "stdiolink";
-import { getConfig } from "stdiolink";
+import { getConfig, openDriver } from "stdiolink";
 import { createLogger } from "stdiolink/log";
 import { resolveDriver } from "stdiolink/driver";
 
@@ -244,30 +259,37 @@ const logger = createLogger({ service: "my_service" });
 (async () => {
     logger.info("service starting", cfg);
 
-    // 方式 1：通过路径打开 Driver
+    // 推荐方式：先 resolveDriver()，再 openDriver()
     const driverPath = resolveDriver("stdio.drv.echo");
     const drv = await openDriver(driverPath);
-
-    // 方式 2：通过 Project 配置的驱动引用（推荐）
-    // const drv = await resolveDriver(cfg.driver_ref);
 
     // 调用 Driver 命令
     const result = await drv.echo({ msg: "Hello from Service" });
     logger.info("driver response", result);
 
-    // keepalive 模式：不调用 $close()，保持运行
-    logger.info("service running...");
+    // one-shot service 应主动关闭 driver
+    await drv.$close();
+    logger.info("service completed");
 })();
 ```
+
+说明：
+- 当前 Service 目录由 `ServiceScanner` 按 `manifest.json + config.schema.json + index.js` 三件套扫描加载。
+- `resolveDriver("stdio.drv.xxx")` 默认优先从 `data_root/drivers/*/` 查找 Driver。
+- 如果在临时 `data_root` 或独立运行时目录中测试 Service，应显式传入 `--data-root=<path>`。
 
 ### 4.2 常用 API
 
 **Driver 操作**：
 ```js
 import { openDriver, resolveDriver } from "stdiolink";
+import { APP_PATHS } from "stdiolink/constants";
 
-// 打开 Driver
-const drv = await openDriver("/path/to/driver");
+// 推荐：通过 resolveDriver() 定位 data_root/drivers 下的可执行文件
+const drv = await openDriver(resolveDriver("stdio.drv.echo"));
+
+// 临时 data_root 场景可先确认 APP_PATHS.dataRoot
+console.log("dataRoot =", APP_PATHS.dataRoot);
 
 // 调用命令
 const result = await drv.commandName({ param1: "value" });
@@ -305,8 +327,11 @@ await sleep(1000); // 延迟 1 秒
 
 ```js
 import { openDriver, resolveDriver } from "stdiolink";
+import { createLogger } from "stdiolink/log";
 
 (async () => {
+    const logger = createLogger({ service: "scan_service" });
+
     // 打开多个 Driver
     const crane = await openDriver(resolveDriver("stdio.drv.plc_crane"));
     const vision = await openDriver(resolveDriver("stdio.drv.3dvision"));
@@ -317,11 +342,15 @@ import { openDriver, resolveDriver } from "stdiolink";
     logger.info("crane status", status);
 
     // 步骤 2：触发 3D 扫描
-    const scanResult = await vision.vessel_command({
+    // 带 '.' 的命令名需使用下标访问
+    const scanResult = await vision["vessel.command"]({
         cmd: "scan",
         id: 15
     });
     logger.info("scan result", scanResult);
+
+    await crane.$close();
+    await vision.$close();
 })();
 ```
 
@@ -358,13 +387,18 @@ Project 是 JSON 配置文件，定义 Service 实例及其运行参数。
 | `name` | string | 项目显示名称 |
 | `serviceId` | string | Service 目录名（对应 `services/` 下的目录） |
 | `enabled` | boolean | 是否启用 |
-| `schedule.type` | string | 调度类型：`manual`（手动）、`auto`（自动启动） |
+| `schedule.type` | string | 调度类型：`manual`、`fixed_rate`、`daemon` |
 | `config` | object | 传递给 Service 的配置参数（通过 `getConfig()` 读取） |
 
 ### 5.3 调度类型
 
 - **manual**：手动启动，通过 WebUI 或 API 控制
-- **auto**：Server 启动时自动启动 Service
+- **fixed_rate**：按固定间隔周期触发实例，受 `intervalMs` 与 `maxConcurrent` 控制
+- **daemon**：常驻运行，异常退出后按 `restartDelayMs` 自动拉起，达到连续失败上限后抑制重启
+
+建议直接以现行手册为准：
+- `doc/manual/11-server/project-management.md`
+- `doc/manual/11-server/instance-and-schedule.md`
 
 ## 6. 测试方法
 
@@ -521,7 +555,7 @@ cd build/runtime_release
 
 访问 WebUI：`http://localhost:6200`
 
-### 7.3 开发环境
+### 7.4 开发环境
 
 使用 `dev.bat` / `dev.ps1` 启动开发环境，自动配置 PATH 和 Driver 别名：
 
@@ -537,7 +571,7 @@ drivers
 stdio.drv.echo --export-meta
 ```
 
-### 7.4 典型开发流程
+### 7.5 典型开发流程
 
 1. **开发 Driver**：
    - 在 `src/drivers/driver_xxx/` 创建目录
@@ -547,12 +581,13 @@ stdio.drv.echo --export-meta
 
 2. **开发 Service**：
    - 在 `src/data_root/services/xxx_service/` 创建目录
-   - 编写 `index.js` 使用 `openDriver` 编排 Driver
+   - 补齐 `manifest.json`、`config.schema.json`、`index.js`
+   - 编写 `index.js` 使用 `openDriver(resolveDriver(...))` 编排 Driver
    - 本地测试
 
 3. **配置 Project**：
    - 在 `src/data_root/projects/` 创建 JSON 配置
-   - 通过 WebUI 或 API 启动实例
+   - 通过 WebUI 或 `POST /api/projects/{id}/start` 启动实例
 
 4. **测试验证**：
    - 编写单元测试（GTest / Vitest）
@@ -563,7 +598,7 @@ stdio.drv.echo --export-meta
 
 ### 8.1 REST API
 
-Server 提供 REST API 管理 Service 实例：
+Server 提供 REST API 管理 Service、Project 和 Instance：
 
 ```bash
 # 列出所有 Service
@@ -572,15 +607,23 @@ GET http://localhost:6200/api/services
 # 列出所有 Project
 GET http://localhost:6200/api/projects
 
-# 启动实例
-POST http://localhost:6200/api/instances
-{"projectId": "my_project"}
+# 启动 Project（创建新实例）
+POST http://localhost:6200/api/projects/my_project/start
 
-# 停止实例
-DELETE http://localhost:6200/api/instances/{instanceId}
+# 停止 Project（终止该 Project 的所有实例）
+POST http://localhost:6200/api/projects/my_project/stop
+
+# 查询 Project 运行态
+GET http://localhost:6200/api/projects/my_project/runtime
+
+# 查看 Project 日志
+GET http://localhost:6200/api/projects/my_project/logs
 
 # 查询实例状态
 GET http://localhost:6200/api/instances/{instanceId}
+
+# 终止指定实例
+POST http://localhost:6200/api/instances/{instanceId}/terminate
 ```
 
 ### 8.2 DriverLab（交互调试）
@@ -601,8 +644,8 @@ export async function listServices() {
   return apiClient.get('/api/services');
 }
 
-export async function startInstance(projectId: string) {
-  return apiClient.post('/api/instances', { projectId });
+export async function startProject(projectId: string) {
+  return apiClient.post(`/api/projects/${projectId}/start`);
 }
 ```
 
@@ -625,6 +668,8 @@ export async function startInstance(projectId: string) {
 - **错误处理**：使用 try-catch 捕获异常，记录详细错误信息
 - **资源清理**：oneshot 模式需调用 `drv.$close()` 关闭 Driver
 - **异步编排**：使用 `async/await` 编排多个 Driver 调用
+- **路径解析**：优先用 `resolveDriver()`，临时 runtime / 测试目录显式传 `--data-root`
+- **命令调用**：普通命令用 `proxy.cmd()`，带 `.` 的命令用 `proxy["cmd.name"]()`
 
 ### 9.3 测试规范
 
@@ -673,8 +718,10 @@ docs: 更新开发指南
 
 **解决**：
 - 确认 Driver 可执行文件名以 `stdio.drv.` 开头
-- 确认 Driver 位于 `data_root/drivers/` 目录下
-- 检查 PATH 环境变量是否包含 `bin/` 目录
+- 确认 Driver 位于 `<data_root>/drivers/<driver_dir>/` 目录下
+- 检查运行时是否显式传入 `--data-root=<path>`
+- 在 JS 中检查 `APP_PATHS.dataRoot` 是否符合预期
+- 确认 runtime 目录已正确组装，`bin/` 与 `data_root/` 同级
 
 ### 10.2 Windows 管道阻塞
 

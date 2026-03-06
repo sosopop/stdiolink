@@ -63,8 +63,9 @@ build.bat
 
 ```javascript
 import { openDriver } from "stdiolink";
+import { resolveDriver } from "stdiolink/driver";
 
-const calc = await openDriver("./stdio.drv.calculator");
+const calc = await openDriver(resolveDriver("stdio.drv.calculator"));
 
 // 代理语法 —— 像调用本地函数一样调用远程命令
 const result = await calc.add({ a: 10, b: 20 });
@@ -77,10 +78,11 @@ calc.$close();
 
 ```javascript
 import { openDriver } from "stdiolink";
+import { resolveDriver } from "stdiolink/driver";
 
 const [drvA, drvB] = await Promise.all([
-    openDriver("./stdio.drv.calculator"),
-    openDriver("./stdio.drv.calculator"),
+    openDriver(resolveDriver("stdio.drv.calculator")),
+    openDriver(resolveDriver("stdio.drv.calculator")),
 ]);
 
 const [a, b] = await Promise.all([
@@ -171,11 +173,12 @@ DriverMetaBuilder()
 
 ```javascript
 import { openDriver, waitAny } from "stdiolink";
+import { resolveDriver } from "stdiolink/driver";
 import { writeJson } from "stdiolink/fs";
 import { createLogger } from "stdiolink/log";
 
 const logger = createLogger({ service: "pipeline" });
-const drv = await openDriver("./stdio.drv.sensor");
+const drv = await openDriver(resolveDriver("stdio.drv.sensor"));
 
 const task = drv.$rawRequest("read", { channel: 1 });
 const result = await waitAny([task], 5000);
@@ -209,8 +212,8 @@ curl http://localhost:6200/api/events
 
 三种内置调度策略：
 - **Manual** — 按需启停
-- **Interval** — 可配置间隔的周期执行
-- **Cron** — 基于 Cron 表达式的定时调度
+- **FixedRate** — 基于 `intervalMs` 与 `maxConcurrent` 的周期执行
+- **Daemon** — 常驻运行，异常退出后自动重启
 
 ### 现代化 WebUI
 
