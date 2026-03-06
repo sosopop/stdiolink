@@ -401,9 +401,22 @@ TEST(DocGenerator, TypeScriptEmptyMeta) {
 
 TEST(DocGenerator, TypeScriptExportDocCli) {
     QString binDir = QCoreApplication::applicationDirPath();
-    QString exe = PlatformUtils::executablePath(
-        QDir(binDir).filePath("../data_root/drivers/stdio.drv.calculator"), "stdio.drv.calculator");
-    ASSERT_TRUE(QFileInfo::exists(exe));
+    const QStringList candidates = {
+        PlatformUtils::executablePath(
+            QDir(binDir).filePath("../data_root/drivers/stdio.drv.calculator"), "stdio.drv.calculator"),
+        PlatformUtils::executablePath(
+            QDir(binDir).filePath("../runtime_release/data_root/drivers/stdio.drv.calculator"), "stdio.drv.calculator"),
+        PlatformUtils::executablePath(
+            QDir(binDir).filePath("../runtime_debug/data_root/drivers/stdio.drv.calculator"), "stdio.drv.calculator"),
+    };
+    QString exe;
+    for (const QString& candidate : candidates) {
+        if (QFileInfo::exists(candidate)) {
+            exe = candidate;
+            break;
+        }
+    }
+    ASSERT_FALSE(exe.isEmpty());
 
     QProcess proc;
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();

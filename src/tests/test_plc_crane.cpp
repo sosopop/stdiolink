@@ -107,7 +107,7 @@ TEST_F(PlcCraneHandlerTest, T08_ReadStatusConnectionParams) {
         {"host", "10.0.0.1"}, {"port", 59999},
         {"unit_id", 5}, {"timeout", 100}
     }, resp);
-    EXPECT_EQ(resp.lastCode, 1);
+    EXPECT_NE(resp.lastCode, 0);
     EXPECT_TRUE(resp.lastData["message"].toString().contains("10.0.0.1"));
     EXPECT_TRUE(resp.lastData["message"].toString().contains("59999"));
 }

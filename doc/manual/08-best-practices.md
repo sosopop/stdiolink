@@ -12,10 +12,24 @@
 - 自动生成帮助文档
 - 支持 Console 模式
 
+### Console 参数建议
+
+- 优先使用显式路径写法：`--units[0].id=1 --units[0].size=10000`
+- 对纯数字字符串、枚举字符串使用 Canonical 字面量：`--password="123456" --mode_code="1"`
+- 对特殊键名使用 `labels["app.kubernetes.io/name"]="demo"`
+- 不要依赖整段 JSON 在不同 shell 中的转义行为
+
+### 不推荐的写法
+
+```bash
+--units=[{"id":1,"size":10000}]
+--a={"b":1} --a.c=2
+```
+
 ### 选择合适的生命周期
 
 - **OneShot**：适合一次性任务（默认模式）
-- **KeepAlive**：适合需要多次调用的场景，通过 `--profile=keepalive` 启动参数指定
+- **KeepAlive**：适合需要多次调用的场景，通过 `--profile=keepalive` 指定
 
 ### 统一 Driver 可执行文件命名（Server 场景）
 
@@ -50,7 +64,7 @@ if (!t.waitNext(msg, 5000)) {
 Driver d;
 d.start("driver.exe");
 // ... 使用 ...
-d.terminate();  // 不要忘记
+d.terminate();
 ```
 
 ## 性能优化

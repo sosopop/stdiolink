@@ -1,5 +1,6 @@
 #pragma once
 
+#include "json_cli_codec.h"
 #include "stdiolink/stdiolink_export.h"
 
 #include <QJsonObject>
@@ -8,12 +9,14 @@
 namespace stdiolink {
 
 /**
- * 类型推断：将字符串值转换为合适的 JSON 类型
+ * 兼容性辅助函数：将单个 CLI 文本按 Friendly 规则推断为 JSON 值。
+ * 新的结构化 CLI 解析应优先使用 JsonCliCodec。
  */
 STDIOLINK_API QJsonValue inferType(const QString& value);
 
 /**
- * 设置嵌套路径的值
+ * 兼容性辅助函数：仅支持旧式 a.b 路径。
+ * 新的结构化路径写入应优先使用 JsonCliCodec。
  */
 STDIOLINK_API void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& value);
 
@@ -44,6 +47,7 @@ public:
 
     // data 参数
     QJsonObject data;
+    QList<RawCliArg> rawDataArgs;
 
     // 错误信息
     QString errorMessage;

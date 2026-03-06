@@ -9,16 +9,61 @@ interface CommandLineExampleProps {
   params: Record<string, unknown>;
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined || value === '') return '';
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : String(value);
-  if (typeof value === 'string') {
-    if (/[\s"'\\|&;<>()$`!]/.test(value)) return `"${value}"`;
-    return value;
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function encodePathKey(key: string, isRoot: boolean): string {
+  if (/^[A-Za-z_][A-Za-z0-9_-]*$/.test(key)) {
+    return isRoot ? key : `.${key}`;
   }
-  // Object or Array
-  return `"${JSON.stringify(value)}"`;
+  const escaped = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `["${escaped}"]`;
+}
+
+function canonicalLiteral(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+function renderPath(prefix: string, value: unknown, out: string[]): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      out.push(`--${prefix}=[]`);
+      return;
+    }
+    value.forEach((item, index) => {
+      renderPath(`${prefix}[${index}]`, item, out);
+    });
+    return;
+  }
+
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
+    if (entries.length === 0) {
+      out.push(`--${prefix}={}`);
+      return;
+    }
+    entries.forEach(([key, child]) => {
+      renderPath(`${prefix}${encodePathKey(key, false)}`, child, out);
+    });
+    return;
+  }
+
+  out.push(`--${prefix}=${canonicalLiteral(value)}`);
+}
+
+export function renderCliArgs(params: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  Object.keys(params)
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((key) => {
+      renderPath(encodePathKey(key, true), params[key], out);
+    });
+  return out;
 }
 
 export function buildCommandLine(
@@ -27,13 +72,7 @@ export function buildCommandLine(
   params: Record<string, unknown>,
 ): string {
   if (!driverId || !command) return '';
-  const parts = [driverId, `--cmd=${command}`];
-  for (const [key, value] of Object.entries(params)) {
-    const formatted = formatValue(value);
-    if (!formatted) continue;
-    parts.push(`--${key}=${formatted}`);
-  }
-  return parts.join(' ');
+  return [driverId, `--cmd=${command}`, ...renderCliArgs(params)].join(' ');
 }
 
 export function buildArgsLine(
@@ -41,13 +80,7 @@ export function buildArgsLine(
   params: Record<string, unknown>,
 ): string {
   if (!command) return '';
-  const parts = [`--cmd=${command}`];
-  for (const [key, value] of Object.entries(params)) {
-    const formatted = formatValue(value);
-    if (!formatted) continue;
-    parts.push(`--${key}=${formatted}`);
-  }
-  return parts.join(' ');
+  return [`--cmd=${command}`, ...renderCliArgs(params)].join(' ');
 }
 
 export const CommandLineExample: React.FC<CommandLineExampleProps> = ({

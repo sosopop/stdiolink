@@ -1,0 +1,34 @@
+[
+  {
+    "name": "numeric_string_password",
+    "params": {
+      "password": "123456"
+    },
+    "args": [
+      "--password=\"123456\""
+    ]
+  },
+  {
+    "name": "object_array_units",
+    "params": {
+      "units": [
+        { "id": 1, "size": 10000 }
+      ]
+    },
+    "args": [
+      "--units[0].id=1",
+      "--units[0].size=10000"
+    ]
+  },
+  {
+    "name": "special_key_labels",
+    "params": {
+      "labels": {
+        "app.kubernetes.io/name": "demo"
+      }
+    },
+    "args": [
+      "--labels[\"app.kubernetes.io/name\"]=\"demo\""
+    ]
+  }
+]

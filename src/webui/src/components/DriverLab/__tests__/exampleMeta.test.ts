@@ -17,7 +17,10 @@ describe('normalizeCommandExamples', () => {
       { description: 'ok2', mode: 'stdio', params: { a: 2 } },
     ];
     const out = normalizeCommandExamples(input);
-    expect(out).toEqual([{ description: 'ok', mode: 'console', params: { a: 1 } }]);
+    expect(out).toEqual([
+      { description: 'ok', mode: 'console', params: { a: 1 } },
+      { description: 'ok2', mode: 'stdio', params: { a: 2 } },
+    ]);
   });
 
   it('keeps expectedOutput when provided', () => {

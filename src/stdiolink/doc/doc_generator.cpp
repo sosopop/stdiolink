@@ -1,4 +1,5 @@
 #include "doc_generator.h"
+#include "cli_example_formatter.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QRegularExpression>
@@ -82,86 +83,12 @@ QString qjsonValueCompactString(const QJsonValue& v) {
     return "null";
 }
 
-QString formatCliValue(const QJsonValue& value) {
-    if (value.isNull() || value.isUndefined()) {
-        return QString();
-    }
-    if (value.isBool()) {
-        return value.toBool() ? "true" : "false";
-    }
-    if (value.isDouble()) {
-        return QString::number(value.toDouble(), 'g', 15);
-    }
-    if (value.isString()) {
-        const QString s = value.toString();
-        if (s.isEmpty()) {
-            return QString();
-        }
-        if (s.contains(QRegularExpression(R"([\s"'\\|&;<>()$`!])"))) {
-            QString escaped = s;
-            escaped.replace("\\", "\\\\");
-            escaped.replace("\"", "\\\"");
-            return "\"" + escaped + "\"";
-        }
-        return s;
-    }
-    QString json;
-    if (value.isObject()) {
-        json = QString::fromUtf8(QJsonDocument(value.toObject()).toJson(QJsonDocument::Compact));
-    } else if (value.isArray()) {
-        json = QString::fromUtf8(QJsonDocument(value.toArray()).toJson(QJsonDocument::Compact));
-    }
-    if (json.isEmpty()) {
-        return QString();
-    }
-    QString escaped = json;
-    escaped.replace("\\", "\\\\");
-    escaped.replace("\"", "\\\"");
-    return "\"" + escaped + "\"";
-}
-
 QString formatExampleCli(const QString& cmdName, const QJsonObject& ex) {
-    const QString mode = ex.value("mode").toString();
-    const QJsonObject params = ex.value("params").toObject();
-
-    if (mode == "stdio") {
-        return "echo '<jsonl>' | <program> --mode=stdio";
-    }
-
-    QStringList parts;
-    parts << "<program>" << ("--cmd=" + cmdName);
-
-    if (!mode.isEmpty() && mode != "console") {
-        parts << ("--mode=" + mode);
-    }
-
-    const QJsonValue profileValue = params.value("profile");
-    const QString profile = profileValue.isString() ? profileValue.toString() : QString();
-    if (!profile.isEmpty() && profile != "oneshot") {
-        parts << ("--profile=" + profile);
-    }
-
-    QStringList keys = params.keys();
-    keys.sort(Qt::CaseSensitive);
-    for (const QString& key : keys) {
-        if (key == "mode" || key == "profile") {
-            continue;
-        }
-        const QString formatted = formatCliValue(params.value(key));
-        if (formatted.isEmpty()) {
-            continue;
-        }
-        parts << ("--" + key + "=" + formatted);
-    }
-    return parts.join(' ');
+    return stdiolink::formatCliExampleCommand(cmdName, ex);
 }
 
 QString formatExampleStdinLine(const QString& cmdName, const QJsonObject& ex) {
-    const QJsonObject req{
-        {"cmd", cmdName},
-        {"data", ex.value("params").toObject()},
-    };
-    return QString::fromUtf8(QJsonDocument(req).toJson(QJsonDocument::Compact));
+    return stdiolink::formatCliExampleStdinLine(cmdName, ex);
 }
 
 QString jsonValueToIndented(const QJsonValue& value) {

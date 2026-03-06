@@ -10,6 +10,8 @@ set(TEST_SOURCES
     test_host_driver.cpp
     test_wait_any.cpp
     test_console.cpp
+    test_json_cli_codec.cpp
+    test_driver_core_console_stub.cpp
     test_meta_types.cpp
     test_meta_describe.cpp
     test_meta_builder.cpp
@@ -74,6 +76,7 @@ set(TEST_SOURCES
     test_driver_resolve.cpp
     test_multiscan_driver.cpp
     test_3dvision_websocket.cpp
+    test_manual_docs.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -306,3 +309,14 @@ set_target_properties(test_tree_guard_check_stub PROPERTIES
 set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_tree_guard_check_stub)
 
 add_dependencies(stdiolink_tests test_tree_guard_check_stub)
+
+add_executable(test_console_meta_driver test_console_meta_driver_main.cpp)
+
+target_link_libraries(test_console_meta_driver PRIVATE stdiolink)
+
+set_target_properties(test_console_meta_driver PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
+)
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_console_meta_driver)
+
+add_dependencies(stdiolink_tests test_console_meta_driver)

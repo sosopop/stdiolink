@@ -25,11 +25,12 @@ function normalizeOne(item: unknown): CommandExampleMeta | null {
 
 export function normalizeCommandExamples(input: unknown): CommandExampleMeta[] {
   if (!Array.isArray(input)) return [];
+  const out: CommandExampleMeta[] = [];
   for (const item of input) {
     const normalized = normalizeOne(item);
     if (normalized !== null) {
-      return [normalized];
+      out.push(normalized);
     }
   }
-  return [];
+  return out;
 }

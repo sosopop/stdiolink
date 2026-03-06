@@ -128,35 +128,42 @@ TEST(ConsoleArgs, DataSimple) {
     const char* argv[] = {"prog", "--cmd=scan", "--fps=10"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
-    EXPECT_EQ(args.data["fps"].toInt(), 10);
+    EXPECT_TRUE(args.data.isEmpty());
+    ASSERT_EQ(args.rawDataArgs.size(), 1);
+    EXPECT_EQ(args.rawDataArgs[0].path, "fps");
+    EXPECT_EQ(args.rawDataArgs[0].rawValue, "10");
 }
 
 TEST(ConsoleArgs, DataMultiple) {
     const char* argv[] = {"prog", "--cmd=scan", "--fps=10", "--enable=true", "--name=test"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(5, const_cast<char**>(argv)));
-    EXPECT_EQ(args.data["fps"].toInt(), 10);
-    EXPECT_EQ(args.data["enable"].toBool(), true);
-    EXPECT_EQ(args.data["name"].toString(), "test");
+    EXPECT_TRUE(args.data.isEmpty());
+    ASSERT_EQ(args.rawDataArgs.size(), 3);
+    EXPECT_EQ(args.rawDataArgs[0].path, "fps");
+    EXPECT_EQ(args.rawDataArgs[1].path, "enable");
+    EXPECT_EQ(args.rawDataArgs[2].path, "name");
 }
 
 TEST(ConsoleArgs, DataNested) {
     const char* argv[] = {"prog", "--cmd=scan", "--roi.x=10", "--roi.y=20"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(4, const_cast<char**>(argv)));
-
-    auto roi = args.data["roi"].toObject();
-    EXPECT_EQ(roi["x"].toInt(), 10);
-    EXPECT_EQ(roi["y"].toInt(), 20);
+    EXPECT_TRUE(args.data.isEmpty());
+    ASSERT_EQ(args.rawDataArgs.size(), 2);
+    EXPECT_EQ(args.rawDataArgs[0].path, "roi.x");
+    EXPECT_EQ(args.rawDataArgs[1].path, "roi.y");
 }
 
-TEST(ConsoleArgs, DataArgPrefix) {
+TEST(ConsoleArgs, T15_ArgPrefixAvoidsFrameworkConflict) {
     // --arg-mode 用于避免与 --mode 冲突
     const char* argv[] = {"prog", "--cmd=scan", "--mode=console", "--arg-mode=frame"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(4, const_cast<char**>(argv)));
     EXPECT_EQ(args.mode, "console");
-    EXPECT_EQ(args.data["mode"].toString(), "frame");
+    ASSERT_EQ(args.rawDataArgs.size(), 1);
+    EXPECT_EQ(args.rawDataArgs[0].path, "mode");
+    EXPECT_EQ(args.rawDataArgs[0].rawValue, "frame");
 }
 
 // ============================================
@@ -174,8 +181,17 @@ TEST(ConsoleArgs, InvalidJson) {
     const char* argv[] = {"prog", "--cmd=test", "--obj={invalid}"};
     ConsoleArgs args;
     EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
-    // 无效 JSON 应被当作字符串
-    EXPECT_EQ(args.data["obj"].toString(), "{invalid}");
+    ASSERT_EQ(args.rawDataArgs.size(), 1);
+    EXPECT_EQ(args.rawDataArgs[0].path, "obj");
+    EXPECT_EQ(args.rawDataArgs[0].rawValue, "{invalid}");
+}
+
+TEST(ConsoleArgs, DefersStructuredCliErrorsToDriverCore) {
+    const char* argv[] = {"prog", "--cmd=test", "--users[].name=alice"};
+    ConsoleArgs args;
+    EXPECT_TRUE(args.parse(3, const_cast<char**>(argv)));
+    ASSERT_EQ(args.rawDataArgs.size(), 1);
+    EXPECT_EQ(args.rawDataArgs[0].path, "users[].name");
 }
 
 TEST(ConsoleArgs, MissingCmd) {

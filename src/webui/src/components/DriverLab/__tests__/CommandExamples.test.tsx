@@ -4,7 +4,7 @@ import { ConfigProvider } from 'antd';
 import { CommandExamples } from '../CommandExamples';
 
 describe('CommandExamples', () => {
-  it('renders only one example item', () => {
+  it('renders all valid examples with mode metadata', () => {
     render(
       <ConfigProvider>
         <CommandExamples
@@ -19,11 +19,11 @@ describe('CommandExamples', () => {
 
     expect(screen.getByTestId('command-examples')).toBeDefined();
     expect(screen.getByTestId('example-item-0')).toBeDefined();
+    expect(screen.getByTestId('example-item-1')).toBeDefined();
     expect(screen.getByTestId('example-params-0').textContent).toContain('"host":"127.0.0.1"');
-    expect(screen.queryByTestId('example-item-1')).toBeNull();
-    expect(screen.queryByText('读取示例')).toBeNull();
-    expect(screen.queryByText('stdio')).toBeNull();
-    expect(screen.queryByText('console')).toBeNull();
+    expect(screen.getByTestId('example-description-0').textContent).toContain('读取示例');
+    expect(screen.getByTestId('example-mode-0').textContent).toContain('stdio');
+    expect(screen.getByTestId('example-mode-1').textContent).toContain('console');
   });
 
   it('applies example params on click', () => {

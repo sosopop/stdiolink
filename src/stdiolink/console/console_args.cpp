@@ -7,40 +7,13 @@
 namespace stdiolink {
 
 QJsonValue inferType(const QString& value) {
-    // bool
-    if (value == "true")
-        return true;
-    if (value == "false")
-        return false;
-
-    // null
-    if (value == "null")
-        return QJsonValue::Null;
-
-    // number
-    bool ok;
-    if (!value.contains('.')) {
-        int i = value.toInt(&ok);
-        if (ok)
-            return i;
+    QJsonParseError error{};
+    const QByteArray wrapped = "[" + value.toUtf8() + "]";
+    const QJsonDocument doc = QJsonDocument::fromJson(wrapped, &error);
+    if (error.error == QJsonParseError::NoError && doc.isArray() && doc.array().size() == 1) {
+        return doc.array().at(0);
     }
-    double d = value.toDouble(&ok);
-    if (ok)
-        return d;
-
-    // JSON object/array
-    if (value.startsWith('{') || value.startsWith('[')) {
-        QJsonDocument doc = QJsonDocument::fromJson(value.toUtf8());
-        if (!doc.isNull()) {
-            if (doc.isObject())
-                return doc.object();
-            if (doc.isArray())
-                return doc.array();
-        }
-    }
-
-    // string
-    return value;
+    return QJsonValue(value);
 }
 
 void setNestedValue(QJsonObject& root, const QString& path, const QJsonValue& value) {
@@ -129,6 +102,8 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
         }
     }
 
+    data = QJsonObject{};
+
     // 验证必需参数
     // 如果显式指定 stdio 模式，不需要 --cmd
     if (mode == "stdio") {
@@ -152,7 +127,7 @@ bool ConsoleArgs::parse(int argc, char* argv[]) {
     }
 
     // 传入 data 参数时必须提供命令
-    if (!data.isEmpty() && cmd.isEmpty()) {
+    if (!rawDataArgs.isEmpty() && cmd.isEmpty()) {
         errorMessage = "Data arguments require --cmd";
         return false;
     }
@@ -179,8 +154,7 @@ void ConsoleArgs::parseFrameworkArg(const QString& key, const QString& value) {
 }
 
 void ConsoleArgs::parseDataArg(const QString& key, const QString& value) {
-    QJsonValue jsonValue = inferType(value);
-    setNestedValue(data, key, jsonValue);
+    rawDataArgs.append(RawCliArg{key, value});
 }
 
 bool ConsoleArgs::isInteractiveStdin() {

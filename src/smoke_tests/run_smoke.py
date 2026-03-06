@@ -11,12 +11,18 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 PLAN_SCRIPTS = {
+    "m98_json_cli_normalization": SCRIPT_DIR / "m98_json_cli_normalization.py",
+    "m99_cli_example_unification": SCRIPT_DIR / "m99_cli_example_unification.py",
+    "m100_cli_docs_and_migration": SCRIPT_DIR / "m100_cli_docs_and_migration.py",
     "m94_server_run_oneshot": SCRIPT_DIR / "m94_server_run_oneshot_smoke.py",
     "m95_driver_examples": SCRIPT_DIR / "m95_driver_examples.py",
     "m96_3dvision_ws": SCRIPT_DIR / "m96_3dvision_ws.py",
     "m97_plc_crane_sim": SCRIPT_DIR / "m97_plc_crane_sim_smoke.py",
 }
 LEGACY_MILESTONE_ALIASES = {
+    "98": "m98_json_cli_normalization",
+    "99": "m99_cli_example_unification",
+    "100": "m100_cli_docs_and_migration",
     "94": "m94_server_run_oneshot",
     "95": "m95_driver_examples",
     "96": "m96_3dvision_ws",

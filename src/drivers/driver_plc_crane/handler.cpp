@@ -37,6 +37,9 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
     int port = p["port"].toInt(502);
     int unitId = p["unit_id"].toInt(1);
     int timeout = p["timeout"].toInt(3000);
+    auto endpointError = [&](const QString& message) {
+        return QString("%1 (%2:%3)").arg(message, host).arg(port);
+    };
 
     // Pre-validate action/mode enums before connecting
     if (cmd == "cylinder_control") {
@@ -84,7 +87,7 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
     if (cmd == "read_status") {
         auto result = client->readHoldingRegisters(9, 6);
         if (!result.success) {
-            resp.error(2, QJsonObject{{"message", result.errorMessage}});
+            resp.error(2, QJsonObject{{"message", endpointError(result.errorMessage)}});
             return;
         }
         resp.done(0, QJsonObject{{"cylinder_up", result.registers[0] != 0},
@@ -101,7 +104,7 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
 
         auto result = client->writeSingleRegister(0, value);
         if (!result.success) {
-            resp.error(2, QJsonObject{{"message", result.errorMessage}});
+            resp.error(2, QJsonObject{{"message", endpointError(result.errorMessage)}});
             return;
         }
         resp.done(0, QJsonObject{{"written", true}, {"action", action}});
@@ -115,7 +118,7 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
 
         auto result = client->writeSingleRegister(1, value);
         if (!result.success) {
-            resp.error(2, QJsonObject{{"message", result.errorMessage}});
+            resp.error(2, QJsonObject{{"message", endpointError(result.errorMessage)}});
             return;
         }
         resp.done(0, QJsonObject{{"written", true}, {"action", action}});
@@ -125,7 +128,7 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
 
         auto result = client->writeSingleRegister(2, value);
         if (!result.success) {
-            resp.error(2, QJsonObject{{"message", result.errorMessage}});
+            resp.error(2, QJsonObject{{"message", endpointError(result.errorMessage)}});
             return;
         }
         resp.done(0, QJsonObject{{"written", true}, {"action", action}});
@@ -135,7 +138,7 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
 
         auto result = client->writeSingleRegister(3, value);
         if (!result.success) {
-            resp.error(2, QJsonObject{{"message", result.errorMessage}});
+            resp.error(2, QJsonObject{{"message", endpointError(result.errorMessage)}});
             return;
         }
         resp.done(0, QJsonObject{{"written", true}, {"mode", mode}});

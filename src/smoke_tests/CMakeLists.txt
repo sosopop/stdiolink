@@ -1,6 +1,51 @@
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_test(
+    NAME smoke_m98_json_cli_normalization
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m98_json_cli_normalization
+)
+
+set_tests_properties(
+    smoke_m98_json_cli_normalization
+    PROPERTIES
+        LABELS "smoke;m98"
+        TIMEOUT 120
+)
+
+add_test(
+    NAME smoke_m99_cli_example_unification
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m99_cli_example_unification
+)
+
+set_tests_properties(
+    smoke_m99_cli_example_unification
+    PROPERTIES
+        LABELS "smoke;m99"
+        TIMEOUT 120
+)
+
+add_test(
+    NAME smoke_m100_cli_docs_and_migration
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m100_cli_docs_and_migration
+)
+
+set_tests_properties(
+    smoke_m100_cli_docs_and_migration
+    PROPERTIES
+        LABELS "smoke;m100"
+        TIMEOUT 60
+)
+
+add_test(
     NAME smoke_m94_server_run_oneshot
     COMMAND
         ${Python3_EXECUTABLE}

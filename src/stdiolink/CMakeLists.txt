@@ -32,11 +32,13 @@ set(HOST_SOURCES
 
 set(CONSOLE_SOURCES
     console/console_args.cpp
+    console/json_cli_codec.cpp
     console/console_responder.cpp
     console/system_options.cpp
 )
 
 set(DOC_SOURCES
+    doc/cli_example_formatter.cpp
     doc/doc_generator.cpp
 )
 

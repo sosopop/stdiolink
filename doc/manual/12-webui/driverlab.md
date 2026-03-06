@@ -4,26 +4,34 @@ DriverLab 是 WebUI 内置的 Driver 实时调试工具，通过 WebSocket 与 D
 
 ## 界面布局
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │  连接面板：选择 Driver · 运行模式 · 连接/断开     │
 ├────────────────────┬─────────────────────────────┤
 │  命令面板          │  协议流查看器                │
 │  · 命令列表        │  · 请求/响应消息流           │
 │  · 参数表单        │  · 展开/折叠 JSON            │
-│  · 执行按钮        │  · 自动滚动                  │
+│  · 示例区          │  · 自动滚动                  │
+│  · 命令行预览      │                             │
 ├────────────────────┴─────────────────────────────┤
 │  状态栏：连接状态 · PID · 元数据信息              │
 └──────────────────────────────────────────────────┘
 ```
 
+## 执行边界
+
+- DriverLab 中显示的命令行示例本质上是 **argv token** 展示和复制辅助
+- 示例文本遵循与 Console 模式一致的 JSON -> CLI 规范
+- DriverLab 实际执行仍走 WebSocket/JSON 请求，不以该字符串作为内部协议
+- 命令行预览始终反映当前表单参数；点击 `Apply example` 后，示例参数才会写回表单并更新预览
+
 ## 连接流程
 
 1. 在连接面板选择目标 Driver
-2. 选择运行模式：`oneshot`（单次）或 `keepalive`（保活）
+2. 选择运行模式：`oneshot` 或 `keepalive`
 3. 点击连接，WebUI 通过 WebSocket 连接到后端
 4. 后端启动 Driver 进程，返回元数据和命令列表
-5. 命令面板自动填充可用命令
+5. 命令面板自动填充可用命令、示例和参数表单
 
 ## WebSocket 协议
 
@@ -32,10 +40,7 @@ DriverLab 是 WebUI 内置的 Driver 实时调试工具，通过 WebSocket 与 D
 ### 客户端发送
 
 ```json
-// 执行命令
 {"type": "exec", "cmd": "command_name", "data": {"param": "value"}}
-
-// 取消执行
 {"type": "cancel"}
 ```
 
@@ -45,15 +50,14 @@ DriverLab 是 WebUI 内置的 Driver 实时调试工具，通过 WebSocket 与 D
 |------|------|
 | `driver.started` | Driver 进程已启动 |
 | `driver.restarted` | Driver 进程已重启（OneShot 模式） |
-| `meta` | 元数据（命令列表、参数定义） |
+| `meta` | 元数据（命令列表、参数定义、examples） |
 | `stdout` | Driver 的 JSONL 响应输出 |
 | `driver.exited` | Driver 进程已退出 |
 | `error` | 错误信息 |
 
-## 功能特性
+## 命令行示例来源
 
-- **命令面板**：根据元数据自动生成参数表单，支持类型校验
-- **协议流查看器**：按时间顺序展示所有请求和响应消息，最多保留 500 条
-- **消息操作**：导出消息记录、清空消息、复制单条消息
-- **自动滚动**：新消息到达时自动滚动到底部，可手动关闭
-- **状态指示**：实时显示连接状态（connected / connecting / disconnected / error）
+- `meta.examples` 提供结构化 `params` 与 `mode`
+- 前端按统一规则把结构化参数渲染成 CLI 预览
+- console 示例用于展示路径展开后的命令行
+- stdio 示例保留 JSON 请求语义，不会被 console 示例覆盖

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import React from 'react';
 import { ConfigProvider } from 'antd';
 import { CommandPanel } from '../CommandPanel';
 
@@ -47,6 +48,34 @@ function renderPanel(overrides = {}) {
     ...overrides,
   };
   return { ...render(<ConfigProvider><CommandPanel {...props} /></ConfigProvider>), props };
+}
+
+function renderPanelHarness(initialParams: Record<string, unknown>) {
+  const onSelectCommand = vi.fn();
+  const onExec = vi.fn();
+  const onCancel = vi.fn();
+
+  const Harness = () => {
+    const [params, setParams] = React.useState<Record<string, unknown>>(initialParams);
+    return (
+      <ConfigProvider>
+        <CommandPanel
+          commands={mockCommands}
+          selectedCommand="add"
+          commandParams={params}
+          executing={false}
+          connected={true}
+          driverId="calc"
+          onSelectCommand={onSelectCommand}
+          onParamsChange={setParams}
+          onExec={onExec}
+          onCancel={onCancel}
+        />
+      </ConfigProvider>
+    );
+  };
+
+  return render(<Harness />);
 }
 
 describe('CommandPanel', () => {
@@ -97,11 +126,19 @@ describe('CommandPanel', () => {
     const { props } = renderPanel({ selectedCommand: 'add' });
     fireEvent.click(screen.getByTestId('apply-example-0'));
     expect(props.onParamsChange).toHaveBeenCalledWith({ a: 1, b: 2 });
-    expect(screen.queryByTestId('apply-example-1')).toBeNull();
+    expect(screen.getByTestId('apply-example-1')).toBeDefined();
   });
 
   it('does not render examples block when command has no examples', () => {
     renderPanel({ selectedCommand: 'ping' });
     expect(screen.queryByTestId('command-examples')).toBeNull();
+  });
+
+  it('preview follows current params and changes only after apply updates state', () => {
+    renderPanelHarness({ a: 9, b: 9 });
+    expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=9 --b=9');
+
+    fireEvent.click(screen.getByTestId('apply-example-0'));
+    expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=1 --b=2');
   });
 });

@@ -52,6 +52,46 @@ if (!d.start(path)) {
 **解决方案：**
 确保使用 UTF-8 编码。
 
+## Console 参数问题
+
+### `password: expected string`
+
+**症状：** console 调用返回 `ValidationFailed`，消息包含 `password: expected string`
+
+**根因：** 旧实现会把 `--password=123456` 这类纯数字字符串提前推断成 number；M98 后 console 模式会按元数据保留字符串，但 stdio 请求仍必须传 JSON string。
+
+**推荐写法：**
+
+```bash
+stdio.drv.example --cmd=login --password="123456"
+```
+
+### `units: expected array` / `expected object`
+
+**症状：** 在 PowerShell 5.1、cmd 中传 `--units=[{"id":1}]` 或复杂对象参数时失败，错误消息包含 `expected array` 或 `expected object`
+
+**根因：** 这类写法依赖 shell 保留 JSON 内部双引号；PowerShell 5.1 和 cmd 对这类转义尤其脆弱。
+
+**推荐写法：**
+
+```bash
+--units[0].id=1 --units[0].size=10000
+```
+
+### PowerShell 5.1 / cmd 兼容性
+
+- `PowerShell 7` 对复杂参数保留更稳定
+- `PowerShell 5.1` 和 `cmd` 更容易在传参过程中破坏 JSON 引号
+- 对第三方脚本集成，优先传 argv token 列表，不要手工拼一整行 JSON 命令
+
+## 迁移说明
+
+| 旧写法 | 失败症状 | 推荐替代 |
+|--------|----------|----------|
+| `--units=[{"id":1}]` | `expected array` | `--units[0].id=1` |
+| `--password=123456` | `expected string` | `--password="123456"` |
+| `--a={"b":1} --a.c=2` | `path conflict` / 校验失败 | 统一使用完整 JSON 或统一使用子路径 |
+
 ## JS Service 问题
 
 ### 模块加载失败

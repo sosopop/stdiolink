@@ -3,6 +3,24 @@ import { buildCommandLine, buildArgsLine } from '../CommandLineExample';
 import { render, screen } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { CommandLineExample } from '../CommandLineExample';
+import fs from 'node:fs';
+import path from 'node:path';
+
+function loadRenderCases() {
+  const candidates = [
+    path.resolve(process.cwd(), '../tests/data/cli_render_cases.json'),
+    path.resolve(process.cwd(), 'src/tests/data/cli_render_cases.json'),
+  ];
+  const fixturePath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!fixturePath) {
+    throw new Error(`cli_render_cases.json not found in ${candidates.join(', ')}`);
+  }
+  return JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as Array<{
+    name: string;
+    params: Record<string, unknown>;
+    args: string[];
+  }>;
+}
 
 describe('buildCommandLine', () => {
   it('returns empty when no driver or command', () => {
@@ -27,22 +45,29 @@ describe('buildCommandLine', () => {
 
   it('serializes object values as compact JSON', () => {
     const result = buildCommandLine('drv', 'cmd', { data: { x: 1 } });
-    expect(result).toContain('--data="{"x":1}"');
+    expect(result).toContain('--data.x=1');
   });
 
-  it('skips null and empty string params', () => {
+  it('renders null and empty string as canonical literals', () => {
     const result = buildCommandLine('drv', 'cmd', { a: 1, b: null, c: '' });
-    expect(result).toBe('drv --cmd=cmd --a=1');
+    expect(result).toBe('drv --cmd=cmd --a=1 --b=null --c=""');
   });
 
   it('handles boolean values', () => {
     const result = buildCommandLine('drv', 'cmd', { verbose: true, quiet: false });
-    expect(result).toBe('drv --cmd=cmd --verbose=true --quiet=false');
+    expect(result).toBe('drv --cmd=cmd --quiet=false --verbose=true');
   });
 
   it('handles array values', () => {
     const result = buildCommandLine('drv', 'cmd', { ids: [1, 2, 3] });
-    expect(result).toContain('--ids="[1,2,3]"');
+    expect(result).toBe('drv --cmd=cmd --ids[0]=1 --ids[1]=2 --ids[2]=3');
+  });
+
+  it('matches shared fixture cases', () => {
+    const fixture = loadRenderCases();
+    fixture.forEach((item) => {
+      expect(buildArgsLine('run', item.params)).toBe(`--cmd=run ${item.args.join(' ')}`);
+    });
   });
 });
 
