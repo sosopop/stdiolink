@@ -26,7 +26,7 @@
         "description": "Server configuration",
         "fields": {
             "host": { "type": "string", "default": "0.0.0.0", "description": "Bind address" },
-            "port": { "type": "int", "default": 8080, "description": "Server port" },
+            "port": { "type": "int", "default": 6200, "description": "Server port" },
             "ssl": { "type": "bool", "default": false, "description": "Enable SSL" }
         }
     },
@@ -43,3 +43,4 @@
         "constraints": { "min": 0, "max": 1 }
     }
 }
+

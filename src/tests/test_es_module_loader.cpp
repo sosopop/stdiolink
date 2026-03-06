@@ -132,14 +132,14 @@ TEST_F(EsModuleLoaderTest, ImportNonexistentFileFails) {
 }
 
 TEST_F(EsModuleLoaderTest, ExportDefaultWorks) {
-    writeFile(m_tmpDir, "config.js", "export default { port: 8080 };\n");
+    writeFile(m_tmpDir, "config.js", "export default { port: 6200 };\n");
     const QString mainPath = writeFile(m_tmpDir, "main.js",
                                        "import config from './config.js';\n"
                                        "globalThis.result = config.port;\n");
     ASSERT_FALSE(mainPath.isEmpty());
 
     EXPECT_EQ(evalAndDrain(mainPath), 0);
-    EXPECT_EQ(readGlobalInt(m_engine->context(), "result"), 8080);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "result"), 6200);
 }
 
 TEST_F(EsModuleLoaderTest, BuiltinModuleIntercept) {
@@ -247,3 +247,4 @@ TEST_F(EsModuleLoaderTest, WindowsBackslashSpecifierSupportedAndDeduped) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "loads"), 1);
 }
 #endif
+

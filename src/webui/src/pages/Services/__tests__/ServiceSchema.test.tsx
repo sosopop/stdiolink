@@ -16,7 +16,7 @@ describe('ServiceSchema', () => {
   it('renders schema table with fields', () => {
     const fields: FieldMeta[] = [
       { name: 'host', type: 'string', description: 'Server host', default: 'localhost' },
-      { name: 'port', type: 'int', description: 'Server port', default: 8080 },
+      { name: 'port', type: 'int', description: 'Server port', default: 6200 },
     ];
     renderComponent(fields, ['host']);
     expect(screen.getByTestId('service-schema')).toBeDefined();
@@ -47,3 +47,4 @@ describe('ServiceSchema', () => {
     expect(screen.getByText('database.port')).toBeDefined();
   });
 });
+

@@ -25,7 +25,7 @@ void printHelp() {
     err << "Usage: stdiolink_server [options]\n"
         << "Options:\n"
         << "  --data-root=<path>       Data root directory (default: .)\n"
-        << "  --port=<port>            HTTP port (default: 8080)\n"
+        << "  --port=<port>            HTTP port (default: 6200)\n"
         << "  --host=<addr>            Listen address (default: 127.0.0.1)\n"
         << "  --log-level=<level>      debug|info|warn|error (default: info)\n"
         << "  -h, --help               Show this help\n"
@@ -152,3 +152,4 @@ int main(int argc, char* argv[]) {
 
     return app.exec();
 }
+

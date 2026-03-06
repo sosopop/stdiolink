@@ -8,7 +8,7 @@ StdioLink Server 提供了一套完整的 RESTful API，用于管理服务（Ser
 
 **默认配置**:
 - Host: `127.0.0.1`
-- Port: `8080`
+- Port: `6200`
 
 **CORS 支持**: 所有接口支持跨域请求，默认允许所有来源（`*`）
 
@@ -1514,3 +1514,4 @@ GET /api/instances/{instanceId}/logs?lines=100
 - 完整的服务、项目、实例、驱动管理 API
 - SSE 事件推送支持
 - 文件系统管理 API
+

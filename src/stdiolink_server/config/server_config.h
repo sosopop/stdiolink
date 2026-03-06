@@ -7,7 +7,7 @@
 namespace stdiolink_server {
 
 struct ServerConfig {
-    int port = 8080;
+    int port = 6200;
     QString host = "127.0.0.1";
     QString logLevel = "info";
     QString serviceProgram;
@@ -21,3 +21,4 @@ struct ServerConfig {
 };
 
 } // namespace stdiolink_server
+

@@ -1900,7 +1900,7 @@ TEST(ApiRouterTest, ValidateSchemaViaHttp) {
 
     // Valid schema
     QJsonObject validSchema{
-        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 6200}}},
         {"name", QJsonObject{{"type", "string"}}}
     };
     ASSERT_TRUE(sendRequest("POST",
@@ -2839,3 +2839,4 @@ TEST(ApiRouterTest, GetEventsFilterByProjectId) {
                       .value("projectId").toString(), "pA");
     }
 }
+

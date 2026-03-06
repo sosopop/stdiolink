@@ -5,7 +5,7 @@ import { ParamsTable } from '../ParamsTable';
 
 const mockParams = [
   { name: 'host', type: 'string', required: true, description: 'Server host' },
-  { name: 'port', type: 'int', required: false, min: 1, max: 65535, default: 8080 },
+  { name: 'port', type: 'int', required: false, min: 1, max: 65535, default: 6200 },
   { name: 'db', type: 'object', fields: [{ name: 'name', type: 'string', required: true }] },
 ];
 
@@ -39,3 +39,4 @@ describe('ParamsTable', () => {
     expect(screen.getByText(/max: 65535/)).toBeDefined();
   });
 });
+

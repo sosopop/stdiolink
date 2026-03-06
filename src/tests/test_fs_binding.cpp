@@ -83,9 +83,9 @@ TEST_F(JsFsTest, WriteJsonAndReadJson) {
     int ret = runScript(
         "import { writeJson, readJson } from 'stdiolink/fs';\n"
         "const p = __tmpDir + '/cfg.json';\n"
-        "writeJson(p, { port: 8080, name: 'test' });\n"
+        "writeJson(p, { port: 6200, name: 'test' });\n"
         "const cfg = readJson(p);\n"
-        "globalThis.ok = (cfg.port === 8080 && cfg.name === 'test') ? 1 : 0;\n"
+        "globalThis.ok = (cfg.port === 6200 && cfg.name === 'test') ? 1 : 0;\n"
     );
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
@@ -240,3 +240,4 @@ TEST_F(JsFsTest, NonStringArgThrowsTypeError) {
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
 }
+

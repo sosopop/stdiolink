@@ -28,7 +28,7 @@ stdiolink_service 提供类型安全的配置参数机制，通过 `config.schem
 import { getConfig } from 'stdiolink';
 
 const config = getConfig();
-console.log(config.port);   // 8080（命令行传入）
+console.log(config.port);   // 6200（命令行传入）
 console.log(config.debug);  // false（默认值）
 ```
 
@@ -50,7 +50,7 @@ console.log(config.debug);  // false（默认值）
 | type 值 | 命令行格式 | 示例 |
 |---------|-----------|------|
 | `string` | 原始字符串 | `--config.name=hello` |
-| `int` | 整数字面量 | `--config.port=8080` |
+| `int` | 整数字面量 | `--config.port=6200` |
 | `int64` | 64位整数 | `--config.id=9007199254740991` |
 | `double` | 浮点字面量 | `--config.ratio=0.5` |
 | `bool` | `true`/`false` | `--config.debug=true` |
@@ -80,7 +80,7 @@ console.log(config.debug);  // false（默认值）
 
 | 优先级 | 来源 | 示例 |
 |--------|------|------|
-| 1 | 命令行参数 | `--config.port=8080` |
+| 1 | 命令行参数 | `--config.port=6200` |
 | 2 | 配置文件 | `--config-file=config.json`（或 `--config-file=-` 从 stdin 读取） |
 | 3 | Schema 默认值 | `config.schema.json` 中的 `default` |
 
@@ -90,7 +90,7 @@ console.log(config.debug);  // false（默认值）
 
 ```bash
 # 直接传入配置
-stdiolink_service ./my_service --config.port=8080 --config.name=myService
+stdiolink_service ./my_service --config.port=6200 --config.name=myService
 
 # 使用配置文件
 stdiolink_service ./my_service --config-file=config.json
@@ -192,3 +192,4 @@ Config:
 - `getConfig()` 返回只读（冻结）的合并后配置对象
 - 多次调用 `getConfig()` 返回同一对象
 - 未注入配置时返回空对象 `{}`
+

@@ -296,10 +296,10 @@ TEST_F(JsIntegrationTest, ConfigInjectionViaServiceDir) {
         "console.log('name:', cfg.name);\n",
         schema);
 
-    auto r = runServiceDir(dir, {"--config.port=8080"});
+    auto r = runServiceDir(dir, {"--config.port=6200"});
     EXPECT_TRUE(r.finished);
     EXPECT_EQ(r.exitCode, 0);
-    EXPECT_TRUE(r.stderrText.contains("port: 8080"));
+    EXPECT_TRUE(r.stderrText.contains("port: 6200"));
     EXPECT_TRUE(r.stderrText.contains("name: default"));
 }
 
@@ -329,4 +329,5 @@ TEST_F(JsIntegrationTest, UnknownFieldTypeFailsWithExit2) {
     EXPECT_EQ(r.exitCode, 2);
     EXPECT_TRUE(r.stderrText.contains("unknown field type"));
 }
+
 

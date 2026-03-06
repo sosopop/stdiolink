@@ -20,7 +20,7 @@ using namespace stdiolink_server;
 // ---------------------------------------------------------------------------
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsBasic) {
-    const QUrl url("ws://127.0.0.1:8080/api/driverlab/driver_modbustcp");
+    const QUrl url("ws://127.0.0.1:6200/api/driverlab/driver_modbustcp");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_EQ(params.driverId, "driver_modbustcp");
     EXPECT_EQ(params.runMode, "oneshot");  // default
@@ -28,7 +28,7 @@ TEST(DriverLabWsHandlerTest, ParseConnectionParamsBasic) {
 }
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsWithRunMode) {
-    const QUrl url("ws://127.0.0.1:8080/api/driverlab/my_driver?runMode=keepalive");
+    const QUrl url("ws://127.0.0.1:6200/api/driverlab/my_driver?runMode=keepalive");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_EQ(params.driverId, "my_driver");
     EXPECT_EQ(params.runMode, "keepalive");
@@ -36,7 +36,7 @@ TEST(DriverLabWsHandlerTest, ParseConnectionParamsWithRunMode) {
 }
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsWithArgs) {
-    const QUrl url("ws://127.0.0.1:8080/api/driverlab/drv1?runMode=oneshot&args=--verbose,--port%3D502");
+    const QUrl url("ws://127.0.0.1:6200/api/driverlab/drv1?runMode=oneshot&args=--verbose,--port%3D502");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_EQ(params.driverId, "drv1");
     EXPECT_EQ(params.runMode, "oneshot");
@@ -46,26 +46,26 @@ TEST(DriverLabWsHandlerTest, ParseConnectionParamsWithArgs) {
 }
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsInvalidPath) {
-    const QUrl url("ws://127.0.0.1:8080/api/other/something");
+    const QUrl url("ws://127.0.0.1:6200/api/other/something");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_TRUE(params.driverId.isEmpty());
 }
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsEmptyDriverId) {
-    const QUrl url("ws://127.0.0.1:8080/api/driverlab/");
+    const QUrl url("ws://127.0.0.1:6200/api/driverlab/");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_TRUE(params.driverId.isEmpty());
 }
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsDefaultRunMode) {
     // No runMode query param → defaults to "oneshot"
-    const QUrl url("ws://127.0.0.1:8080/api/driverlab/test_drv");
+    const QUrl url("ws://127.0.0.1:6200/api/driverlab/test_drv");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_EQ(params.runMode, "oneshot");
 }
 
 TEST(DriverLabWsHandlerTest, ParseConnectionParamsEmptyArgs) {
-    const QUrl url("ws://127.0.0.1:8080/api/driverlab/drv?args=");
+    const QUrl url("ws://127.0.0.1:6200/api/driverlab/drv?args=");
     const auto params = DriverLabWsHandler::parseConnectionParams(url);
     EXPECT_TRUE(params.extraArgs.isEmpty());
 }
@@ -571,3 +571,4 @@ TEST(DriverLabWsHandlerTest, CloseAllClearsAndHeartbeatRecovers) {
     waitMs(300);
     EXPECT_EQ(fixture.handler->activeConnectionCount(), 0);
 }
+

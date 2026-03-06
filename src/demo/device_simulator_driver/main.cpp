@@ -85,7 +85,7 @@ void DeviceSimulatorHandler::buildMeta()
                 .placeholder("192.168.1.1")
                 .group("连接"))
             .param(FieldBuilder("port", FieldType::Int)
-                .defaultValue(8080)
+                .defaultValue(6200)
                 .range(1, 65535)))
         .command(CommandBuilder("disconnect")
             .description("断开连接"))
@@ -122,3 +122,4 @@ int main(int argc, char* argv[])
     core.setMetaHandler(&handler);
     return core.run(argc, argv);
 }
+

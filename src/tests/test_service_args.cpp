@@ -15,11 +15,11 @@ using namespace stdiolink_service;
 class ServiceArgsTest : public ::testing::Test {};
 
 TEST_F(ServiceArgsTest, ParseSimpleConfigArg) {
-    QStringList args = {"stdiolink_service", "./my_service", "--config.port=8080"};
+    QStringList args = {"stdiolink_service", "./my_service", "--config.port=6200"};
     auto result = ServiceArgs::parse(args);
     EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
     EXPECT_EQ(result.serviceDir, "./my_service");
-    EXPECT_EQ(result.rawConfigValues["port"].toString(), "8080");
+    EXPECT_EQ(result.rawConfigValues["port"].toString(), "6200");
 }
 
 TEST_F(ServiceArgsTest, ParseNestedConfigArg) {
@@ -75,7 +75,7 @@ TEST_F(ServiceArgsTest, DumpSchemaFlag) {
 }
 
 TEST_F(ServiceArgsTest, MissingServiceDir) {
-    QStringList args = {"stdiolink_service", "--config.port=8080"};
+    QStringList args = {"stdiolink_service", "--config.port=6200"};
     auto result = ServiceArgs::parse(args);
     EXPECT_FALSE(result.error.isEmpty());
 }
@@ -96,7 +96,7 @@ TEST_F(ServiceArgsTest, KeepJsonObjectLiteralAsRawString) {
 
 TEST_F(ServiceArgsTest, MultipleConfigArgs) {
     QStringList args = {"stdiolink_service", "./svc",
-                        "--config.port=8080",
+                        "--config.port=6200",
                         "--config.name=test",
                         "--config.debug=false"};
     auto result = ServiceArgs::parse(args);
@@ -266,3 +266,4 @@ TEST_F(ServiceArgsTest, M72_R17_LoadConfigFileUnderLimitAccepted) {
     EXPECT_TRUE(err.isEmpty()) << err.toStdString();
     EXPECT_EQ(obj["port"].toInt(), 3000);
 }
+

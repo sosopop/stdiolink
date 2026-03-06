@@ -29,7 +29,7 @@ describe('StringField', () => {
 
 describe('NumberField', () => {
   it('renders with min/max', () => {
-    render(<ConfigProvider><NumberField field={{ name: 'port', type: 'int', min: 1, max: 65535 }} value={8080} onChange={vi.fn()} /></ConfigProvider>);
+    render(<ConfigProvider><NumberField field={{ name: 'port', type: 'int', min: 1, max: 65535 }} value={6200} onChange={vi.fn()} /></ConfigProvider>);
     expect(screen.getByTestId('input-port')).toBeDefined();
   });
 
@@ -92,3 +92,4 @@ describe('ArrayField', () => {
     expect(btn.closest('button')?.disabled).toBe(true);
   });
 });
+

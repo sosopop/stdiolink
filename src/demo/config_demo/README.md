@@ -29,13 +29,13 @@ build.bat
 cd build/bin
 
 # 场景1：基础类型
-./stdiolink_service.exe config_demo/services/basic_types --config.name=myApp --config.port=8080
+./stdiolink_service.exe config_demo/services/basic_types --config.name=myApp --config.port=6200
 
 # 场景2：约束校验
-./stdiolink_service.exe config_demo/services/constraints --config.port=8080 --config.name=myService
+./stdiolink_service.exe config_demo/services/constraints --config.port=6200 --config.name=myService
 
 # 场景3：嵌套对象
-./stdiolink_service.exe config_demo/services/nested_object --config.server.port=8080 --config.database.name=mydb
+./stdiolink_service.exe config_demo/services/nested_object --config.server.port=6200 --config.database.name=mydb
 
 # 场景4：数组与枚举
 ./stdiolink_service.exe config_demo/services/array_and_enum --config.level=3 --config.mode=fast
@@ -77,5 +77,6 @@ cd build/bin
 ./stdiolink_service.exe config_demo/services/constraints --config.port=99999 --config.name=myService
 
 # 名称不符合 pattern
-./stdiolink_service.exe config_demo/services/constraints --config.port=8080 --config.name=123bad
+./stdiolink_service.exe config_demo/services/constraints --config.port=6200 --config.name=123bad
 ```
+

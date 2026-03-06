@@ -100,7 +100,7 @@ Project 加载或创建时会经过以下验证流程：
 可通过 API 单独触发验证（不保存）：
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/validate
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/validate
 ```
 
 ## CRUD 操作
@@ -110,14 +110,14 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/validate
 直接在 `projects/` 目录下创建、编辑、删除 JSON 文件。修改后需通过 API 触发重载：
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/reload
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/reload
 ```
 
 ### 通过 HTTP API
 
 ```bash
 # 创建 Project
-curl -X POST http://127.0.0.1:8080/api/projects \
+curl -X POST http://127.0.0.1:6200/api/projects \
   -H "Content-Type: application/json" \
   -d '{
     "id": "silo-a",
@@ -129,10 +129,10 @@ curl -X POST http://127.0.0.1:8080/api/projects \
   }'
 
 # 查看 Project
-curl http://127.0.0.1:8080/api/projects/silo-a
+curl http://127.0.0.1:6200/api/projects/silo-a
 
 # 更新 Project
-curl -X PUT http://127.0.0.1:8080/api/projects/silo-a \
+curl -X PUT http://127.0.0.1:6200/api/projects/silo-a \
   -H "Content-Type: application/json" \
   -d '{
     "id": "silo-a",
@@ -144,17 +144,18 @@ curl -X PUT http://127.0.0.1:8080/api/projects/silo-a \
   }'
 
 # 删除 Project
-curl -X DELETE http://127.0.0.1:8080/api/projects/silo-a
+curl -X DELETE http://127.0.0.1:6200/api/projects/silo-a
 ```
 
 ### 启动与停止
 
 ```bash
 # 启动 Project（创建 Instance）
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/start
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/start
 
 # 停止 Project（终止所有 Instance）
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/stop
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/stop
 ```
 
 详见 [HTTP API 参考](http-api.md)。
+

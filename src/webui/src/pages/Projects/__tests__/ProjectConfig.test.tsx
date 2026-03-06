@@ -13,7 +13,7 @@ function renderComponent(props: Partial<Parameters<typeof ProjectConfig>[0]> = {
   return render(
     <ConfigProvider>
       <ProjectConfig
-        config={{ host: 'localhost', port: 8080 }}
+        config={{ host: 'localhost', port: 6200 }}
         schema={schema}
         onSave={vi.fn().mockResolvedValue(true)}
         {...props}
@@ -43,3 +43,4 @@ describe('ProjectConfig', () => {
     });
   });
 });
+

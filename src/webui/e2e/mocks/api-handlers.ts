@@ -4,7 +4,7 @@ export const mockServerStatus = {
   uptimeMs: 3600000,
   startedAt: '2025-01-01T00:00:00Z',
   host: '0.0.0.0',
-  port: 8080,
+  port: 6200,
   dataRoot: '/data',
   serviceProgram: 'stdiolink_service',
   counts: {
@@ -252,3 +252,4 @@ export const mockDriverDetail = {
     ],
   },
 };
+

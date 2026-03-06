@@ -20,7 +20,7 @@ describe('serverApi', () => {
       uptimeMs: 60000,
       startedAt: '2024-01-01T00:00:00Z',
       host: '0.0.0.0',
-      port: 8080,
+      port: 6200,
       dataRoot: '/data',
       serviceProgram: 'stdiolink_service',
       counts: {
@@ -39,3 +39,4 @@ describe('serverApi', () => {
     expect(result.system.platform).toBe('win32');
   });
 });
+

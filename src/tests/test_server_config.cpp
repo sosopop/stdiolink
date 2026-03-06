@@ -27,7 +27,7 @@ TEST(ServerConfigTest, MissingFileUsesDefaults) {
     QString error;
     const auto cfg = ServerConfig::loadFromFile("/tmp/stdiolink_nonexistent_config.json", error);
     EXPECT_TRUE(error.isEmpty());
-    EXPECT_EQ(cfg.port, 8080);
+    EXPECT_EQ(cfg.port, 6200);
     EXPECT_EQ(cfg.host, "127.0.0.1");
     EXPECT_EQ(cfg.logLevel, "info");
     EXPECT_TRUE(cfg.serviceProgram.isEmpty());
@@ -79,7 +79,7 @@ TEST(ServerConfigTest, UnknownFieldRejected) {
     ASSERT_TRUE(dir.isValid());
 
     const QString filePath = dir.path() + "/config.json";
-    const QJsonObject obj{{"port", 8080}, {"unknown", 1}};
+    const QJsonObject obj{{"port", 6200}, {"unknown", 1}};
     ASSERT_TRUE(writeFile(filePath, QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 
     QString error;
@@ -216,3 +216,4 @@ TEST(ServerConfigTest, LogFieldsDefaultValues) {
     EXPECT_EQ(cfg.logMaxBytes, 10 * 1024 * 1024);
     EXPECT_EQ(cfg.logMaxFiles, 3);
 }
+

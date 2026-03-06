@@ -347,4 +347,5 @@ echo ""
 echo "To start the server:"
 echo "  cd ${PACKAGE_DIR}"
 echo "  ./start.sh              (bash)"
-echo "  ./start.sh --port=8080  (custom port)"
+echo "  ./start.sh --port=6200  (custom port)"
+

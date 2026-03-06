@@ -48,12 +48,12 @@ protected:
 TEST_F(ServiceConfigJsTest, GetConfigReturnsInjectedConfig) {
     JsConfigBinding::setMergedConfig(
         m_engine->context(),
-        QJsonObject{{"port", 8080}, {"name", "test"}, {"debug", false}});
+        QJsonObject{{"port", 6200}, {"name", "test"}, {"debug", false}});
 
     int ret = evalScript("get_config.js",
         "import { getConfig } from 'stdiolink';\n"
         "const cfg = getConfig();\n"
-        "if (cfg.port !== 8080) throw new Error('port mismatch');\n"
+        "if (cfg.port !== 6200) throw new Error('port mismatch');\n"
         "if (cfg.name !== 'test') throw new Error('name mismatch');\n"
         "if (cfg.debug !== false) throw new Error('debug mismatch');\n"
     );
@@ -143,7 +143,7 @@ TEST_F(ServiceConfigJsTest, GetConfigReturnsBoolValues) {
 TEST_F(ServiceConfigJsTest, ResetClearsConfig) {
     JsConfigBinding::setMergedConfig(
         m_engine->context(),
-        QJsonObject{{"port", 8080}});
+        QJsonObject{{"port", 6200}});
     JsConfigBinding::reset(m_engine->context());
 
     int ret = evalScript("after_reset.js",
@@ -157,7 +157,7 @@ TEST_F(ServiceConfigJsTest, ResetClearsConfig) {
 TEST_F(ServiceConfigJsTest, GetConfigMultipleCallsReturnSameData) {
     JsConfigBinding::setMergedConfig(
         m_engine->context(),
-        QJsonObject{{"port", 8080}});
+        QJsonObject{{"port", 6200}});
 
     int ret = evalScript("multi_call.js",
         "import { getConfig } from 'stdiolink';\n"
@@ -167,4 +167,5 @@ TEST_F(ServiceConfigJsTest, GetConfigMultipleCallsReturnSameData) {
     );
     EXPECT_EQ(ret, 0);
 }
+
 

@@ -111,10 +111,11 @@ Services: 3 loaded, 1 failed
 
 ```bash
 # 列出所有 Service
-curl http://127.0.0.1:8080/api/services
+curl http://127.0.0.1:6200/api/services
 
 # 查看单个 Service 详情（含 Schema）
-curl http://127.0.0.1:8080/api/services/data-collector
+curl http://127.0.0.1:6200/api/services/data-collector
 ```
 
 详见 [HTTP API 参考](http-api.md)。
+

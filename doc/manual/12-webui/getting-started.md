@@ -69,8 +69,8 @@ stdiolink_server --data-root=<data_root>
 
 访问地址：
 
-- `http://127.0.0.1:8080/`
-- `http://127.0.0.1:8080/dashboard`
+- `http://127.0.0.1:6200/`
+- `http://127.0.0.1:6200/dashboard`
 
 说明：
 
@@ -107,3 +107,4 @@ import type { ServerEvent } from '@/types/server';
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `VITE_API_BASE_URL` | API 基础路径 | `/api` |
+

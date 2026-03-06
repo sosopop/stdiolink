@@ -47,13 +47,14 @@ stdiolink 是基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过 stdin
 
 ### 2.4 通信协议
 
-进程间通过 stdin/stdout 传输 JSONL，四种消息语义：
-- `done` — 最终执行成功结果（替代旧版 `ok`）
-- `event` — 中间流式事件（命令执行过程中的增量推送）
-- `error` — 错误响应
-- `meta.describe` — 元数据导出
+进程间通过 stdin/stdout 传输 JSONL。
 
-请求格式：`{"cmd":"command_name","data":{...}}`
+- 请求使用 `cmd` 字段，例如：`{"cmd":"command_name","data":{...}}`
+- 响应使用 `status` 字段，常见状态为：
+  - `done`：最终执行成功结果（替代旧版 `ok`）
+  - `event`：中间流式事件（命令执行过程中的增量推送）
+  - `error`：错误响应
+- `meta.describe` 是内置命令名，用于导出 Driver 元数据；成功时返回 `done`
 
 ### 2.5 目录布局
 
@@ -146,42 +147,72 @@ int main(int argc, char* argv[]) {
 **步骤 3：CMakeLists.txt**
 
 ```cmake
-add_executable(stdio.drv.echo main.cpp handler.cpp)
-target_link_libraries(stdio.drv.echo PRIVATE stdiolink)
+add_executable(driver_echo main.cpp handler.cpp)
+target_link_libraries(driver_echo PRIVATE stdiolink)
 
-# 设置输出名称（必须以 stdio.drv. 开头才能被 Server 自动扫描）
-set_target_properties(stdio.drv.echo PROPERTIES OUTPUT_NAME "stdio.drv.echo")
+# 逻辑 target 名保持普通 CMake 命名，最终输出名必须以 stdio.drv. 开头
+set_target_properties(driver_echo PROPERTIES
+    OUTPUT_NAME "stdio.drv.echo"
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
+)
+
+# 注册到 assemble_runtime，确保 raw -> runtime 组装时被带入运行时目录
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS driver_echo)
 ```
 
 ### 3.2 添加元数据
 
-使用 `MetaBuilder` 定义命令元数据，支持自动文档生成和参数校验：
+如果要让 Driver 支持 `meta.describe`、自动文档和参数校验，需要把处理器实现为 `IMetaCommandHandler`，并使用 `MetaBuilder` 定义元数据：
 
 ```cpp
-#include "stdiolink/meta/meta_builder.h"
+#include "stdiolink/driver/meta_builder.h"
+#include "stdiolink/driver/meta_command_handler.h"
 
-stdiolink::meta::DriverMeta buildMeta() {
-    using namespace stdiolink::meta;
+class EchoHandler : public stdiolink::IMetaCommandHandler {
+public:
+    EchoHandler() {
+        using namespace stdiolink::meta;
 
-    return DriverMetaBuilder()
-        .info("echo", "1.0.0", "Echo Driver", "Vendor")
-        .command("echo")
-            .title("回显消息")
-            .param("msg", FieldType::String)
-                .required()
-                .description("要回显的消息")
-                .done()
-            .returns()
-                .field("echo", FieldType::String)
-                    .description("回显结果")
-                    .done()
-                .done()
-            .done()
-        .build();
-}
+        m_meta = DriverMetaBuilder()
+            .schemaVersion("1.0")
+            .info("demo.echo", "Echo Driver", "1.0.0", "Simple echo demo")
+            .vendor("example")
+            .command(CommandBuilder("echo")
+                .title("回显消息")
+                .param(FieldBuilder("msg", FieldType::String)
+                    .required()
+                    .description("要回显的消息"))
+                .returns(FieldType::Object, "回显结果"))
+            .build();
+    }
 
-// 在 main 中设置元数据
-core.setMeta(buildMeta());
+    const stdiolink::meta::DriverMeta& driverMeta() const override {
+        return m_meta;
+    }
+
+    void handle(const QString& cmd,
+                const QJsonValue& data,
+                stdiolink::IResponder& resp) override
+    {
+        if (cmd == "echo") {
+            const QString msg = data.toObject()["msg"].toString();
+            resp.done(0, QJsonObject{{"echo", msg}});
+        } else {
+            resp.error(404, QJsonObject{{"message", "unknown command"}});
+        }
+    }
+
+private:
+    stdiolink::meta::DriverMeta m_meta;
+};
+```
+
+`main.cpp` 中对应改为：
+
+```cpp
+EchoHandler handler;
+stdiolink::DriverCore core;
+core.setMetaHandler(&handler);
 ```
 
 ### 3.3 目录结构
@@ -216,7 +247,7 @@ export LD_LIBRARY_PATH=$PWD/build/runtime_debug/bin:$LD_LIBRARY_PATH
 ./build/runtime_debug/data_root/drivers/stdio.drv.echo/stdio.drv.echo --export-meta
 ```
 
-**推荐方式**：使用 `dev.bat` / `dev.ps1` 自动配置环境（见第 7.3 节）。
+如果你已经通过发布脚本生成了发布包，可使用包根目录下的 `dev.bat` / `dev.ps1` 自动配置环境；`build/runtime_*` 目录本身默认不包含这两个脚本。
 
 ## 4. 开发 Service（JavaScript）
 
@@ -246,6 +277,10 @@ src/data_root/services/my_service/
 ```json
 {}
 ```
+
+说明：
+- `config.schema.json` 使用项目自定义的配置 schema 结构，底层复用 `FieldMeta` 类型系统，不是通用 JSON Schema 标准格式。
+- 具体字段写法、嵌套对象/数组规则、默认值与校验行为请参考 `doc/manual/10-js-service/config-schema.md`。
 
 **index.js 示例**：
 ```js
@@ -277,6 +312,11 @@ const logger = createLogger({ service: "my_service" });
 - 当前 Service 目录由 `ServiceScanner` 按 `manifest.json + config.schema.json + index.js` 三件套扫描加载。
 - `resolveDriver("stdio.drv.xxx")` 默认优先从 `data_root/drivers/*/` 查找 Driver。
 - 如果在临时 `data_root` 或独立运行时目录中测试 Service，应显式传入 `--data-root=<path>`。
+
+Service 运行形态：
+- **One-shot**：进程启动后执行一次任务并退出。这类 Service 通常在完成主流程后主动调用 `drv.$close()`，适合手动触发、定时任务、批处理。
+- **Long-running**：进程进入持续循环或持续监听，不主动退出。适合常驻服务，但必须自行管理 Driver 生命周期、错误恢复与退出路径。
+- `stdiolink_service` 本身不额外区分单独的“运行模式”参数；行为由 `index.js` 是否主动结束主流程决定。若通过 Server `Project` 调度运行，应按业务选择 `manual`、`fixed_rate` 或 `daemon`。
 
 ### 4.2 常用 API
 
@@ -427,7 +467,24 @@ TEST(EchoDriver, BasicEcho) {
 ./build/runtime_debug/bin/stdiolink_tests
 ```
 
-### 6.2 单元测试（JS Service）
+### 6.2 回归测试（JS Service）
+
+当前项目没有独立的“纯 JS Service 单元测试”框架；JS Service 主要通过 C++ 集成测试和冒烟测试覆盖：
+
+```bash
+# 运行 C++ / JS 集成测试
+ctest --test-dir build --output-on-failure
+
+# 运行冒烟测试
+python src/smoke_tests/run_smoke.py --plan all
+```
+
+典型测试文件：
+- `src/tests/test_js_integration.cpp`
+- `src/tests/test_js_engine_scaffold.cpp`
+- `src/tests/test_driver_resolve.cpp`
+
+### 6.3 单元测试（WebUI / Vitest）
 
 使用 Vitest 框架（WebUI 测试）：
 
@@ -436,20 +493,20 @@ cd src/webui
 npm run test
 ```
 
-### 6.3 端到端测试（Playwright）
+### 6.4 端到端测试（Playwright）
 
 ```bash
 cd src/webui
 npx playwright test
 ```
 
-### 6.4 冒烟测试（Python）
+### 6.5 冒烟测试（Python）
 
 冒烟测试验证端到端流程：
 
 ```bash
 # 运行单个测试
-python src/smoke_tests/m94_server_run_oneshot.py
+python src/smoke_tests/m94_server_run_oneshot_smoke.py
 
 # 运行所有测试
 python src/smoke_tests/run_smoke.py --plan all
@@ -462,7 +519,7 @@ ctest --test-dir build -L smoke --output-on-failure
 **测试脚本工具**：
 ```bash
 # 选择性运行测试套件
-tools/run_tests.sh                # 全部执行（GTest + Vitest + Playwright）
+tools/run_tests.sh                # 全部执行（GTest + Smoke + Vitest + Playwright）
 tools/run_tests.sh --gtest        # 仅 C++ 单元测试
 tools/run_tests.ps1 --vitest --playwright  # 仅 WebUI 测试
 ```
@@ -472,7 +529,7 @@ tools/run_tests.ps1 --vitest --playwright  # 仅 WebUI 测试
 - 在 `src/smoke_tests/run_smoke.py` 注册
 - 在 `src/smoke_tests/CMakeLists.txt` 注册对应 CTest
 
-### 6.5 手动测试 Driver
+### 6.6 手动测试 Driver
 
 **Console 模式**（命令行交互）：
 ```bash
@@ -536,8 +593,8 @@ release/stdiolink_<timestamp>_<git>/
 │   ├── services/           # Service 模板
 │   ├── projects/           # Project 配置
 │   ├── webui/              # WebUI 静态文件
-│   └── config.json         # 默认配置
-├── start.bat / start.ps1   # 启动脚本
+│   └── config.json         # 默认配置（publish_release.* 生成时默认端口 6200）
+├── start.bat / start.sh    # 启动脚本
 ├── dev.bat / dev.ps1       # 开发环境脚本
 └── RELEASE_MANIFEST.txt    # 发布清单
 ```
@@ -546,30 +603,43 @@ release/stdiolink_<timestamp>_<git>/
 
 ```bash
 cd build/runtime_release
-./start.bat  # Windows
-./start.sh   # Linux/macOS
+
+# Windows
+.\bin\stdiolink_server.exe --data-root=.\data_root --webui-dir=.\data_root\webui
+
+# Linux/macOS
+./bin/stdiolink_server --data-root=./data_root --webui-dir=./data_root/webui
 
 # 或指定端口
-./start.bat --port=8080
+.\bin\stdiolink_server.exe --data-root=.\data_root --webui-dir=.\data_root\webui --port=6200
 ```
 
-访问 WebUI：`http://localhost:6200`
+访问 WebUI：
+- 直接运行 `build/runtime_release/bin/stdiolink_server` 且未提供 `data_root/config.json` 时，默认是 `http://127.0.0.1:6200`
+- 使用 `tools/publish_release.ps1` / `tools/publish_release.sh` 生成的发布包启动时，包内默认 `config.json` 端口是 `6200`
+
+说明：
+- `build/runtime_*` 是组装后的开发运行时目录，默认直接运行 `bin/stdiolink_server`。
+- `start.bat` / `start.sh` 是 `tools/publish_release.*` 生成的发布包启动脚本，不在 `build/runtime_*` 中默认提供。
+- 发布包若未自带 `data_root/config.json`，`tools/publish_release.*` 会生成一个默认配置，端口为 `6200`。
 
 ### 7.4 开发环境
 
-使用 `dev.bat` / `dev.ps1` 启动开发环境，自动配置 PATH 和 Driver 别名：
+`dev.bat` / `dev.ps1` 由 `tools/publish_release.ps1` / `tools/publish_release.sh` 在发布包根目录生成，不会出现在 `build/runtime_*`。如果你已经生成发布包，可这样使用：
 
 ```bash
 # Windows (PowerShell)
-cd build/runtime_debug
+cd release/<package-name>
 .\dev.ps1
 
 # 列出所有 Driver
 drivers
 
 # 直接运行 Driver（已配置别名）
-stdio.drv.echo --export-meta
+stdio.drv.modbustcp_server --export-meta
 ```
+
+如果你是在 `build/runtime_*` 下本地调试，请按第 3.4 节手动设置 `PATH` 后再直接运行 Driver。
 
 ### 7.5 典型开发流程
 
@@ -602,28 +672,28 @@ Server 提供 REST API 管理 Service、Project 和 Instance：
 
 ```bash
 # 列出所有 Service
-GET http://localhost:6200/api/services
+GET http://127.0.0.1:6200/api/services
 
 # 列出所有 Project
-GET http://localhost:6200/api/projects
+GET http://127.0.0.1:6200/api/projects
 
 # 启动 Project（创建新实例）
-POST http://localhost:6200/api/projects/my_project/start
+POST http://127.0.0.1:6200/api/projects/my_project/start
 
 # 停止 Project（终止该 Project 的所有实例）
-POST http://localhost:6200/api/projects/my_project/stop
+POST http://127.0.0.1:6200/api/projects/my_project/stop
 
 # 查询 Project 运行态
-GET http://localhost:6200/api/projects/my_project/runtime
+GET http://127.0.0.1:6200/api/projects/my_project/runtime
 
 # 查看 Project 日志
-GET http://localhost:6200/api/projects/my_project/logs
+GET http://127.0.0.1:6200/api/projects/my_project/logs
 
 # 查询实例状态
-GET http://localhost:6200/api/instances/{instanceId}
+GET http://127.0.0.1:6200/api/instances/{instanceId}
 
 # 终止指定实例
-POST http://localhost:6200/api/instances/{instanceId}/terminate
+POST http://127.0.0.1:6200/api/instances/{instanceId}/terminate
 ```
 
 ### 8.2 DriverLab（交互调试）
@@ -638,7 +708,7 @@ WebUI 提供 DriverLab 页面，可视化调试 Driver：
 
 ```typescript
 // src/webui/src/api/services.ts
-import { apiClient } from './client';
+import apiClient from './client';
 
 export async function listServices() {
   return apiClient.get('/api/services');
@@ -769,7 +839,7 @@ docs: 更新开发指南
   - Project 示例：`src/data_root/projects/manual_modbustcp_server.json`
 - **测试示例**：
   - 单元测试：`src/tests/test_driver_core.cpp`
-  - 冒烟测试：`src/smoke_tests/m94_server_run_oneshot.py`
+  - 冒烟测试：`src/smoke_tests/m94_server_run_oneshot_smoke.py`
 - **架构文档**：`doc/manual/03-architecture.md`
 - **JS Service API**：`doc/manual/10-js-service/`
 
@@ -785,6 +855,8 @@ docs: 更新开发指南
 
 **快速链接**：
 - 构建：`build.bat Release` / `./build.sh Release`
-- 启动：`cd build/runtime_release && ./start.bat`
+- 启动：`cd build/runtime_release && ./bin/stdiolink_server --data-root=./data_root --webui-dir=./data_root/webui`
 - 测试：`ctest --test-dir build --output-on-failure`
-- WebUI：`http://localhost:6200`
+- WebUI（build/runtime_release 直跑）：`http://127.0.0.1:6200`
+- WebUI（publish_release 生成的发布包默认）：`http://127.0.0.1:6200`
+

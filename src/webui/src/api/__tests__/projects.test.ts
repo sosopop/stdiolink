@@ -69,8 +69,8 @@ describe('projectsApi', () => {
   it('validate() calls POST /projects/:id/validate', async () => {
     const data = { valid: true };
     vi.mocked(apiClient.post).mockResolvedValue({ data });
-    const result = await projectsApi.validate('p1', { port: 8080 });
-    expect(apiClient.post).toHaveBeenCalledWith('/projects/p1/validate', { config: { port: 8080 } });
+    const result = await projectsApi.validate('p1', { port: 6200 });
+    expect(apiClient.post).toHaveBeenCalledWith('/projects/p1/validate', { config: { port: 6200 } });
     expect(result).toEqual(data);
   });
 
@@ -139,3 +139,4 @@ describe('projectsApi', () => {
     expect(result).toEqual(data);
   });
 });
+

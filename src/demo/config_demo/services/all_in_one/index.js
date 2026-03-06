@@ -46,15 +46,15 @@ const scenarioBase = findScenarioBase(service);
 const scenarios = [
     {
         dir: `${scenarioBase}/basic_types`,
-        args: ["--config.name=myApp", "--config.port=8080"]
+        args: ["--config.name=myApp", "--config.port=6200"]
     },
     {
         dir: `${scenarioBase}/constraints`,
-        args: ["--config.port=8080", "--config.name=myService"]
+        args: ["--config.port=6200", "--config.name=myService"]
     },
     {
         dir: `${scenarioBase}/nested_object`,
-        args: ["--config.server.port=8080", "--config.database.name=mydb"]
+        args: ["--config.server.port=6200", "--config.database.name=mydb"]
     },
     {
         dir: `${scenarioBase}/array_and_enum`,
@@ -101,3 +101,4 @@ for (const s of scenarios) {
 
 console.log("");
 console.log("=== M28 config_demo done:", passed, "passed,", failed, "failed ===");
+

@@ -24,7 +24,7 @@ const defaultState = {
     uptimeMs: 3600000,
     startedAt: '2024-01-01',
     host: '0.0.0.0',
-    port: 8080,
+    port: 6200,
     dataRoot: '/data',
     serviceProgram: 'stdiolink_service',
     counts: {
@@ -83,3 +83,4 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('dashboard-error')).toBeDefined();
   });
 });
+

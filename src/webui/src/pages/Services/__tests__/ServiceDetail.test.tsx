@@ -30,7 +30,7 @@ const mockService = {
   configSchema: {},
   configSchemaFields: [
     { name: 'host', type: 'string', description: 'Server host', required: true, default: 'localhost' },
-    { name: 'port', type: 'int', description: 'Server port', default: 8080 },
+    { name: 'port', type: 'int', description: 'Server port', default: 6200 },
   ],
   projects: ['p1', 'p2'],
 };
@@ -94,3 +94,4 @@ describe('ServiceDetailPage', () => {
     expect(screen.getByTestId('detail-not-found')).toBeDefined();
   });
 });
+

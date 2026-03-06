@@ -43,13 +43,13 @@ Instance 是一个正在运行的 `stdiolink_service` 子进程，由 `InstanceM
 
 ```bash
 # 通过 Instance ID 查看
-curl http://127.0.0.1:8080/api/instances/{instanceId}/logs
+curl http://127.0.0.1:6200/api/instances/{instanceId}/logs
 
 # 通过 Project ID 查看（Instance 退出后仍可查看历史日志）
-curl http://127.0.0.1:8080/api/instances/silo-a/logs
+curl http://127.0.0.1:6200/api/instances/silo-a/logs
 
 # 指定返回行数（默认 100，最大 5000）
-curl "http://127.0.0.1:8080/api/instances/silo-a/logs?lines=50"
+curl "http://127.0.0.1:6200/api/instances/silo-a/logs?lines=50"
 ```
 
 ## 调度引擎
@@ -95,19 +95,20 @@ curl "http://127.0.0.1:8080/api/instances/silo-a/logs?lines=50"
 
 ```bash
 # 查看所有运行中的 Instance
-curl http://127.0.0.1:8080/api/instances
+curl http://127.0.0.1:6200/api/instances
 
 # 按 Project 筛选
-curl "http://127.0.0.1:8080/api/instances?projectId=silo-a"
+curl "http://127.0.0.1:6200/api/instances?projectId=silo-a"
 
 # 终止指定 Instance
-curl -X POST http://127.0.0.1:8080/api/instances/{instanceId}/terminate
+curl -X POST http://127.0.0.1:6200/api/instances/{instanceId}/terminate
 
 # 启动 Project（创建新 Instance）
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/start
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/start
 
 # 停止 Project（终止该 Project 的所有 Instance）
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/stop
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/stop
 ```
 
 详见 [HTTP API 参考](http-api.md)。
+

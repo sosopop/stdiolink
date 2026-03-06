@@ -77,8 +77,8 @@ describe('DriverLabWsClient', () => {
   });
 
   it('connect() includes args in URL params', () => {
-    client.connect('d1', 'oneshot', ['--port', '8080']);
-    expect(lastWs().url).toContain('args=--port%2C8080');
+    client.connect('d1', 'oneshot', ['--port', '6200']);
+    expect(lastWs().url).toContain('args=--port%2C6200');
   });
 
   it('emits connected event on open', () => {
@@ -159,3 +159,4 @@ describe('DriverLabWsClient', () => {
     expect(lastWs().sent).toEqual([]);
   });
 });
+

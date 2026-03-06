@@ -29,7 +29,7 @@ stdiolink_server [options]
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
 | `--data-root=<path>` | 数据根目录路径 | `.`（当前目录） |
-| `--port=<port>` | HTTP 监听端口 | `8080` |
+| `--port=<port>` | HTTP 监听端口 | `6200` |
 | `--host=<addr>` | 监听地址 | `127.0.0.1` |
 | `--webui-dir=<path>` | WebUI 静态目录（绝对路径，或相对 `data_root`） | `<data_root>/webui` |
 | `--log-level=<level>` | 日志级别：`debug`/`info`/`warn`/`error` | `info` |
@@ -46,7 +46,7 @@ stdiolink_server
 stdiolink_server --data-root=/opt/stdiolink/data --port=9090
 
 # 监听所有网卡（需配合外层鉴权）
-stdiolink_server --host=0.0.0.0 --port=8080
+stdiolink_server --host=0.0.0.0 --port=6200
 ```
 
 ## 配置文件（config.json）
@@ -55,7 +55,7 @@ stdiolink_server --host=0.0.0.0 --port=8080
 
 ```json
 {
-  "port": 8080,
+  "port": 6200,
   "host": "127.0.0.1",
   "webuiDir": "webui",
   "logLevel": "info",
@@ -65,7 +65,7 @@ stdiolink_server --host=0.0.0.0 --port=8080
 
 | 字段 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `port` | int | HTTP 监听端口 | `8080` |
+| `port` | int | HTTP 监听端口 | `6200` |
 | `host` | string | 监听地址 | `127.0.0.1` |
 | `webuiDir` | string | WebUI 静态目录（支持相对路径） | `webui` |
 | `logLevel` | string | 日志级别 | `info` |
@@ -110,7 +110,7 @@ Services: 3 loaded, 0 failed
 Drivers: 2 updated, 1 failed, 0 skipped
 Projects: 5 loaded, 1 invalid
 WebUI: serving from /opt/stdiolink/data/webui
-HTTP server listening on 127.0.0.1:8080
+HTTP server listening on 127.0.0.1:6200
 ```
 
 ## 安全说明
@@ -139,3 +139,4 @@ build\runtime_debug\bin\stdiolink_server.exe --help
 - [Service 扫描](service-scanner.md) — 了解 Service 目录约定
 - [Project 管理](project-management.md) — 创建和管理 Project
 - [HTTP API 参考](http-api.md) — 完整的 API 接口文档
+

@@ -1,6 +1,6 @@
 # HTTP API 参考
 
-`stdiolink_server` 基于 Qt 官方 `QHttpServer` 提供 RESTful API，默认监听 `127.0.0.1:8080`。
+`stdiolink_server` 基于 Qt 官方 `QHttpServer` 提供 RESTful API，默认监听 `127.0.0.1:6200`。
 
 ## 通用约定
 
@@ -48,7 +48,7 @@
 获取单个 Service 的详情，包含完整的 Manifest、配置 Schema 和关联的 Project ID 列表。
 
 ```bash
-curl http://127.0.0.1:8080/api/services/data-collector
+curl http://127.0.0.1:6200/api/services/data-collector
 ```
 
 **响应示例：**
@@ -94,7 +94,7 @@ curl http://127.0.0.1:8080/api/services/data-collector
 手动触发 Service 目录重扫。重新扫描 `services/` 目录，发现新增/移除/更新的 Service，并可选地重新验证关联的 Project。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/services/scan
+curl -X POST http://127.0.0.1:6200/api/services/scan
 ```
 
 **请求体（可选）：**
@@ -134,7 +134,7 @@ curl -X POST http://127.0.0.1:8080/api/services/scan
 列出所有 Project。
 
 ```bash
-curl http://127.0.0.1:8080/api/projects
+curl http://127.0.0.1:6200/api/projects
 ```
 
 **响应示例：**
@@ -170,7 +170,7 @@ curl http://127.0.0.1:8080/api/projects
 获取单个 Project 的详情，包含完整配置、关联的 Instance 列表和 Service 的配置 Schema。
 
 ```bash
-curl http://127.0.0.1:8080/api/projects/silo-a
+curl http://127.0.0.1:6200/api/projects/silo-a
 ```
 
 **响应示例：**
@@ -221,7 +221,7 @@ curl http://127.0.0.1:8080/api/projects/silo-a
 创建新 Project。请求体中必须包含 `id` 字段。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects \
+curl -X POST http://127.0.0.1:6200/api/projects \
   -H "Content-Type: application/json" \
   -d '{
     "id": "silo-b",
@@ -244,7 +244,7 @@ curl -X POST http://127.0.0.1:8080/api/projects \
 更新已有 Project。请求体中的 `id` 必须与路径参数一致。
 
 ```bash
-curl -X PUT http://127.0.0.1:8080/api/projects/silo-b \
+curl -X PUT http://127.0.0.1:6200/api/projects/silo-b \
   -H "Content-Type: application/json" \
   -d '{
     "id": "silo-b",
@@ -268,7 +268,7 @@ curl -X PUT http://127.0.0.1:8080/api/projects/silo-b \
 删除 Project 配置文件。
 
 ```bash
-curl -X DELETE http://127.0.0.1:8080/api/projects/silo-b
+curl -X DELETE http://127.0.0.1:6200/api/projects/silo-b
 ```
 
 | 状态码 | 说明 |
@@ -285,7 +285,7 @@ curl -X DELETE http://127.0.0.1:8080/api/projects/silo-b
 验证 Project 配置（不保存）。用于在创建或更新前预检。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/validate
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/validate
 ```
 
 **响应示例（验证通过）：**
@@ -305,7 +305,7 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/validate
 启动 Project，创建新的 Instance。启动前会自动恢复该 Project 的调度状态。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/start
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/start
 ```
 
 **响应示例：**
@@ -334,7 +334,7 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/start
 停止 Project 的所有运行中 Instance，并暂停该 Project 的调度。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/stop
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/stop
 ```
 
 **响应示例：**
@@ -348,7 +348,7 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/stop
 重新从文件加载 Project 配置并重新验证。适用于直接修改了 `projects/{id}.json` 文件后的场景。reload 会先停止当前运行的 Instance 和调度，然后重新加载配置并验证，最后重启调度引擎。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/projects/silo-a/reload
+curl -X POST http://127.0.0.1:6200/api/projects/silo-a/reload
 ```
 
 **响应：**
@@ -366,7 +366,7 @@ curl -X POST http://127.0.0.1:8080/api/projects/silo-a/reload
 获取 Project 的运行态信息，包含实例列表和调度引擎状态。
 
 ```bash
-curl http://127.0.0.1:8080/api/projects/silo-a/runtime
+curl http://127.0.0.1:6200/api/projects/silo-a/runtime
 ```
 
 **响应示例：**
@@ -420,10 +420,10 @@ curl http://127.0.0.1:8080/api/projects/silo-a/runtime
 
 ```bash
 # 列出全部
-curl http://127.0.0.1:8080/api/instances
+curl http://127.0.0.1:6200/api/instances
 
 # 按 Project 筛选
-curl "http://127.0.0.1:8080/api/instances?projectId=silo-a"
+curl "http://127.0.0.1:6200/api/instances?projectId=silo-a"
 ```
 
 **响应示例：**
@@ -448,7 +448,7 @@ curl "http://127.0.0.1:8080/api/instances?projectId=silo-a"
 终止指定的 Instance。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/instances/inst_a1b2c3d4/terminate
+curl -X POST http://127.0.0.1:6200/api/instances/inst_a1b2c3d4/terminate
 ```
 
 **响应示例：**
@@ -468,13 +468,13 @@ curl -X POST http://127.0.0.1:8080/api/instances/inst_a1b2c3d4/terminate
 
 ```bash
 # 通过 Instance ID 查看
-curl http://127.0.0.1:8080/api/instances/inst_a1b2c3d4/logs
+curl http://127.0.0.1:6200/api/instances/inst_a1b2c3d4/logs
 
 # 通过 Project ID 查看（Instance 退出后仍可查看历史日志）
-curl http://127.0.0.1:8080/api/instances/silo-a/logs
+curl http://127.0.0.1:6200/api/instances/silo-a/logs
 
 # 指定返回行数
-curl "http://127.0.0.1:8080/api/instances/silo-a/logs?lines=50"
+curl "http://127.0.0.1:6200/api/instances/silo-a/logs?lines=50"
 ```
 
 **查询参数：**
@@ -501,7 +501,7 @@ curl "http://127.0.0.1:8080/api/instances/silo-a/logs?lines=50"
 列出所有已发现的 Driver 及其元数据摘要。
 
 ```bash
-curl http://127.0.0.1:8080/api/drivers
+curl http://127.0.0.1:6200/api/drivers
 ```
 
 **响应示例：**
@@ -535,7 +535,7 @@ curl http://127.0.0.1:8080/api/drivers
 手动触发 Driver 目录重扫。会重新执行完整的扫描流程。
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/drivers/scan
+curl -X POST http://127.0.0.1:6200/api/drivers/scan
 ```
 
 **请求体（可选）：**
@@ -579,3 +579,4 @@ curl -X POST http://127.0.0.1:8080/api/drivers/scan
 | GET | `/api/instances/{id}/logs` | 查看日志（支持 Instance ID 或 Project ID） |
 | GET | `/api/drivers` | 列出已发现 Driver |
 | POST | `/api/drivers/scan` | 触发 Driver 重扫 |
+

@@ -7,7 +7,7 @@ using namespace stdiolink_server;
 TEST(ServerArgsTest, DefaultValues) {
     const auto args = ServerArgs::parse({"stdiolink_server"});
     EXPECT_EQ(args.dataRoot, ".");
-    EXPECT_EQ(args.port, 8080);
+    EXPECT_EQ(args.port, 6200);
     EXPECT_EQ(args.host, "127.0.0.1");
     EXPECT_EQ(args.logLevel, "info");
     EXPECT_TRUE(args.error.isEmpty());
@@ -58,3 +58,4 @@ TEST(ServerArgsTest, UnknownOption) {
     });
     EXPECT_FALSE(args.error.isEmpty());
 }
+

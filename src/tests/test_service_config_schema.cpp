@@ -440,7 +440,7 @@ TEST(ServiceConfigSchema, FromJsonFileEmptyObject) {
 
 TEST(ServiceConfigSchema, FromJsonObjectValidSchema) {
     QJsonObject input{
-        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 6200}}},
         {"name", QJsonObject{{"type", "string"}, {"required", true}}},
         {"debug", QJsonObject{{"type", "bool"}, {"default", false}}}
     };
@@ -488,7 +488,7 @@ TEST(ServiceConfigSchema, FromJsonObjectEmptySchema) {
 
 TEST(ServiceConfigSchema, ToFieldMetaArray) {
     QJsonObject input{
-        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 6200}}},
         {"name", QJsonObject{{"type", "string"}, {"required", true}}}
     };
 
@@ -508,7 +508,7 @@ TEST(ServiceConfigSchema, ToFieldMetaArray) {
 
 TEST(ServiceConfigSchema, GenerateDefaults) {
     QJsonObject input{
-        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 8080}}},
+        {"port", QJsonObject{{"type", "int"}, {"required", true}, {"default", 6200}}},
         {"name", QJsonObject{{"type", "string"}, {"required", true}}},
         {"debug", QJsonObject{{"type", "bool"}, {"default", false}}},
         {"ratio", QJsonObject{{"type", "double"}, {"default", 0.5}}}
@@ -519,7 +519,7 @@ TEST(ServiceConfigSchema, GenerateDefaults) {
     ASSERT_TRUE(error.isEmpty());
 
     QJsonObject defaults = schema.generateDefaults();
-    EXPECT_EQ(defaults.value("port").toInt(), 8080);
+    EXPECT_EQ(defaults.value("port").toInt(), 6200);
     EXPECT_EQ(defaults.value("debug").toBool(), false);
     EXPECT_DOUBLE_EQ(defaults.value("ratio").toDouble(), 0.5);
     // name has no default, should not appear
@@ -549,3 +549,4 @@ TEST(ServiceConfigSchema, RequiredAndOptionalFieldNames) {
     EXPECT_TRUE(optional.contains("debug"));
     EXPECT_TRUE(optional.contains("ratio"));
 }
+
