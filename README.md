@@ -63,8 +63,9 @@ build.bat
 
 ```javascript
 import { openDriver } from "stdiolink";
+import { resolveDriver } from "stdiolink/driver";
 
-const calc = await openDriver("./stdio.drv.calculator");
+const calc = await openDriver(resolveDriver("stdio.drv.calculator"));
 
 // Proxy syntax — call remote commands like local functions
 const result = await calc.add({ a: 10, b: 20 });
@@ -77,10 +78,11 @@ calc.$close();
 
 ```javascript
 import { openDriver } from "stdiolink";
+import { resolveDriver } from "stdiolink/driver";
 
 const [drvA, drvB] = await Promise.all([
-    openDriver("./stdio.drv.calculator"),
-    openDriver("./stdio.drv.calculator"),
+    openDriver(resolveDriver("stdio.drv.calculator")),
+    openDriver(resolveDriver("stdio.drv.calculator")),
 ]);
 
 const [a, b] = await Promise.all([
@@ -171,11 +173,12 @@ Write services in JavaScript with full access to system capabilities through C++
 
 ```javascript
 import { openDriver, waitAny } from "stdiolink";
+import { resolveDriver } from "stdiolink/driver";
 import { writeJson } from "stdiolink/fs";
 import { createLogger } from "stdiolink/log";
 
 const logger = createLogger({ service: "pipeline" });
-const drv = await openDriver("./stdio.drv.sensor");
+const drv = await openDriver(resolveDriver("stdio.drv.sensor"));
 
 const task = drv.$rawRequest("read", { channel: 1 });
 const result = await waitAny([task], 5000);
@@ -209,8 +212,8 @@ curl http://localhost:6200/api/events
 
 Three built-in scheduling strategies:
 - **Manual** — start/stop on demand
-- **Interval** — periodic execution with configurable intervals
-- **Cron** — cron-expression based scheduling
+- **FixedRate** — periodic execution with `intervalMs` and `maxConcurrent`
+- **Daemon** — long-running service with automatic restart on abnormal exit
 
 ### Modern WebUI
 

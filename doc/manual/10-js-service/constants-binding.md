@@ -42,15 +42,18 @@ if (SYSTEM.isWindows) {
 | `serviceEntryDir` | `string` | 入口脚本所在目录 |
 | `tempDir` | `string` | 系统临时目录 |
 | `homeDir` | `string` | 用户主目录 |
+| `dataRoot` | `string` | 当前 `--data-root` 对应的绝对路径；未指定时为空字符串 |
 
 ```js
 import { APP_PATHS } from 'stdiolink/constants';
 
 console.log('Service dir:', APP_PATHS.serviceDir);
 console.log('Temp dir:', APP_PATHS.tempDir);
+console.log('Data root:', APP_PATHS.dataRoot);
 ```
 
 ## 注意事项
 
 - 两个对象均为 deep freeze，赋值操作静默无效
 - 路径在 Windows 上也使用 `/` 分隔符
+- `resolveDriver()` 优先在 `APP_PATHS.dataRoot/drivers/*/` 下查找 Driver；临时 runtime 场景建议显式传 `--data-root`

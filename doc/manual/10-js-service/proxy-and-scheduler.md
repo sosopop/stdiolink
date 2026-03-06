@@ -8,8 +8,9 @@
 
 ```js
 import { openDriver } from 'stdiolink';
+import { resolveDriver } from 'stdiolink/driver';
 
-const calc = await openDriver('./stdio.drv.calculator');
+const calc = await openDriver(resolveDriver('stdio.drv.calculator'));
 const result = await calc.add({ a: 5, b: 3 });
 console.log(result);  // { result: 8 }
 calc.$close();
@@ -66,7 +67,7 @@ Proxy 对象提供以下特殊字段：
 
 ```js
 try {
-    const calc = await openDriver('./stdio.drv.calculator');
+    const calc = await openDriver(resolveDriver('stdio.drv.calculator'));
     const result = await calc.add({ a: 5, b: 3 });
     calc.$close();
 } catch (e) {
@@ -83,9 +84,10 @@ try {
 
 ```js
 import { openDriver } from 'stdiolink';
+import { resolveDriver } from 'stdiolink/driver';
 
-const drvA = await openDriver('./driver_a');
-const drvB = await openDriver('./driver_b');
+const drvA = await openDriver(resolveDriver('stdio.drv.driver_a'));
+const drvB = await openDriver(resolveDriver('stdio.drv.driver_b'));
 
 const [resultA, resultB] = await Promise.all([
     drvA.scan({ fps: 30 }),
@@ -97,6 +99,10 @@ drvB.$close();
 ```
 
 内部通过 `JsTaskScheduler` 基于 `waitAnyNext` 实现单线程多任务调度。
+
+说明：
+- 推荐把 `openDriver()` 和 `resolveDriver()` 配套使用，避免把 Service 绑定到工作目录中的相对可执行文件。
+- 临时 runtime 或测试目录请在启动 `stdiolink_service` 时显式传 `--data-root=<path>`。
 
 ## waitAny 多路监听
 

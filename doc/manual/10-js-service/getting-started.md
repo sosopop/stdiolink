@@ -32,8 +32,9 @@
 
 ```js
 import { openDriver } from 'stdiolink';
+import { resolveDriver } from 'stdiolink/driver';
 
-const calc = await openDriver('./stdio.drv.calculator');
+const calc = await openDriver(resolveDriver('stdio.drv.calculator'));
 const result = await calc.add({ a: 10, b: 20 });
 console.log('10 + 20 =', result.result);
 calc.$close();
@@ -42,7 +43,7 @@ calc.$close();
 运行：
 
 ```bash
-stdiolink_service ./hello
+stdiolink_service ./hello --data-root=./build/runtime_debug/data_root
 ```
 
 ## 使用配置参数
@@ -56,7 +57,7 @@ stdiolink_service ./hello
     "driverPath": {
         "type": "string",
         "required": true,
-        "description": "Driver 可执行文件路径"
+        "description": "Driver 标识，例如 stdio.drv.calculator"
     },
     "a": { "type": "int", "required": true, "description": "第一个操作数" },
     "b": { "type": "int", "required": true, "description": "第二个操作数" }
@@ -67,9 +68,10 @@ stdiolink_service ./hello
 
 ```js
 import { getConfig, openDriver } from 'stdiolink';
+import { resolveDriver } from 'stdiolink/driver';
 
 const config = getConfig();
-const calc = await openDriver(config.driverPath);
+const calc = await openDriver(resolveDriver(config.driverPath));
 const result = await calc.add({ a: config.a, b: config.b });
 console.log(`${config.a} + ${config.b} =`, result.result);
 calc.$close();
@@ -79,9 +81,14 @@ calc.$close();
 
 ```bash
 stdiolink_service ./my_calc \
-    --config.driverPath=./stdio.drv.calculator \
+    --data-root=./build/runtime_debug/data_root \
+    --config.driverPath=stdio.drv.calculator \
     --config.a=5 --config.b=3
 ```
+
+说明：
+- 推荐在 Service 中使用 `resolveDriver("stdio.drv.xxx")`，而不是硬编码相对可执行文件路径。
+- 若 Driver 位于临时 `data_root` 或发布包外目录，启动 `stdiolink_service` 时请显式传入 `--data-root=<path>`。
 
 查看配置帮助：
 

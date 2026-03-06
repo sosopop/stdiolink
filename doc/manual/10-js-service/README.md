@@ -55,6 +55,7 @@ stdiolink_service <service_dir> [options]
 | `-v, --version` | 显示版本 |
 | `--config.key=value` | 设置配置值 |
 | `--config-file=<path>` | 从 JSON 文件加载配置（`-` 表示 stdin） |
+| `--data-root=<path>` | 指定 `resolveDriver()` 使用的 `data_root` 根目录 |
 | `--dump-config-schema` | 导出配置 schema 并退出 |
 
 ## 模块总览
