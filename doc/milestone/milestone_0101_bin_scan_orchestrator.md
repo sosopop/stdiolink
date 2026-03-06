@@ -11,7 +11,7 @@
 |--------|--------|
 | `src/data_root/services` | `bin_scan_orchestrator` Service 模板 |
 | `src/data_root/projects` | `manual` / `fixed_rate` Project 示例 |
-| `src/tests` | 基于真实 `stdiolink_service` 进程的黑盒单元/集成测试 |
+| `src/tests` | 基于真实 `stdiolink_service` 进程的黑盒服务测试 |
 | `src/smoke_tests` | CLI / Server 主链路冒烟脚本与 CTest 接入 |
 | `doc/milestone` | 与现有框架一致的开发计划文档 |
 
@@ -20,7 +20,7 @@
 - 支持三种加载方式：命令行直接运行、Server `manual` 调度、Server `fixed_rate` 调度。
 - 编排 PLC Crane 与 3DVision 完成单料仓扫描，覆盖准备、等待到位、触发扫描、结果确认、结果落盘、失败复位。
 - 提供适配 WebUI 的 `config.schema.json`，确保现有 Services / Projects 页面可直接加载。
-- 单元测试覆盖核心决策路径 100%，并提供统一入口冒烟脚本。
+- 单元测试覆盖核心功能场景 100%，并提供统一入口冒烟脚本。
 
 ## 2. 背景与问题
 
@@ -44,7 +44,7 @@
 - 新增 `src/data_root/services/bin_scan_orchestrator/` Service 目录。
 - 新增 `manual` / `fixed_rate` 两个 Project 示例。
 - 基于现有驱动能力调用 `stdio.drv.plc_crane` 与 `stdio.drv.3dvision`。
-- 提供本地可控的单元测试、Server 集成测试与冒烟测试方案。
+- 提供本地可控的黑盒服务测试与冒烟测试方案。
 - 为 WebUI 明确“Service 列表可见、Project 可配置、Start/Runtime/Logs 可观测”的验收路径。
 
 **非目标**:
@@ -53,6 +53,13 @@
 - 不修改 PLC Crane / 3DVision 驱动协议。
 - 不支持多料仓并发扫描。
 - 不把 WebSocket 广播事件作为当前里程碑唯一完成判据。
+
+### 2.2 实施与测试前置资产
+
+- Service 实现前置产物为：`stdiolink_service`、`stdiolink_server`、`stdio.drv.plc_crane`、`stdio.drv.3dvision`。
+- 黑盒/冒烟测试额外要求已构建 `stdio.drv.plc_crane_sim`。缺失该驱动时，对应测试必须直接报 FAIL，并输出缺失产物路径，不允许静默跳过。
+- 3DVision fake HTTP 能力默认复用现有 [`src/tests/helpers/http_test_server.h`](/D:/code/stdiolink/src/tests/helpers/http_test_server.h) 作为底座，再新增 `FakeVisionServer` 夹具做脚本化响应编排；本里程碑不要求从零实现新的通用 HTTP mock 框架。
+- PLC 侧默认复用现有 `stdio.drv.plc_crane_sim`，并新增 `PlcCraneSimHandle` 测试夹具封装子进程生命周期、端口分配、寄存器读取与模式断言；基线方案不要求额外实现 `FakePlcCraneServer`。
 
 ## 3. 技术要点
 
@@ -97,6 +104,8 @@ stderr 日志 + 可选 result.json + 退出码
 执行契约补充：
 - 命令行和黑盒测试场景如果使用临时 `data_root`，必须显式传 `--data-root=<temp_data_root>`。
 - 只有在 Server 通过既有 data_root 启动实例时，才依赖 Server 注入的标准运行目录。
+- 成功路径的退出契约为：主 IIFE 执行完成，`finally` 中关闭所有 driver，且不再保留未完成 Promise / 定时器，进程自然退出并返回 `0`。
+- 失败路径的退出契约为：捕获异常后记录日志，`finally` 中关闭所有 driver，然后继续抛错交给 `stdiolink_service` runtime 生成非 `0` 退出码。
 
 ### 3.2 配置模型与 Schema
 
@@ -183,6 +192,22 @@ const scanResp = await vision["vessel.command"]({
   id: cfg.vessel_id,
   cmd: "scan"
 });
+
+const cranes = await Promise.all(
+  cfg.cranes.map(() => openDriver(resolveDriver("stdio.drv.plc_crane")))
+);
+
+await Promise.all(
+  cranes.map((crane, index) =>
+    crane.set_mode({
+      host: cfg.cranes[index].host,
+      port: cfg.cranes[index].port,
+      unit_id: cfg.cranes[index].unit_id,
+      timeout: cfg.cranes[index].timeout_ms,
+      mode: "auto"
+    })
+  )
+);
 ```
 
 ```text
@@ -210,7 +235,7 @@ vessel.command(scan)
 成功 exit 0 / 失败非 0
 ```
 
-建议拆分的 helper：
+建议拆分的 helper（其中 `openVision()` 明确定义为返回 `{ driver, token }`）：
 
 ```js
 async function openVision(visionCfg) {}
@@ -307,7 +332,14 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 
 ## 4. 实现方案
 
-### 4.1 Service 三件套目录
+### 4.1 实施顺序
+
+1. 先完成 `manifest.json + config.schema.json`，先把 Service 契约、WebUI 表单字段和默认值固定下来。
+2. 再实现 `index.js` 主流程，严格按已冻结的 schema 字段读取配置，不在实现阶段反向发明新字段。
+3. 然后补 `manual` / `fixed_rate` Project 示例，验证 CLI 与 Server 使用的是同一份 service 产物。
+4. 最后补黑盒服务测试与 Python 冒烟测试，测试夹具以本节约定的复用资产和新增 helper 为准。
+
+### 4.2 Service 三件套目录
 
 - 新增 `src/data_root/services/bin_scan_orchestrator/`
   - `manifest.json`
@@ -333,23 +365,29 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - `GET /api/services` 能列出 `bin_scan_orchestrator`。
 - `GET /api/services/bin_scan_orchestrator` 能返回 manifest 与 schema。
 
-### 4.2 `config.schema.json`
+### 4.3 `config.schema.json`
 
 - 新增 `src/data_root/services/bin_scan_orchestrator/config.schema.json`
 - 使用项目自定义 schema，而不是 JSON Schema
 
-关键片段：
+完整文件建议如下：
 
 ```json
 {
+  "vessel_id": {
+    "type": "int",
+    "required": true,
+    "description": "目标料仓 ID",
+    "constraints": { "min": 1 }
+  },
   "vision": {
     "type": "object",
     "required": true,
     "fields": {
-      "addr": { "type": "string", "required": true },
-      "user_name": { "type": "string", "required": true },
-      "password": { "type": "string", "required": true },
-      "view_mode": { "type": "bool", "default": false }
+      "addr": { "type": "string", "required": true, "description": "3DVision 地址，格式 host:port" },
+      "user_name": { "type": "string", "required": true, "description": "登录用户名" },
+      "password": { "type": "string", "required": true, "description": "登录密码" },
+      "view_mode": { "type": "bool", "default": false, "description": "login.viewMode" }
     }
   },
   "cranes": {
@@ -361,11 +399,23 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
       "fields": {
         "id": { "type": "string", "required": true },
         "host": { "type": "string", "required": true },
-        "port": { "type": "int", "default": 502 },
-        "unit_id": { "type": "int", "default": 1 }
+        "port": { "type": "int", "default": 502, "constraints": { "min": 1, "max": 65535 } },
+        "unit_id": { "type": "int", "default": 1, "constraints": { "min": 1, "max": 247 } },
+        "timeout_ms": { "type": "int", "default": 3000, "constraints": { "min": 100, "max": 60000 } }
       }
     }
-  }
+  },
+  "crane_poll_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 100, "max": 10000 } },
+  "crane_wait_timeout_ms": { "type": "int", "default": 60000, "constraints": { "min": 1000, "max": 600000 } },
+  "scan_request_timeout_ms": { "type": "int", "default": 8000, "constraints": { "min": 500, "max": 60000 } },
+  "scan_start_retry_count": { "type": "int", "default": 2, "constraints": { "min": 0, "max": 10 } },
+  "scan_start_retry_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 0, "max": 30000 } },
+  "scan_poll_interval_ms": { "type": "int", "default": 3000, "constraints": { "min": 200, "max": 60000 } },
+  "scan_poll_fail_limit": { "type": "int", "default": 5, "constraints": { "min": 1, "max": 100 } },
+  "scan_timeout_ms": { "type": "int", "default": 120000, "constraints": { "min": 1000, "max": 1800000 } },
+  "clock_skew_tolerance_ms": { "type": "int", "default": 2000, "constraints": { "min": 0, "max": 60000 } },
+  "on_error_set_manual": { "type": "bool", "default": true },
+  "result_output_path": { "type": "string", "default": "" }
 }
 ```
 
@@ -376,7 +426,7 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - `stdiolink_service <service_dir> --dump-config-schema` 输出合法 schema。
 - 无效 Project 会被现有校验链标记为 invalid。
 
-### 4.3 `index.js`
+### 4.4 `index.js`
 
 - 新增 `src/data_root/services/bin_scan_orchestrator/index.js`
 - 采用“函数拆分 + 顶层 IIFE”的 one-shot 结构
@@ -387,14 +437,14 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 (async () => {
   const cfg = getConfig();
   const logger = createLogger({ service: "bin_scan_orchestrator" });
-  const vision = await openVision(cfg.vision);
+  const { driver: visionDriver, token } = await openVision(cfg.vision);
   const cranes = await openCranes(cfg.cranes);
 
   try {
     await prepareCranes(cranes);
     await waitCranesReady(cranes, cfg);
-    const scanStartedAt = await startScan(vision.driver, cfg, vision.token);
-    const visionLog = await pollScanCompleted(vision.driver, cfg, scanStartedAt);
+    const scanStartedAt = await startScan(visionDriver, cfg, token);
+    const visionLog = await pollScanCompleted(visionDriver, cfg, scanStartedAt);
     await writeResultFile(cfg, buildResult(cfg, scanStartedAt, visionLog));
     logger.info("scan completed", { vesselId: cfg.vessel_id });
   } catch (err) {
@@ -404,13 +454,14 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
     logger.error("scan failed", { message: String(err) });
     throw err;
   } finally {
-    await closeAll(cranes, vision);
+    await closeAll(cranes, visionDriver);
   }
 })();
 ```
 
 具体要求：
 - 使用 `resolveDriver("stdio.drv.plc_crane")` 和 `resolveDriver("stdio.drv.3dvision")`。
+- 多 Crane 的 `set_mode(auto)` 和单轮 `read_status` 检查都按 `Promise.all(...)` 并发触发，不使用串行 `for-await` 作为基线实现。
 - PLC 连接参数通过命令参数传入真实 driver。
 - 扫描启动必须支持重试，且重试次数和间隔来自配置。
 - 失败路径必须保证所有 driver `$close()` 都执行。
@@ -424,7 +475,7 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - CLI / Server / WebUI 三条加载路径运行的是同一 `index.js`。
 - 失败路径不残留失控 driver 进程。
 
-### 4.4 Project 示例
+### 4.5 Project 示例
 
 - 新增 `src/data_root/projects/manual_bin_scan_orchestrator.json`
 - 新增 `src/data_root/projects/fixed_rate_bin_scan_orchestrator.json`
@@ -486,35 +537,53 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 
 ## 5. 文件变更清单
 
-### 5.1 新增文件
+### 5.1 核心实现文件
 - `src/data_root/services/bin_scan_orchestrator/manifest.json` - Service 元数据
 - `src/data_root/services/bin_scan_orchestrator/config.schema.json` - 配置 schema
 - `src/data_root/services/bin_scan_orchestrator/index.js` - one-shot 扫描编排逻辑
 - `src/data_root/projects/manual_bin_scan_orchestrator.json` - 手动触发 Project 示例
 - `src/data_root/projects/fixed_rate_bin_scan_orchestrator.json` - 定时触发 Project 示例
-- `src/tests/test_bin_scan_orchestrator_service.cpp` - 黑盒单元/集成测试
-- `src/smoke_tests/m101_bin_scan_orchestrator.py` - 冒烟测试脚本
 - `doc/milestone/milestone_0101_bin_scan_orchestrator.md` - 现有框架版实施计划
 
-### 5.2 修改文件
+### 5.2 测试支撑与覆盖文件
+- `src/tests/test_bin_scan_orchestrator_service.cpp` - 基于真实 `stdiolink_service` 进程的黑盒测试
+- `src/tests/helpers/bin_scan_fake_vision_server.h` - 基于现有 `HttpTestServer` 的 3DVision fake server 夹具
+- `src/tests/helpers/plc_crane_sim_handle.h` - 封装 `stdio.drv.plc_crane_sim` 子进程与状态断言
+- `src/smoke_tests/m101_bin_scan_orchestrator.py` - 冒烟测试脚本
+
+### 5.3 修改文件
 - `src/smoke_tests/run_smoke.py` - 注册 m101_bin_scan_orchestrator 测试计划
 - `src/smoke_tests/CMakeLists.txt` - 添加 CTest 目标 `smoke_m101_bin_scan_orchestrator`
 
-### 5.3 测试文件
-- `src/tests/test_bin_scan_orchestrator_service.cpp` - 基于真实 `stdiolink_service` 进程的黑盒测试
+### 5.4 复用的现有测试基础设施
+- [`src/tests/helpers/http_test_server.h`](/D:/code/stdiolink/src/tests/helpers/http_test_server.h) - 作为 3DVision fake server 的 HTTP 底座
+- `stdio.drv.plc_crane_sim` - 作为 PLC 侧黑盒/冒烟测试的现成模拟驱动
 
 ## 6. 测试与验收
 
 ### 6.1 单元测试
 
 - **测试对象**: `index.js` 主流程在真实 `stdiolink_service` 进程中的行为
-- **用例分层**: 正常路径、配置边界、轮询/超时异常、外部接口失败传播、Server/Project 兼容回归
+- **职责边界**: C++ 黑盒测试仅覆盖 CLI / service 进程本身（T01-T16）；Server `manual` / `fixed_rate` 主链路统一放到 Python 冒烟测试（S03-S04）
+- **用例分层**: 正常路径、配置边界、轮询/超时异常、外部接口失败传播、资源清理与退出码契约
 - **断言要点**: 退出码、日志、结果文件、重试次数、失败回退、副作用清理
 - **桩替身策略**:
-  - 3DVision 使用本地 fake HTTP server，控制 `login` / `vessel.command` / `vessellog.last`
-  - PLC 使用现有 `plc_crane_sim` 或本地 fake 替身
+  - 3DVision 使用本地 fake HTTP server，基于现有 [`src/tests/helpers/http_test_server.h`](/D:/code/stdiolink/src/tests/helpers/http_test_server.h) 封装 `FakeVisionServer`，控制 `login` / `vessel.command` / `vessellog.last`
+  - PLC 默认使用现有 `plc_crane_sim`，通过 `PlcCraneSimHandle` 封装启动、停止、寄存器读取和模式断言
   - 不依赖真实硬件或公网
 - **测试文件**: `src/tests/test_bin_scan_orchestrator_service.cpp`
+
+#### 测试工具能力说明
+
+- `FakeVisionServer`
+  - 复用 `HttpTestServer` 监听本地随机端口。
+  - 提供 `enqueueLoginDone(token)`、`enqueueLoginError(msg)`、`enqueueScanDone()`、`enqueueScanError(msg)`、`enqueueLastLogNewerThanNow()`、`enqueueLastLogOlderThan(ts)` 等脚本化接口。
+  - 提供 `scanCallCount()`、`lastLogCallCount()` 等计数接口，便于断言重试与轮询次数。
+- `PlcCraneSimHandle`
+  - 启动现有 `stdio.drv.plc_crane_sim` 子进程，自动分配端口并注入快速延时参数。
+  - 支持读取关键寄存器/状态位，用于断言 `mode=manual`、`cylinder_down`、`valve_open` 等最终状态。
+  - 支持通过短超时、未监听端口或第二台故障 endpoint 组合稳定触发 `set_mode`/等待失败场景。
+- 基线方案不新增 `FakePlcCraneServer`。如果后续证明 `plc_crane_sim` 无法覆盖某个必须的按调用序列故障注入场景，再单独追加 follow-up 设计，不作为本里程碑前置阻塞。
 
 #### 路径矩阵
 
@@ -536,14 +605,12 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 | 失败回退 | `on_error_set_manual=true` 时切回 manual | T14 |
 | 结果输出 | `result_output_path` 非空时写出 JSON | T15 |
 | 退出码契约 | 成功 0 / 失败非 0 | T16 |
-| Server 集成 | `manual` Project 可启动实例并完成 | T17 |
-| Server 集成 | `fixed_rate` Project 周期触发 | T18 |
 
-覆盖要求：核心决策路径 `100%` 对应用例；无公网依赖；“WS 事件先完成”不属于本里程碑可达路径。
+覆盖要求：核心功能场景 `100%` 对应用例；无公网依赖；“WS 事件先完成”不属于本里程碑可达路径。
 
 #### 执行约束
 
-- T03-T18 必须实际执行，不得禁用。
+- T03-T16 必须实际执行，不得禁用。
 - 失败路径必须使用本地 fake/mock 稳定复现。
 - 进程型测试必须在失败或超时后清理子进程、端口、临时目录。
 
@@ -631,7 +698,7 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - 前置条件: `on_error_set_manual=true`，扫描阶段故意失败。
 - 输入: 启动 service。
 - 预期: 失败前对所有 Crane 执行 `set_mode(manual)`。
-- 断言: fake PLC 记录到 manual 调用。
+- 断言: `PlcCraneSimHandle` 观测到最终模式已切回 `manual`。
 
 **T15 — 结果文件输出**
 - 前置条件: `result_output_path` 指向临时文件。
@@ -644,18 +711,6 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - 输入: 运行两次 service。
 - 预期: 成功返回 `0`，失败返回非 `0`。
 - 断言: 两次退出码分别满足契约。
-
-**T17 — Manual Project 可拉起实例**
-- 前置条件: 在临时 data_root 写入 service 与 `manual` project，启动 server manager。
-- 输入: 调用 `POST /api/projects/{id}/start`。
-- 预期: 创建实例并运行完成。
-- 断言: `runtime` 可见实例记录；`logs` 可见成功日志。
-
-**T18 — FixedRate Project 周期触发**
-- 前置条件: `intervalMs` 设置为可测试的小值。
-- 输入: 启动调度引擎。
-- 预期: 在窗口期内触发至少两次。
-- 断言: 实例数/日志计数满足周期执行预期。
 
 #### 测试代码
 
@@ -688,7 +743,7 @@ TEST_F(BinScanOrchestratorServiceTest, T14_OnErrorSetManualCallsManualMode) {
     vision.enqueueScanError("fail");
     vision.enqueueScanError("fail");
 
-    FakePlcCraneServer crane = startFakeCrane();
+    PlcCraneSimHandle crane = startCraneSim();
     const QString configPath = writeConfig(makeConfig(vision, crane, true));
 
     RunResult r = runService(serviceDirPath(), {
@@ -697,7 +752,7 @@ TEST_F(BinScanOrchestratorServiceTest, T14_OnErrorSetManualCallsManualMode) {
     });
 
     EXPECT_NE(r.exitCode, 0);
-    EXPECT_TRUE(crane.hasSeenSetMode("manual"));
+    EXPECT_TRUE(crane.isManualMode());
 }
 ```
 
@@ -714,9 +769,9 @@ TEST_F(BinScanOrchestratorServiceTest, T14_OnErrorSetManualCallsManualMode) {
   - `S03`: Server manual project → `POST /api/projects/{id}/start` 后 runtime/logs 可观测
   - `S04`: Server fixed_rate project → 周期触发至少两次实例
 - **失败输出规范**: 必须输出退出码、候选可执行文件路径、关键日志摘要
-- **环境约束与跳过策略**:
-  - 若 `stdiolink_service` 或 `stdiolink_server` 可执行文件不存在，判定 FAIL
-  - 若 `plc_crane_sim` 不存在，判定 FAIL
+- **前置条件与失败策略**:
+  - 必须能定位 `stdiolink_service`、`stdiolink_server`、`stdio.drv.plc_crane_sim`
+  - 若任一产物不存在，判定 FAIL，并输出缺失产物的候选路径
   - 端口冲突时脚本自动换随机端口
 - **产物定位契约**:
   - `stdiolink_service`: `build/runtime_*/bin/stdiolink_service(.exe)`
@@ -747,7 +802,7 @@ def run_s03_server_manual() -> bool:
 
 ### 6.4 验收标准
 
-- [ ] `bin_scan_orchestrator` 能被 ServiceScanner 正确发现并在 `GET /api/services` 中返回。（T17, S03）
+- [ ] `bin_scan_orchestrator` 能被 ServiceScanner 正确发现并在 `GET /api/services` 中返回。（S03）
 - [ ] `config.schema.json` 可被 `--dump-config-schema` 正确导出，且 WebUI 可渲染表单。（T01, S03）
 - [ ] 单 Crane 正常扫描主链路可在本地 fake 环境稳定通过。（T03, S01）
 - [ ] 多 Crane 任一失败会立即中止，不会继续触发扫描。（T04）
@@ -757,14 +812,14 @@ def run_s03_server_manual() -> bool:
 - [ ] 轮询失败上限与总超时都能触发明确失败退出。（T12, T13, S02）
 - [ ] 失败时可按配置把 Crane 切回 `manual`。（T14）
 - [ ] 成功执行时可输出完整结果 JSON。（T15, S01）
-- [ ] CLI / Server manual / Server fixed_rate 三种加载方式都可运行同一套 service 产物。（T16, T17, T18, S01, S03, S04）
+- [ ] CLI / Server manual / Server fixed_rate 三种加载方式都可运行同一套 service 产物。（T16, S01, S03, S04）
 
 ## 7. 风险与控制
 
 - 风险: 开发过程再次回到“命令型 service”抽象，导致实现偏离当前框架。
   - 控制: 以本文档为唯一实现基线；评审时逐项检查是否引入新底层能力。
   - 控制: 测试全部围绕 one-shot 模式设计。
-  - 测试覆盖: T16, T17, T18, S03, S04
+  - 测试覆盖: T16, S03, S04
 
 - 风险: 3DVision `logTime` 格式或时区处理不稳定，导致误判完成。
   - 控制: `isFreshLog()` 独立实现并覆盖“旧日志忽略”路径。
@@ -773,25 +828,25 @@ def run_s03_server_manual() -> bool:
 
 - 风险: 失败路径未正确切回 manual，现场设备可能停留在 auto。
   - 控制: 失败路径统一进入 `safeSetManual()`。
-  - 控制: fake PLC 记录命令并在测试中断言。
+  - 控制: `PlcCraneSimHandle` 读取模拟器状态并在测试中断言。
   - 测试覆盖: T14
 
 - 风险: 周期调度下实例堆积。
   - 控制: `fixed_rate` 示例固定 `maxConcurrent=1`。
   - 控制: 冒烟脚本验证周期执行窗口中的实例数量。
-  - 测试覆盖: T18, S04
+  - 测试覆盖: S04
 
 - 风险: 进程型测试残留子进程或占用端口。
   - 控制: 测试夹具统一封装子进程清理。
   - 控制: 超时分支执行 kill/wait + 临时目录回收。
-  - 测试覆盖: T03-T18, S01-S04
+  - 测试覆盖: T03-T16, S01-S04
 
 ## 8. 里程碑完成定义（DoD）
 
 - [ ] `src/data_root/services/bin_scan_orchestrator/` 三件套已完成，且能被扫描发现。
 - [ ] `manual` / `fixed_rate` 两个 Project 示例已完成。
 - [ ] `index.js` 主流程只使用现有框架能力，无新增底层接口依赖。
-- [ ] `src/tests/test_bin_scan_orchestrator_service.cpp` 已完成，T01-T18 全部通过。
+- [ ] `src/tests/test_bin_scan_orchestrator_service.cpp` 已完成，T01-T16 全部通过。
 - [ ] `src/smoke_tests/m101_bin_scan_orchestrator.py` 已完成并接入 `run_smoke.py` 与 CTest。
 - [ ] `smoke_m101_bin_scan_orchestrator` 在目标环境执行通过，或有明确失败报告，不存在静默通过。
 - [ ] WebUI 通过现有 Services / Projects / Runtime / Logs 页面可完成配置、触发与观察。
