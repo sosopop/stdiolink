@@ -390,6 +390,27 @@ if (-not $skipTests) {
         Write-Host "WARNING: npx or node_modules not available, skipping Playwright."
     }
 
+    # 4. Smoke tests (Python)
+    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($pythonCmd) {
+        Write-Host "--- Smoke tests (Python) ---"
+        $smokeScript = Join-Path $rootDir "src/smoke_tests/run_smoke.py"
+        if (Test-Path -LiteralPath $smokeScript -PathType Leaf) {
+            & python $smokeScript --plan all
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Smoke tests failed (exit code $LASTEXITCODE)"
+                exit 1
+            }
+            Write-Host "  Smoke tests passed."
+        }
+        else {
+            Write-Host "WARNING: Smoke test script not found at $smokeScript, skipping smoke tests."
+        }
+    }
+    else {
+        Write-Host "WARNING: Python not found, skipping smoke tests."
+    }
+
     Write-Host "=== All test suites passed ==="
 }
 
