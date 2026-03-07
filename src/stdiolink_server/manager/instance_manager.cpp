@@ -123,6 +123,7 @@ QString InstanceManager::startInstance(const Project& project,
     inst->startedAt = QDateTime::currentDateTimeUtc();
     inst->status = "starting";
     inst->tempConfigFile = std::move(tempFile);
+    inst->runTimeoutMs = project.schedule.runTimeoutMs;
 
     // Create ProcessGuard for parent-child liveness monitoring
     auto guard = std::make_unique<stdiolink::ProcessGuardServer>();
@@ -189,6 +190,32 @@ QString InstanceManager::startInstance(const Project& project,
         Instance* inst = it->second.get();
         inst->pid = inst->process->processId();
         inst->status = "running";
+        if (inst->runTimeoutMs > 0) {
+            auto timer = std::make_unique<QTimer>();
+            timer->setSingleShot(true);
+            connect(timer.get(), &QTimer::timeout, this, [this, instanceId]() {
+                auto timeoutIt = m_instances.find(instanceId);
+                if (timeoutIt == m_instances.end()) {
+                    return;
+                }
+                Instance* timeoutInst = timeoutIt->second.get();
+                if (!timeoutInst->process
+                    || timeoutInst->process->state() == QProcess::NotRunning) {
+                    return;
+                }
+                timeoutInst->timedOut = true;
+                timeoutInst->timeoutReason = QStringLiteral(
+                                                 "service run timeout (%1 ms)")
+                                                 .arg(timeoutInst->runTimeoutMs);
+                if (timeoutInst->logWriter) {
+                    timeoutInst->logWriter->appendStderr(
+                        timeoutInst->timeoutReason.toUtf8() + "\n");
+                }
+                timeoutInst->process->kill();
+            });
+            timer->start(inst->runTimeoutMs);
+            inst->runTimeoutTimer = std::move(timer);
+        }
         emit instanceStarted(instanceId, inst->projectId);
     });
 
@@ -344,6 +371,10 @@ void InstanceManager::onProcessFinished(const QString& instanceId,
     const bool wasStarting = (inst->status == "starting");
     const bool abnormal = status == QProcess::CrashExit || exitCode != 0;
     inst->status = abnormal ? "failed" : "stopped";
+    if (inst->runTimeoutTimer) {
+        inst->runTimeoutTimer->stop();
+        inst->runTimeoutTimer.reset();
+    }
 
     // starting 阶段退出：补发 startFailed（如果 errorOccurred/timeout 未发过）
     if (wasStarting && !inst->startFailedEmitted) {

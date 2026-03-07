@@ -118,10 +118,13 @@
             "type": "Schedule Type",
             "manual": "Manual",
             "daemon": "Daemon",
-            "fixed_rate": "Fixed Rate",
-            "restart_delay": "Restart Delay (ms)",
-            "max_failures": "Max Consecutive Failures",
-            "interval": "Interval (ms)",
+        "fixed_rate": "Fixed Rate",
+        "run_timeout": "Run Timeout (ms)",
+        "run_timeout_hint": "0 = disabled",
+        "run_timeout_invalid": "Run timeout must be a non-negative integer",
+        "restart_delay": "Restart Delay (ms)",
+        "max_failures": "Max Consecutive Failures",
+        "interval": "Interval (ms)",
             "max_concurrent": "Max Concurrent"
         },
         "instances_tab": {

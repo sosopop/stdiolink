@@ -248,6 +248,7 @@ int main(int argc, char* argv[]) {
         }
     }
     if (ret == 0 && engine.hadJobError()) {
+        engine.reportUnhandledPromiseRejections();
         ret = 1;
     }
 

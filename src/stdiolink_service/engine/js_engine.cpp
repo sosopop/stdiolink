@@ -13,6 +13,38 @@
 #include "bindings/js_task.h"
 #include "module_loader.h"
 
+namespace {
+
+QString formatExceptionValue(JSContext* ctx, JSValueConst value) {
+    QStringList parts;
+
+    const char* excText = JS_ToCString(ctx, value);
+    if (excText) {
+        parts.append(QString::fromUtf8(excText));
+        JS_FreeCString(ctx, excText);
+    }
+
+    JSValue stack = JS_GetPropertyStr(ctx, value, "stack");
+    if (!JS_IsUndefined(stack)) {
+        const char* stackText = JS_ToCString(ctx, stack);
+        if (stackText) {
+            const QString stackString = QString::fromUtf8(stackText);
+            if (!stackString.isEmpty()) {
+                parts.append(stackString);
+            }
+            JS_FreeCString(ctx, stackText);
+        }
+    }
+    JS_FreeValue(ctx, stack);
+
+    if (parts.isEmpty()) {
+        return QStringLiteral("Unhandled promise rejection");
+    }
+    return parts.join('\n');
+}
+
+} // namespace
+
 JsEngine::JsEngine() {
     m_rt = JS_NewRuntime();
     if (!m_rt) {
@@ -30,6 +62,7 @@ JsEngine::JsEngine() {
 
     JS_SetMemoryLimit(m_rt, 256ull * 1024ull * 1024ull);
     JS_SetMaxStackSize(m_rt, 8ull * 1024ull * 1024ull);
+    JS_SetHostPromiseRejectionTracker(m_rt, &JsEngine::promiseRejectionTracker, this);
     ModuleLoader::install(m_ctx);
 }
 
@@ -134,6 +167,16 @@ bool JsEngine::hasPendingJobs() const {
     return JS_IsJobPending(m_rt) > 0;
 }
 
+bool JsEngine::hadJobError() const {
+    return m_jobError || !m_unhandledPromiseRejections.isEmpty();
+}
+
+void JsEngine::reportUnhandledPromiseRejections() const {
+    for (auto it = m_unhandledPromiseRejections.cbegin(); it != m_unhandledPromiseRejections.cend(); ++it) {
+        qCritical().noquote() << it.value();
+    }
+}
+
 void JsEngine::printException(JSContext* ctx) const {
     if (!ctx) {
         qCritical() << "Unknown JavaScript exception";
@@ -157,4 +200,20 @@ void JsEngine::printException(JSContext* ctx) const {
     }
     JS_FreeValue(ctx, stack);
     JS_FreeValue(ctx, exception);
+}
+
+void JsEngine::promiseRejectionTracker(JSContext* ctx, JSValueConst promise, JSValueConst reason,
+                                       bool isHandled, void* opaque) {
+    auto* self = static_cast<JsEngine*>(opaque);
+    if (!self) {
+        return;
+    }
+
+    const quintptr key = reinterpret_cast<quintptr>(JS_VALUE_GET_PTR(promise));
+    if (isHandled) {
+        self->m_unhandledPromiseRejections.remove(key);
+        return;
+    }
+
+    self->m_unhandledPromiseRejections.insert(key, formatExceptionValue(ctx, reason));
 }

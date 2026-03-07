@@ -14,6 +14,7 @@ Instance 是一个正在运行的 `stdiolink_service` 子进程，由 `InstanceM
    stdiolink_service <service_dir> --config-file=<temp_config>
 5. 重定向 stdout/stderr 到 logs/{projectId}.log
 6. 记录 Instance 到内存（ID、PID、启动时间）
+7. 若 `schedule.runTimeoutMs > 0`，在进程进入 `running` 后启动运行期 watchdog
 ```
 
 ### Instance 状态
@@ -34,6 +35,20 @@ Instance 是一个正在运行的 `stdiolink_service` 子进程，由 `InstanceM
 3. 清理临时配置文件
 4. 从内存移除 Instance 对象
 5. 通知 `ScheduleEngine`（由调度策略决定是否重启）
+
+### 运行期 watchdog
+
+`Project.schedule.runTimeoutMs` 用于限制单个 Service 实例进入 `running` 后的最长运行时间：
+
+| 配置 | 行为 |
+|------|------|
+| `0` 或缺省 | 不启用 watchdog |
+| `> 0` | 进入 `running` 后启动单次定时器；到期后 `kill()` 当前 Service |
+
+说明：
+- `runTimeoutMs` 只作用于运行期，不替代现有的 `5s` 启动超时。
+- Service 被 watchdog 终止时，日志会追加 timeout 文本，清理仍统一走 `finished -> onProcessFinished()`。
+- 该字段适用于 `manual`、`fixed_rate`、`daemon` 三种调度类型。
 
 ## 日志
 
@@ -61,6 +76,7 @@ curl "http://127.0.0.1:6200/api/instances/silo-a/logs?lines=50"
 - 不自动启动任何 Instance
 - 仅响应 `POST /api/projects/{id}/start` 手动触发
 - 同一时刻最多运行一个 Instance，已有运行中实例时返回 `409 Conflict`
+- 若配置 `runTimeoutMs`，手动启动的实例也会在运行期受 watchdog 约束
 
 ### fixed_rate 模式
 
@@ -69,6 +85,7 @@ curl "http://127.0.0.1:6200/api/instances/silo-a/logs?lines=50"
 - 若 `运行中数量 >= maxConcurrent`，跳过本次触发
 - Instance 退出后不重启，等待下次定时触发
 - 也可通过 API 手动触发额外的 Instance
+- 若配置 `runTimeoutMs`，每个触发出的实例都单独计时
 
 ### daemon 模式
 
@@ -77,6 +94,7 @@ curl "http://127.0.0.1:6200/api/instances/silo-a/logs?lines=50"
 - 异常退出（崩溃或 exitCode ≠ 0）：延迟 `restartDelayMs` 后自动重启
 - 连续异常退出达到 `maxConsecutiveFailures` 次：停止自动重启（崩溃抑制）
 - 崩溃抑制后需人工介入排查，修复后可通过 API 手动重新启动
+- 若配置 `runTimeoutMs`，daemon 单个实例达到运行上限后会被终止，并按现有失败路径处理
 
 ## 优雅关闭
 

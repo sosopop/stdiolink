@@ -1,6 +1,21 @@
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_test(
+    NAME smoke_m101a_service_driver_timeout
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m101a_service_driver_timeout
+)
+
+set_tests_properties(
+    smoke_m101a_service_driver_timeout
+    PROPERTIES
+        LABELS "smoke;m101a"
+        TIMEOUT 180
+)
+
+add_test(
     NAME smoke_m98_json_cli_normalization
     COMMAND
         ${Python3_EXECUTABLE}

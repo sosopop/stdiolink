@@ -1,7 +1,7 @@
 # 里程碑 101：料仓扫描联动服务（BinScanOrchestrator，现有框架版）
 
-> **前置条件**: M86（`resolveDriver` 绑定）、M89（统一 runtime 布局）、`stdio.drv.plc_crane`、`stdio.drv.3dvision`
-> **目标**: 在不新增底层 runtime / server / driver 能力的前提下，基于现有 `manifest.json + config.schema.json + index.js + Project` 机制交付可运行、可调度、可测试的单次料仓扫描编排服务
+> **前置条件**: M86（`resolveDriver` 绑定）、M89（统一 runtime 布局）、M101A（`schedule.runTimeoutMs` / `drv.xxx(params, { timeoutMs })` 基础能力）、`stdio.drv.plc_crane`、`stdio.drv.3dvision`
+> **目标**: 在不新增底层 runtime / server / driver 能力的前提下，基于现有 `manifest.json + config.schema.json + index.js + Project` 机制交付可运行、可调度、可测试的单次料仓扫描编排服务，并直接复用 M101A 提供的 server/service 双层 timeout 契约
 
 ## 1. 目标
 
@@ -16,7 +16,7 @@
 | `doc/milestone` | 与现有框架一致的开发计划文档 |
 
 - 交付一个 one-shot JS orchestrator，一次进程启动只完成一次扫描。
-- 只复用现有 `getConfig`、`resolveDriver`、`openDriver`、`stdiolink/fs`、Project 调度能力，不新增底层接口。
+- 只复用现有 `getConfig`、`resolveDriver`、`openDriver`、`stdiolink/fs`、Project 调度能力，以及 M101A 已补齐的 timeout 基础设施，不新增新的底层接口。
 - 支持三种加载方式：命令行直接运行、Server `manual` 调度、Server `fixed_rate` 调度。
 - 编排 PLC Crane 与 3DVision 完成单料仓扫描，覆盖准备、等待到位、触发扫描、结果确认、结果落盘、失败复位。
 - 提供适配 WebUI 的 `config.schema.json`，确保现有 Services / Projects 页面可直接加载。

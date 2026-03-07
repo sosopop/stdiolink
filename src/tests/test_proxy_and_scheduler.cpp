@@ -9,6 +9,7 @@
 
 #include <quickjs.h>
 #include "bindings/js_stdiolink_module.h"
+#include "bindings/js_time.h"
 #include "bindings/js_task_scheduler.h"
 #include "bindings/js_wait_any_scheduler.h"
 #include "engine/console_bridge.h"
@@ -59,6 +60,11 @@ QString slowMetaDriverPath() {
         QCoreApplication::applicationDirPath(), "test_slow_meta_driver");
 }
 
+QString slowCommandDriverPath() {
+    return stdiolink::PlatformUtils::executablePath(
+        QCoreApplication::applicationDirPath(), "test_slow_command_driver");
+}
+
 } // namespace
 
 TEST(JsTaskSchedulerTest, InitiallyEmpty) {
@@ -86,6 +92,8 @@ protected:
 
         ConsoleBridge::install(m_engine->context());
         m_engine->registerModule("stdiolink", jsInitStdiolinkModule);
+        m_engine->registerModule("stdiolink/time", stdiolink_service::JsTimeBinding::initModule);
+        stdiolink_service::JsTimeBinding::attachRuntime(m_engine->runtime());
         JsTaskScheduler::installGlobal(m_engine->context(), m_scheduler.get());
         WaitAnyScheduler::installGlobal(m_engine->context(), m_waitAnyScheduler.get());
     }
@@ -93,7 +101,9 @@ protected:
     int runScript(const QString& path) {
         int ret = m_engine->evalFile(path);
         while (m_scheduler->hasPending() || m_waitAnyScheduler->hasPending()
-               || m_engine->hasPendingJobs()) {
+               || m_engine->hasPendingJobs()
+               || stdiolink_service::JsTimeBinding::hasPending(m_engine->context())) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
             if (m_scheduler->hasPending()) {
                 m_scheduler->poll(50);
             }
@@ -243,7 +253,7 @@ TEST_F(JsProxyTest, OpenDriverStartFail) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "caught"), 1);
 }
 
-TEST_F(JsProxyTest, ProxyCommandCall) {
+TEST_F(JsProxyTest, T09_OldSignatureRemainsCompatible) {
     const QString driverPath = calculatorDriverPath();
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
@@ -261,6 +271,54 @@ TEST_F(JsProxyTest, ProxyCommandCall) {
 
     EXPECT_EQ(runScript(scriptPath), 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, T10_CommandTimeoutOptionsSuccessPath) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_timeout_success.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  const r = await drv.delayed_done({ delayMs: 20 }, { timeoutMs: 1000 });\n"
+                            "  globalThis.ok = (r && r.ok === true) ? 1 : 0;\n"
+                            "  drv.$close();\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, OldSignatureDoesNotBlockOtherAsyncJobs) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_async_old_signature.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "import { sleep } from 'stdiolink/time';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  const cmd = drv.delayed_done({ delayMs: 100 });\n"
+                            "  sleep(10).then(() => drv.$close());\n"
+                            "  let exitCaught = 0;\n"
+                            "  try {\n"
+                            "    await cmd;\n"
+                            "  } catch (e) {\n"
+                            "    const msg = String(e.message || e);\n"
+                            "    exitCaught = (msg.includes('driver exited') || msg.includes('without sending a response') || msg.includes('terminal response')) ? 1 : 0;\n"
+                            "  }\n"
+                            "  globalThis.exitCaught = exitCaught;\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "exitCaught"), 1);
 }
 
 TEST_F(JsProxyTest, ProxyReservedFieldsAndUndefinedCommand) {
@@ -365,6 +423,179 @@ TEST_F(JsProxyTest, DriverErrorBecomesThrow) {
 
     EXPECT_EQ(runScript(scriptPath), 0);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, T11_CommandOptionsValidationRejectsInvalidInput) {
+    const QString driverPath = calculatorDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_timeout_validation.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const calc = await openDriver('%1');\n"
+                            "  let badType = 0;\n"
+                            "  let badKey = 0;\n"
+                            "  try { await calc.add({ a: 1, b: 2 }, 'bad'); }\n"
+                            "  catch (e) { badType = (e instanceof TypeError && String(e).includes('driver command options')) ? 1 : 0; }\n"
+                            "  try { await calc.add({ a: 1, b: 2 }, { foo: 1 }); }\n"
+                            "  catch (e) { badKey = (e instanceof TypeError && String(e).includes('unknown driver command option')) ? 1 : 0; }\n"
+                            "  globalThis.badType = badType;\n"
+                            "  globalThis.badKey = badKey;\n"
+                            "  calc.$close();\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "badType"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "badKey"), 1);
+}
+
+TEST_F(JsProxyTest, TimeoutMsZeroKeepsLegacyNoTimeoutBehavior) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_timeout_zero.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  const r = await drv.delayed_done({ delayMs: 20 }, { timeoutMs: 0 });\n"
+                            "  globalThis.ok = (r && r.ok === true && r.delayMs === 20) ? 1 : 0;\n"
+                            "  drv.$close();\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, TimeoutPathDoesNotBlockOtherAsyncJobs) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_async_timeout_path.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "import { sleep } from 'stdiolink/time';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  const cmd = drv.delayed_done({ delayMs: 100 }, { timeoutMs: 1000 });\n"
+                            "  sleep(10).then(() => drv.$close());\n"
+                            "  let exitCaught = 0;\n"
+                            "  try {\n"
+                            "    await cmd;\n"
+                            "  } catch (e) {\n"
+                            "    const msg = String(e.message || e);\n"
+                            "    exitCaught = (String(e.code) !== 'ETIMEDOUT' && (msg.includes('driver exited') || msg.includes('without sending a response') || msg.includes('terminal response'))) ? 1 : 0;\n"
+                            "  }\n"
+                            "  globalThis.exitCaught = exitCaught;\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "exitCaught"), 1);
+}
+
+TEST_F(JsProxyTest, T12_EventThenDoneReturnsFinalPayload) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_event_then_done.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  const r = await drv.delayed_batch({ delayMs: 20, emitEvent: true }, { timeoutMs: 1000 });\n"
+                            "  globalThis.ok = (r && r.ok === true && r.emitEvent === true) ? 1 : 0;\n"
+                            "  drv.$close();\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
+TEST_F(JsProxyTest, T13_CommandTimeoutTerminatesDriver) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_timeout_terminates.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  let timeoutCaught = 0;\n"
+                            "  let runningAfter = 1;\n"
+                            "  try {\n"
+                            "    await drv.delayed_done({ delayMs: 5000 }, { timeoutMs: 50 });\n"
+                            "  } catch (e) {\n"
+                            "    timeoutCaught = (String(e.code) === 'ETIMEDOUT') ? 1 : 0;\n"
+                            "    runningAfter = drv.$driver.running ? 1 : 0;\n"
+                            "  }\n"
+                            "  globalThis.timeoutCaught = timeoutCaught;\n"
+                            "  globalThis.runningAfter = runningAfter;\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "timeoutCaught"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "runningAfter"), 0);
+}
+
+TEST_F(JsProxyTest, SmallTimeoutPreemptsResponseWithoutPollingSlack) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_timeout_small_deadline.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  let timeoutCaught = 0;\n"
+                            "  try {\n"
+                            "    // Old waitAny-based polling only showed up in tests with small deadlines.\n"
+                            "    await drv.delayed_done({ delayMs: 30 }, { timeoutMs: 15 });\n"
+                            "  } catch (e) {\n"
+                            "    timeoutCaught = (String(e.code) === 'ETIMEDOUT') ? 1 : 0;\n"
+                            "  }\n"
+                            "  globalThis.timeoutCaught = timeoutCaught;\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "timeoutCaught"), 1);
+}
+
+TEST_F(JsProxyTest, T14_DriverExitIsNotReportedAsTimeout) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "proxy_driver_exit.js",
+                    QString("import { openDriver } from 'stdiolink';\n"
+                            "(async () => {\n"
+                            "  const drv = await openDriver('%1');\n"
+                            "  let exitCaught = 0;\n"
+                            "  try {\n"
+                            "    await drv.delayed_exit({ delayMs: 20 }, { timeoutMs: 1000 });\n"
+                            "  } catch (e) {\n"
+                            "    const msg = String(e.message || e);\n"
+                            "    exitCaught = (String(e.code) !== 'ETIMEDOUT' && (msg.includes('driver exited') || msg.includes('driver process exited') || msg.includes('without sending a response') || msg.includes('terminal response'))) ? 1 : 0;\n"
+                            "  }\n"
+                            "  globalThis.exitCaught = exitCaught;\n"
+                            "})();\n")
+                        .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "exitCaught"), 1);
 }
 
 TEST_F(JsProxyTest, CloseTerminatesDriver) {

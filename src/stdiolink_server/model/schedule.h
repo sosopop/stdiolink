@@ -19,6 +19,7 @@ struct Schedule {
 
     int restartDelayMs = 3000;
     int maxConsecutiveFailures = 5;
+    int runTimeoutMs = 0;
 
     static Schedule fromJson(const QJsonObject& obj, QString& error);
     QJsonObject toJson() const;

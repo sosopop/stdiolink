@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <QHash>
 #include <QString>
+#include <quickjs.h>
 
 struct JSContext;
 struct JSModuleDef;
@@ -45,7 +47,10 @@ public:
 
     /// @brief 检查异步任务执行过程中是否发生过错误
     /// @return 发生过错误返回 true
-    bool hadJobError() const { return m_jobError; }
+    bool hadJobError() const;
+
+    /// @brief 输出未处理 Promise rejection 的详细信息
+    void reportUnhandledPromiseRejections() const;
 
     /// @brief 获取 QuickJS 上下文
     /// @return 当前引擎的 JSContext 指针
@@ -56,6 +61,9 @@ public:
     JSRuntime* runtime() const { return m_rt; }
 
 private:
+    static void promiseRejectionTracker(JSContext* ctx, JSValueConst promise, JSValueConst reason,
+                                        bool isHandled, void* opaque);
+
     /// @brief 打印 JS 异常信息到 stderr
     /// @param ctx 发生异常的 JSContext
     void printException(JSContext* ctx) const;
@@ -63,4 +71,5 @@ private:
     JSRuntime* m_rt = nullptr;   ///< QuickJS 运行时实例
     JSContext* m_ctx = nullptr;  ///< QuickJS 上下文实例
     bool m_jobError = false;     ///< 异步任务是否出错的标记
+    QHash<quintptr, QString> m_unhandledPromiseRejections; ///< 未处理 Promise rejection
 };

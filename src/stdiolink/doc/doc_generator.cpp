@@ -495,6 +495,10 @@ QString DocGenerator::toTypeScript(const meta::DriverMeta& meta) {
     ts += "    readonly hasMeta: boolean;\n";
     ts += "}\n\n";
 
+    ts += "export interface DriverCommandCallOptions {\n";
+    ts += "    timeoutMs?: number;\n";
+    ts += "}\n\n";
+
     for (const auto& cmd : meta.commands) {
         const QString base = toPascalCase(cmd.name);
         const QString paramsName = base + "Params";
@@ -534,7 +538,8 @@ QString DocGenerator::toTypeScript(const meta::DriverMeta& meta) {
             ts += "     * @example " + formatExampleCli(cmd.name, ex) + "\n";
             ts += "     */\n";
         }
-        ts += "    " + tsMemberName(cmd.name) + "(params?: " + paramsName + "): Promise<" + resultName + ">;\n";
+        ts += "    " + tsMemberName(cmd.name) + "(params?: " + paramsName
+              + ", options?: DriverCommandCallOptions): Promise<" + resultName + ">;\n";
     }
     ts += "    readonly $driver: Driver;\n";
     ts += "    readonly $meta: object;\n";

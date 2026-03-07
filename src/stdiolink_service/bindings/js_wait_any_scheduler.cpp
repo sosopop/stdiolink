@@ -1,5 +1,6 @@
 #include "js_wait_any_scheduler.h"
 
+#include <algorithm>
 #include <QHash>
 #include <QJsonObject>
 #include <QSet>
@@ -175,10 +176,18 @@ bool WaitAnyScheduler::poll(int timeoutMs) {
         return false;
     }
 
+    int effectiveWaitMs = timeoutMs;
     for (int i = m_pending.size() - 1; i >= 0; --i) {
         const PendingGroup& group = m_pending[i];
         if (group.timeoutMs >= 0 && group.elapsed.hasExpired(group.timeoutMs)) {
             settleGroup(i, JS_NULL, false);
+            continue;
+        }
+        if (group.timeoutMs >= 0) {
+            const int remainingMs = std::max(0, group.timeoutMs - static_cast<int>(group.elapsed.elapsed()));
+            if (effectiveWaitMs < 0 || remainingMs < effectiveWaitMs) {
+                effectiveWaitMs = remainingMs;
+            }
         }
     }
     if (m_pending.isEmpty()) {
@@ -227,7 +236,7 @@ bool WaitAnyScheduler::poll(int timeoutMs) {
     }
 
     stdiolink::AnyItem anyItem;
-    const bool gotMessage = stdiolink::waitAnyNext(allTasks, anyItem, timeoutMs);
+    const bool gotMessage = stdiolink::waitAnyNext(allTasks, anyItem, effectiveWaitMs);
     if (gotMessage && anyItem.taskIndex >= 0 && anyItem.taskIndex < refs.size()) {
         const TaskRef ref = refs[anyItem.taskIndex];
         if (ref.groupIndex >= 0 && ref.groupIndex < m_pending.size()) {

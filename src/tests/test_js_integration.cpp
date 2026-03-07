@@ -240,6 +240,18 @@ TEST_F(JsIntegrationTest, UncaughtExceptionExitsWithError) {
     EXPECT_TRUE(r.stderrText.contains("test uncaught"));
 }
 
+TEST_F(JsIntegrationTest, UnhandledAsyncRejectionExitsWithError) {
+    QString dir = createServiceDir(
+        "(async () => {\n"
+        "  throw new Error('test async uncaught');\n"
+        "})();\n");
+
+    const RunResult r = runServiceDir(dir);
+    EXPECT_TRUE(r.finished);
+    EXPECT_EQ(r.exitCode, 1);
+    EXPECT_TRUE(r.stderrText.contains("test async uncaught"));
+}
+
 TEST_F(JsIntegrationTest, CrossFileImport) {
     QString dir = createServiceDir(
         "import { add } from './lib.js';\n"

@@ -381,8 +381,10 @@ TEST(DocGenerator, TypeScriptProxyInterface) {
 
     QString ts = DocGenerator::toTypeScript(meta);
     EXPECT_TRUE(ts.contains("export interface ProxyDriverProxy"));
-    EXPECT_TRUE(ts.contains("scan(params?: ScanParams): Promise<ScanResult>;"));
-    EXPECT_TRUE(ts.contains("'mesh.union'(params?: MeshUnionParams): Promise<MeshUnionResult>;"));
+    EXPECT_TRUE(ts.contains("export interface DriverCommandCallOptions"));
+    EXPECT_TRUE(ts.contains("timeoutMs?: number;"));
+    EXPECT_TRUE(ts.contains("scan(params?: ScanParams, options?: DriverCommandCallOptions): Promise<ScanResult>;"));
+    EXPECT_TRUE(ts.contains("'mesh.union'(params?: MeshUnionParams, options?: DriverCommandCallOptions): Promise<MeshUnionResult>;"));
     EXPECT_TRUE(ts.contains("readonly $driver: Driver;"));
     EXPECT_TRUE(ts.contains("readonly $meta: object;"));
     EXPECT_TRUE(ts.contains("$rawRequest(cmd: string, data?: any): Task;"));

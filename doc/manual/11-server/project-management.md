@@ -12,7 +12,8 @@ Project 是对某个 Service 的一次实例化配置，包含业务参数和调
   "schedule": {
     "type": "fixed_rate",
     "intervalMs": 5000,
-    "maxConcurrent": 1
+    "maxConcurrent": 1,
+    "runTimeoutMs": 30000
   },
   "config": {
     "device": { "host": "192.168.1.100", "port": 502 },
@@ -43,7 +44,7 @@ Project 是对某个 Service 的一次实例化配置，包含业务参数和调
 ### manual — 手动触发
 
 ```json
-{ "type": "manual" }
+{ "type": "manual", "runTimeoutMs": 0 }
 ```
 
 不自动启动，仅通过 `POST /api/projects/{id}/start` 手动触发。适用于一次性任务或按需执行的场景。
@@ -54,7 +55,8 @@ Project 是对某个 Service 的一次实例化配置，包含业务参数和调
 {
   "type": "fixed_rate",
   "intervalMs": 5000,
-  "maxConcurrent": 1
+  "maxConcurrent": 1,
+  "runTimeoutMs": 30000
 }
 ```
 
@@ -62,6 +64,7 @@ Project 是对某个 Service 的一次实例化配置，包含业务参数和调
 |------|------|--------|------|------|
 | `intervalMs` | int | `5000` | >= 100 | 执行间隔（毫秒） |
 | `maxConcurrent` | int | `1` | >= 1 | 最大并发实例数 |
+| `runTimeoutMs` | int | `0` | >= 0 | 单个实例运行超时（毫秒），`0` 表示禁用 |
 
 按固定间隔周期性触发新 Instance。当运行中的 Instance 数量达到 `maxConcurrent` 时，跳过本次触发。Instance 退出后不重启，等待下次定时触发。
 
@@ -71,7 +74,8 @@ Project 是对某个 Service 的一次实例化配置，包含业务参数和调
 {
   "type": "daemon",
   "restartDelayMs": 3000,
-  "maxConsecutiveFailures": 5
+  "maxConsecutiveFailures": 5,
+  "runTimeoutMs": 0
 }
 ```
 
@@ -79,8 +83,11 @@ Project 是对某个 Service 的一次实例化配置，包含业务参数和调
 |------|------|--------|------|------|
 | `restartDelayMs` | int | `3000` | >= 0 | 异常退出后重启延迟（毫秒） |
 | `maxConsecutiveFailures` | int | `5` | >= 1 | 连续失败上限，达到后停止自动重启 |
+| `runTimeoutMs` | int | `0` | >= 0 | 单个实例运行超时（毫秒），`0` 表示禁用 |
 
 启动后常驻运行。异常退出（崩溃或退出码非 0）后延迟 `restartDelayMs` 毫秒自动重启。正常退出（退出码 0）不重启。连续异常退出达到 `maxConsecutiveFailures` 次时进入崩溃抑制，停止自动重启。
+
+`runTimeoutMs` 适用于所有三种调度类型。实例进入 `running` 后开始计时；到期时由 Server 直接终止该 Service 进程，并在项目日志中记录 timeout 原因。
 
 ## 配置验证
 

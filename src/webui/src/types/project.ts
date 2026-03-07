@@ -21,6 +21,7 @@ export interface Schedule {
   maxConcurrent?: number;
   restartDelayMs?: number;
   maxConsecutiveFailures?: number;
+  runTimeoutMs?: number;
 }
 
 export interface ProjectRuntime {

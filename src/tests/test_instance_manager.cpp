@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QTemporaryDir>
+#include <QTextStream>
 
 #include <functional>
 
@@ -74,6 +75,41 @@ Project makeProject(const QString& id,
     }
     p.config = QJsonObject{{"_test", testObj}};
     return p;
+}
+
+QString readUtf8File(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+    return QString::fromUtf8(file.readAll());
+}
+
+QString writeFakeExecutable(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        return {};
+    }
+#ifdef Q_OS_WIN
+    QTextStream out(&file);
+    out << "not a real executable\n";
+#else
+    QTextStream out(&file);
+    out << "#!/definitely/missing/interpreter\n";
+#endif
+    out.flush();
+    file.close();
+
+#ifndef Q_OS_WIN
+    const QFileDevice::Permissions perms =
+        QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner
+        | QFileDevice::ReadGroup | QFileDevice::ExeGroup
+        | QFileDevice::ReadOther | QFileDevice::ExeOther;
+    if (!QFile::setPermissions(path, perms)) {
+        return {};
+    }
+#endif
+    return path;
 }
 
 } // namespace
@@ -329,4 +365,202 @@ TEST(InstanceManagerTest, LogContentHasTimestampAndStderrPrefix) {
     }
     EXPECT_TRUE(foundStdout) << "stdout marker not found in log";
     EXPECT_TRUE(foundStderr) << "stderr marker not found in log";
+}
+
+TEST(InstanceManagerTest, T05_RuntimeWatchdogKillsLongRunningService) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString dataRoot = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/workspaces"));
+
+    const QString serviceDir = dataRoot + "/services/demo";
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    InstanceManager mgr(dataRoot, cfg);
+
+    int startFailedCount = 0;
+    int finishedCount = 0;
+    QObject::connect(&mgr, &InstanceManager::instanceStartFailed,
+                     [&startFailedCount](const QString&, const QString&, const QString&) {
+                         startFailedCount++;
+                     });
+    QObject::connect(&mgr, &InstanceManager::instanceFinished,
+                     [&finishedCount](const QString&, const QString&, int, QProcess::ExitStatus) {
+                         finishedCount++;
+                     });
+
+    Project project = makeProject("timeout_project", 0, 5000);
+    project.schedule.runTimeoutMs = 100;
+
+    QString error;
+    const QString instanceId = mgr.startInstance(project, serviceDir, error);
+    ASSERT_TRUE(error.isEmpty());
+    ASSERT_FALSE(instanceId.isEmpty());
+
+    const Instance* started = nullptr;
+    ASSERT_TRUE(waitUntil([&]() {
+        started = mgr.getInstance(instanceId);
+        return started != nullptr && started->status == "running";
+    }, 3000));
+    const QString tempConfigPath =
+        started->tempConfigFile ? started->tempConfigFile->fileName() : QString();
+    ASSERT_FALSE(tempConfigPath.isEmpty());
+
+    ASSERT_TRUE(waitUntil([&]() { return finishedCount == 1 && mgr.instanceCount("timeout_project") == 0; },
+                          3000));
+    EXPECT_EQ(startFailedCount, 0);
+    EXPECT_FALSE(QFileInfo::exists(tempConfigPath));
+
+    const QString logContent = readUtf8File(dataRoot + "/logs/timeout_project.log");
+    EXPECT_TRUE(logContent.contains("service run timeout (100 ms)"));
+}
+
+TEST(InstanceManagerTest, T06_RuntimeWatchdogDoesNotKillShortTask) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString dataRoot = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/workspaces"));
+
+    const QString serviceDir = dataRoot + "/services/demo";
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    InstanceManager mgr(dataRoot, cfg);
+
+    int finishedCount = 0;
+    int startFailedCount = 0;
+    QObject::connect(&mgr, &InstanceManager::instanceFinished,
+                     [&finishedCount](const QString&, const QString&, int, QProcess::ExitStatus) {
+                         finishedCount++;
+                     });
+    QObject::connect(&mgr, &InstanceManager::instanceStartFailed,
+                     [&startFailedCount](const QString&, const QString&, const QString&) {
+                         startFailedCount++;
+                     });
+
+    Project project = makeProject("short_project", 0, 20);
+    project.schedule.runTimeoutMs = 1000;
+
+    QString error;
+    const QString instanceId = mgr.startInstance(project, serviceDir, error);
+    ASSERT_TRUE(error.isEmpty());
+    ASSERT_FALSE(instanceId.isEmpty());
+
+    ASSERT_TRUE(waitUntil([&]() { return finishedCount == 1 && mgr.instanceCount("short_project") == 0; },
+                          3000));
+    EXPECT_EQ(startFailedCount, 0);
+
+    const QString logContent = readUtf8File(dataRoot + "/logs/short_project.log");
+    EXPECT_FALSE(logContent.contains("service run timeout"));
+}
+
+TEST(InstanceManagerTest, T07_StartupFailureDoesNotReportRuntimeTimeout) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString dataRoot = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/workspaces"));
+
+    const QString serviceDir = dataRoot + "/services/demo";
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+
+#ifdef Q_OS_WIN
+    const QString fakeProgram = dataRoot + "/fake_service.exe";
+#else
+    const QString fakeProgram = dataRoot + "/fake_service";
+#endif
+    ASSERT_FALSE(writeFakeExecutable(fakeProgram).isEmpty());
+
+    ServerConfig cfg;
+    cfg.serviceProgram = fakeProgram;
+
+    InstanceManager mgr(dataRoot, cfg);
+
+    int startFailedCount = 0;
+    int finishedCount = 0;
+    QString startFailedReason;
+    QObject::connect(&mgr, &InstanceManager::instanceStartFailed,
+                     [&startFailedCount, &startFailedReason](const QString&, const QString&, const QString& reason) {
+                         startFailedCount++;
+                         startFailedReason = reason;
+                     });
+    QObject::connect(&mgr, &InstanceManager::instanceFinished,
+                     [&finishedCount](const QString&, const QString&, int, QProcess::ExitStatus) {
+                         finishedCount++;
+                     });
+
+    Project project = makeProject("startup_fail_project", 0, 0);
+    project.schedule.runTimeoutMs = 10;
+
+    QString error;
+    const QString instanceId = mgr.startInstance(project, serviceDir, error);
+    ASSERT_TRUE(error.isEmpty());
+    ASSERT_FALSE(instanceId.isEmpty());
+
+    ASSERT_TRUE(waitUntil([&]() { return startFailedCount == 1 && finishedCount == 1; }, 3000));
+    EXPECT_EQ(mgr.instanceCount(), 0);
+    EXPECT_FALSE(startFailedReason.contains("service run timeout"));
+}
+
+TEST(InstanceManagerTest, T08_RuntimeTimeoutCleansTimerAndInstanceRecord) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString dataRoot = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/workspaces"));
+
+    const QString serviceDir = dataRoot + "/services/demo";
+    ASSERT_TRUE(QDir().mkpath(serviceDir));
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    InstanceManager mgr(dataRoot, cfg);
+
+    int finishedCount = 0;
+    QString tempConfigPath;
+    QString instanceId;
+    QObject::connect(&mgr, &InstanceManager::instanceStarted,
+                     [&mgr, &tempConfigPath, &instanceId](const QString& startedId, const QString&) {
+                         instanceId = startedId;
+                         const Instance* inst = mgr.getInstance(startedId);
+                         if (inst && inst->tempConfigFile) {
+                             tempConfigPath = inst->tempConfigFile->fileName();
+                         }
+                     });
+    QObject::connect(&mgr, &InstanceManager::instanceFinished,
+                     [&finishedCount](const QString&, const QString&, int, QProcess::ExitStatus) {
+                         finishedCount++;
+                     });
+
+    Project project = makeProject("cleanup_project", 0, 5000);
+    project.schedule.runTimeoutMs = 100;
+
+    QString error;
+    const QString startedId = mgr.startInstance(project, serviceDir, error);
+    ASSERT_TRUE(error.isEmpty());
+    ASSERT_FALSE(startedId.isEmpty());
+
+    ASSERT_TRUE(waitUntil([&]() { return finishedCount == 1; }, 3000));
+    EXPECT_EQ(mgr.instanceCount(), 0);
+    EXPECT_EQ(mgr.getInstance(startedId), nullptr);
+    ASSERT_FALSE(tempConfigPath.isEmpty());
+    EXPECT_FALSE(QFileInfo::exists(tempConfigPath));
+
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 300);
+    EXPECT_EQ(finishedCount, 1);
 }

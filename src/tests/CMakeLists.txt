@@ -262,6 +262,18 @@ set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_slow_meta_
 
 add_dependencies(stdiolink_tests test_slow_meta_driver)
 
+# test_slow_command_driver (用于 M101A command timeout 测试的慢命令驱动)
+add_executable(test_slow_command_driver test_slow_command_driver_main.cpp)
+
+target_link_libraries(test_slow_command_driver PRIVATE stdiolink)
+
+set_target_properties(test_slow_command_driver PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
+)
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_slow_command_driver)
+
+add_dependencies(stdiolink_tests test_slow_command_driver)
+
 # test_guard_stub (用于 ProcessGuard 测试的辅助子进程)
 add_executable(test_guard_stub test_guard_stub_main.cpp)
 

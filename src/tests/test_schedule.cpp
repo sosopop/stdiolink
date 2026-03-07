@@ -1,20 +1,27 @@
 #include <gtest/gtest.h>
 
+#include "stdiolink_server/model/project.h"
 #include "stdiolink_server/model/schedule.h"
 
 using namespace stdiolink_server;
 
-TEST(ScheduleTest, ManualDefault) {
+TEST(ScheduleTest, T01_ManualDefaultDisablesRunTimeoutMs) {
     const QJsonObject obj{{"type", "manual"}};
     QString error;
     const Schedule schedule = Schedule::fromJson(obj, error);
 
     EXPECT_TRUE(error.isEmpty());
     EXPECT_EQ(schedule.type, ScheduleType::Manual);
+    EXPECT_EQ(schedule.runTimeoutMs, 0);
 }
 
-TEST(ScheduleTest, FixedRate) {
-    const QJsonObject obj{{"type", "fixed_rate"}, {"intervalMs", 3000}, {"maxConcurrent", 2}};
+TEST(ScheduleTest, T02_FixedRateRoundTripsRunTimeoutMs) {
+    const QJsonObject obj{
+        {"type", "fixed_rate"},
+        {"intervalMs", 3000},
+        {"maxConcurrent", 2},
+        {"runTimeoutMs", 2000},
+    };
     QString error;
     const Schedule schedule = Schedule::fromJson(obj, error);
 
@@ -22,6 +29,8 @@ TEST(ScheduleTest, FixedRate) {
     EXPECT_EQ(schedule.type, ScheduleType::FixedRate);
     EXPECT_EQ(schedule.intervalMs, 3000);
     EXPECT_EQ(schedule.maxConcurrent, 2);
+    EXPECT_EQ(schedule.runTimeoutMs, 2000);
+    EXPECT_EQ(schedule.toJson().value("runTimeoutMs").toInt(), 2000);
 }
 
 TEST(ScheduleTest, FixedRateInvalidInterval) {
@@ -57,4 +66,39 @@ TEST(ScheduleTest, DaemonInvalidFailureThreshold) {
     (void)Schedule::fromJson(obj, error);
 
     EXPECT_FALSE(error.isEmpty());
+}
+
+TEST(ScheduleTest, T03_NegativeRunTimeoutIsRejected) {
+    const QJsonObject obj{{"type", "manual"}, {"runTimeoutMs", -1}};
+    QString error;
+    (void)Schedule::fromJson(obj, error);
+
+    EXPECT_TRUE(error.contains("runTimeoutMs"));
+}
+
+TEST(ScheduleTest, RunTimeoutRejectsFractionalValue) {
+    const QJsonObject obj{{"type", "manual"}, {"runTimeoutMs", 1.5}};
+    QString error;
+    (void)Schedule::fromJson(obj, error);
+
+    EXPECT_TRUE(error.contains("runTimeoutMs"));
+}
+
+TEST(ScheduleTest, RunTimeoutRejectsNonNumericValue) {
+    const QJsonObject obj{{"type", "manual"}, {"runTimeoutMs", "100"}};
+    QString error;
+    (void)Schedule::fromJson(obj, error);
+
+    EXPECT_TRUE(error.contains("runTimeoutMs"));
+}
+
+TEST(ScheduleTest, T04_ProjectToJsonIncludesRunTimeoutMs) {
+    Project project;
+    project.name = "demo";
+    project.serviceId = "svc";
+    project.schedule.type = ScheduleType::Manual;
+    project.schedule.runTimeoutMs = 3000;
+
+    const QJsonObject obj = project.toJson();
+    EXPECT_EQ(obj.value("schedule").toObject().value("runTimeoutMs").toInt(), 3000);
 }

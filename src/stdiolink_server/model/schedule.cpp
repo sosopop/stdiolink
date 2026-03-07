@@ -1,9 +1,46 @@
 #include "schedule.h"
 
+#include <cmath>
+#include <limits>
+
 namespace stdiolink_server {
+
+namespace {
+
+bool parseNonNegativeIntField(const QJsonObject& obj,
+                              const QString& key,
+                              int defaultValue,
+                              int& out,
+                              QString& error) {
+    if (!obj.contains(key)) {
+        out = defaultValue;
+        return true;
+    }
+
+    const QJsonValue value = obj.value(key);
+    if (!value.isDouble()) {
+        error = QString("schedule.%1 must be an integer >= 0").arg(key);
+        return false;
+    }
+
+    const double raw = value.toDouble();
+    if (!std::isfinite(raw) || std::floor(raw) != raw
+        || raw < 0.0 || raw > static_cast<double>(std::numeric_limits<int>::max())) {
+        error = QString("schedule.%1 must be an integer >= 0").arg(key);
+        return false;
+    }
+
+    out = static_cast<int>(raw);
+    return true;
+}
+
+} // namespace
 
 Schedule Schedule::fromJson(const QJsonObject& obj, QString& error) {
     Schedule schedule;
+    if (!parseNonNegativeIntField(obj, QStringLiteral("runTimeoutMs"), 0, schedule.runTimeoutMs, error)) {
+        return schedule;
+    }
 
     const QString type = obj.value("type").toString("manual");
     if (type == "manual") {
@@ -45,6 +82,7 @@ Schedule Schedule::fromJson(const QJsonObject& obj, QString& error) {
 
 QJsonObject Schedule::toJson() const {
     QJsonObject obj;
+    obj["runTimeoutMs"] = runTimeoutMs;
     switch (type) {
     case ScheduleType::Manual:
         obj["type"] = "manual";

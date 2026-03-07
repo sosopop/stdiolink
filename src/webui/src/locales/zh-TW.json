@@ -118,10 +118,13 @@
             "type": "排程類型",
             "manual": "手動",
             "daemon": "守護程序",
-            "fixed_rate": "定時執行",
-            "restart_delay": "重啟延遲 (ms)",
-            "max_failures": "最大連續失敗次數",
-            "interval": "執行間隔 (ms)",
+        "fixed_rate": "定時執行",
+        "run_timeout": "執行逾時 (ms)",
+        "run_timeout_hint": "0 = 停用",
+        "run_timeout_invalid": "執行逾時必須是大於等於 0 的整數",
+        "restart_delay": "重啟延遲 (ms)",
+        "max_failures": "最大連續失敗次數",
+        "interval": "執行間隔 (ms)",
             "max_concurrent": "最大並行數"
         },
         "instances_tab": {

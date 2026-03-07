@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QProcess>
 #include <QString>
+#include <QTimer>
 #include <QTemporaryFile>
 
 #include <memory>
@@ -28,8 +29,12 @@ struct Instance {
     QString workingDirectory;
     QString logPath;
     QStringList commandLine;
+    int runTimeoutMs = 0;
+    bool timedOut = false;
+    QString timeoutReason;
 
     std::unique_ptr<QTemporaryFile> tempConfigFile;
+    std::unique_ptr<QTimer> runTimeoutTimer;
     std::unique_ptr<stdiolink::ProcessGuardServer> guard;
     std::unique_ptr<InstanceLogWriter> logWriter;
 

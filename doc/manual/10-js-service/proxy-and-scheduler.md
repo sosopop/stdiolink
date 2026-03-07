@@ -63,6 +63,25 @@ Proxy 对象提供以下特殊字段：
 | `$rawRequest(cmd, data)` | `Task` | 底层请求，返回 Task |
 | `$close()` | `void` | 终止 Driver 进程 |
 
+### 命令级超时
+
+Proxy 命令在保持原有 `drv.xxx(params)` 用法不变的同时，支持第二个可选参数：
+
+```js
+const result = await calc.add({ a: 5, b: 3 }, { timeoutMs: 1000 });
+```
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `timeoutMs` | `number` | `0` | 命令级等待超时，`0` 表示不启用 |
+
+语义约束：
+- `drv.xxx(params)` 保持兼容，不启用命令超时。
+- `drv.xxx(params, { timeoutMs })` 对当前命令启用整体 deadline。
+- 中间 `event` 对调用方透明，Proxy 会继续等待 `done` / `error`。
+- 超时后会强制关闭当前 Driver 进程，并抛出 `code = "ETIMEDOUT"` 的错误。
+- 超时后的 Driver 不可复用；若要重试，应重新 `openDriver()`。
+
 ### 错误处理
 
 ```js
@@ -73,6 +92,7 @@ try {
 } catch (e) {
     console.error(e.message);
     // Driver 返回 error 状态时，e.code 和 e.data 包含错误详情
+    // 命令超时时，e.code === "ETIMEDOUT"
 }
 ```
 
