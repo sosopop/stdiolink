@@ -162,6 +162,11 @@ stderr 日志 + 可选 result.json + 退出码
 - 不再引入 `vision_cmd/vision_ws/driver_ref` 之类现有框架外抽象。
 - 3DVision 连接信息和 PLC 连接信息都直接放在 Project `config` 中。
 - Schema 默认值必须保证 WebUI 创建 Project 时可直接得到可编辑表单。
+- `scan_request_timeout_ms` 明确定义为 Service 层通过 M101A 提供的 Proxy 命令选项
+  `drv.xxx(params, { timeoutMs })` 施加的单次命令超时上界。
+- `scan_request_timeout_ms` 不等同于 `stdio.drv.3dvision` 内部 `HttpClient::post(..., timeoutMs)`
+  的底层 HTTP 超时参数；本里程碑不修改 3DVision driver 协议，只复用现有 Proxy timeout
+  契约来约束 `login` / `vessel.command` / `vessellog.last` 的单次调用时长。
 
 ### 3.3 编排主流程
 
@@ -182,7 +187,7 @@ const loginResult = await vision.login({
   userName: cfg.vision.user_name,
   password: cfg.vision.password,
   viewMode: cfg.vision.view_mode
-});
+}, { timeoutMs: cfg.scan_request_timeout_ms });
 
 await crane.set_mode({ host, port, unit_id, timeout, mode: "auto" });
 const status = await crane.read_status({ host, port, unit_id, timeout });
@@ -191,7 +196,12 @@ const scanResp = await vision["vessel.command"]({
   token: loginResult.token,
   id: cfg.vessel_id,
   cmd: "scan"
-});
+}, { timeoutMs: cfg.scan_request_timeout_ms });
+
+const lastLog = await vision["vessellog.last"]({
+  addr: cfg.vision.addr,
+  id: cfg.vessel_id
+}, { timeoutMs: cfg.scan_request_timeout_ms });
 
 const cranes = await Promise.all(
   cfg.cranes.map(() => openDriver(resolveDriver("stdio.drv.plc_crane")))
@@ -252,6 +262,10 @@ async function writeResultFile(cfg, result) {}
 - `login`、`set_mode`、`read_status`、`vessellog.last` 等常规命令默认使用 Proxy 方式调用。
 - `vessel.command` 也优先通过 `vision["vessel.command"](...)` 调用。
 - 本里程碑文档不把 `$rawRequest() + task.waitNext()` 作为默认实现路径。
+- 所有 3DVision 单次 HTTP 型命令都统一通过第二参数传入
+  `{ timeoutMs: cfg.scan_request_timeout_ms }`，而不是向命令 `params` 中发明 `timeout` 字段。
+- 若 Proxy 命令超时，按 M101A 既有契约抛出 `ETIMEDOUT`；实现上将其分别视为
+  `login` 失败、`scan` 启动失败或 `vessellog.last` 轮询失败，不额外引入新的错误类型。
 
 Crane 就绪判定固定映射当前真实驱动字段：
 
@@ -303,6 +317,7 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 |---------|------|--------|---------|
 | 配置非法 | 启动失败 | 非 `0` | 无 |
 | `login` 失败 | 立即失败 | 非 `0` | 关闭已打开 driver |
+| 单次 3DVision 命令超时（`ETIMEDOUT`） | 立即失败或计入轮询失败 | 非 `0` | 可选切回 manual |
 | 任一 Crane `set_mode(auto)` 失败 | 立即失败 | 非 `0` | 可选切回 manual |
 | Crane 等待超时 | 立即失败 | 非 `0` | 可选切回 manual |
 | `vessel.command(scan)` 重试耗尽 | 立即失败 | 非 `0` | 可选切回 manual |
@@ -421,6 +436,8 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 
 改动理由：
 - 让 `ProjectManager`、`ServiceConfigValidator`、WebUI 表单渲染共用一份真实契约。
+- `scan_request_timeout_ms` 的真实落地点是 Service Proxy 调用选项，不要求修改
+  `stdio.drv.3dvision` 现有命令参数模型。
 
 验收方式：
 - `stdiolink_service <service_dir> --dump-config-schema` 输出合法 schema。
@@ -670,6 +687,14 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - 预期: 扫描启动失败退出。
 - 断言: 调用次数等于 `retry_count + 1`；退出码非 `0`。
 
+**T09A — 单次 3DVision 请求超时按 Proxy timeout 契约失败**
+- 前置条件: fake 3DVision 对 `login` 或 `vessel.command(scan)` 故意挂起不返回；
+  `scan_request_timeout_ms` 设置为小值。
+- 输入: 启动 service。
+- 预期: 由 M101A 的 `drv.xxx(params, { timeoutMs })` 路径抛出超时并终止当前尝试。
+- 断言: 退出码非 `0`；stderr 包含 timeout 语义；实现不依赖向 3DVision 命令参数额外注入
+  `timeout` 字段。
+
 **T10 — 轮询命中新鲜日志**
 - 前置条件: `vessellog.last` 首次返回新鲜日志。
 - 输入: 启动 service。
@@ -687,6 +712,13 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
 - 输入: 启动 service。
 - 预期: 达上限后失败。
 - 断言: 退出码非 `0`；stderr 包含 `scan poll fail limit`。
+
+**T12A — `vessellog.last` 单次超时计入轮询失败**
+- 前置条件: fake 3DVision 对 `vessellog.last` 故意挂起不返回；
+  `scan_request_timeout_ms` 与 `scan_poll_fail_limit` 设置为小值。
+- 输入: 启动 service。
+- 预期: 单次轮询命令经 Proxy timeout 失败，并按轮询失败计数收敛。
+- 断言: 最终退出码非 `0`；stderr 包含 timeout 或 poll fail limit 语义。
 
 **T13 — 总超时失败**
 - 前置条件: `vessellog.last` 始终返回旧日志或空结果；`scan_timeout_ms` 设置为小值。
