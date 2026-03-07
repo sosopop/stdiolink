@@ -6,7 +6,6 @@ vcpkg_installed/
 .cache/
 compile_commands.json
 single_include/
-.claude/
 nul
 .DS_Store
 release/
@@ -40,3 +39,4 @@ src/webui/.vitest-report.json
 src/demo/server_manager_demo/data_root/logs/
 
 tmp/
+.claude/settings.local.json
