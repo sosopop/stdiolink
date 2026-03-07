@@ -14,11 +14,10 @@
 ├── drivers/             # Driver 可执行文件目录
 ├── workspaces/          # 各 Project 的工作目录（自动创建）
 ├── logs/                # 日志目录（自动创建）
-├── webui/               # WebUI 静态文件目录（可选）
-└── shared/              # 全局共享目录
+└── webui/               # WebUI 静态文件目录（可选）
 ```
 
-其中 `services/`、`projects/`、`workspaces/`、`logs/` 四个目录在启动时自动 `mkpath`，不存在则创建。`drivers/`、`webui/` 和 `shared/` 由用户按需建立。
+其中 `services/`、`projects/`、`workspaces/`、`logs/` 四个目录在启动时自动 `mkpath`，不存在则创建。`drivers/` 和 `webui/` 由用户按需建立。
 
 ## 命令行参数
 

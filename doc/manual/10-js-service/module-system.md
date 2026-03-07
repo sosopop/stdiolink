@@ -22,6 +22,14 @@ stdiolink_service 使用 ES Module 规范，脚本以模块模式执行，支持
 import { Driver, openDriver, waitAny, exec, getConfig } from 'stdiolink';
 ```
 
+### stdiolink/driver
+
+Driver 路径解析：
+
+```js
+import { resolveDriver } from 'stdiolink/driver';
+```
+
 ### stdiolink/constants
 
 系统信息与路径常量：
