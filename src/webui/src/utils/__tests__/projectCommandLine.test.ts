@@ -12,15 +12,29 @@ describe('buildProjectCommandLines', () => {
 
   it('builds both expanded and config-file forms', () => {
     expect(buildProjectCommandLines({
-      serviceDir: 'D:/data/services/demo',
-      dataRoot: 'D:/data',
+      serviceDir: 'D:/code/stdiolink/release/pkg/data_root/services/demo',
+      dataRoot: 'D:/code/stdiolink/release/pkg/data_root',
       config: {
         host: '127.0.0.1',
         nested: { port: 502 },
       },
       configFileName: 'demo-project.config.json',
     })).toEqual({
-      expanded: 'stdiolink_service "D:/data/services/demo" --data-root="D:/data" --config.host="127.0.0.1" --config.nested.port=502',
+      expanded: 'stdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="127.0.0.1" --config.nested.port=502',
+      configFile: 'stdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="demo-project.config.json"',
+    });
+  });
+
+  it('keeps absolute paths when dataRoot is not a release data_root path', () => {
+    expect(buildProjectCommandLines({
+      serviceDir: 'D:/data/services/demo',
+      dataRoot: 'D:/data',
+      config: {
+        host: '127.0.0.1',
+      },
+      configFileName: 'demo-project.config.json',
+    })).toEqual({
+      expanded: 'stdiolink_service "D:/data/services/demo" --data-root="D:/data" --config.host="127.0.0.1"',
       configFile: 'stdiolink_service "D:/data/services/demo" --data-root="D:/data" --config-file="demo-project.config.json"',
     });
   });

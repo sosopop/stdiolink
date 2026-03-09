@@ -16,8 +16,8 @@ function renderComponent(props: Partial<Parameters<typeof ProjectConfig>[0]> = {
         projectId="demo-project"
         config={{ host: 'localhost', port: 6200 }}
         schema={schema}
-        serviceDir="D:/data/services/demo"
-        dataRoot="D:/data"
+        serviceDir="D:/code/stdiolink/release/pkg/data_root/services/demo"
+        dataRoot="D:/code/stdiolink/release/pkg/data_root"
         onSave={vi.fn().mockResolvedValue(true)}
         {...props}
       />
@@ -82,7 +82,14 @@ describe('ProjectConfig', () => {
     expect(screen.getByText('Expanded config arguments')).toBeDefined();
     expect(screen.getByText('Config file mode')).toBeDefined();
     expect(screen.getByTestId('export-config-btn')).toBeDefined();
-    expect(screen.getByText('stdiolink_service "D:/data/services/demo" --data-root="D:/data" --config-file="demo-project.config.json"')).toBeDefined();
+    expect(screen.getByText('stdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="demo-project.config.json"')).toBeDefined();
+  });
+
+  it('renders the test commands panel before the editable form', () => {
+    renderComponent();
+    const panel = screen.getByTestId('project-config-test-commands');
+    const form = screen.getByTestId('schema-form');
+    expect(panel.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('shows placeholder when command inputs are not ready', () => {

@@ -40,5 +40,6 @@
 
 ## Related
 
+- `projects-config-and-test-commands.md`
 - `driverlab-and-events.md`
 - `../05-server/server-api-realtime.md`

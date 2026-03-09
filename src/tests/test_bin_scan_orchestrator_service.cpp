@@ -6,12 +6,14 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QHostAddress>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QTemporaryDir>
+#include <QTcpServer>
 #include <QThread>
 
 #ifdef Q_OS_WIN
@@ -167,6 +169,11 @@ int countOccurrences(const QString& haystack, const QString& needle) {
     return count;
 }
 
+bool canListenOnPort(quint16 port) {
+    QTcpServer server;
+    return server.listen(QHostAddress::AnyIPv4, port);
+}
+
 #ifdef Q_OS_WIN
 QString normalizeWinPath(const QString& path) {
     return QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath()).toLower();
@@ -240,6 +247,11 @@ void killProcessesByExecutablePath(const QString&) {
 class BinScanOrchestratorServiceTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        if (!canListenOnPort(6200)) {
+            GTEST_SKIP() << "TCP port 6200 is already in use; a running stdiolink_server or other"
+                            " local process may interfere with BinScanOrchestratorServiceTest";
+        }
+
         ASSERT_TRUE(m_tmpDir.isValid());
         ASSERT_TRUE(QFileInfo::exists(serviceExecutablePath()));
         ASSERT_TRUE(QFileInfo::exists(serviceSourceDirPath()));

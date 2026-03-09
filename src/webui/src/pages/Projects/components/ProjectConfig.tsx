@@ -90,18 +90,12 @@ export const ProjectConfig: React.FC<ProjectConfigProps> = ({
 
   return (
     <div data-testid="project-config">
-      <SchemaForm schema={schema} value={value} onChange={setValue} />
-      <Button
-        type="primary"
-        onClick={handleSave}
-        loading={saving}
-        style={{ marginTop: 16 }}
-        data-testid="save-config-btn"
+      <Card
+        className="glass-panel"
+        bordered={false}
+        style={{ marginBottom: 20 }}
+        data-testid="project-config-test-commands"
       >
-        {t('projects.config.save')}
-      </Button>
-
-      <Card className="glass-panel" bordered={false} style={{ marginTop: 16 }} data-testid="project-config-test-commands">
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
           <div>
             <Text strong>{t('projects.config.test_commands')}</Text>
@@ -165,6 +159,17 @@ export const ProjectConfig: React.FC<ProjectConfigProps> = ({
           )}
         </Space>
       </Card>
+
+      <SchemaForm schema={schema} value={value} onChange={setValue} />
+      <Button
+        type="primary"
+        onClick={handleSave}
+        loading={saving}
+        style={{ marginTop: 16 }}
+        data-testid="save-config-btn"
+      >
+        {t('projects.config.save')}
+      </Button>
     </div>
   );
 };
