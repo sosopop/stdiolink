@@ -28,6 +28,14 @@
 - Driver 单跑：先配 `PATH` 指到 `build/runtime_debug/bin`
 - Server 单跑：`build/runtime_release/bin/stdiolink_server --data-root=... --webui-dir=...`
 
+## Driver Standalone Minimal Steps
+
+- Windows:
+  `set PATH=%CD%\build\runtime_debug\bin;%PATH%`
+  `build\runtime_debug\data_root\drivers\stdio.drv.<name>\stdio.drv.<name>.exe --export-meta`
+- 先确认目标 Driver 已被组装进 `data_root/drivers/`，不要从 raw 输出目录直接联调
+- 如果 Service 或 Server 找不到 Driver，优先回查 `runtime-layout.md` 和 `resolveDriver()` 路径链路
+
 ## Related
 
 - `test-matrix.md`

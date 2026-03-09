@@ -1,99 +1,49 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Knowledge Base First
 
-- `src/stdiolink/` contains the core library modules.
-- `src/stdiolink/protocol/` holds JSONL protocol plus meta types/validators.
-- `src/stdiolink/driver/` is the Driver-side runtime (responders, DriverCore, meta builder/export).
-- `src/stdiolink/host/` is the Host-side runtime (Driver wrapper, task/wait_any, meta cache, form generation).
-- `src/stdiolink/console/` provides console-mode parsing/responding.
-- `src/stdiolink/doc/` contains built-in document generation helpers.
-- `src/stdiolink_service/` contains the JS/runtime service executable (engine, bindings, proxy, config).
-- `src/stdiolink_server/` contains the server manager runtime (scanner, project/instance/schedule manager, HTTP API).
-- `src/driverlab/` contains the GUI testing tool (UI, models, resources).
-- `src/drivers/` contains production/sample driver implementations (modbus, 3dvision, etc.).
-- `src/demo/` contains demo drivers, host examples, and server manager demo assets.
-- `src/tests/` contains unit and integration tests (GoogleTest).
-- `tools/` holds developer utilities such as `run-clang-tidy.py`.
-- `doc/manual/` is the user/developer manual; `doc/milestone/` tracks implementation milestones.
+- 做任何开发前，必须先从 `doc/knowledge/README.md` 开始。
+- 先读目标子系统目录下的 `README.md`，再读对应主题文档；跨子系统需求优先看 `doc/knowledge/08-workflows/`。
+- 先用知识库组织出“需求目标 -> 涉及子系统 -> 修改入口 -> 约束/风险 -> 测试入口 -> 文档同步点”的实现路径，再动代码。
+- `doc/knowledge/` 是 AI 开发检索层；`doc/manual/` 只在需要展开细节时作为详细参考。
 
-## Build, Test, and Development Commands
+## Project Map
 
-- `build.bat` or `build.bat Release`: configure/build with CMake + Ninja (Windows).
-- `./build.sh` or `./build.sh Release`: configure/build with CMake + Ninja (macOS/Linux).
-- `./build/runtime_debug/bin/stdiolink_tests`: run all tests (Windows binary may be `stdiolink_tests.exe`).
-- `python ./tools/run-clang-tidy.py -p build -j 8 -quiet -config-file .clang-tidy`: static analysis.
-- `./tools/publish_release.sh --build-dir build --output-dir release`: package compiled artifacts and demo assets into a release directory.
+- `src/stdiolink/`：核心库，含 `protocol/`、`driver/`、`host/`、`console/`
+- `src/stdiolink_service/`：QuickJS Service 运行时与绑定
+- `src/stdiolink_server/`：Server 管理、扫描、调度、HTTP/SSE/WS
+- `src/drivers/`：生产/示例 Driver
+- `src/data_root/services/`、`src/data_root/projects/`：Service 与 Project 事实源
+- `src/tests/`、`src/smoke_tests/`、`src/webui/`：测试与前端
 
-## Driver Standalone Run (Windows)
+## Build And Run
 
-- Driver executables depend on runtime DLLs in `build\runtime_debug\bin`; add this directory to `PATH` before launching a driver directly.
-- Use the driver binary under `build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`.
-- Example:
-  - `set PATH=%CD%\build\runtime_debug\bin;%PATH%`
-  - `build\runtime_debug\data_root\drivers\stdio.drv.modbustcp_server\stdio.drv.modbustcp_server.exe --export-meta`
+- Windows：`build.bat` 或 `build.bat Release`
+- Unix：`./build.sh` 或 `./build.sh Release`
+- 全量测试：`ctest --test-dir build --output-on-failure`
+- Smoke：`python src/smoke_tests/run_smoke.py --plan all`
+- WebUI 测试：在 `src/webui/` 下运行 `npm run test`、`npx playwright test`
 
-## Coding Style & Naming Conventions
+## Driver Standalone Run
 
-- Use Qt types for IO and JSON: `QFile`, `QTextStream`, `QString`, `QJsonObject`, `QJsonArray`.
-- Naming: namespaces `lower_case`, classes `CamelCase`, methods `camelBack`, members `m_` prefix.
-- Prefer JSONL line-based parsing. On Windows, avoid `fread()` with pipes; use `QTextStream::readLine()`.
-- Formatting/linting: follow `.clang-tidy` and `.clang-format` in repo root.
+- Windows 直接运行 Driver 前，先把 `build\runtime_debug\bin` 加到 `PATH`
+- Driver 路径：`build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`
 
-## Testing Guidelines
+## Development Constraints
 
-- Framework: GoogleTest. Tests live in `src/tests/` and follow `test_*.cpp` naming.
-- Add unit tests for protocol/meta serialization, validation, and host/driver utilities.
-- For `stdiolink_service` changes, add/extend tests covering config validation, JS engine bindings, and proxy/scheduler behavior.
-- For `src/stdiolink/host/` request lifecycle changes, add/extend regression tests that cover driver early-exit during `waitNext/waitAnyNext` (see `test_host_driver.cpp`, `test_wait_any.cpp`).
-- Prefer focused tests with clear assertions; cover edge cases (invalid input, boundary values).
-- Use CTest as the unified test entry when possible:
-  - List tests: `ctest --test-dir build -N`
-  - Run all registered tests: `ctest --test-dir build --output-on-failure`
-  - Run smoke label only: `ctest --test-dir build -L smoke --output-on-failure`
-- Smoke tests are maintained under `src/smoke_tests/`:
-  - Run by test plan: `python src/smoke_tests/run_smoke.py --plan <PLAN_NAME>`
-  - Run all smoke plans: `python src/smoke_tests/run_smoke.py --plan all`
-- For each new milestone feature, add/update a smoke script and register it in both `src/smoke_tests/run_smoke.py` and `src/smoke_tests/CMakeLists.txt`.
+- 使用 Qt 类型处理 IO 与 JSON：`QFile`、`QTextStream`、`QString`、`QJsonObject`、`QJsonArray`
+- 协议始终是 JSONL；Windows 管道读取必须使用 `QTextStream::readLine()`
+- 命名：namespace `lower_case`，类 `CamelCase`，方法 `camelBack`，成员 `m_`
+- 公共协议、元数据、HTTP API、运行行为变更时，需同步更新 `doc/knowledge/`，必要时再补 `doc/manual/`
+- Web Dashboard API 变更时，同步维护 `doc/todolist.md`
 
-## Commit & Pull Request Guidelines
+## Testing Rules
 
-- Commit style follows Conventional Commits observed in history: `feat: ...`, `docs: ...`.
-- Keep commits scoped and descriptive.
-- PRs should include a concise summary, testing notes (commands run), and links to relevant issues/design docs if applicable.
+- 协议、元数据、Host/Driver、JS 绑定改动优先补 GTest
+- `src/stdiolink/host/` 请求生命周期改动必须覆盖 Driver 早退场景，参考 `test_host_driver.cpp`、`test_wait_any.cpp`
+- 新增需要端到端覆盖的功能时，补 `src/smoke_tests/mXX_*.py`，并注册到 `run_smoke.py` 与 `CMakeLists.txt`
 
-## Configuration & Tooling Notes
+## Commit And Encoding
 
-- Build artifacts land in `build/`.
-- Release packages generated by `tools/publish_release.sh` land in `release/` by default.
-- Public protocol/meta changes should be aligned with docs under `doc/manual/` and relevant milestone docs under `doc/milestone/`.
-- Web dashboard-oriented API backlog is tracked in `doc/todolist.md`; when adding/removing server endpoints, keep this file in sync.
-
-## PowerShell Encoding Notes
-
-- When using PowerShell commands to read or write text files, assume target text files are UTF-8 encoded.
-
-
-## Skills
-A skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.
-### Available skills
-- skill-creator: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations. (file: C:/Users/mengchao/.codex/skills/.system/skill-creator/SKILL.md)
-- skill-installer: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). (file: C:/Users/mengchao/.codex/skills/.system/skill-installer/SKILL.md)
-### How to use skills
-- Discovery: The list above is the skills available in this session (name + description + file path). Skill bodies live on disk at the listed paths.
-- Trigger rules: If the user names a skill (with `$SkillName` or plain text) OR the task clearly matches a skill's description shown above, you must use that skill for that turn. Multiple mentions mean use them all. Do not carry skills across turns unless re-mentioned.
-- Missing/blocked: If a named skill isn't in the list or the path can't be read, say so briefly and continue with the best fallback.
-- How to use a skill (progressive disclosure):
-  1) After deciding to use a skill, open its `SKILL.md`. Read only enough to follow the workflow.
-  2) When `SKILL.md` references relative paths (e.g., `scripts/foo.py`), resolve them relative to the skill directory listed above first, and only consider other paths if needed.
-  3) If `SKILL.md` points to extra folders such as `references/`, load only the specific files needed for the request; don't bulk-load everything.
-  4) If `scripts/` exist, prefer running or patching them instead of retyping large code blocks.
-  5) If `assets/` or templates exist, reuse them instead of recreating from scratch.
-- Coordination and sequencing:
-  - If multiple skills apply, choose the minimal set that covers the request and state the order you'll use them.
-  - Announce which skill(s) you're using and why (one short line). If you skip an obvious skill, say why.
-- Context hygiene:
-  - Keep context small: summarize long sections instead of pasting them; only load extra files when needed.
-  - Avoid deep reference-chasing: prefer opening only files directly linked from `SKILL.md` unless you're blocked.
-  - When variants exist (frameworks, providers, domains), pick only the relevant reference file(s) and note that choice.
-- Safety and fallback: If a skill can't be applied cleanly (missing files, unclear instructions), state the issue, pick the next-best approach, and continue.
+- 提交遵循 Conventional Commits：`feat:`、`fix:`、`docs:`、`refactor:`、`test:`、`chore:`
+- PowerShell 读写文本文件时按 UTF-8 处理

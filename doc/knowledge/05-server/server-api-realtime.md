@@ -31,8 +31,15 @@
 ## Modify Entry
 
 - 新增 API：优先改 `api_router.*`，再补 tests 和 `doc/http_api.md`
+- API 字段、枚举、路径、查询参数变更：同步检查 `src/webui/src/api/`、相关 `types/`、页面消费点，以及 `doc/todolist.md`
 - 改事件模型：同步检查 SSE 客户端和 WebUI stores
 - 改 DriverLab 协议：同步检查 `src/webui/src/api/driverlab-ws.ts`
+
+## Sync Rules
+
+- REST 变更至少联动：后端路由、后端测试、前端 API 客户端、前端类型、接口文档
+- SSE 事件字段变更至少联动：`event_bus.*`、`event_stream_handler.*`、`src/webui/src/api/event-stream.ts`、相关 stores
+- DriverLab WS 协议变更至少联动：后端 `driverlab_ws_*`、前端 `driverlab-ws.ts`、DriverLab 页面消费逻辑
 
 ## Tests
 

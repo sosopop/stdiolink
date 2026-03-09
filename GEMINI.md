@@ -1,142 +1,32 @@
-# stdiolink 项目指南 (GEMINI.md)
+# stdiolink 项目指引（简版）
 
-本文件为 Gemini CLI 提供项目上下文、架构说明及开发指南。
+## 知识库优先
 
-## 1. 项目概览
+- 做任何开发前，必须先从 `doc/knowledge/README.md` 组织信息。
+- 先读目标子系统目录的 `README.md`，再进入具体主题文档；跨子系统实现路径先看 `doc/knowledge/08-workflows/`。
+- 先在知识库中构建“需求目标、涉及模块、修改入口、约束风险、测试与文档同步点”的准确实现路径，再开始编码。
+- `doc/knowledge/` 是紧凑检索层；`doc/manual/` 是展开细节的详细参考。
 
-`stdiolink` 是一个基于 Qt 的跨平台 IPC 框架，使用 **JSONL (Line-delimited JSON)** 作为协议载体，通过 stdin/stdout 进行进程间通信。它旨在实现轻量级、自描述的 Host-Driver 通讯模型。
+## 最小目录图
 
-### 核心特性
-- **单一协议**: 始终使用 JSONL，每行一个完整的 JSON 对象。
-- **自描述元数据**: Driver 可以导出元数据 (`meta.describe`)，声明支持的命令、参数约束及事件流。
-- **双模式运行**:
-    - **StdIO 模式**: 适用于 Host 自动化控制，通过管道进行异步双向通讯。
-    - **Console 模式**: 适用于命令行直接调用和调试，支持扁平化参数映射。
-- **异步任务模型**: Host 侧提供 Future/Promise 风格的 `Task` 句柄，支持 `waitAnyNext` 并发等待多个 Driver。
-- **自动文档与 UI**: 基于元数据自动生成 Markdown/OpenAPI 文档以及 UI 描述模型。
-- **管理中枢 (Server & WebUI)**: 提供基于 Web 的管理界面，支持项目编排、实例监控、DriverLab 交互调试及实时遥测。
+- `src/stdiolink/`：协议、Driver、Host、Console
+- `src/stdiolink_service/`：JS 运行时与绑定
+- `src/stdiolink_server/`：Server 管理与 HTTP/实时通信
+- `src/drivers/`：Driver 实现
+- `src/data_root/services/`、`src/data_root/projects/`：Service/Project
+- `src/tests/`、`src/smoke_tests/`、`src/webui/`：测试与前端
 
-### 设计目标
-1. **标准化与简易性**: 利用标准流 (stdin/stdout) 和 JSONL 建立统一通信规范，降低接入成本。
-2. **自描述与发现 (Self-Description)**: Driver 主动声明能力（命令、参数、事件），支持 Host 动态发现与校验。
-3. **开发体验优先**: 提供自动文档生成、Console 调试模式及 UI 描述模型，减少重复劳动。
-4. **可视化与可观测性**: 通过 WebUI 实现对复杂 Driver 集群的直观管理与实时状态监控。
+## 常用命令
 
-### 架构分层
-- **协议层 (Protocol)**: 基于 stdin/stdout 的 JSONL 流，确保跨平台与无阻塞处理。
-- **模型层 (Host-Driver)**: 
-    - **Driver**: 独立进程，基于 `IMetaCommandHandler` 实现业务逻辑与元数据导出。
-    - **Host**: 进程管理器，提供 `Task` 异步句柄与 `waitAnyNext` 并发调度。
-- **元数据层 (Metadata)**: 定义命令 (`Command`)、参数 (`Field`) 与校验规则，驱动文档与 UI 生成。
-- **应用层 (Server/WebUI)**: 
-    - **Server**: C++ 编写的后端服务，管理项目配置、生命周期及 SSE 实时事件推送。
-    - **WebUI**: 基于 React + Ant Design 的前端界面，采用 "Style 06" (Premium Glassmorphism) 设计风格。
+- 构建：`build.bat` / `build.bat Release`
+- 全量测试：`ctest --test-dir build --output-on-failure`
+- Smoke：`python src/smoke_tests/run_smoke.py --plan all`
+- Driver 单跑前先把 `build\runtime_debug\bin` 加入 `PATH`
 
-## 2. 技术栈
-- **后端 (C++)**:
-    - 语言: C++17
-    - 框架: Qt6 (Core, Network, WebSockets, HttpServer)
-    - 日志: spdlog
-    - 测试: Google Test (GTest)
-- **前端 (WebUI)**:
-    - 框架: React 18 + TypeScript + Vite
-    - UI 库: Ant Design 5 (Premium Custom Theme)
-    - 状态管理: Zustand
-    - 通讯: Axios + Server-Sent Events (SSE)
-- **构建/部署**:
-    - 构建: CMake (>= 3.20) + Ninja
-    - 依赖管理: vcpkg (C++), npm (WebUI)
-    - 部署: 自研 `publish_release.ps1` 脚本，支持 Qt 插件自动打包与 demo 数据预设。
+## 开发约束
 
-## 3. 目录结构
-```
-src/
-├── stdiolink/         # 核心基础库 (Protocol, Driver, Host, Console, Doc)
-├── stdiolink_server/  # 管理后端服务 (HTTP API, Project Manager, SSE)
-├── webui/             # 管理前端应用 (Dashboard, Drivers, DriverLab)
-├── tests/             # 单元测试与集成测试 (GTest)
-└── demo/              # 示例程序与预设数据 (Calculator, Device Simulator)
-tools/                 # 辅助脚本 (Clang-tidy, Publish script, Bridges)
-doc/                   # 设计文档、API 参考与里程碑
-```
-
-## 4. 构建与运行
-
-### 构建项目 (Windows)
-推荐使用 `build.bat` 进行构建：
-
-```powershell
-# 首次配置和构建 (Debug)
-.\build.bat
-
-# 构建 Release 版本
-.\build.bat Release
-```
-
-### 完整发布打包
-使用发布脚本进行一站式打包（含 WebUI 构建）：
-```powershell
-.\tools\publish_release.ps1 --demo
-```
-产物将生成在 `release/stdiolink_<timestamp>_<git>/` 下。
-
-### 运行测试
-```powershell
-# 运行 C++ 单元测试
-.\build\runtime_debug\bin\stdiolink_tests.exe
-
-# 运行 CTest（推荐统一入口）
-ctest --test-dir build --output-on-failure
-
-# 仅运行 smoke 标签
-ctest --test-dir build -L smoke --output-on-failure
-
-# 运行冒烟测试方案
-python src/smoke_tests/run_smoke.py --plan m94_server_run_oneshot
-python src/smoke_tests/run_smoke.py --plan all
-```
-
-### Driver 单独运行（Windows）
-
-driver 可执行文件依赖 `build\runtime_debug\bin` 下的运行时 DLL。若直接运行某个 driver，请先将该目录加入 `PATH`，再执行 `build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`。
-
-```powershell
-$env:PATH = "$PWD\build\runtime_debug\bin;$env:PATH"
-.\build\runtime_debug\data_root\drivers\stdio.drv.modbustcp_server\stdio.drv.modbustcp_server.exe --export-meta
-```
-
-里程碑新增功能时，需补充 `src/smoke_tests/mXX_*.py` 并同时更新：
-- `src/smoke_tests/run_smoke.py`（统一入口注册）
-- `src/smoke_tests/CMakeLists.txt`（CTest 注册）
-
-## 5. 开发规范与约定
-
-### 代码风格 (Qt 优先)
-- **文件 I/O**: 必须使用 `QFile`。
-- **文本流**: 使用 `QTextStream` 逐行读取以避免 Windows 管道阻塞。
-- **JSON**: 使用 `QJsonDocument` / `QJsonObject`。
-- **WebUI 风格**: 遵循 "Style 06" 规范，使用 Glassmorphism (Bento Grid) 布局。支持 **Dark (默认) / Light** 双主题切换，开发组件时必须确保两种模式下的视觉表现与一致性。
-
-### 提交规范
-遵循 Conventional Commits (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`)。
-
-### AI 辅助与 Shell 约定
-- **Shell 环境下的文件读写 (Windows)**: 在 Windows 下使用 shell 命令读写文本类型文件时，必须假设目标文件是 **UTF-8 格式**。请使用适当的参数或命令确保采用 UTF-8 编码读取和写入文件（例如在 PowerShell 中使用 `-Encoding UTF8` 读写文件）。
-
-## 6. 里程碑状态
-- [x] M1-M6: 基础协议、Driver/Host 核心、Console 模式
-- [x] M7-M11: 元数据系统、校验、Host 查询
-- [x] M12-M33: JS 绑定、异步调度、JS 引擎集成
-- [x] M34-M57: Server 架构、项目管理、SSE 事件流、WebSocket 调试
-- [x] M58-M69: WebUI 全栈实现、"Style 06" UI 重构、E2E 测试与发布自动化
-- [x] M70-M74: 进程守护、鲁棒性修复、异步非阻塞重构、进程树管理
-- [x] M75-M78: WebSocket 心跳、spdlog 日志集成、实例结构化日志、事件持久化
-- [x] M79-M85: Modbus 驱动集群 (TCP/RTU Server/Client)、PLC 起重机驱动、事件格式化
-- [x] M86-M89: JS resolveDriver 绑定、消除共享依赖、统一运行与开发发布布局
-- [x] M90-M92: WebUI array<object> 配置能力改造、Demo Service 资产、stdio.drv.multiscan 演示 Driver
-
-## 7. 关键文档索引
-- `doc/stdiolink_ipc_design.md`: 核心 IPC 协议与传输设计。
-- `doc/stdiolink_webui_design.md`: WebUI 视觉与交互设计规范。
-- `doc/http_api.md`: Server HTTP API 参考文档。
-- `GEMINI.md`: 本项目指南文档。
+- Qt 优先：`QFile`、`QTextStream`、`QJsonObject`
+- 协议固定为 JSONL；Windows 管道读取必须用 `QTextStream::readLine()`
+- 提交遵循 Conventional Commits
+- 任何公共行为、协议、元数据、API 变更，先同步 `doc/knowledge/`，再按需补 `doc/manual/`
+- 新增需要端到端覆盖的功能时，补 `src/smoke_tests/mXX_*.py` 并注册到 `run_smoke.py` 和 `CMakeLists.txt`

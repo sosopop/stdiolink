@@ -1,147 +1,32 @@
-# stdiolink 项目指南（CLAUDE）
+# stdiolink 项目指引（简版）
 
-基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过 stdin/stdout 通信。当前代码已包含核心库、JS 运行时及管控后端服务。
+## 知识库优先
 
-## 架构概览
+- 做任何开发前，先从 `doc/knowledge/README.md` 建立上下文。
+- 先读对应子系统目录 `README.md`，再读主题文档；跨子系统需求先看 `doc/knowledge/08-workflows/`。
+- 先用知识库整理出准确的需求实现路径，再开始设计、编码、测试和文档同步。
+- `doc/knowledge/` 是主检索入口；`doc/manual/` 是补充细节的详细参考。
 
-三层架构，自底向上：
+## 最小项目地图
 
-```
-┌──────────────────────────────────────────────────┐
-│  stdiolink_server  (管控面)                       │
-│  项目管理 · 实例编排 · 调度引擎 · REST API · SSE   │
-├──────────────────────────────────────────────────┤
-│  stdiolink_service (JS 运行时)                    │
-│  QuickJS 引擎 · ES Module · C++ 绑定             │
-├──────────────────────────────────────────────────┤
-│  stdiolink        (核心库)                        │
-│  JSONL 协议 · Driver/Host · 元数据 · Console      │
-└──────────────────────────────────────────────────┘
-```
+- `src/stdiolink/`：协议、Driver、Host、Console
+- `src/stdiolink_service/`：JS Service 运行时与绑定
+- `src/stdiolink_server/`：扫描、Project/Instance、调度、HTTP/SSE/WS
+- `src/drivers/`：Driver 实现
+- `src/data_root/services/`、`src/data_root/projects/`：Service/Project 模板
+- `src/tests/`、`src/smoke_tests/`、`src/webui/`：测试与前端
 
-### 通信协议
+## 常用命令
 
-进程间通过 stdin/stdout 传输 JSONL（每行一个 JSON）。四种消息语义：
+- 构建：`build.bat [Release]` / `./build.sh [Release]`
+- 测试：`ctest --test-dir build --output-on-failure`
+- Smoke：`python src/smoke_tests/run_smoke.py --plan all`
+- 发布：`tools/publish_release.ps1` / `tools/publish_release.sh`
 
-- `done` — 最终执行成功结果（替代旧版 `ok`）
-- `event` — 中间流式事件（命令执行过程中的增量推送）
-- `error` — 错误响应
-- `meta.describe` — 元数据导出
+## 开发硬约束
 
-请求格式：`{"cmd":"command_name","data":{...}}`
-
-### 核心抽象
-
-- `DriverCore`：Driver 端主类，支持 `OneShot` / `KeepAlive` 生命周期。
-- `Driver`（Host 端）：管理 Driver 子进程，处理异步通讯与进程早退检测。
-- `Task`：Future/Promise 风格句柄，支持 `waitAnyNext()` 并发调度。
-- `DriverMeta`：自描述元数据，支持配置校验、自动表单生成与 OpenAPI 文档导出。
-- `ServerManager`：编排层，管理 `Service` (模板) → `Project` (配置) → `Instance` (进程) 的全生命周期。
-
-## 构建与发布
-
-### 构建 (Windows/macOS/Linux)
-
-- Windows: `build.bat [Release]`
-- Unix: `./build.sh [Debug|Release]`
-- 测试: `./build/runtime_debug/bin/stdiolink_tests`
-
-### Driver 单独运行（Windows）
-
-- driver 可执行文件依赖 `build\runtime_debug\bin` 下的运行时 DLL；单独运行前需先将该目录加入 `PATH`。
-- driver 实际路径位于 `build\runtime_debug\data_root\drivers\stdio.drv.{name}\stdio.drv.{name}.exe`。
-- 示例：
-```powershell
-$env:PATH = "$PWD\build\runtime_debug\bin;$env:PATH"
-.\build\runtime_debug\data_root\drivers\stdio.drv.modbustcp_server\stdio.drv.modbustcp_server.exe --export-meta
-```
-
-### 目录布局（M89）
-
-构建产物采用 raw + runtime 两级布局：
-
-```
-build/
-├── debug/                  # CMake 原始输出（仅编译产物）
-├── runtime_debug/          # 组装后的运行时目录
-│   ├── bin/                # 核心二进制 + Qt 插件
-│   ├── data_root/
-│   │   ├── drivers/        # 驱动按子目录组织（stdio.drv.*）
-│   │   ├── services/       # Service 模板
-│   │   ├── projects/       # Project 配置
-│   │   └── ...
-│   ├── demos/
-│   └── scripts/
-└── runtime_release/        # Release 构建同构布局
-```
-
-- CMake `RUNTIME_OUTPUT_DIRECTORY` 统一指向 `build/<config>/`（raw dir）
-- `assemble_runtime` target 自动组装 raw → runtime，驱动按 `data_root/drivers/<name>/` 子目录分发
-- 开发环境与发布包目录结构同构（isomorphic layout）
-
-### 测试
-
-独立测试脚本支持选择性运行三套测试（GTest / Vitest / Playwright），无参数时全部执行：
-```bash
-tools/run_tests.sh                # 全部执行
-tools/run_tests.sh --gtest        # 仅 C++ 单元测试
-tools/run_tests.ps1 --vitest --playwright  # 仅 WebUI 测试
-```
-
-推荐同时使用 CTest 统一入口管理测试：
-```bash
-ctest --test-dir build --output-on-failure        # 运行全部已注册测试
-ctest --test-dir build -L smoke --output-on-failure  # 仅运行 smoke 标签
-```
-
-冒烟测试脚本位于 `src/smoke_tests/`：
-```bash
-python src/smoke_tests/run_smoke.py --plan m94_server_run_oneshot
-python src/smoke_tests/run_smoke.py --plan all
-```
-
-里程碑新增功能时，需同步：
-- 新增/更新 `src/smoke_tests/mXX_*.py`
-- 在 `src/smoke_tests/run_smoke.py` 注册
-- 在 `src/smoke_tests/CMakeLists.txt` 注册对应 CTest
-
-### 发布打包
-
-使用 `tools/publish_release.ps1` (Windows) 或 `tools/publish_release.sh` (Unix)。
-发布前默认执行全部测试，可用 `--skip-tests` 跳过。
-```powershell
-.\tools\publish_release.ps1 --name stdiolink_v1.0
-.\tools\publish_release.ps1 --skip-tests --skip-webui  # 快速打包
-```
-
-## 关键模块
-
-### `src/stdiolink/`
-核心协议与基础库。包含元数据 Builder、Validator 及文档生成器。
-
-### `src/stdiolink_server/`
-管控后端：
-- `manager/`：项目管理 (`ProjectManager`)、实例管理 (`InstanceManager`)、调度引擎 (`ScheduleEngine`)
-- `http/`：REST API 路由、SSE 事件推送、DriverLab WebSocket 代理
-- `scanner/`：Service 与 Driver 的自动扫描发现
-
-### `src/webui/`
-React 18 + TypeScript + Vite 前端。
-- **设计规范**: "Style 06" (Premium Glassmorphism)，采用 Bento Grid 布局。
-- **核心组件**: Dashboard (Mission Control)、DriverLab (交互调试)、SchemaEditor (可视配置)。
-- **国际化**: 支持 9 种语言 (i18next)。
-
-## 里程碑状态
-
-- [x] M1-M33: 核心协议、元数据、JS Runtime 及其全量 C++ 绑定。
-- [x] M34-M48: Server 架构、项目生命周期管理、SSE/WebSocket 通讯。
-- [x] M49-M69: WebUI 全量实现、"Style 06" 视觉重构、E2E 测试、发布脚本完善。
-- [x] M70-M85: Modbus 驱动族（TCP/RTU/Serial 主从站）、PLC 升降装置驱动、Service 模板。
-- [x] M86-M89: resolveDriver 绑定、shared 目录移除、统一 runtime 布局与同构目录结构。
-
-## 开发约束
-
-- **Qt 优先**: 文件 I/O 使用 `QFile`，JSON 使用 `QJsonObject`。
-- **无阻塞 I/O**: Windows 管道读取必须使用 `QTextStream::readLine()`。
-- **命名规范**: 类 `CamelCase`、方法 `camelBack`、成员 `m_` 前缀。
-- **提交规范**: 遵循 Conventional Commits。
+- 使用 Qt 类型处理文件、文本流和 JSON
+- 协议固定为 JSONL；Windows 管道读取使用 `QTextStream::readLine()`
+- 命名：类 `CamelCase`、方法 `camelBack`、成员 `m_`
+- 公共行为或接口变更时，先更新 `doc/knowledge/`，必要时再更新 `doc/manual/`
+- API 变更时检查测试、前后端调用点和 `doc/todolist.md`

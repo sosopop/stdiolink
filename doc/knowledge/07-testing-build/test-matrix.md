@@ -22,8 +22,15 @@
 
 - 改协议/Host/Driver：至少补 GTest
 - 改 Service/Server 编排：补 GTest，必要时补 Smoke
-- 改里程碑功能：补对应 smoke 脚本并注册到 `run_smoke.py` 和 `CMakeLists.txt`
+- 改需要端到端覆盖的功能：补对应 smoke 脚本，并同时注册到 `run_smoke.py` 和 `CMakeLists.txt`
 - 改 WebUI：补 Vitest；跨页面流程补 Playwright
+
+## Smoke Registration Rule
+
+- Smoke 脚本文件：`src/smoke_tests/mXX_*.py`
+- 统一入口注册：`src/smoke_tests/run_smoke.py`
+- CTest 注册：`src/smoke_tests/CMakeLists.txt`
+- 缺任何一处都会导致脚本无法通过统一入口或 CTest 被发现
 
 ## High Value Test Files
 

@@ -26,6 +26,13 @@
 - 接口变更必须联动 `types/`、`api/`、页面消费点
 - 实时逻辑变更同时检查 SSE 和 DriverLab WS
 
+## UI Baseline
+
+- 保持现有设计体系，不要在已有界面上引入新的视觉语言
+- 延续当前 "Style 06" 方向：Glassmorphism、Bento Grid、深浅双主题兼容
+- 新组件或页面必须同时检查深色和浅色模式，不只看默认主题
+- 涉及 DriverLab、Projects、Dashboard 等现有页面时，优先复用现有组件、tokens、stores 和交互模式
+
 ## Tests
 
 - 单元：`src/webui/src/__tests__/`
