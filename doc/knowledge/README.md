@@ -33,8 +33,12 @@
 - “修改协议/参数校验” -> `01-protocol/message-model.md` -> `01-protocol/meta-validation.md`
 - “加 Server API/调度能力” -> `05-server/server-lifecycle.md` -> `05-server/server-api-realtime.md`
 - “前端接新接口/改实时联调” -> `06-webui/webui-structure.md` -> `06-webui/driverlab-and-events.md`
+- “用户贴了一段测试失败日志，先确认问题是否仍存在” -> `07-testing-build/verify-reported-failure.md`
+- “不知道先跑哪层测试最合适” -> `07-testing-build/choose-test-entry.md`
+- “测试失败像是环境/产物/运行目录问题” -> `07-testing-build/triage-test-failure.md` -> `07-testing-build/test-artifact-and-runtime-layout.md`
 - “排查改动落点” -> `08-workflows/debug-change-entry.md`
 - “本次改动要更新哪些知识库” -> `08-workflows/update-knowledge-base.md`
+- “根据这次问答/排障过程反思并优化知识库路径” -> `08-workflows/reflect-and-update-knowledge-base.md`
 
 ## Source of Truth
 

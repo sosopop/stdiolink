@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildCommandLine, buildArgsLine } from '../CommandLineExample';
+import { renderCliArgs } from '@/utils/cliArgs';
 import { render, screen } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { CommandLineExample } from '../CommandLineExample';
@@ -82,6 +83,15 @@ describe('buildArgsLine', () => {
 
   it('appends params as --key=value', () => {
     expect(buildArgsLine('add', { a: 1, b: 2 })).toBe('--cmd=add --a=1 --b=2');
+  });
+});
+
+describe('renderCliArgs', () => {
+  it('supports alternate option prefixes', () => {
+    expect(renderCliArgs({ host: 'localhost', port: 502 }, '--config.')).toEqual([
+      '--config.host="localhost"',
+      '--config.port=502',
+    ]);
   });
 });
 

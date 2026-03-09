@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
@@ -8,6 +8,9 @@ vi.mock('@/stores/useProjectsStore', () => ({
 }));
 vi.mock('@/stores/useServicesStore', () => ({
   useServicesStore: vi.fn(),
+}));
+vi.mock('@/stores/useDashboardStore', () => ({
+  useDashboardStore: vi.fn(),
 }));
 vi.mock('@/api/instances', () => ({
   instancesApi: { list: vi.fn().mockResolvedValue({ instances: [] }) },
@@ -19,6 +22,7 @@ vi.mock('@/api/projects', () => ({
 import { ProjectDetailPage } from '../Detail';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useServicesStore } from '@/stores/useServicesStore';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 const mockProject = {
   id: 'p1',
@@ -42,7 +46,7 @@ const mockRuntime = {
   schedule: { type: 'manual', timerActive: false, restartSuppressed: false, consecutiveFailures: 0, shuttingDown: false, autoRestarting: false },
 };
 
-function renderDetail(projectOverrides = {}, serviceOverrides = {}) {
+function renderDetail(projectOverrides = {}, serviceOverrides = {}, dashboardOverrides = {}) {
   const pState = {
     currentProject: mockProject,
     currentRuntime: mockRuntime,
@@ -75,8 +79,22 @@ function renderDetail(projectOverrides = {}, serviceOverrides = {}) {
     scanServices: vi.fn(),
     ...serviceOverrides,
   };
+  const dState = {
+    serverStatus: { dataRoot: '/data' },
+    instances: [],
+    events: [],
+    loading: false,
+    error: null,
+    connected: false,
+    fetchServerStatus: vi.fn(),
+    fetchInstances: vi.fn(),
+    addEvent: vi.fn(),
+    setConnected: vi.fn(),
+    ...dashboardOverrides,
+  };
   vi.mocked(useProjectsStore).mockImplementation((sel?: any) => sel ? sel(pState) : pState);
   vi.mocked(useServicesStore).mockImplementation((sel?: any) => sel ? sel(sState) : sState);
+  vi.mocked(useDashboardStore).mockImplementation((sel?: any) => sel ? sel(dState) : dState);
   return render(
     <ConfigProvider>
       <MemoryRouter initialEntries={['/projects/p1']}>
@@ -92,9 +110,19 @@ describe('ProjectDetailPage', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('renders overview tab', () => {
-    renderDetail();
+    renderDetail({}, { currentService: { serviceDir: '/data/services/s1', configSchemaFields: [] } });
     expect(screen.getByTestId('page-project-detail')).toBeDefined();
     expect(screen.getByTestId('project-overview')).toBeDefined();
+    expect(screen.queryByTestId('project-config-test-commands')).toBeNull();
+  });
+
+  it('shows config test commands in config tab', async () => {
+    renderDetail({}, { currentService: { serviceDir: '/data/services/s1', configSchemaFields: [] } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Config' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('project-config-test-commands')).toBeDefined();
+    });
+    expect(screen.getByTestId('export-config-btn')).toBeDefined();
   });
 
   it('shows all tabs', () => {

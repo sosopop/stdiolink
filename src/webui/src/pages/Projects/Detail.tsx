@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Tabs, Spin, Alert, Empty } from 'antd';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useServicesStore } from '@/stores/useServicesStore';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 import { ProjectOverview } from './components/ProjectOverview';
 import { ProjectConfig } from './components/ProjectConfig';
 import { ProjectInstances } from './components/ProjectInstances';
@@ -20,6 +21,7 @@ export const ProjectDetailPage: React.FC = () => {
     fetchProjectDetail, fetchRuntime, startProject, stopProject, reloadProject, updateProject,
   } = useProjectsStore();
   const { currentService, fetchServiceDetail } = useServicesStore();
+  const { serverStatus, fetchServerStatus } = useDashboardStore();
 
   useEffect(() => {
     if (id) {
@@ -33,6 +35,12 @@ export const ProjectDetailPage: React.FC = () => {
       fetchServiceDetail(currentProject.serviceId);
     }
   }, [currentProject?.serviceId, fetchServiceDetail]);
+
+  useEffect(() => {
+    if (!serverStatus) {
+      fetchServerStatus();
+    }
+  }, [serverStatus, fetchServerStatus]);
 
   if (loading) return <Spin data-testid="detail-loading" />;
   if (error) return <Alert type="error" message={error} data-testid="detail-error" />;
@@ -57,8 +65,11 @@ export const ProjectDetailPage: React.FC = () => {
       label: t('projects.detail.config'),
       children: (
         <ProjectConfig
+          projectId={currentProject.id}
           config={currentProject.config}
           schema={currentService?.configSchemaFields ?? []}
+          serviceDir={currentService?.serviceDir ?? null}
+          dataRoot={serverStatus?.dataRoot ?? null}
           onSave={(config) => updateProject(currentProject.id, { config })}
         />
       ),

@@ -2,68 +2,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography, Button, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
+import { renderCliArgs } from '@/utils/cliArgs';
 
 interface CommandLineExampleProps {
   driverId: string | null;
   command: string | null;
   params: Record<string, unknown>;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function encodePathKey(key: string, isRoot: boolean): string {
-  if (/^[A-Za-z_][A-Za-z0-9_-]*$/.test(key)) {
-    return isRoot ? key : `.${key}`;
-  }
-  const escaped = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  return `["${escaped}"]`;
-}
-
-function canonicalLiteral(value: unknown): string {
-  return JSON.stringify(value);
-}
-
-function renderPath(prefix: string, value: unknown, out: string[]): void {
-  if (value === undefined) {
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      out.push(`--${prefix}=[]`);
-      return;
-    }
-    value.forEach((item, index) => {
-      renderPath(`${prefix}[${index}]`, item, out);
-    });
-    return;
-  }
-
-  if (isPlainObject(value)) {
-    const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
-    if (entries.length === 0) {
-      out.push(`--${prefix}={}`);
-      return;
-    }
-    entries.forEach(([key, child]) => {
-      renderPath(`${prefix}${encodePathKey(key, false)}`, child, out);
-    });
-    return;
-  }
-
-  out.push(`--${prefix}=${canonicalLiteral(value)}`);
-}
-
-export function renderCliArgs(params: Record<string, unknown>): string[] {
-  const out: string[] = [];
-  Object.keys(params)
-    .sort((a, b) => a.localeCompare(b))
-    .forEach((key) => {
-      renderPath(encodePathKey(key, true), params[key], out);
-    });
-  return out;
 }
 
 export function buildCommandLine(

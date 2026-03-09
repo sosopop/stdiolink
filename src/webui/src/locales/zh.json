@@ -111,6 +111,22 @@
         "logs": {
             "refresh": "刷新"
         },
+        "config": {
+            "save": "保存配置",
+            "save_success": "配置已保存",
+            "save_fail": "保存配置失败",
+            "test_commands": "测试命令",
+            "test_commands_hint": "基于项目当前已保存的配置生成可复用的 stdiolink_service 测试命令。",
+            "expanded_command": "展开配置参数",
+            "config_file_command": "配置文件方式",
+            "config_file_command_hint": "先导出已保存配置为 {{fileName}}，再运行此命令。",
+            "test_commands_loading": "正在加载服务目录和 data root...",
+            "test_command_copied": "命令已复制",
+            "test_command_copy_failed": "复制命令失败",
+            "export": "导出配置",
+            "export_success": "配置已导出",
+            "export_fail": "导出配置失败"
+        },
         "schedule": {
             "save": "保存调度",
             "save_success": "调度已保存",

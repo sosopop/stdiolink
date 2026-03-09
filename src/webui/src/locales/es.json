@@ -111,6 +111,22 @@
         "logs": {
             "refresh": "Actualizar"
         },
+        "config": {
+            "save": "Save Configuration",
+            "save_success": "Configuration saved",
+            "save_fail": "Failed to save configuration",
+            "test_commands": "Test Commands",
+            "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
+            "expanded_command": "Expanded config arguments",
+            "config_file_command": "Config file mode",
+            "config_file_command_hint": "Export the saved config to {{fileName}}, then run this command.",
+            "test_commands_loading": "Loading service directory and data root...",
+            "test_command_copied": "Command copied",
+            "test_command_copy_failed": "Failed to copy command",
+            "export": "Export Config",
+            "export_success": "Config exported",
+            "export_fail": "Failed to export config"
+        },
         "schedule": {
             "save": "Guardar programación",
             "save_success": "Programación guardada",

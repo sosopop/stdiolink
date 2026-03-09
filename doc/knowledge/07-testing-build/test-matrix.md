@@ -18,6 +18,30 @@
 - Smoke plan：`python src/smoke_tests/run_smoke.py --plan all`
 - WebUI：在 `src/webui/` 下运行 `npm run test` / `npx playwright test`
 
+## Decision Table
+
+- 用户贴 `[ FAILED ] Suite.Test`
+  - 先读 `verify-reported-failure.md`
+  - 先确认 `ctest --test-dir build -N -V`
+  - 再直接跑 `stdiolink_tests.exe --gtest_filter=Suite.Test`
+- 不知道先跑哪层测试
+  - 先读 `choose-test-entry.md`
+  - 核心 C++ 行为优先 GTest
+  - 跨进程链路再补 smoke
+- CTest 和手动运行结果不一致
+  - 先读 `test-artifact-and-runtime-layout.md`
+  - 比较产物路径、工作目录、环境变量
+- 失败像环境问题或偶发竞争
+  - 先读 `triage-test-failure.md`
+  - 先排查端口、残留进程、运行目录、超时
+
+## CTest And GTest
+
+- `ctest` 注册的是测试命令，不一定是单个 GTest case
+- 当前仓库中，`stdiolink_tests` 常作为一个整体测试程序被 CTest 注册
+- 要复现单个 GTest case，优先直接运行 `stdiolink_tests.exe --gtest_filter=...`
+- 在判断失败是否仍存在前，先用 `ctest --test-dir build -N -V` 确认实际注册命令和工作目录
+
 ## Minimum Expectation
 
 - 改协议/Host/Driver：至少补 GTest
@@ -42,5 +66,9 @@
 
 ## Related
 
+- `choose-test-entry.md`
+- `verify-reported-failure.md`
+- `triage-test-failure.md`
+- `test-artifact-and-runtime-layout.md`
 - `../08-workflows/add-driver.md`
 - `../08-workflows/add-service-or-project.md`
