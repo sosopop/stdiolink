@@ -32,6 +32,7 @@ set(TEST_SOURCES
     test_proxy_and_scheduler.cpp
     test_js_integration.cpp
     test_js_stress.cpp
+    test_bin_scan_orchestrator_service.cpp
     test_service_config_schema.cpp
     test_service_args.cpp
     test_service_config_validator.cpp

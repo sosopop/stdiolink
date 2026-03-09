@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "bin_scan_orchestrator",
+  "name": "Bin Scan Orchestrator",
+  "version": "1.0.0",
+  "description": "One-shot bin scan orchestration service based on plc_crane and 3dvision drivers"
+}

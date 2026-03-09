@@ -1,0 +1,138 @@
+{
+  "vessel_id": {
+    "type": "int",
+    "required": true,
+    "description": "目标料仓 ID",
+    "constraints": { "min": 1 }
+  },
+  "vision": {
+    "type": "object",
+    "required": true,
+    "description": "3DVision 连接配置",
+    "fields": {
+      "addr": {
+        "type": "string",
+        "required": true,
+        "description": "3DVision 地址，格式 host:port"
+      },
+      "user_name": {
+        "type": "string",
+        "required": true,
+        "description": "登录用户名"
+      },
+      "password": {
+        "type": "string",
+        "required": true,
+        "description": "登录密码"
+      },
+      "view_mode": {
+        "type": "bool",
+        "default": false,
+        "description": "login.viewMode"
+      }
+    }
+  },
+  "cranes": {
+    "type": "array",
+    "required": true,
+    "description": "参与联动的 PLC Crane 列表",
+    "constraints": { "minItems": 1 },
+    "items": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Crane 标识"
+        },
+        "host": {
+          "type": "string",
+          "required": true,
+          "description": "PLC 主机地址"
+        },
+        "port": {
+          "type": "int",
+          "default": 502,
+          "description": "Modbus TCP 端口",
+          "constraints": { "min": 1, "max": 65535 }
+        },
+        "unit_id": {
+          "type": "int",
+          "default": 1,
+          "description": "Modbus 从站地址",
+          "constraints": { "min": 1, "max": 247 }
+        },
+        "timeout_ms": {
+          "type": "int",
+          "default": 3000,
+          "description": "PLC 命令超时(ms)",
+          "constraints": { "min": 100, "max": 60000 }
+        }
+      }
+    }
+  },
+  "crane_poll_interval_ms": {
+    "type": "int",
+    "default": 1000,
+    "description": "Crane 状态轮询间隔(ms)",
+    "constraints": { "min": 100, "max": 10000 }
+  },
+  "crane_wait_timeout_ms": {
+    "type": "int",
+    "default": 60000,
+    "description": "等待 Crane 就绪超时(ms)",
+    "constraints": { "min": 1000, "max": 600000 }
+  },
+  "scan_request_timeout_ms": {
+    "type": "int",
+    "default": 8000,
+    "description": "3DVision 单次命令超时(ms)",
+    "constraints": { "min": 500, "max": 60000 }
+  },
+  "scan_start_retry_count": {
+    "type": "int",
+    "default": 2,
+    "description": "scan 启动失败重试次数",
+    "constraints": { "min": 0, "max": 10 }
+  },
+  "scan_start_retry_interval_ms": {
+    "type": "int",
+    "default": 1000,
+    "description": "scan 启动重试间隔(ms)",
+    "constraints": { "min": 0, "max": 30000 }
+  },
+  "scan_poll_interval_ms": {
+    "type": "int",
+    "default": 3000,
+    "description": "vessellog.last 轮询间隔(ms)",
+    "constraints": { "min": 200, "max": 60000 }
+  },
+  "scan_poll_fail_limit": {
+    "type": "int",
+    "default": 5,
+    "description": "轮询连续失败上限",
+    "constraints": { "min": 1, "max": 100 }
+  },
+  "scan_timeout_ms": {
+    "type": "int",
+    "default": 120000,
+    "description": "扫描总超时(ms)",
+    "constraints": { "min": 1000, "max": 1800000 }
+  },
+  "clock_skew_tolerance_ms": {
+    "type": "int",
+    "default": 2000,
+    "description": "logTime 新鲜度容差(ms)",
+    "constraints": { "min": 0, "max": 60000 }
+  },
+  "on_error_set_manual": {
+    "type": "bool",
+    "default": true,
+    "description": "失败时是否尝试切回 manual"
+  },
+  "result_output_path": {
+    "type": "string",
+    "default": "",
+    "description": "结果 JSON 输出路径，空字符串表示不输出"
+  }
+}

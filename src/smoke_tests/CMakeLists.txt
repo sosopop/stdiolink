@@ -1,6 +1,21 @@
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_test(
+    NAME smoke_m101_bin_scan_orchestrator
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m101_bin_scan_orchestrator
+)
+
+set_tests_properties(
+    smoke_m101_bin_scan_orchestrator
+    PROPERTIES
+        LABELS "smoke;m101"
+        TIMEOUT 240
+)
+
+add_test(
     NAME smoke_m101a_service_driver_timeout
     COMMAND
         ${Python3_EXECUTABLE}
