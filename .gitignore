@@ -40,3 +40,4 @@ src/demo/server_manager_demo/data_root/logs/
 
 tmp/
 .claude/settings.local.json
+.codex/config.toml
