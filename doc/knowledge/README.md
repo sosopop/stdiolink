@@ -34,6 +34,7 @@
 - “加 Server API/调度能力” -> `05-server/server-lifecycle.md` -> `05-server/server-api-realtime.md`
 - “前端接新接口/改实时联调” -> `06-webui/webui-structure.md` -> `06-webui/driverlab-and-events.md`
 - “排查改动落点” -> `08-workflows/debug-change-entry.md`
+- “本次改动要更新哪些知识库” -> `08-workflows/update-knowledge-base.md`
 
 ## Source of Truth
 
@@ -52,3 +53,6 @@
 - 单篇文档只覆盖一个主题或一个链路。
 - 正文优先写：修改入口、约束、依赖、失败点、测试入口。
 - 避免复制 `doc/manual/` 的长段说明；这里只保留决策信息和跳转。
+- 任何公共行为、协议、元数据、配置结构、API、调试路径、测试路径变更后，都必须同步检查是否需要更新知识库。
+- 先更新受影响主题文档，再更新对应目录 `README.md`，最后检查根索引是否需要补新的检索入口。
+- 如果新增了新的开发路径、联动规则或高频排障经验，应优先补到 `08-workflows/` 而不是塞进记忆文件。
