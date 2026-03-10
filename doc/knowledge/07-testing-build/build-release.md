@@ -16,6 +16,7 @@
 - 运行联调优先看 `build/runtime_debug/`
 - 发布验证优先看 `release/<pkg>/`
 - `build/runtime_*` 默认没有发布包根脚本；`dev.ps1`、`start.*` 来自发布脚本
+- 发布包里的 `dev.ps1` 会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
 
 ## Modify Entry
 

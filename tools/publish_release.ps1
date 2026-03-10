@@ -551,15 +551,17 @@ Write-Host "Generating dev.ps1..."
 $devPs1 = Join-Path $packageDir "dev.ps1"
 $devPs1Content = @"
 #!/usr/bin/env pwsh
-`$script:scriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
-`$binDir = Join-Path `$script:scriptDir "bin"
-`$driversDir = Join-Path `$script:scriptDir "data_root/drivers"
+`$global:stdiolinkDevScriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
+`$global:stdiolinkDevBinDir = Join-Path `$global:stdiolinkDevScriptDir "bin"
+`$global:stdiolinkDevDriversDir = Join-Path `$global:stdiolinkDevScriptDir "data_root/drivers"
+`$global:stdiolinkDevProjectsDir = Join-Path `$global:stdiolinkDevScriptDir "data_root/projects"
+`$global:stdiolinkProjectAliases = @()
 
 # Add bin directory to PATH for current session
-`$env:PATH = "`$binDir;`$env:PATH"
+`$env:PATH = "`$global:stdiolinkDevBinDir;`$env:PATH"
 
 # Set Qt plugin path
-`$env:QT_PLUGIN_PATH = `$binDir
+`$env:QT_PLUGIN_PATH = `$global:stdiolinkDevBinDir
 
 # Discover and create function aliases for all drivers
 "@
@@ -590,6 +592,64 @@ function global:$aliasName {
 
 $devPs1Content += @"
 
+
+# Read project config explicitly as UTF-8 so Windows PowerShell can parse non-ASCII names.
+function Read-ProjectConfig {
+    param(
+        [Parameter(Mandatory = `$true)]
+        [string]`$ConfigPath
+    )
+
+    `$json = [System.IO.File]::ReadAllText(`$ConfigPath, [System.Text.Encoding]::UTF8)
+    return `$json | ConvertFrom-Json
+}
+
+# Discover and create project aliases from saved project configs
+if (Test-Path -LiteralPath `$global:stdiolinkDevProjectsDir -PathType Container) {
+    foreach (`$projectDir in (Get-ChildItem -LiteralPath `$global:stdiolinkDevProjectsDir -Directory | Sort-Object Name)) {
+        `$projectId = `$projectDir.Name
+        `$configPath = Join-Path `$projectDir.FullName "config.json"
+        `$projectConfig = `$null
+
+        if (Test-Path -LiteralPath `$configPath -PathType Leaf) {
+            try {
+                `$projectConfig = Read-ProjectConfig -ConfigPath `$configPath
+            }
+            catch {
+                Write-Warning "Skipping project alias '`$projectId': failed to parse `$configPath"
+            }
+        }
+
+        if (-not `$projectConfig) {
+            continue
+        }
+
+        `$serviceId = [string]`$projectConfig.serviceId
+        if ([string]::IsNullOrWhiteSpace(`$serviceId)) {
+            Write-Warning "Skipping project alias '`$projectId': serviceId missing in `$configPath"
+            continue
+        }
+
+        if (Get-Command -Name `$projectId -ErrorAction SilentlyContinue) {
+            Write-Warning "Skipping project alias '`$projectId': command name already exists"
+            continue
+        }
+
+        `$functionName = "__stdiolink_project_`$(`$projectId -replace '[^A-Za-z0-9_]', '_')"
+        `$serviceDir = "data_root/services/`$serviceId"
+        `$paramPath = "data_root/projects/`$projectId/param.json"
+        `$scriptBlock = {
+            & stdiolink_service "`$serviceDir" --data-root="data_root" --config-file="`$paramPath" @args
+        }.GetNewClosure()
+
+        Set-Item -Path ("Function:global:{0}" -f `$functionName) -Value `$scriptBlock
+        Set-Alias -Name `$projectId -Value `$functionName -Scope Global
+        `$global:stdiolinkProjectAliases += [PSCustomObject]@{
+            Id = `$projectId
+            ServiceId = `$serviceId
+        }
+    }
+}
 
 # Helper function to list all available drivers
 function global:drivers {
@@ -626,7 +686,59 @@ function global:services {
     }
     Write-Host ""
     Write-Host "Example usage:"
-    Write-Host "  stdiolink_service --service-dir=`"data_root/services/[service-name]`" --project-dir=`"data_root/projects/[project-name]`"" -ForegroundColor Gray
+    Write-Host "  stdiolink_service `"data_root/services/[service-name]`" --data-root=`"data_root`" --config-file=`"data_root/projects/[project-id]/param.json`"" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# Helper function to list all available projects
+function global:projects {
+    Write-Host ""
+    Write-Host "Available projects:"
+    Write-Host ""
+    `$aliasByProject = @{}
+    foreach (`$projectAlias in `$global:stdiolinkProjectAliases) {
+        `$aliasByProject[[string]`$projectAlias.Id] = [string]`$projectAlias.ServiceId
+    }
+    if (Test-Path -LiteralPath `$global:stdiolinkDevProjectsDir -PathType Container) {
+        `$projectDirs = Get-ChildItem -LiteralPath `$global:stdiolinkDevProjectsDir -Directory | Sort-Object Name
+        if (`$projectDirs.Count -gt 0) {
+            foreach (`$projectDir in `$projectDirs) {
+                `$projectId = `$projectDir.Name
+                `$serviceLabel = "(service unknown)"
+                if (`$aliasByProject.ContainsKey(`$projectId)) {
+                    `$serviceLabel = `$aliasByProject[`$projectId]
+                } else {
+                    `$configPath = Join-Path `$projectDir.FullName "config.json"
+                    if (Test-Path -LiteralPath `$configPath -PathType Leaf) {
+                        try {
+                            `$projectConfig = Read-ProjectConfig -ConfigPath `$configPath
+                            if (-not [string]::IsNullOrWhiteSpace([string]`$projectConfig.serviceId)) {
+                                `$serviceLabel = [string]`$projectConfig.serviceId
+                            }
+                        }
+                        catch {
+                        }
+                    }
+                }
+
+                `$aliasNote = ""
+                if (-not (Get-Alias -Name `$projectId -ErrorAction SilentlyContinue)) {
+                    `$aliasNote = " (alias unavailable)"
+                }
+
+                Write-Host "  `$projectId" -ForegroundColor Magenta -NoNewline
+                Write-Host " -> `$serviceLabel`$aliasNote" -ForegroundColor DarkGray
+            }
+        } else {
+            Write-Host "  (no projects found)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  (no projects found)" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "To run a project:"
+    Write-Host "  [project-id]"
+    Write-Host "  [project-id] [extra args]"
     Write-Host ""
 }
 
@@ -638,6 +750,7 @@ Write-Host ""
 Write-Host "Environment configured:"
 Write-Host "  - bin\ added to PATH"
 Write-Host "  - Driver aliases created"
+Write-Host "  - Project aliases created"
 Write-Host ""
 Write-Host "To list all drivers:"
 Write-Host "  drivers"
@@ -645,12 +758,19 @@ Write-Host ""
 Write-Host "To list all services:"
 Write-Host "  services"
 Write-Host ""
+Write-Host "To list all projects:"
+Write-Host "  projects"
+Write-Host ""
 Write-Host "To run a driver:"
 Write-Host "  [driver-name] --export-meta"
 Write-Host "  [driver-name] [args...]"
 Write-Host ""
+Write-Host "To run a project:"
+Write-Host "  [project-id]"
+Write-Host "  [project-id] [extra args]"
+Write-Host ""
 Write-Host "To start the server:"
-Write-Host "  stdiolink_server --data-root=`"`$script:scriptDir\data_root`""
+Write-Host ("  stdiolink_server --data-root=""{0}""" -f (Join-Path `$global:stdiolinkDevScriptDir "data_root"))
 Write-Host ""
 "@
 
