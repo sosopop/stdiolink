@@ -11,8 +11,8 @@
   - 展开参数方式：`--config.xxx=...`
   - 配置文件方式：`--config-file=...`
 - 配置文件方式直接复用已保存的 `projects/<id>/param.json`
-- 命令片段会先切换到一个明确的工作目录，再执行 `stdiolink_service`
-- 命令中的 `serviceDir`、`dataRoot`、`--config-file` 路径相对这个工作目录生成
+- 命令片段直接显示 `stdiolink_service ...`
+- 命令中的 `serviceDir`、`dataRoot`、`--config-file` 路径按当前相对化规则展示，不额外拼接前置 `cd`
 
 ## Source Of Truth
 
@@ -60,23 +60,18 @@
 
 - 只有当 `dataRoot` 末段名称为 `data_root` 时，才尝试做相对化
 - 相对化基准是 `dataRoot` 的父目录，也就是推导出的发布根目录
-- 前端会把这条目录作为命令片段里的 `cd <workingDirectory>`
 - 成功相对化时：
   - `D:/pkg/data_root` -> `data_root`
   - `D:/pkg/data_root/services/demo` -> `data_root/services/demo`
 - `--config-file` 指向真实项目参数文件：
   - 发布目录布局下显示为 `data_root/projects/<id>/param.json`
   - 非发布目录布局下显示为 `projects/<id>/param.json`
-- 非发布目录布局下，工作目录就是 `dataRoot` 本身，因此命令会表现为：
-  - `cd /abs/data_root`
-  - `stdiolink_service "services/demo" --data-root="." --config-file="projects/<id>/param.json"`
 - 这个相对化只影响展示和复制出的示例命令，不改变后端运行行为
 
 ### Saved Param File Rule
 
 - 面板不再提供参数文件下载
 - `--config-file` 始终指向项目目录下已经存在的 `param.json`
-- 命令片段自身保证 `cwd` 正确，不再依赖用户手工切换到特定目录
 - 未保存的表单编辑不会改变“测试命令”面板展示的 `--config-file` 内容
 
 ## Common Questions

@@ -47,8 +47,8 @@ test.describe('Projects', () => {
     await page.getByRole('tab', { name: 'Config' }).click();
     const panel = page.getByTestId('project-config-test-commands');
     await expect(panel).toBeVisible();
-    await expect(panel).toContainText('cd "/data"');
     await expect(panel).toContainText('--config-file="projects/demo-project/param.json"');
+    await expect(panel).not.toContainText('cd "/data"');
   });
 
   test('switches project detail tabs', async ({ page }) => {

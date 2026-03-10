@@ -105,15 +105,7 @@ export const ProjectConfig: React.FC<ProjectConfigProps> = ({
               </div>
 
               <div style={{ display: 'grid', gap: 6 }}>
-                <div style={{ display: 'grid', gap: 4 }}>
-                  <Text strong style={{ fontSize: 13 }}>{t('projects.config.config_file_command')}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {t('projects.config.config_file_command_hint', {
-                      filePath: commandLines.configFilePath,
-                      workingDirectory: commandLines.workingDirectory,
-                    })}
-                  </Text>
-                </div>
+                <Text strong style={{ fontSize: 13 }}>{t('projects.config.config_file_command')}</Text>
                 <div style={{ position: 'relative' }}>
                   <pre style={commandStyle}>{commandLines.configFile}</pre>
                   <Button

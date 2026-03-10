@@ -8,7 +8,7 @@ describe('buildProjectCommandLines', () => {
       serviceDir: null,
       dataRoot: 'D:/data',
       config: {},
-    })).toEqual({ expanded: '', configFile: '', configFilePath: '', workingDirectory: '' });
+    })).toEqual({ expanded: '', configFile: '', configFilePath: '' });
   });
 
   it('builds both expanded and config-file forms', () => {
@@ -21,10 +21,9 @@ describe('buildProjectCommandLines', () => {
         nested: { port: 502 },
       },
     })).toEqual({
-      expanded: 'cd "D:/code/stdiolink/release/pkg"\nstdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="127.0.0.1" --config.nested.port=502',
-      configFile: 'cd "D:/code/stdiolink/release/pkg"\nstdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="data_root/projects/demo-project/param.json"',
+      expanded: 'stdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="127.0.0.1" --config.nested.port=502',
+      configFile: 'stdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="data_root/projects/demo-project/param.json"',
       configFilePath: 'data_root/projects/demo-project/param.json',
-      workingDirectory: 'D:/code/stdiolink/release/pkg',
     });
   });
 
@@ -37,10 +36,9 @@ describe('buildProjectCommandLines', () => {
         host: '127.0.0.1',
       },
     })).toEqual({
-      expanded: 'cd "D:/data"\nstdiolink_service "services/demo" --data-root="." --config.host="127.0.0.1"',
-      configFile: 'cd "D:/data"\nstdiolink_service "services/demo" --data-root="." --config-file="projects/demo-project/param.json"',
+      expanded: 'stdiolink_service "services/demo" --data-root="." --config.host="127.0.0.1"',
+      configFile: 'stdiolink_service "services/demo" --data-root="." --config-file="projects/demo-project/param.json"',
       configFilePath: 'projects/demo-project/param.json',
-      workingDirectory: 'D:/data',
     });
   });
 });

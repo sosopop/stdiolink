@@ -124,7 +124,7 @@ describe('ProjectDetailPage', () => {
     });
     expect(screen.queryByTestId('export-config-btn')).toBeNull();
     expect(screen.getByTestId('project-config-test-commands').textContent)
-      .toContain('cd "/data"\nstdiolink_service "services/s1" --data-root="." --config-file="projects/p1/param.json"');
+      .toContain('stdiolink_service "services/s1" --data-root="." --config-file="projects/p1/param.json"');
   });
 
   it('shows all tabs', () => {

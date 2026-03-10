@@ -53,7 +53,7 @@ describe('ProjectConfig', () => {
     expect(screen.getByText('Config file mode')).toBeDefined();
     expect(screen.queryByTestId('export-config-btn')).toBeNull();
     expect(screen.getByTestId('project-config-test-commands').textContent)
-      .toContain('cd "D:/code/stdiolink/release/pkg"\nstdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="data_root/projects/demo-project/param.json"');
+      .toContain('stdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="data_root/projects/demo-project/param.json"');
   });
 
   it('renders the test commands panel before the editable form', () => {
@@ -73,7 +73,7 @@ describe('ProjectConfig', () => {
     fireEvent.change(screen.getByDisplayValue('saved-host'), { target: { value: 'edited-host' } });
 
     expect(screen.getByTestId('project-config-test-commands').textContent)
-      .toContain('cd "D:/code/stdiolink/release/pkg"\nstdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="saved-host" --config.port=6200');
+      .toContain('stdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="saved-host" --config.port=6200');
   });
 });
 

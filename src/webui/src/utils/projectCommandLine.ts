@@ -78,7 +78,6 @@ export interface ProjectCommandLines {
   expanded: string;
   configFile: string;
   configFilePath: string;
-  workingDirectory: string;
 }
 
 export function buildProjectCommandLines({
@@ -88,7 +87,7 @@ export function buildProjectCommandLines({
   config,
 }: ProjectCommandLinesOptions): ProjectCommandLines {
   if (!projectId || !serviceDir || !dataRoot) {
-    return { expanded: '', configFile: '', configFilePath: '', workingDirectory: '' };
+    return { expanded: '', configFile: '', configFilePath: '' };
   }
 
   const workingDirectory = commandWorkingDirectory(dataRoot);
@@ -96,12 +95,10 @@ export function buildProjectCommandLines({
   const displayDataRoot = relativeToRoot(dataRoot, workingDirectory);
   const configFilePath = relativeToRoot(`${normalizePath(dataRoot)}/projects/${projectId}/param.json`, workingDirectory);
   const baseArgs = [quote(displayServiceDir), `--data-root=${quote(displayDataRoot)}`];
-  const prefix = `cd ${quote(workingDirectory)}\n`;
 
   return {
-    expanded: prefix + ['stdiolink_service', ...baseArgs, ...renderCliArgs(config, '--config.')].join(' '),
-    configFile: prefix + ['stdiolink_service', ...baseArgs, `--config-file=${quote(configFilePath)}`].join(' '),
+    expanded: ['stdiolink_service', ...baseArgs, ...renderCliArgs(config, '--config.')].join(' '),
+    configFile: ['stdiolink_service', ...baseArgs, `--config-file=${quote(configFilePath)}`].join(' '),
     configFilePath,
-    workingDirectory,
   };
 }
