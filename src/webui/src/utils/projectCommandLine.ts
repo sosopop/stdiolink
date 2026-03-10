@@ -54,22 +54,6 @@ function relativeToRoot(path: string, root: string): string {
   return relativeParts.length > 0 ? relativeParts.join('/') : '.';
 }
 
-function displayPath(path: string, dataRoot: string): string {
-  const normalizedPath = normalizePath(path);
-  const normalizedDataRoot = normalizePath(dataRoot);
-
-  if (baseName(normalizedDataRoot) !== 'data_root') {
-    return normalizedPath;
-  }
-
-  const releaseRoot = parentDir(normalizedDataRoot);
-  if (!releaseRoot) {
-    return normalizedPath;
-  }
-
-  return relativeToRoot(normalizedPath, releaseRoot);
-}
-
 function commandWorkingDirectory(dataRoot: string): string {
   const normalizedDataRoot = normalizePath(dataRoot);
 
