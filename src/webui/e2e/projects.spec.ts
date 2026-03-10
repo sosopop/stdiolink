@@ -45,9 +45,10 @@ test.describe('Projects', () => {
   test('shows test commands in config tab', async ({ page }) => {
     await page.goto('/projects/demo-project');
     await page.getByRole('tab', { name: 'Config' }).click();
-    await expect(page.getByTestId('project-config-test-commands')).toBeVisible();
-    await expect(page.getByText(/cd "\/data"/)).toBeVisible();
-    await expect(page.getByText(/--config-file="projects\/demo-project\/param\.json"/)).toBeVisible();
+    const panel = page.getByTestId('project-config-test-commands');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('cd "/data"');
+    await expect(panel).toContainText('--config-file="projects/demo-project/param.json"');
   });
 
   test('switches project detail tabs', async ({ page }) => {
