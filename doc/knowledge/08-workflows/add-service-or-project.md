@@ -21,6 +21,12 @@
 5. 按业务选择 `manual` / `fixed_rate` / `daemon`
 6. 若是新增调度字段，联动 Server model/manager/API/UI
 
+## File Boundary
+
+- API 请求体里的 `config` 字段对应 Service 参数；磁盘 `config.json` 不应包含这个字段。
+- 磁盘 `config.json` 只放 Project 元信息；Service 业务参数固定放 `param.json`。
+- 直接运行 `stdiolink_service --config-file=...` 时，要保证路径对当前工作目录可达；不要假设它会相对 `--data-root` 查找。
+
 ## Main Source Entry
 
 - `src/stdiolink_service/`
@@ -33,6 +39,11 @@
 - JS 集成：`src/tests/test_js_integration.cpp`
 - Driver 解析：`src/tests/test_driver_resolve.cpp`
 - Smoke：`src/smoke_tests/`
+- 改 Project 存储或 Project 生命周期时，补：
+  - `src/tests/test_project_manager.cpp`：双文件保存/回滚、磁盘格式误写
+  - `src/tests/test_api_router.cpp`：删除运行中项目、Project 变更冲突
+  - `src/tests/test_instance_manager.cpp`：项目级等待退出
+  - `src/webui/src/pages/Projects/__tests__/ProjectConfig.test.tsx`：测试命令路径和 `cwd`
 
 ## Related
 

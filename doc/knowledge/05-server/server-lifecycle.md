@@ -32,11 +32,19 @@
 - 改实例生命周期 -> `instance_manager.*`, `process_monitor.*`
 - 改调度策略 -> `schedule_engine.*`
 
+## Project Mutation Rules
+
+- `update` / `enabled` 这类会改磁盘的接口，先保存 `config.json + param.json`，再停实例；后续停实例失败时必须回滚磁盘状态。
+- `delete` 先停调度并等待该 Project 的 Instance 退出，再删除 `projects/<id>/`，否则 Windows 上容易因 `workspace/` 被占用而失败。
+- `reload` 不改磁盘，只负责停实例、重载文件、重新验证并恢复调度。
+- 同一 Project 的 `update`、`delete`、`reload`、`start`、`stop`、`enabled` 最好做项目级互斥；不要允许这些接口在同一 Project 上并发交错。
+
 ## Tests
 
 - `src/tests/test_driver_manager_scanner.cpp`
 - `src/tests/test_instance_manager.cpp`
 - `src/tests/test_api_router.cpp`
+- 改 Project 变更时序时，至少补“删除运行中项目”“保存后停实例失败回滚”“并发变更返回 409”三类回归
 
 ## Related
 
