@@ -34,7 +34,7 @@ void printHelp() {
 }
 
 bool ensureDirectories(const QString& dataRoot) {
-    static const char* kDirs[] = {"services", "projects", "workspaces", "logs"};
+    static const char* kDirs[] = {"services", "projects", "logs"};
     for (const char* sub : kDirs) {
         if (!QDir(dataRoot + "/" + sub).mkpath(".")) {
             qCritical("Failed to create: %s/%s", qUtf8Printable(dataRoot), sub);

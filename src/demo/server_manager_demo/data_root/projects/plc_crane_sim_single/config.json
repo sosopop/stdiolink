@@ -1,0 +1,9 @@
+{
+  "id": "plc_crane_sim_single",
+  "name": "PLC Crane Sim Single",
+  "serviceId": "plc_crane_sim",
+  "enabled": true,
+  "schedule": {
+    "type": "manual"
+  }
+}

@@ -19,12 +19,24 @@ bool writeJsonFile(const QString& path, const QJsonObject& obj) {
     return file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact)) > 0;
 }
 
+bool ensureDir(const QString& path) {
+    return QDir().mkpath(path);
+}
+
 bool writeRawFile(const QString& path, const QByteArray& content) {
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         return false;
     }
     return file.write(content) == content.size();
+}
+
+QString readTextFile(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+    return QString::fromUtf8(file.readAll());
 }
 
 QMap<QString, ServiceInfo> makeServices() {
@@ -61,8 +73,19 @@ protected:
         ASSERT_TRUE(QDir().mkpath(projectsDir));
     }
 
-    void writeProject(const QString& id, const QJsonObject& obj) {
-        ASSERT_TRUE(writeJsonFile(projectsDir + "/" + id + ".json", obj));
+    void writeProjectConfig(const QString& id, const QJsonObject& obj) {
+        ASSERT_TRUE(ensureDir(projectsDir + "/" + id));
+        ASSERT_TRUE(writeJsonFile(projectsDir + "/" + id + "/config.json", obj));
+    }
+
+    void writeProjectParams(const QString& id, const QJsonObject& obj) {
+        ASSERT_TRUE(ensureDir(projectsDir + "/" + id));
+        ASSERT_TRUE(writeJsonFile(projectsDir + "/" + id + "/param.json", obj));
+    }
+
+    void writeProject(const QString& id, const QJsonObject& configObj, const QJsonObject& paramObj) {
+        writeProjectConfig(id, configObj);
+        writeProjectParams(id, paramObj);
     }
 
     QTemporaryDir tmpDir;
@@ -84,8 +107,9 @@ TEST_F(ProjectManagerTest, ValidProjectAndDefaultsMerged) {
         {"name", "Test"},
         {"serviceId", "demo"},
         {"enabled", true},
-        {"schedule", QJsonObject{{"type", "manual"}}},
-        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    }, QJsonObject{
+        {"device", QJsonObject{{"host", "127.0.0.1"}}}
     });
 
     ProjectManager manager;
@@ -101,7 +125,8 @@ TEST_F(ProjectManagerTest, ValidProjectAndDefaultsMerged) {
 }
 
 TEST_F(ProjectManagerTest, InvalidJson) {
-    ASSERT_TRUE(writeRawFile(projectsDir + "/bad.json", "not-json"));
+    ASSERT_TRUE(ensureDir(projectsDir + "/bad"));
+    ASSERT_TRUE(writeRawFile(projectsDir + "/bad/config.json", "not-json"));
 
     ProjectManager manager;
     ProjectManager::LoadStats stats;
@@ -117,8 +142,9 @@ TEST_F(ProjectManagerTest, UnknownService) {
         {"name", "Orphan"},
         {"serviceId", "missing"},
         {"enabled", true},
-        {"schedule", QJsonObject{{"type", "manual"}}},
-        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    }, QJsonObject{
+        {"device", QJsonObject{{"host", "127.0.0.1"}}}
     });
 
     ProjectManager manager;
@@ -136,8 +162,9 @@ TEST_F(ProjectManagerTest, BodyIdMismatchMarkedInvalid) {
         {"name", "Mismatch"},
         {"serviceId", "demo"},
         {"enabled", true},
-        {"schedule", QJsonObject{{"type", "manual"}}},
-        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    }, QJsonObject{
+        {"device", QJsonObject{{"host", "127.0.0.1"}}}
     });
 
     ProjectManager manager;
@@ -154,8 +181,9 @@ TEST_F(ProjectManagerTest, InvalidProjectIdFilteredByFilename) {
         {"name", "Bad"},
         {"serviceId", "demo"},
         {"enabled", true},
-        {"schedule", QJsonObject{{"type", "manual"}}},
-        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    }, QJsonObject{
+        {"device", QJsonObject{{"host", "127.0.0.1"}}}
     });
 
     ProjectManager manager;
@@ -191,11 +219,12 @@ TEST(ProjectManagerIoTest, SaveAndRemoveProject) {
     QString error;
     EXPECT_TRUE(ProjectManager::saveProject(projectsDir, project, error));
     EXPECT_TRUE(error.isEmpty());
-    EXPECT_TRUE(QFile::exists(projectsDir + "/save_test.json"));
+    EXPECT_TRUE(QFile::exists(projectsDir + "/save_test/config.json"));
+    EXPECT_TRUE(QFile::exists(projectsDir + "/save_test/param.json"));
 
     EXPECT_TRUE(ProjectManager::removeProject(projectsDir, "save_test", error));
     EXPECT_TRUE(error.isEmpty());
-    EXPECT_FALSE(QFile::exists(projectsDir + "/save_test.json"));
+    EXPECT_FALSE(QDir(projectsDir + "/save_test").exists());
 }
 
 // M72_G04 — saveProject normal success with atomic write
@@ -217,10 +246,12 @@ TEST(ProjectManagerIoTest, M72_G04_SaveProjectAtomicWriteSuccess) {
     EXPECT_TRUE(error.isEmpty());
 
     // Verify file exists and is valid JSON
-    const QString filePath = projectsDir + "/atomic_test.json";
-    ASSERT_TRUE(QFile::exists(filePath));
+    const QString configPath = projectsDir + "/atomic_test/config.json";
+    const QString paramPath = projectsDir + "/atomic_test/param.json";
+    ASSERT_TRUE(QFile::exists(configPath));
+    ASSERT_TRUE(QFile::exists(paramPath));
 
-    QFile file(filePath);
+    QFile file(configPath);
     ASSERT_TRUE(file.open(QIODevice::ReadOnly));
     const QByteArray data = file.readAll();
     QJsonParseError parseErr;
@@ -229,6 +260,7 @@ TEST(ProjectManagerIoTest, M72_G04_SaveProjectAtomicWriteSuccess) {
     EXPECT_TRUE(doc.isObject());
 
     const QJsonObject obj = doc.object();
+    EXPECT_EQ(obj.value("id").toString(), "atomic_test");
     EXPECT_EQ(obj.value("name").toString(), "AtomicTest");
     EXPECT_EQ(obj.value("serviceId").toString(), "demo");
 }
@@ -240,17 +272,17 @@ TEST(ProjectManagerIoTest, M72_R04_SaveProjectIsAtomicOnWriteFailure) {
     const QString projectsDir = tmpDir.path() + "/projects";
     ASSERT_TRUE(QDir().mkpath(projectsDir));
 
-    // Write an initial file
-    const QString filePath = projectsDir + "/preserve_test.json";
-    {
-        QFile f(filePath);
-        ASSERT_TRUE(f.open(QIODevice::WriteOnly));
-        f.write(R"({"name":"original","serviceId":"demo"})");
-    }
+    // Write initial files
+    const QString projectDir = projectsDir + "/preserve_test";
+    ASSERT_TRUE(QDir().mkpath(projectDir));
+    const QString configPath = projectDir + "/config.json";
+    const QString paramPath = projectDir + "/param.json";
+    ASSERT_TRUE(writeRawFile(configPath, R"({"id":"preserve_test","name":"original","serviceId":"demo"})"));
+    ASSERT_TRUE(writeRawFile(paramPath, R"({"device":{"host":"old-host"}})"));
 
     // Try to save to a read-only directory (simulate failure)
-    // Make the projects dir read-only
-    QFile::setPermissions(projectsDir,
+    // Make the project dir read-only
+    QFile::setPermissions(projectDir,
                           QFileDevice::ReadOwner | QFileDevice::ExeOwner);
 
     Project project;
@@ -265,7 +297,7 @@ TEST(ProjectManagerIoTest, M72_R04_SaveProjectIsAtomicOnWriteFailure) {
     const bool saved = ProjectManager::saveProject(projectsDir, project, error);
 
     // Restore permissions for cleanup
-    QFile::setPermissions(projectsDir,
+    QFile::setPermissions(projectDir,
                           QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
 
     // If setPermissions didn't actually prevent writing (e.g. running as root),
@@ -278,8 +310,63 @@ TEST(ProjectManagerIoTest, M72_R04_SaveProjectIsAtomicOnWriteFailure) {
     EXPECT_FALSE(error.isEmpty());
 
     // Old file should be preserved
-    QFile f(filePath);
-    ASSERT_TRUE(f.open(QIODevice::ReadOnly));
-    const QByteArray content = f.readAll();
-    EXPECT_TRUE(content.contains("original"));
+    EXPECT_TRUE(readTextFile(configPath).contains("original"));
+    EXPECT_TRUE(readTextFile(paramPath).contains("old-host"));
+}
+
+TEST_F(ProjectManagerTest, MissingParamJsonLoadsAsEmptyObjectBeforeValidation) {
+    writeProjectConfig("paramless", QJsonObject{
+        {"id", "paramless"},
+        {"name", "Paramless"},
+        {"serviceId", "demo"},
+        {"enabled", true},
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    });
+
+    ProjectManager manager;
+    ProjectManager::LoadStats stats;
+    const auto result = manager.loadAll(projectsDir, makeServices(), &stats);
+
+    ASSERT_TRUE(result.contains("paramless"));
+    EXPECT_FALSE(result["paramless"].valid);
+    EXPECT_TRUE(result["paramless"].config.isEmpty());
+}
+
+TEST_F(ProjectManagerTest, InvalidParamJsonMarksProjectInvalid) {
+    writeProjectConfig("bad_param", QJsonObject{
+        {"id", "bad_param"},
+        {"name", "BadParam"},
+        {"serviceId", "demo"},
+        {"enabled", true},
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    });
+    ASSERT_TRUE(writeRawFile(projectsDir + "/bad_param/param.json", "not-json"));
+
+    ProjectManager manager;
+    ProjectManager::LoadStats stats;
+    const auto result = manager.loadAll(projectsDir, makeServices(), &stats);
+
+    ASSERT_TRUE(result.contains("bad_param"));
+    EXPECT_FALSE(result["bad_param"].valid);
+    EXPECT_EQ(stats.invalid, 1);
+}
+
+TEST_F(ProjectManagerTest, ConfigJsonRejectsEmbeddedServiceParams) {
+    writeProjectConfig("misplaced_config", QJsonObject{
+        {"id", "misplaced_config"},
+        {"name", "MisplacedConfig"},
+        {"serviceId", "demo"},
+        {"enabled", true},
+        {"schedule", QJsonObject{{"type", "manual"}}},
+        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+    });
+
+    ProjectManager manager;
+    ProjectManager::LoadStats stats;
+    const auto result = manager.loadAll(projectsDir, makeServices(), &stats);
+
+    ASSERT_TRUE(result.contains("misplaced_config"));
+    EXPECT_FALSE(result["misplaced_config"].valid);
+    EXPECT_TRUE(result["misplaced_config"].error.contains("param.json"));
+    EXPECT_EQ(stats.invalid, 1);
 }

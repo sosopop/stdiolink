@@ -1,4 +1,5 @@
 {
+  "id": "fixed_rate_demo",
   "name": "Fixed Rate Demo",
   "serviceId": "quick_start_service",
   "enabled": true,
@@ -6,10 +7,5 @@
     "type": "fixed_rate",
     "intervalMs": 2000,
     "maxConcurrent": 2
-  },
-  "config": {
-    "mode": "normal",
-    "runMs": 1200,
-    "message": "fixed rate run"
   }
 }

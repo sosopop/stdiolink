@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Space, Typography, message } from 'antd';
-import { CopyOutlined, DownloadOutlined } from '@ant-design/icons';
+import { CopyOutlined } from '@ant-design/icons';
 import { SchemaForm } from '@/components/SchemaForm/SchemaForm';
 import type { FieldMeta } from '@/types/service';
 import {
   buildProjectCommandLines,
-  buildProjectConfigExportFileName,
 } from '@/utils/projectCommandLine';
 
 interface ProjectConfigProps {
@@ -41,12 +40,11 @@ export const ProjectConfig: React.FC<ProjectConfigProps> = ({
   const { t } = useTranslation();
   const [value, setValue] = useState<Record<string, unknown>>(config);
   const [saving, setSaving] = useState(false);
-  const exportFileName = buildProjectConfigExportFileName(projectId);
   const commandLines = buildProjectCommandLines({
+    projectId,
     serviceDir,
     dataRoot,
     config,
-    configFileName: exportFileName,
   });
   const commandsReady = Boolean(commandLines.expanded && commandLines.configFile);
 
@@ -68,23 +66,6 @@ export const ProjectConfig: React.FC<ProjectConfigProps> = ({
       message.success(t('projects.config.test_command_copied'));
     } catch {
       message.error(t('projects.config.test_command_copy_failed'));
-    }
-  };
-
-  const handleExport = () => {
-    try {
-      const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = exportFileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      message.success(t('projects.config.export_success'));
-    } catch {
-      message.error(t('projects.config.export_fail'));
     }
   };
 
@@ -124,21 +105,15 @@ export const ProjectConfig: React.FC<ProjectConfigProps> = ({
               </div>
 
               <div style={{ display: 'grid', gap: 6 }}>
-                <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
-                  <div style={{ display: 'grid', gap: 4 }}>
-                    <Text strong style={{ fontSize: 13 }}>{t('projects.config.config_file_command')}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {t('projects.config.config_file_command_hint', { fileName: exportFileName })}
-                    </Text>
-                  </div>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    onClick={handleExport}
-                    data-testid="export-config-btn"
-                  >
-                    {t('projects.config.export')}
-                  </Button>
-                </Space>
+                <div style={{ display: 'grid', gap: 4 }}>
+                  <Text strong style={{ fontSize: 13 }}>{t('projects.config.config_file_command')}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {t('projects.config.config_file_command_hint', {
+                      filePath: commandLines.configFilePath,
+                      workingDirectory: commandLines.workingDirectory,
+                    })}
+                  </Text>
+                </div>
                 <div style={{ position: 'relative' }}>
                   <pre style={commandStyle}>{commandLines.configFile}</pre>
                   <Button

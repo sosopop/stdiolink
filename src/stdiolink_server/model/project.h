@@ -21,6 +21,9 @@ struct Project {
     static Project fromJson(const QString& id,
                             const QJsonObject& obj,
                             QString& parseError);
+    static Project fromStorageJson(const QString& id,
+                                   const QJsonObject& obj,
+                                   QString& parseError);
     QJsonObject toJson() const;
 };
 

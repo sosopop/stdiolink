@@ -31,7 +31,10 @@ server_manager_demo/
 │   │   ├── fixed_rate_demo.json
 │   │   └── daemon_demo.json
 │   ├── drivers/
-│   ├── workspaces/
+│   │   └── <projectId>/
+│   │       ├── config.json
+│   │       ├── param.json
+│   │       └── workspace/
 │   └── logs/
 └── scripts/
     ├── run_demo.sh

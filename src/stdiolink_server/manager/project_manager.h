@@ -22,6 +22,11 @@ public:
     static bool validateProject(Project& project,
                                 const QMap<QString, ServiceInfo>& services);
 
+    static bool loadProject(const QString& projectsDir,
+                            const QString& id,
+                            Project& project,
+                            QString& error);
+
     static bool saveProject(const QString& projectsDir,
                             const Project& project,
                             QString& error);
@@ -33,7 +38,7 @@ public:
     static bool isValidProjectId(const QString& id);
 
 private:
-    static Project loadOne(const QString& filePath,
+    static Project loadOne(const QString& projectDir,
                            const QString& id);
 };
 

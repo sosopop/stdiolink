@@ -3,9 +3,11 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QRegularExpression>
-#include <QSaveFile>
+#include <QTemporaryFile>
+#include <QUuid>
 
 #include "config/service_config_validator.h"
 
@@ -13,43 +15,164 @@ using namespace stdiolink_service;
 
 namespace stdiolink_server {
 
-bool ProjectManager::isValidProjectId(const QString& id) {
-    static const QRegularExpression re("^[A-Za-z0-9_-]+$");
-    return !id.isEmpty() && re.match(id).hasMatch();
+namespace {
+
+QString projectDirPath(const QString& projectsDir, const QString& id) {
+    return QDir(projectsDir).absoluteFilePath(id);
 }
 
-Project ProjectManager::loadOne(const QString& filePath,
-                                const QString& id) {
-    Project project;
-    project.id = id;
+QString projectConfigPath(const QString& projectsDir, const QString& id) {
+    return QDir(projectDirPath(projectsDir, id)).absoluteFilePath("config.json");
+}
 
+QString projectParamPath(const QString& projectsDir, const QString& id) {
+    return QDir(projectDirPath(projectsDir, id)).absoluteFilePath("param.json");
+}
+
+bool loadJsonObjectFile(const QString& filePath,
+                        const QString& objectLabel,
+                        QJsonObject& out,
+                        QString& error) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        project.valid = false;
-        project.error = "cannot open file: " + filePath;
-        return project;
+        error = QString("cannot open %1: %2").arg(objectLabel, filePath);
+        return false;
     }
 
     QJsonParseError parseErr;
     const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseErr);
     if (parseErr.error != QJsonParseError::NoError) {
-        project.valid = false;
-        project.error = "JSON parse error: " + parseErr.errorString();
-        return project;
+        error = QString("%1 parse error: %2").arg(objectLabel, parseErr.errorString());
+        return false;
+    }
+    if (!doc.isObject()) {
+        error = QString("%1 must contain a JSON object").arg(objectLabel);
+        return false;
     }
 
-    if (!doc.isObject()) {
+    out = doc.object();
+    error.clear();
+    return true;
+}
+
+bool writeTempJsonObjectFile(const QString& dirPath,
+                             const QString& baseName,
+                             const QJsonObject& obj,
+                             QString& tempPath,
+                             QString& error) {
+    QTemporaryFile file(QDir(dirPath).absoluteFilePath(baseName + ".XXXXXX.tmp"));
+    file.setAutoRemove(false);
+    if (!file.open()) {
+        error = "cannot create temp file for: " + baseName;
+        return false;
+    }
+
+    const QByteArray data = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+    if (file.write(data) != data.size()) {
+        tempPath = file.fileName();
+        file.close();
+        QFile::remove(tempPath);
+        error = "write failed (incomplete): " + baseName;
+        return false;
+    }
+
+    if (!file.flush()) {
+        tempPath = file.fileName();
+        file.close();
+        QFile::remove(tempPath);
+        error = "cannot flush temp file for: " + baseName;
+        return false;
+    }
+
+    tempPath = file.fileName();
+    file.close();
+    error.clear();
+    return true;
+}
+
+struct SaveTransactionEntry {
+    QString finalPath;
+    QString tempPath;
+    QString backupPath;
+    bool existed = false;
+    bool movedToBackup = false;
+    bool installed = false;
+};
+
+void cleanupTransactionTemps(const QVector<SaveTransactionEntry>& entries) {
+    for (const SaveTransactionEntry& entry : entries) {
+        if (!entry.tempPath.isEmpty()) {
+            QFile::remove(entry.tempPath);
+        }
+    }
+}
+
+bool rollbackSaveTransaction(const QVector<SaveTransactionEntry>& entries,
+                             QString& error) {
+    QString rollbackError;
+
+    for (int index = entries.size() - 1; index >= 0; --index) {
+        const SaveTransactionEntry& entry = entries[index];
+        if (entry.installed) {
+            QFile::remove(entry.finalPath);
+        }
+        if (entry.movedToBackup) {
+            if (!QFile::rename(entry.backupPath, entry.finalPath) && rollbackError.isEmpty()) {
+                rollbackError = "rollback failed for: " + entry.finalPath;
+            }
+        }
+        if (!entry.tempPath.isEmpty()) {
+            QFile::remove(entry.tempPath);
+        }
+    }
+
+    if (!rollbackError.isEmpty()) {
+        error += "; " + rollbackError;
+    }
+    return rollbackError.isEmpty();
+}
+
+} // namespace
+
+bool ProjectManager::isValidProjectId(const QString& id) {
+    static const QRegularExpression re("^[A-Za-z0-9_-]+$");
+    return !id.isEmpty() && re.match(id).hasMatch();
+}
+
+Project ProjectManager::loadOne(const QString& projectDir,
+                                const QString& id) {
+    Project project;
+    project.id = id;
+
+    const QString configPath = QDir(projectDir).absoluteFilePath("config.json");
+    const QString paramPath = QDir(projectDir).absoluteFilePath("param.json");
+
+    QJsonObject configObj;
+    QString error;
+    if (!loadJsonObjectFile(configPath, "project config file", configObj, error)) {
         project.valid = false;
-        project.error = "project file must contain a JSON object";
+        project.error = error;
         return project;
     }
 
     QString parseError;
-    project = Project::fromJson(id, doc.object(), parseError);
+    project = Project::fromStorageJson(id, configObj, parseError);
     if (!parseError.isEmpty()) {
         project.valid = false;
         project.error = parseError;
         return project;
+    }
+
+    if (QFileInfo::exists(paramPath)) {
+        QJsonObject paramsObj;
+        if (!loadJsonObjectFile(paramPath, "project param file", paramsObj, error)) {
+            project.valid = false;
+            project.error = error;
+            return project;
+        }
+        project.config = paramsObj;
+    } else {
+        project.config = QJsonObject{};
     }
 
     project.valid = true;
@@ -57,9 +180,34 @@ Project ProjectManager::loadOne(const QString& filePath,
     return project;
 }
 
+bool ProjectManager::loadProject(const QString& projectsDir,
+                                 const QString& id,
+                                 Project& project,
+                                 QString& error) {
+    if (!isValidProjectId(id)) {
+        error = "invalid project id: " + id;
+        return false;
+    }
+
+    const QString dirPath = projectDirPath(projectsDir, id);
+    if (!QDir(dirPath).exists()) {
+        error = "project not found: " + id;
+        return false;
+    }
+
+    project = loadOne(dirPath, id);
+    if (!project.valid) {
+        error = project.error;
+        return false;
+    }
+
+    error.clear();
+    return true;
+}
+
 QMap<QString, Project> ProjectManager::loadAll(const QString& projectsDir,
-                                                const QMap<QString, ServiceInfo>& services,
-                                                LoadStats* stats) {
+                                               const QMap<QString, ServiceInfo>& services,
+                                               LoadStats* stats) {
     QMap<QString, Project> result;
 
     QDir dir(projectsDir);
@@ -67,11 +215,11 @@ QMap<QString, Project> ProjectManager::loadAll(const QString& projectsDir,
         return result;
     }
 
-    const auto entries = dir.entryList({"*.json"}, QDir::Files);
+    const auto entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     for (const QString& entry : entries) {
-        const QString id = entry.chopped(5);
+        const QString id = entry;
         if (!isValidProjectId(id)) {
-            qWarning("ProjectManager: skip invalid id filename: %s", qUtf8Printable(entry));
+            qWarning("ProjectManager: skip invalid project directory: %s", qUtf8Printable(entry));
             continue;
         }
 
@@ -142,23 +290,65 @@ bool ProjectManager::saveProject(const QString& projectsDir,
         return false;
     }
 
-    const QString filePath = projectsDir + "/" + project.id + ".json";
-    QSaveFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly)) {
-        error = "cannot write file: " + filePath;
+    const QString dirPath = projectDirPath(projectsDir, project.id);
+    if (!QDir().mkpath(dirPath)) {
+        error = "cannot create project directory: " + dirPath;
         return false;
     }
 
-    const QByteArray data = QJsonDocument(project.toJson()).toJson(QJsonDocument::Indented);
-    if (file.write(data) != data.size()) {
-        file.cancelWriting();
-        error = "write failed (incomplete): " + filePath;
-        return false;
+    QVector<SaveTransactionEntry> entries{
+        SaveTransactionEntry{projectConfigPath(projectsDir, project.id)},
+        SaveTransactionEntry{projectParamPath(projectsDir, project.id)}
+    };
+    const QVector<QPair<QString, QJsonObject>> payloads{
+        {QStringLiteral("config.json"), project.toJson()},
+        {QStringLiteral("param.json"), project.config}
+    };
+
+    for (int index = 0; index < entries.size(); ++index) {
+        if (!writeTempJsonObjectFile(dirPath,
+                                     payloads[index].first,
+                                     payloads[index].second,
+                                     entries[index].tempPath,
+                                     error)) {
+            cleanupTransactionTemps(entries);
+            return false;
+        }
     }
 
-    if (!file.commit()) {
-        error = "atomic commit failed: " + filePath;
-        return false;
+    const QString backupSuffix = ".bak." + QUuid::createUuid().toString(QUuid::WithoutBraces);
+    for (SaveTransactionEntry& entry : entries) {
+        entry.existed = QFile::exists(entry.finalPath);
+        if (!entry.existed) {
+            continue;
+        }
+
+        entry.backupPath = entry.finalPath + backupSuffix;
+        if (!QFile::rename(entry.finalPath, entry.backupPath)) {
+            error = "cannot backup file: " + entry.finalPath;
+            (void)rollbackSaveTransaction(entries, error);
+            return false;
+        }
+        entry.movedToBackup = true;
+    }
+
+    for (SaveTransactionEntry& entry : entries) {
+        if (!QFile::rename(entry.tempPath, entry.finalPath)) {
+            error = "cannot install file: " + entry.finalPath;
+            (void)rollbackSaveTransaction(entries, error);
+            return false;
+        }
+        entry.installed = true;
+        entry.tempPath.clear();
+    }
+
+    for (const SaveTransactionEntry& entry : entries) {
+        if (entry.movedToBackup && !entry.backupPath.isEmpty()) {
+            if (!QFile::remove(entry.backupPath)) {
+                qWarning("ProjectManager: stale backup file left behind: %s",
+                         qUtf8Printable(entry.backupPath));
+            }
+        }
     }
 
     error.clear();
@@ -168,13 +358,13 @@ bool ProjectManager::saveProject(const QString& projectsDir,
 bool ProjectManager::removeProject(const QString& projectsDir,
                                    const QString& id,
                                    QString& error) {
-    const QString filePath = projectsDir + "/" + id + ".json";
-    if (!QFile::exists(filePath)) {
+    const QString dirPath = projectDirPath(projectsDir, id);
+    if (!QDir(dirPath).exists()) {
         error = "project not found: " + id;
         return false;
     }
-    if (!QFile::remove(filePath)) {
-        error = "cannot remove file: " + filePath;
+    if (!QDir(dirPath).removeRecursively()) {
+        error = "cannot remove project directory: " + dirPath;
         return false;
     }
 

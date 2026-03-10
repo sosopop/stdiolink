@@ -4,15 +4,24 @@
 
 namespace stdiolink_server {
 
-Project Project::fromJson(const QString& id,
-                          const QJsonObject& obj,
-                          QString& parseError) {
+namespace {
+
+Project parseProjectJson(const QString& id,
+                         const QJsonObject& obj,
+                         bool allowConfigField,
+                         QString& parseError) {
     Project project;
     project.id = id;
 
-    static const QSet<QString> knownFields = {
-        "id", "name", "serviceId", "enabled", "schedule", "config"
-    };
+    if (!allowConfigField && obj.contains("config")) {
+        parseError = "project metadata file must not contain 'config'; move service parameters to param.json";
+        return project;
+    }
+
+    QSet<QString> knownFields = {"id", "name", "serviceId", "enabled", "schedule"};
+    if (allowConfigField) {
+        knownFields.insert("config");
+    }
     for (auto it = obj.begin(); it != obj.end(); ++it) {
         if (!knownFields.contains(it.key())) {
             parseError = "unknown field in project config: " + it.key();
@@ -73,7 +82,7 @@ Project Project::fromJson(const QString& id,
         }
     }
 
-    if (obj.contains("config")) {
+    if (allowConfigField && obj.contains("config")) {
         if (!obj.value("config").isObject()) {
             parseError = "project field 'config' must be an object";
             return project;
@@ -85,13 +94,27 @@ Project Project::fromJson(const QString& id,
     return project;
 }
 
+} // namespace
+
+Project Project::fromJson(const QString& id,
+                          const QJsonObject& obj,
+                          QString& parseError) {
+    return parseProjectJson(id, obj, true, parseError);
+}
+
+Project Project::fromStorageJson(const QString& id,
+                                 const QJsonObject& obj,
+                                 QString& parseError) {
+    return parseProjectJson(id, obj, false, parseError);
+}
+
 QJsonObject Project::toJson() const {
     QJsonObject obj;
+    obj["id"] = id;
     obj["name"] = name;
     obj["serviceId"] = serviceId;
     obj["enabled"] = enabled;
     obj["schedule"] = schedule.toJson();
-    obj["config"] = config;
     return obj;
 }
 

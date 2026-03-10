@@ -806,6 +806,7 @@ DELETE /api/projects/{projectId}
 **状态码**
 - `204 No Content`: 删除成功
 - `404 Not Found`: 项目不存在
+- `409 Conflict`: 项目实例在停止超时后仍未退出，删除被拒绝
 
 ### 4.6 验证项目
 

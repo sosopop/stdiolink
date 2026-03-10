@@ -33,10 +33,10 @@ def candidate_bin_dirs() -> list[Path]:
         dirs.append(Path(env_bin))
     dirs.extend(
         [
-            ROOT_DIR / "build" / "debug",
             ROOT_DIR / "build" / "release",
-            ROOT_DIR / "build" / "runtime_debug" / "bin",
             ROOT_DIR / "build" / "runtime_release" / "bin",
+            ROOT_DIR / "build" / "debug",
+            ROOT_DIR / "build" / "runtime_debug" / "bin",
         ]
     )
     return dirs
@@ -141,6 +141,12 @@ def stop_process(proc: subprocess.Popen[str]) -> tuple[str, str]:
 def write_json(path: Path, obj: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_project(data_root: Path, project_id: str, config_obj: dict, param_obj: dict) -> None:
+    project_dir = data_root / "projects" / project_id
+    write_json(project_dir / "config.json", config_obj)
+    write_json(project_dir / "param.json", param_obj)
 
 
 def write_text(path: Path, content: str) -> None:
@@ -253,7 +259,7 @@ def run_server_case(case_name: str, sleep_ms: int, run_timeout_ms: int, expect_t
     tmp_dir = Path(tempfile.mkdtemp(prefix="m101a_server_"))
     try:
         data_root = tmp_dir / "data_root"
-        for sub in ("services", "projects", "logs", "workspaces"):
+        for sub in ("services", "projects", "logs"):
             (data_root / sub).mkdir(parents=True, exist_ok=True)
 
         service_dir = data_root / "services" / "m101a_timeout_service"
@@ -266,20 +272,22 @@ def run_server_case(case_name: str, sleep_ms: int, run_timeout_ms: int, expect_t
         )
 
         project_id = "m101a_timeout_project"
-        write_json(
-            data_root / "projects" / f"{project_id}.json",
+        write_project(
+            data_root,
+            project_id,
             {
+                "id": project_id,
                 "name": project_id,
                 "serviceId": "m101a_timeout_service",
                 "enabled": True,
                 "schedule": {"type": "manual", "runTimeoutMs": run_timeout_ms},
-                "config": {
-                    "_test": {
-                        "exitCode": 0,
-                        "sleepMs": sleep_ms,
-                        "stderrText": "test_service_stub started",
-                    }
-                },
+            },
+            {
+                "_test": {
+                    "exitCode": 0,
+                    "sleepMs": sleep_ms,
+                    "stderrText": "test_service_stub started",
+                }
             },
         )
 

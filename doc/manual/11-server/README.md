@@ -11,7 +11,7 @@ Service (模板)  →  Project (实例化配置)  →  Instance (运行中进程
 ```
 
 - **Service**：一个 JS Service 目录，包含 `manifest.json`、`config.schema.json`、`index.js`。由 `ServiceScanner` 在启动时自动发现。Service 本身是只读模板，不可修改。
-- **Project**：对某个 Service 的一次实例化配置。包含业务参数（`config`）和调度策略（`schedule`）。存储为 `projects/{id}.json` 文件，支持 CRUD 操作。
+- **Project**：对某个 Service 的一次实例化配置。包含业务参数（`config`）和调度策略（`schedule`）。存储为 `projects/{id}/config.json + param.json`，运行期工作目录为 `projects/{id}/workspace/`。
 - **Instance**：一个正在运行的 `stdiolink_service` 子进程。由 `InstanceManager` 创建和监控，日志重定向到 `logs/{projectId}.log`。
 
 ### 调度策略

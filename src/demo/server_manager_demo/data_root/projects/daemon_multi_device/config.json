@@ -1,0 +1,10 @@
+{
+  "id": "daemon_multi_device",
+  "name": "多设备演示（守护进程）",
+  "serviceId": "multi_device_service",
+  "enabled": false,
+  "schedule": {
+    "type": "daemon",
+    "restartDelayMs": 3000
+  }
+}

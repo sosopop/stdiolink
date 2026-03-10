@@ -1,0 +1,6 @@
+{
+  "listen_port": 502,
+  "unit_ids": "1",
+  "data_area_size": 10000,
+  "event_mode": "write"
+}

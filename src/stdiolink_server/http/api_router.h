@@ -4,6 +4,7 @@
 #include <QHttpServer>
 #include <QHttpServerResponder>
 #include <QObject>
+#include <QSet>
 
 namespace stdiolink_server {
 
@@ -95,6 +96,7 @@ private:
 
     ServerManager* m_manager = nullptr;
     StaticFileServer* m_staticFileServer = nullptr;
+    QSet<QString> m_projectMutationsInFlight;
 };
 
 } // namespace stdiolink_server

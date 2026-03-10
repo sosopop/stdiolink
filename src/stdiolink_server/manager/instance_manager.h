@@ -27,6 +27,7 @@ public:
     void terminateByProject(const QString& projectId);
     void terminateAll();
 
+    bool waitProjectFinished(const QString& projectId, int graceTimeoutMs = 5000);
     void waitAllFinished(int graceTimeoutMs = 5000);
 
     QList<const Instance*> getInstances(const QString& projectId = QString()) const;

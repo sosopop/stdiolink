@@ -1,4 +1,5 @@
 {
+  "id": "daemon_demo",
   "name": "Daemon Crash Loop Demo",
   "serviceId": "quick_start_service",
   "enabled": true,
@@ -6,10 +7,5 @@
     "type": "daemon",
     "restartDelayMs": 500,
     "maxConsecutiveFailures": 3
-  },
-  "config": {
-    "mode": "crash",
-    "runMs": 200,
-    "message": "daemon crash run"
   }
 }

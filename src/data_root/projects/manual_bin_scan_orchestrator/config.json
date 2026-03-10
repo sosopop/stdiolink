@@ -1,0 +1,9 @@
+{
+  "id": "manual_bin_scan_orchestrator",
+  "name": "Manual Bin Scan Orchestrator",
+  "serviceId": "bin_scan_orchestrator",
+  "enabled": false,
+  "schedule": {
+    "type": "manual"
+  }
+}

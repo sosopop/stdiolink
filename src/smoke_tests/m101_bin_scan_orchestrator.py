@@ -36,10 +36,10 @@ def candidate_bin_dirs() -> list[Path]:
         dirs.append(Path(env_bin))
     dirs.extend(
         [
-            ROOT_DIR / "build" / "runtime_debug" / "bin",
             ROOT_DIR / "build" / "runtime_release" / "bin",
-            ROOT_DIR / "build" / "debug",
             ROOT_DIR / "build" / "release",
+            ROOT_DIR / "build" / "runtime_debug" / "bin",
+            ROOT_DIR / "build" / "debug",
         ]
     )
     return dirs
@@ -47,8 +47,8 @@ def candidate_bin_dirs() -> list[Path]:
 
 def candidate_data_roots() -> list[Path]:
     return [
-        ROOT_DIR / "build" / "runtime_debug" / "data_root",
         ROOT_DIR / "build" / "runtime_release" / "data_root",
+        ROOT_DIR / "build" / "runtime_debug" / "data_root",
     ]
 
 
@@ -163,6 +163,12 @@ def copytree(src: Path, dst: Path) -> None:
 def write_json(path: Path, obj: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_project(data_root: Path, project_id: str, config_obj: dict, param_obj: dict) -> None:
+    project_dir = data_root / "projects" / project_id
+    write_json(project_dir / "config.json", config_obj)
+    write_json(project_dir / "param.json", param_obj)
 
 
 def cleanup_dir(path: Path) -> None:
@@ -336,7 +342,7 @@ def start_plc_crane_sim(sim_exe: Path, env: dict[str, str], port: int) -> subpro
 def create_temp_data_root(service_exe: Path) -> tuple[Path, Path]:
     tmp_dir = Path(tempfile.mkdtemp(prefix="m101_bin_scan_"))
     data_root = tmp_dir / "data_root"
-    for sub in ("services", "projects", "drivers", "logs", "workspaces"):
+    for sub in ("services", "projects", "drivers", "logs"):
         (data_root / sub).mkdir(parents=True, exist_ok=True)
 
     copytree(ROOT_DIR / "src" / "data_root" / "services" / "bin_scan_orchestrator",
@@ -486,15 +492,17 @@ def run_server_case(case_name: str, fixed_rate: bool) -> CaseResult:
             "intervalMs": 1200,
             "maxConcurrent": 1,
         }
-        write_json(
-            data_root / "projects" / f"{project_id}.json",
+        write_project(
+            data_root,
+            project_id,
             {
+                "id": project_id,
                 "name": project_id,
                 "serviceId": "bin_scan_orchestrator",
                 "enabled": True if fixed_rate else False,
                 "schedule": schedule,
-                "config": make_config(vision.addr, plc_port, None),
             },
+            make_config(vision.addr, plc_port, None),
         )
 
         port = allocate_port()

@@ -64,18 +64,28 @@ void writeService(const QString& root, const QString& id) {
 void writeProject(const QString& root,
                   const QString& id,
                   const QString& serviceId) {
-    const QString projectPath = root + "/projects/" + id + ".json";
-    QJsonObject obj{
+    const QString projectDir = root + "/projects/" + id;
+    ASSERT_TRUE(QDir().mkpath(projectDir));
+
+    QJsonObject configObj{
+        {"id", id},
         {"name", id},
         {"serviceId", serviceId},
         {"enabled", true},
-        {"schedule", QJsonObject{{"type", "manual"}}},
-        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    };
+    QJsonObject paramObj{
+        {"device", QJsonObject{{"host", "127.0.0.1"}}}
     };
 
-    QFile file(projectPath);
+    QFile file(projectDir + "/config.json");
     ASSERT_TRUE(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
-    ASSERT_GT(file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact)), 0);
+    ASSERT_GT(file.write(QJsonDocument(configObj).toJson(QJsonDocument::Compact)), 0);
+    file.close();
+
+    QFile paramFile(projectDir + "/param.json");
+    ASSERT_TRUE(paramFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    ASSERT_GT(paramFile.write(QJsonDocument(paramObj).toJson(QJsonDocument::Compact)), 0);
 }
 
 } // namespace

@@ -119,7 +119,7 @@
             "test_commands_hint": "根據專案目前已儲存的設定產生可重複使用的 stdiolink_service 測試命令。",
             "expanded_command": "展開設定參數",
             "config_file_command": "設定檔模式",
-            "config_file_command_hint": "先將已儲存設定匯出為 {{fileName}}，再執行此命令。",
+            "config_file_command_hint": "此命令片段會先切換到 {{workingDirectory}}，再重用已儲存的專案參數檔 {{filePath}}。",
             "test_commands_loading": "正在載入服務目錄與 data root...",
             "test_command_copied": "命令已複製",
             "test_command_copy_failed": "複製命令失敗",

@@ -128,7 +128,7 @@ export const mockInstances = [
     pid: 12345,
     startedAt: '2025-01-01T01:00:00Z',
     status: 'running',
-    workingDirectory: '/data/projects/demo-project',
+    workingDirectory: '/data/projects/demo-project/workspace',
     logPath: '/data/logs/inst-001.log',
   },
   {
@@ -138,7 +138,7 @@ export const mockInstances = [
     pid: 12346,
     startedAt: '2025-01-01T02:00:00Z',
     status: 'running',
-    workingDirectory: '/data/projects/test-project',
+    workingDirectory: '/data/projects/test-project/workspace',
     logPath: '/data/logs/inst-002.log',
   },
 ];

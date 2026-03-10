@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
 
+#include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QEventLoop>
 #include <QFile>
+#include <QFileInfo>
 #include <QHttpServer>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -17,6 +20,8 @@
 #include <QTimer>
 #include <QUrl>
 #include <QUrlQuery>
+
+#include <functional>
 
 #include "stdiolink_server/http/api_router.h"
 #include "stdiolink_server/http/event_stream_handler.h"
@@ -74,18 +79,28 @@ void writeArrayObjectService(const QString& root, const QString& id) {
 void writeProject(const QString& root,
                   const QString& id,
                   const QString& serviceId) {
-    const QString projectPath = root + "/projects/" + id + ".json";
-    QJsonObject obj{
+    const QString projectDir = root + "/projects/" + id;
+    ASSERT_TRUE(QDir().mkpath(projectDir));
+
+    QJsonObject configObj{
+        {"id", id},
         {"name", id},
         {"serviceId", serviceId},
         {"enabled", true},
-        {"schedule", QJsonObject{{"type", "manual"}}},
-        {"config", QJsonObject{{"device", QJsonObject{{"host", "127.0.0.1"}}}}}
+        {"schedule", QJsonObject{{"type", "manual"}}}
+    };
+    QJsonObject paramObj{
+        {"device", QJsonObject{{"host", "127.0.0.1"}}}
     };
 
-    QFile file(projectPath);
+    QFile file(projectDir + "/config.json");
     ASSERT_TRUE(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
-    ASSERT_GT(file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact)), 0);
+    ASSERT_GT(file.write(QJsonDocument(configObj).toJson(QJsonDocument::Compact)), 0);
+    file.close();
+
+    QFile paramFile(projectDir + "/param.json");
+    ASSERT_TRUE(paramFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    ASSERT_GT(paramFile.write(QJsonDocument(paramObj).toJson(QJsonDocument::Compact)), 0);
 }
 
 bool sendRequest(const QString& method,
@@ -197,6 +212,30 @@ bool parseJsonObject(const QByteArray& body, QJsonObject& obj) {
     }
     obj = doc.object();
     return true;
+}
+
+QString exeSuffix() {
+#ifdef Q_OS_WIN
+    return ".exe";
+#else
+    return QString();
+#endif
+}
+
+QString testBinaryPath(const QString& baseName) {
+    return QCoreApplication::applicationDirPath() + "/" + baseName + exeSuffix();
+}
+
+bool waitUntil(const std::function<bool()>& pred, int timeoutMs) {
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < timeoutMs) {
+        if (pred()) {
+            return true;
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    }
+    return pred();
 }
 
 } // namespace
@@ -333,7 +372,8 @@ TEST(ApiRouterTest, CreateAndDeleteProjectViaHttp) {
         << qPrintable(error);
     EXPECT_EQ(status, 201);
     EXPECT_TRUE(manager.projects().contains("p2"));
-    EXPECT_TRUE(QFile::exists(root + "/projects/p2.json"));
+    EXPECT_TRUE(QFile::exists(root + "/projects/p2/config.json"));
+    EXPECT_TRUE(QFile::exists(root + "/projects/p2/param.json"));
 
     ASSERT_TRUE(sendRequest("DELETE",
                             QUrl(base + "/api/projects/p2"),
@@ -344,7 +384,68 @@ TEST(ApiRouterTest, CreateAndDeleteProjectViaHttp) {
         << qPrintable(error);
     EXPECT_EQ(status, 204);
     EXPECT_FALSE(manager.projects().contains("p2"));
-    EXPECT_FALSE(QFile::exists(root + "/projects/p2.json"));
+    EXPECT_FALSE(QDir(root + "/projects/p2").exists());
+}
+
+TEST(ApiRouterTest, DeleteRunningProjectWaitsForInstanceExit) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+    writeProject(root, "p1", "demo");
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen in current environment";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind QHttpServer in current environment";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+
+    ASSERT_TRUE(sendRequest("POST",
+                            QUrl(base + "/api/projects/p1/start"),
+                            QByteArray(),
+                            status,
+                            body,
+                            error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(waitUntil([&]() { return manager.instanceManager()->instanceCount("p1") == 1; }, 3000));
+
+    ASSERT_TRUE(sendRequest("DELETE",
+                            QUrl(base + "/api/projects/p1"),
+                            QByteArray(),
+                            status,
+                            body,
+                            error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 204);
+    EXPECT_EQ(manager.instanceManager()->instanceCount("p1"), 0);
+    EXPECT_FALSE(manager.projects().contains("p1"));
+    EXPECT_FALSE(QDir(root + "/projects/p1").exists());
 }
 
 TEST(ApiRouterTest, ServiceScanRefreshesServiceCatalog) {

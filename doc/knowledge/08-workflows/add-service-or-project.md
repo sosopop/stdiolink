@@ -14,10 +14,12 @@
 
 ## Project Steps
 
-1. 在 `src/data_root/projects/<project>.json` 写 `serviceId`、`enabled`、`schedule`、`config`
-2. 校验 `serviceId` 与 Service 目录一致
-3. 按业务选择 `manual` / `fixed_rate` / `daemon`
-4. 若是新增调度字段，联动 Server model/manager/API/UI
+1. 在 `src/data_root/projects/<projectId>/` 创建 `config.json` 与 `param.json`
+2. `config.json` 写 `id`、`serviceId`、`enabled`、`schedule`
+3. `param.json` 写 Service 业务参数对象
+4. 校验 `serviceId` 与 Service 目录一致
+5. 按业务选择 `manual` / `fixed_rate` / `daemon`
+6. 若是新增调度字段，联动 Server model/manager/API/UI
 
 ## Main Source Entry
 

@@ -205,6 +205,38 @@ TEST(InstanceManagerTest, TerminateByProject) {
     EXPECT_EQ(mgr.instanceCount(), 0);
 }
 
+TEST(InstanceManagerTest, WaitProjectFinishedAfterTerminateByProject) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString dataRoot = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(dataRoot + "/services/demo"));
+
+    ServerConfig cfg;
+    cfg.serviceProgram = testBinaryPath("test_service_stub");
+    ASSERT_TRUE(QFileInfo::exists(cfg.serviceProgram));
+
+    InstanceManager mgr(dataRoot, cfg);
+
+    QString err1;
+    QString err2;
+    ASSERT_FALSE(mgr.startInstance(makeProject("a", 0, 5000), dataRoot + "/services/demo", err1).isEmpty());
+    ASSERT_FALSE(mgr.startInstance(makeProject("b", 0, 5000), dataRoot + "/services/demo", err2).isEmpty());
+    ASSERT_TRUE(err1.isEmpty());
+    ASSERT_TRUE(err2.isEmpty());
+
+    ASSERT_TRUE(waitUntil([&]() { return mgr.instanceCount() == 2; }, 3000));
+
+    mgr.terminateByProject("a");
+    EXPECT_TRUE(mgr.waitProjectFinished("a", 3000));
+    EXPECT_EQ(mgr.instanceCount("a"), 0);
+    EXPECT_EQ(mgr.instanceCount("b"), 1);
+
+    mgr.terminateAll();
+    mgr.waitAllFinished(3000);
+}
+
 TEST(InstanceManagerTest, StartFailsWhenProgramMissing) {
     QTemporaryDir tmp;
     ASSERT_TRUE(tmp.isValid());

@@ -124,7 +124,7 @@ OS 级进程树守护，利用操作系统原生机制（Windows Job Object / Un
 `stdiolink/process` 模块中 `spawn()` 返回的进程句柄，支持 onStdout/onStderr/onExit 回调和 write/kill 操作。
 
 **Project**
-对某个 Service 的一次实例化配置，包含业务参数（config）和调度策略（schedule）。存储为 `projects/{id}.json` 文件。
+对某个 Service 的一次实例化配置，包含业务参数（config）和调度策略（schedule）。存储为 `projects/{id}/config.json + param.json`，运行期工作目录为 `projects/{id}/workspace/`。
 
 **ProjectManager**
 管理 Project 配置文件的 CRUD 和 Schema 验证的组件。

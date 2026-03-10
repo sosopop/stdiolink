@@ -1,0 +1,11 @@
+{
+  "id": "fixed_rate_bin_scan_orchestrator",
+  "name": "Fixed Rate Bin Scan Orchestrator",
+  "serviceId": "bin_scan_orchestrator",
+  "enabled": true,
+  "schedule": {
+    "type": "fixed_rate",
+    "intervalMs": 60000,
+    "maxConcurrent": 1
+  }
+}

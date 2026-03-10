@@ -10,14 +10,17 @@
 <data_root>/
 ├── config.json          # 服务器配置（可选）
 ├── services/            # Service 模板目录（自动创建）
-├── projects/            # Project 配置文件（自动创建）
+├── projects/            # Project 目录（自动创建）
+│   └── <projectId>/
+│       ├── config.json  # Project 元信息
+│       ├── param.json   # Service 运行参数
+│       └── workspace/   # 该 Project 的工作目录（按需创建）
 ├── drivers/             # Driver 可执行文件目录
-├── workspaces/          # 各 Project 的工作目录（自动创建）
 ├── logs/                # 日志目录（自动创建）
 └── webui/               # WebUI 静态文件目录（可选）
 ```
 
-其中 `services/`、`projects/`、`workspaces/`、`logs/` 四个目录在启动时自动 `mkpath`，不存在则创建。`drivers/` 和 `webui/` 由用户按需建立。
+其中 `services/`、`projects/`、`logs/` 三个目录在启动时自动 `mkpath`，不存在则创建。各 Project 的 `workspace/` 在实例启动时按需创建。`drivers/` 和 `webui/` 由用户按需建立。
 
 ## 命令行参数
 
@@ -94,7 +97,7 @@ stdiolink_server --host=0.0.0.0 --port=6200
 ```
 1. 解析命令行参数
 2. 加载 config.json（可选）
-3. 创建标准目录结构（services/projects/workspaces/logs）
+3. 创建标准目录结构（services/projects/logs）
 4. 扫描 services/ 目录 → 加载 Service 模板
 5. 扫描 drivers/ 目录 → 导出/加载 Driver 元数据
 6. 加载 projects/ 目录 → 验证 Project 配置

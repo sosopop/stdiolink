@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { ProjectConfig } from '../components/ProjectConfig';
@@ -26,36 +26,6 @@ function renderComponent(props: Partial<Parameters<typeof ProjectConfig>[0]> = {
 }
 
 describe('ProjectConfig', () => {
-  const originalBlob = Blob;
-  const originalCreateObjectURL = URL.createObjectURL;
-  const originalRevokeObjectURL = URL.revokeObjectURL;
-
-  beforeEach(() => {
-    class FakeBlob {
-      public readonly parts: unknown[];
-
-      public readonly type: string;
-
-      constructor(parts: unknown[], options?: { type?: string }) {
-        this.parts = parts;
-        this.type = options?.type ?? '';
-      }
-    }
-
-    // JSDOM Blob is awkward to introspect in this test; a fake keeps the export assertion deterministic.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    globalThis.Blob = FakeBlob as any;
-    URL.createObjectURL = vi.fn(() => 'blob:test-url');
-    URL.revokeObjectURL = vi.fn();
-  });
-
-  afterEach(() => {
-    globalThis.Blob = originalBlob;
-    URL.createObjectURL = originalCreateObjectURL;
-    URL.revokeObjectURL = originalRevokeObjectURL;
-    vi.restoreAllMocks();
-  });
-
   it('renders schema form', () => {
     renderComponent();
     expect(screen.getByTestId('project-config')).toBeDefined();
@@ -76,13 +46,14 @@ describe('ProjectConfig', () => {
     });
   });
 
-  it('renders test commands panel and export action', () => {
+  it('renders test commands panel with the saved param file path', () => {
     renderComponent();
     expect(screen.getByTestId('project-config-test-commands')).toBeDefined();
     expect(screen.getByText('Expanded config arguments')).toBeDefined();
     expect(screen.getByText('Config file mode')).toBeDefined();
-    expect(screen.getByTestId('export-config-btn')).toBeDefined();
-    expect(screen.getByText('stdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="demo-project.config.json"')).toBeDefined();
+    expect(screen.queryByTestId('export-config-btn')).toBeNull();
+    expect(screen.getByTestId('project-config-test-commands').textContent)
+      .toContain('cd "D:/code/stdiolink/release/pkg"\nstdiolink_service "data_root/services/demo" --data-root="data_root" --config-file="data_root/projects/demo-project/param.json"');
   });
 
   it('renders the test commands panel before the editable form', () => {
@@ -97,23 +68,12 @@ describe('ProjectConfig', () => {
     expect(screen.getByTestId('project-config-test-commands-placeholder')).toBeDefined();
   });
 
-  it('exports saved config instead of unsaved edits', async () => {
-    let exportedBlob: { parts: unknown[] } | null = null;
-    URL.createObjectURL = vi.fn((blob: Blob | MediaSource) => {
-      exportedBlob = blob as unknown as { parts: unknown[] };
-      return 'blob:test-url';
-    });
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-
+  it('keeps test commands bound to the saved config instead of unsaved edits', () => {
     renderComponent({ config: { host: 'saved-host', port: 6200 } });
     fireEvent.change(screen.getByDisplayValue('saved-host'), { target: { value: 'edited-host' } });
-    fireEvent.click(screen.getByTestId('export-config-btn'));
 
-    expect(clickSpy).toHaveBeenCalled();
-    expect(exportedBlob).not.toBeNull();
-    const exportedText = String(exportedBlob!.parts[0]);
-    expect(exportedText).toContain('"host": "saved-host"');
-    expect(exportedText).not.toContain('"host": "edited-host"');
+    expect(screen.getByTestId('project-config-test-commands').textContent)
+      .toContain('cd "D:/code/stdiolink/release/pkg"\nstdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="saved-host" --config.port=6200');
   });
 });
 

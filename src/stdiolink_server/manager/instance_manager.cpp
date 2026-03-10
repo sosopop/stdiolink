@@ -103,7 +103,7 @@ QString InstanceManager::startInstance(const Project& project,
     const QString tempConfigPath = tempFile->fileName();
     tempFile->close();
 
-    const QString workspaceDir = m_dataRoot + "/workspaces/" + project.id;
+    const QString workspaceDir = m_dataRoot + "/projects/" + project.id + "/workspace";
     if (!QDir().mkpath(workspaceDir)) {
         error = "cannot create workspace: " + workspaceDir;
         return {};
@@ -288,6 +288,37 @@ void InstanceManager::terminateAll() {
     for (const QString& id : ids) {
         terminateInstance(id);
     }
+}
+
+bool InstanceManager::waitProjectFinished(const QString& projectId, int graceTimeoutMs) {
+    QElapsedTimer timer;
+    timer.start();
+
+    while (timer.elapsed() < graceTimeoutMs) {
+        if (instanceCount(projectId) == 0) {
+            return true;
+        }
+
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    }
+
+    for (auto it = m_instances.begin(); it != m_instances.end(); ++it) {
+        if (it->second->projectId != projectId) {
+            continue;
+        }
+        QProcess* proc = it->second->process;
+        if (proc && proc->state() != QProcess::NotRunning) {
+            proc->kill();
+        }
+    }
+
+    QElapsedTimer drain;
+    drain.start();
+    while (instanceCount(projectId) > 0 && drain.elapsed() < 1000) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    }
+
+    return instanceCount(projectId) == 0;
 }
 
 void InstanceManager::waitAllFinished(int graceTimeoutMs) {

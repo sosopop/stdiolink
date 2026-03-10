@@ -7,7 +7,7 @@
 ## Core Model
 
 - `Service`：只读模板，来自 `data_root/services/`
-- `Project`：某个 Service 的实例化配置，来自 `data_root/projects/*.json`
+- `Project`：某个 Service 的实例化配置，来自 `data_root/projects/<projectId>/config.json + param.json`
 - `Instance`：运行中的 `stdiolink_service` 子进程
 
 ## Main Subsystems

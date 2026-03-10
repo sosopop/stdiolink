@@ -1215,7 +1215,7 @@ WebSocket 消息流天然适合 Shell 风格的交互界面：
   "pid": 12345,
   "startedAt": "2026-02-12T10:00:00Z",
   "status": "running",
-  "workingDirectory": "/path/to/workspaces/silo-a",
+  "workingDirectory": "/path/to/projects/silo-a/workspace",
   "logPath": "/path/to/logs/silo-a.log",
   "commandLine": ["stdiolink_service", "/path/to/services/data-collector", "--config-file=/tmp/xxx"]
 }

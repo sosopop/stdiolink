@@ -1,0 +1,9 @@
+{
+  "id": "manual_modbustcp_server",
+  "name": "Manual Modbus TCP Server",
+  "serviceId": "modbustcp_server_service",
+  "enabled": false,
+  "schedule": {
+    "type": "manual"
+  }
+}

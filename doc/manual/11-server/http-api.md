@@ -265,7 +265,7 @@ curl -X PUT http://127.0.0.1:6200/api/projects/silo-b \
 
 ### DELETE /api/projects/{id}
 
-删除 Project 配置文件。
+删除整个 Project 目录（含 `config.json`、`param.json` 和 `workspace/`）。
 
 ```bash
 curl -X DELETE http://127.0.0.1:6200/api/projects/silo-b
@@ -275,6 +275,7 @@ curl -X DELETE http://127.0.0.1:6200/api/projects/silo-b
 |--------|------|
 | `204 No Content` | 删除成功 |
 | `404 Not Found` | Project 不存在 |
+| `409 Conflict` | 项目实例在停止超时后仍未退出，删除被拒绝 |
 
 ---
 
@@ -345,7 +346,7 @@ curl -X POST http://127.0.0.1:6200/api/projects/silo-a/stop
 
 ### POST /api/projects/{id}/reload
 
-重新从文件加载 Project 配置并重新验证。适用于直接修改了 `projects/{id}.json` 文件后的场景。reload 会先停止当前运行的 Instance 和调度，然后重新加载配置并验证，最后重启调度引擎。
+重新从文件加载 Project 配置并重新验证。适用于直接修改了 `projects/{id}/config.json` 或 `projects/{id}/param.json` 后的场景。reload 会先停止当前运行的 Instance 和调度，然后重新加载配置并验证，最后重启调度引擎。
 
 ```bash
 curl -X POST http://127.0.0.1:6200/api/projects/silo-a/reload

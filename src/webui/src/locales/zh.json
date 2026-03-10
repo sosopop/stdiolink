@@ -119,7 +119,7 @@
             "test_commands_hint": "基于项目当前已保存的配置生成可复用的 stdiolink_service 测试命令。",
             "expanded_command": "展开配置参数",
             "config_file_command": "配置文件方式",
-            "config_file_command_hint": "先导出已保存配置为 {{fileName}}，再运行此命令。",
+            "config_file_command_hint": "该命令片段会先切换到 {{workingDirectory}}，再复用已保存的项目参数文件 {{filePath}}。",
             "test_commands_loading": "正在加载服务目录和 data root...",
             "test_command_copied": "命令已复制",
             "test_command_copy_failed": "复制命令失败",

@@ -1,0 +1,22 @@
+{
+  "service_name": "demo-manual",
+  "log_level": "info",
+  "devices": [
+    {
+      "id": "device-001",
+      "host": "192.168.1.10",
+      "port": 2368,
+      "driver": "simulator",
+      "enabled": true,
+      "timeout_ms": 5000
+    },
+    {
+      "id": "device-002",
+      "host": "192.168.1.11",
+      "port": 2369,
+      "driver": "simulator",
+      "enabled": true,
+      "timeout_ms": 3000
+    }
+  ]
+}

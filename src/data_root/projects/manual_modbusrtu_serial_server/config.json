@@ -1,0 +1,9 @@
+{
+  "id": "manual_modbusrtu_serial_server",
+  "name": "Manual Modbus RTU Serial Server",
+  "serviceId": "modbusrtu_serial_server_service",
+  "enabled": false,
+  "schedule": {
+    "type": "manual"
+  }
+}

@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QScopeGuard>
 #include <QUrlQuery>
 
 #include <algorithm>
@@ -31,6 +32,7 @@ namespace stdiolink_server {
 namespace {
 
 constexpr qint64 kMaxRequestBodyBytes = 1 * 1024 * 1024; // 1MB
+constexpr int kProjectStopTimeoutMs = 5000;
 
 bool parseJsonObjectBody(const QHttpServerRequest& req,
                          QJsonObject& out,
@@ -141,34 +143,6 @@ QString scheduleTypeToString(ScheduleType type) {
     return "manual";
 }
 
-bool loadProjectFromFile(const QString& filePath,
-                         const QString& id,
-                         Project& project,
-                         QString& error) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        error = "cannot open project file: " + filePath;
-        return false;
-    }
-
-    QJsonParseError parseErr;
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseErr);
-    if (parseErr.error != QJsonParseError::NoError || !doc.isObject()) {
-        error = "project file parse error: " + parseErr.errorString();
-        return false;
-    }
-
-    QString parseProjectErr;
-    project = Project::fromJson(id, doc.object(), parseProjectErr);
-    if (!parseProjectErr.isEmpty()) {
-        error = parseProjectErr;
-        return false;
-    }
-
-    error.clear();
-    return true;
-}
-
 constexpr qint64 kMaxTailReadBytes = 4 * 1024 * 1024; // 4MB window
 
 QJsonArray readTailLines(const QString& path, int maxLines) {
@@ -205,6 +179,38 @@ QJsonArray readTailLines(const QString& path, int maxLines) {
         out.append(lines[i]);
     }
     return out;
+}
+
+QHttpServerResponse projectBusyResponse(const QString& id) {
+    return errorResponse(QHttpServerResponse::StatusCode::Conflict,
+                         "project instances still running after stop timeout: " + id);
+}
+
+QHttpServerResponse projectOperationInProgressResponse(const QString& id) {
+    return errorResponse(QHttpServerResponse::StatusCode::Conflict,
+                         "project operation already in progress: " + id);
+}
+
+bool stopProjectAndWait(ServerManager* manager,
+                        const QString& id) {
+    manager->scheduleEngine()->stopProject(id);
+    manager->instanceManager()->terminateByProject(id);
+    return manager->instanceManager()->waitProjectFinished(id, kProjectStopTimeoutMs);
+}
+
+bool rollbackProjectStorage(ServerManager* manager,
+                            const Project& project,
+                            QString& error) {
+    QString rollbackError;
+    if (ProjectManager::saveProject(manager->dataRoot() + "/projects", project, rollbackError)) {
+        return true;
+    }
+
+    if (!error.isEmpty()) {
+        error += "; ";
+    }
+    error += "rollback failed: " + rollbackError;
+    return false;
 }
 
 } // namespace
@@ -1122,6 +1128,13 @@ QHttpServerResponse ApiRouter::handleProjectUpdate(const QString& id,
     if (!projects.contains(id)) {
         return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project not found");
     }
+    if (m_projectMutationsInFlight.contains(id)) {
+        return projectOperationInProgressResponse(id);
+    }
+    m_projectMutationsInFlight.insert(id);
+    const auto releaseMutation = qScopeGuard([this, id]() {
+        m_projectMutationsInFlight.remove(id);
+    });
 
     QJsonObject body;
     QString error;
@@ -1144,12 +1157,20 @@ QHttpServerResponse ApiRouter::handleProjectUpdate(const QString& id,
         return errorResponse(QHttpServerResponse::StatusCode::BadRequest, "project invalid: " + project.error);
     }
 
+    const Project oldProject = projects.value(id);
     if (!ProjectManager::saveProject(m_manager->dataRoot() + "/projects", project, error)) {
         return errorResponse(QHttpServerResponse::StatusCode::InternalServerError, error);
     }
 
-    m_manager->scheduleEngine()->stopProject(id);
-    m_manager->instanceManager()->terminateByProject(id);
+    if (!stopProjectAndWait(m_manager, id)) {
+        const bool rolledBack = rollbackProjectStorage(m_manager, oldProject, error);
+        m_manager->startScheduling();
+        if (!rolledBack) {
+            return errorResponse(QHttpServerResponse::StatusCode::InternalServerError, error);
+        }
+        return projectBusyResponse(id);
+    }
+
     projects[id] = project;
     m_manager->startScheduling();
 
@@ -1164,14 +1185,25 @@ QHttpServerResponse ApiRouter::handleProjectDelete(const QString& id,
     if (!projects.contains(id)) {
         return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project not found");
     }
+    if (m_projectMutationsInFlight.contains(id)) {
+        return projectOperationInProgressResponse(id);
+    }
+    m_projectMutationsInFlight.insert(id);
+    const auto releaseMutation = qScopeGuard([this, id]() {
+        m_projectMutationsInFlight.remove(id);
+    });
+
+    if (!stopProjectAndWait(m_manager, id)) {
+        m_manager->startScheduling();
+        return projectBusyResponse(id);
+    }
 
     QString error;
     if (!ProjectManager::removeProject(m_manager->dataRoot() + "/projects", id, error)) {
+        m_manager->startScheduling();
         return errorResponse(QHttpServerResponse::StatusCode::InternalServerError, error);
     }
 
-    m_manager->scheduleEngine()->stopProject(id);
-    m_manager->instanceManager()->terminateByProject(id);
     projects.remove(id);
 
     return noContentResponse();
@@ -1210,6 +1242,14 @@ QHttpServerResponse ApiRouter::handleProjectValidate(const QString& id,
 QHttpServerResponse ApiRouter::handleProjectStart(const QString& id,
                                                   const QHttpServerRequest& req) {
     Q_UNUSED(req);
+
+    if (m_projectMutationsInFlight.contains(id)) {
+        return projectOperationInProgressResponse(id);
+    }
+    m_projectMutationsInFlight.insert(id);
+    const auto releaseMutation = qScopeGuard([this, id]() {
+        m_projectMutationsInFlight.remove(id);
+    });
 
     auto pIt = m_manager->projects().find(id);
     if (pIt == m_manager->projects().end()) {
@@ -1265,6 +1305,13 @@ QHttpServerResponse ApiRouter::handleProjectStop(const QString& id,
     if (!m_manager->projects().contains(id)) {
         return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project not found");
     }
+    if (m_projectMutationsInFlight.contains(id)) {
+        return projectOperationInProgressResponse(id);
+    }
+    m_projectMutationsInFlight.insert(id);
+    const auto releaseMutation = qScopeGuard([this, id]() {
+        m_projectMutationsInFlight.remove(id);
+    });
 
     m_manager->scheduleEngine()->stopProject(id);
     m_manager->instanceManager()->terminateByProject(id);
@@ -1276,14 +1323,20 @@ QHttpServerResponse ApiRouter::handleProjectReload(const QString& id,
                                                    const QHttpServerRequest& req) {
     Q_UNUSED(req);
 
-    const QString filePath = m_manager->dataRoot() + "/projects/" + id + ".json";
-    if (!QFile::exists(filePath)) {
-        return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project file not found");
+    if (m_projectMutationsInFlight.contains(id)) {
+        return projectOperationInProgressResponse(id);
     }
+    m_projectMutationsInFlight.insert(id);
+    const auto releaseMutation = qScopeGuard([this, id]() {
+        m_projectMutationsInFlight.remove(id);
+    });
 
     Project project;
     QString error;
-    if (!loadProjectFromFile(filePath, id, project, error)) {
+    if (!ProjectManager::loadProject(m_manager->dataRoot() + "/projects", id, project, error)) {
+        if (error == "project not found: " + id) {
+            return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project not found");
+        }
         return errorResponse(QHttpServerResponse::StatusCode::BadRequest, error);
     }
 
@@ -1291,8 +1344,10 @@ QHttpServerResponse ApiRouter::handleProjectReload(const QString& id,
         return errorResponse(QHttpServerResponse::StatusCode::BadRequest, "project invalid: " + project.error);
     }
 
-    m_manager->scheduleEngine()->stopProject(id);
-    m_manager->instanceManager()->terminateByProject(id);
+    if (!stopProjectAndWait(m_manager, id)) {
+        m_manager->startScheduling();
+        return projectBusyResponse(id);
+    }
     m_manager->projects()[id] = project;
     m_manager->startScheduling();
 
@@ -1355,6 +1410,13 @@ QHttpServerResponse ApiRouter::handleProjectEnabled(const QString& id,
     if (it == projects.end()) {
         return errorResponse(QHttpServerResponse::StatusCode::NotFound, "project not found");
     }
+    if (m_projectMutationsInFlight.contains(id)) {
+        return projectOperationInProgressResponse(id);
+    }
+    m_projectMutationsInFlight.insert(id);
+    const auto releaseMutation = qScopeGuard([this, id]() {
+        m_projectMutationsInFlight.remove(id);
+    });
 
     QJsonObject body;
     QString error;
@@ -1369,17 +1431,28 @@ QHttpServerResponse ApiRouter::handleProjectEnabled(const QString& id,
     }
 
     const bool newEnabled = body.value("enabled").toBool();
-    Project updated = it.value();
+    const Project oldProject = it.value();
+    Project updated = oldProject;
     updated.enabled = newEnabled;
 
     if (!ProjectManager::saveProject(m_manager->dataRoot() + "/projects", updated, error)) {
         return errorResponse(QHttpServerResponse::StatusCode::InternalServerError, error);
     }
+
+    if (!newEnabled) {
+        if (!stopProjectAndWait(m_manager, id)) {
+            const bool rolledBack = rollbackProjectStorage(m_manager, oldProject, error);
+            m_manager->startScheduling();
+            if (!rolledBack) {
+                return errorResponse(QHttpServerResponse::StatusCode::InternalServerError, error);
+            }
+            return projectBusyResponse(id);
+        }
+    }
+
     *it = updated;
 
     if (!newEnabled) {
-        m_manager->scheduleEngine()->stopProject(id);
-        m_manager->instanceManager()->terminateByProject(id);
     } else {
         m_manager->scheduleEngine()->startProject(*it, m_manager->services());
     }

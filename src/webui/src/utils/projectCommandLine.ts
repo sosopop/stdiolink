@@ -70,38 +70,54 @@ function displayPath(path: string, dataRoot: string): string {
   return relativeToRoot(normalizedPath, releaseRoot);
 }
 
+function commandWorkingDirectory(dataRoot: string): string {
+  const normalizedDataRoot = normalizePath(dataRoot);
+
+  if (baseName(normalizedDataRoot) === 'data_root') {
+    const releaseRoot = parentDir(normalizedDataRoot);
+    if (releaseRoot) {
+      return releaseRoot;
+    }
+  }
+
+  return normalizedDataRoot;
+}
+
 export interface ProjectCommandLinesOptions {
+  projectId: string;
   serviceDir: string | null;
   dataRoot: string | null;
   config: Record<string, unknown>;
-  configFileName?: string;
 }
 
 export interface ProjectCommandLines {
   expanded: string;
   configFile: string;
+  configFilePath: string;
+  workingDirectory: string;
 }
 
 export function buildProjectCommandLines({
+  projectId,
   serviceDir,
   dataRoot,
   config,
-  configFileName = '<project-config.json>',
 }: ProjectCommandLinesOptions): ProjectCommandLines {
-  if (!serviceDir || !dataRoot) {
-    return { expanded: '', configFile: '' };
+  if (!projectId || !serviceDir || !dataRoot) {
+    return { expanded: '', configFile: '', configFilePath: '', workingDirectory: '' };
   }
 
-  const displayServiceDir = displayPath(serviceDir, dataRoot);
-  const displayDataRoot = displayPath(dataRoot, dataRoot);
+  const workingDirectory = commandWorkingDirectory(dataRoot);
+  const displayServiceDir = relativeToRoot(serviceDir, workingDirectory);
+  const displayDataRoot = relativeToRoot(dataRoot, workingDirectory);
+  const configFilePath = relativeToRoot(`${normalizePath(dataRoot)}/projects/${projectId}/param.json`, workingDirectory);
   const baseArgs = [quote(displayServiceDir), `--data-root=${quote(displayDataRoot)}`];
+  const prefix = `cd ${quote(workingDirectory)}\n`;
 
   return {
-    expanded: ['stdiolink_service', ...baseArgs, ...renderCliArgs(config, '--config.')].join(' '),
-    configFile: ['stdiolink_service', ...baseArgs, `--config-file=${quote(configFileName)}`].join(' '),
+    expanded: prefix + ['stdiolink_service', ...baseArgs, ...renderCliArgs(config, '--config.')].join(' '),
+    configFile: prefix + ['stdiolink_service', ...baseArgs, `--config-file=${quote(configFilePath)}`].join(' '),
+    configFilePath,
+    workingDirectory,
   };
-}
-
-export function buildProjectConfigExportFileName(projectId: string): string {
-  return `${projectId}.config.json`;
 }
