@@ -3,16 +3,59 @@
 # 设置 UTF-8 编码
 export LANG=en_US.UTF-8
 
+show_usage() {
+    cat <<'EOF'
+Usage:
+  ./build.sh [BuildType] [--build-dir <dir>]
+
+Examples:
+  ./build.sh
+  ./build.sh Release
+  ./build.sh Release --build-dir build_release
+EOF
+}
+
+BUILD_TYPE="Debug"
+BUILD_DIR="build"
+INSTALL_DIR="install"
+BUILD_TYPE_SET=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --build-dir)
+            if [[ $# -lt 2 || -z "${2:-}" ]]; then
+                echo "Error: missing value for --build-dir"
+                show_usage
+                exit 1
+            fi
+            BUILD_DIR="$2"
+            shift 2
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        --*)
+            echo "Error: unknown option '$1'"
+            show_usage
+            exit 1
+            ;;
+        *)
+            if [[ "${BUILD_TYPE_SET}" -eq 1 ]]; then
+                echo "Error: unexpected argument '$1'"
+                show_usage
+                exit 1
+            fi
+            BUILD_TYPE="$1"
+            BUILD_TYPE_SET=1
+            shift
+            ;;
+    esac
+done
+
 echo "========================================"
 echo "Build Script"
 echo "========================================"
-
-# 1. 设置构建配置 (默认为 Debug) [cite: 1]
-BUILD_TYPE=${1:-Debug}
-
-# 2. 设置构建和安装目录 [cite: 1]
-BUILD_DIR="build"
-INSTALL_DIR="install"
 
 echo "Build Type: $BUILD_TYPE"
 echo "Build Directory: $BUILD_DIR"

@@ -76,6 +76,32 @@ function Copy-DirClean {
     Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
 }
 
+function Copy-ReleaseScriptFiles {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TemplateDir,
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationDir
+    )
+
+    $scriptNames = @(
+        "start.bat",
+        "start.ps1",
+        "dev.bat",
+        "dev.ps1"
+    )
+
+    foreach ($scriptName in $scriptNames) {
+        $sourcePath = Join-Path $TemplateDir $scriptName
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            Write-Error "Release launcher template not found: $sourcePath"
+            exit 1
+        }
+
+        Copy-Item -LiteralPath $sourcePath -Destination (Join-Path $DestinationDir $scriptName) -Force
+    }
+}
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
 
@@ -164,6 +190,7 @@ if ([string]::IsNullOrWhiteSpace($buildDir) -or [string]::IsNullOrWhiteSpace($ou
 $buildDirAbs = Resolve-AbsolutePath -Path $buildDir -RootDir $rootDir
 $outputDirAbs = Resolve-AbsolutePath -Path $outputDir -RootDir $rootDir
 $runtimeDir = Join-Path $buildDirAbs "runtime_release"
+$releaseScriptTemplateDir = Join-Path $scriptDir "release_scripts"
 
 # Resolve npm.cmd / npx.cmd early so both WebUI build and test blocks can use them.
 # Using .cmd directly bypasses the npm.ps1 shim which is incompatible with StrictMode.
@@ -460,321 +487,9 @@ if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
     $defaultConfig | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $configPath -Encoding utf8
 }
 
-# ── Startup launcher ─────────────────────────────────────────────────
-Write-Host "Generating startup scripts..."
-
-$startBat = Join-Path $packageDir "start.bat"
-@"
-@echo off
-setlocal
-set SCRIPT_DIR=%~dp0
-"%SCRIPT_DIR%bin\stdiolink_server.exe" --data-root="%SCRIPT_DIR%data_root" %*
-"@ | Set-Content -LiteralPath $startBat -Encoding ascii
-
-$startPs1 = Join-Path $packageDir "start.ps1"
-@"
-#!/usr/bin/env pwsh
-`$scriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
-`$dataRoot  = Join-Path `$scriptDir "data_root"
-`$server    = Join-Path `$scriptDir "bin/stdiolink_server.exe"
-
-if (-not (Test-Path -LiteralPath `$server)) {
-    Write-Error "Server binary not found: `$server"
-    exit 1
-}
-
-Write-Host "Starting stdiolink_server..."
-Write-Host "  data_root : `$dataRoot"
-Write-Host "  args      : `$args"
-& `$server --data-root="`$dataRoot" @args
-"@ | Set-Content -LiteralPath $startPs1 -Encoding utf8
-
-# ── Development environment launcher ─────────────────────────────────
-Write-Host "Generating dev.bat..."
-
-$devBat = Join-Path $packageDir "dev.bat"
-$devBatContent = @"
-@echo off
-setlocal
-set SCRIPT_DIR=%~dp0
-
-REM Add bin directory to PATH
-set PATH=%SCRIPT_DIR%bin;%PATH%
-
-REM Discover and create doskey aliases for all drivers
-"@
-
-$driversDir = Join-Path $packageDir "data_root/drivers"
-if (Test-Path -LiteralPath $driversDir -PathType Container) {
-    $driverDirs = Get-ChildItem -LiteralPath $driversDir -Directory | Sort-Object Name
-    foreach ($driverDir in $driverDirs) {
-        $exeFiles = Get-ChildItem -LiteralPath $driverDir.FullName -Filter "*.exe" -File
-        foreach ($exe in $exeFiles) {
-            $aliasName = [System.IO.Path]::GetFileNameWithoutExtension($exe.Name)
-            $relativePath = "data_root\drivers\$($driverDir.Name)\$($exe.Name)"
-            $devBatContent += "`ndoskey $aliasName=`"%SCRIPT_DIR%$relativePath`" `$*"
-        }
-    }
-}
-
-$devBatContent += @"
-
-
-echo.
-echo ========================================
-echo stdiolink Development Environment
-echo ========================================
-echo.
-echo Environment configured:
-echo   - bin\ added to PATH
-echo   - Driver aliases created
-echo.
-echo To list all drivers:
-echo   doskey /macros
-echo.
-echo To run a driver:
-echo   [driver-name] --export-meta
-echo   [driver-name] [args...]
-echo.
-echo To start the server:
-echo   stdiolink_server --data-root="%SCRIPT_DIR%data_root"
-echo.
-
-cmd /k
-"@
-
-Set-Content -LiteralPath $devBat -Value $devBatContent -Encoding ascii
-
-# ── Development environment launcher (PowerShell) ────────────────────
-Write-Host "Generating dev.ps1..."
-
-$devPs1 = Join-Path $packageDir "dev.ps1"
-$devPs1Content = @"
-#!/usr/bin/env pwsh
-`$global:stdiolinkDevScriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
-`$global:stdiolinkDevBinDir = Join-Path `$global:stdiolinkDevScriptDir "bin"
-`$global:stdiolinkDevDriversDir = Join-Path `$global:stdiolinkDevScriptDir "data_root/drivers"
-`$global:stdiolinkDevProjectsDir = Join-Path `$global:stdiolinkDevScriptDir "data_root/projects"
-`$global:stdiolinkProjectAliases = @()
-
-# Add bin directory to PATH for current session
-`$env:PATH = "`$global:stdiolinkDevBinDir;`$env:PATH"
-
-# Set Qt plugin path
-`$env:QT_PLUGIN_PATH = `$global:stdiolinkDevBinDir
-
-# Discover and create function aliases for all drivers
-"@
-
-if (Test-Path -LiteralPath $driversDir -PathType Container) {
-    $driverDirs = Get-ChildItem -LiteralPath $driversDir -Directory | Sort-Object Name
-    foreach ($driverDir in $driverDirs) {
-        $exeFiles = Get-ChildItem -LiteralPath $driverDir.FullName -Filter "*.exe" -File
-        foreach ($exe in $exeFiles) {
-            $aliasName = [System.IO.Path]::GetFileNameWithoutExtension($exe.Name)
-            $driverPath = "data_root/drivers/$($driverDir.Name)/$($exe.Name)"
-            $devPs1Content += @"
-
-function global:$aliasName {
-    `$scriptDir = Split-Path -Parent `$PSCommandPath
-    if (-not `$scriptDir) {
-        `$scriptDir = Split-Path -Parent (Get-Variable -Name PSScriptRoot -ValueOnly -ErrorAction SilentlyContinue)
-    }
-    if (-not `$scriptDir) {
-        `$scriptDir = `$PWD.Path
-    }
-    & (Join-Path `$scriptDir "$driverPath") @args
-}
-"@
-        }
-    }
-}
-
-$devPs1Content += @"
-
-
-# Read project config explicitly as UTF-8 so Windows PowerShell can parse non-ASCII names.
-function Read-ProjectConfig {
-    param(
-        [Parameter(Mandatory = `$true)]
-        [string]`$ConfigPath
-    )
-
-    `$json = [System.IO.File]::ReadAllText(`$ConfigPath, [System.Text.Encoding]::UTF8)
-    return `$json | ConvertFrom-Json
-}
-
-# Discover and create project aliases from saved project configs
-if (Test-Path -LiteralPath `$global:stdiolinkDevProjectsDir -PathType Container) {
-    foreach (`$projectDir in (Get-ChildItem -LiteralPath `$global:stdiolinkDevProjectsDir -Directory | Sort-Object Name)) {
-        `$projectId = `$projectDir.Name
-        `$configPath = Join-Path `$projectDir.FullName "config.json"
-        `$projectConfig = `$null
-
-        if (Test-Path -LiteralPath `$configPath -PathType Leaf) {
-            try {
-                `$projectConfig = Read-ProjectConfig -ConfigPath `$configPath
-            }
-            catch {
-                Write-Warning "Skipping project alias '`$projectId': failed to parse `$configPath"
-            }
-        }
-
-        if (-not `$projectConfig) {
-            continue
-        }
-
-        `$serviceId = [string]`$projectConfig.serviceId
-        if ([string]::IsNullOrWhiteSpace(`$serviceId)) {
-            Write-Warning "Skipping project alias '`$projectId': serviceId missing in `$configPath"
-            continue
-        }
-
-        if (Get-Command -Name `$projectId -ErrorAction SilentlyContinue) {
-            Write-Warning "Skipping project alias '`$projectId': command name already exists"
-            continue
-        }
-
-        `$functionName = "__stdiolink_project_`$(`$projectId -replace '[^A-Za-z0-9_]', '_')"
-        `$serviceDir = "data_root/services/`$serviceId"
-        `$paramPath = "data_root/projects/`$projectId/param.json"
-        `$scriptBlock = {
-            & stdiolink_service "`$serviceDir" --data-root="data_root" --config-file="`$paramPath" @args
-        }.GetNewClosure()
-
-        Set-Item -Path ("Function:global:{0}" -f `$functionName) -Value `$scriptBlock
-        Set-Alias -Name `$projectId -Value `$functionName -Scope Global
-        `$global:stdiolinkProjectAliases += [PSCustomObject]@{
-            Id = `$projectId
-            ServiceId = `$serviceId
-        }
-    }
-}
-
-# Helper function to list all available drivers
-function global:drivers {
-    Write-Host ""
-    Write-Host "Available drivers:"
-    Write-Host ""
-    Get-Command -CommandType Function | Where-Object {
-        `$_.Source -eq '' -and `$_.Name -ne 'drivers' -and `$_.Name -like 'stdio.drv.*'
-    } | ForEach-Object {
-        Write-Host "  `$(`$_.Name)" -ForegroundColor Cyan
-    }
-    Write-Host ""
-}
-
-# Helper function to list all available services
-function global:services {
-    `$scriptDir = Split-Path -Parent `$PSCommandPath
-    if (-not `$scriptDir) {
-        `$scriptDir = Split-Path -Parent (Get-Variable -Name PSScriptRoot -ValueOnly -ErrorAction SilentlyContinue)
-    }
-    if (-not `$scriptDir) {
-        `$scriptDir = `$PWD.Path
-    }
-    Write-Host ""
-    Write-Host "Available services:"
-    Write-Host ""
-    `$servicesDir = Join-Path `$scriptDir "data_root/services"
-    if (Test-Path -LiteralPath `$servicesDir -PathType Container) {
-        Get-ChildItem -LiteralPath `$servicesDir -Directory | Sort-Object Name | ForEach-Object {
-            Write-Host "  `$(`$_.Name)" -ForegroundColor Green
-        }
-    } else {
-        Write-Host "  (no services found)" -ForegroundColor Yellow
-    }
-    Write-Host ""
-    Write-Host "Example usage:"
-    Write-Host "  stdiolink_service `"data_root/services/[service-name]`" --data-root=`"data_root`" --config-file=`"data_root/projects/[project-id]/param.json`"" -ForegroundColor Gray
-    Write-Host ""
-}
-
-# Helper function to list all available projects
-function global:projects {
-    Write-Host ""
-    Write-Host "Available projects:"
-    Write-Host ""
-    `$aliasByProject = @{}
-    foreach (`$projectAlias in `$global:stdiolinkProjectAliases) {
-        `$aliasByProject[[string]`$projectAlias.Id] = [string]`$projectAlias.ServiceId
-    }
-    if (Test-Path -LiteralPath `$global:stdiolinkDevProjectsDir -PathType Container) {
-        `$projectDirs = Get-ChildItem -LiteralPath `$global:stdiolinkDevProjectsDir -Directory | Sort-Object Name
-        if (`$projectDirs.Count -gt 0) {
-            foreach (`$projectDir in `$projectDirs) {
-                `$projectId = `$projectDir.Name
-                `$serviceLabel = "(service unknown)"
-                if (`$aliasByProject.ContainsKey(`$projectId)) {
-                    `$serviceLabel = `$aliasByProject[`$projectId]
-                } else {
-                    `$configPath = Join-Path `$projectDir.FullName "config.json"
-                    if (Test-Path -LiteralPath `$configPath -PathType Leaf) {
-                        try {
-                            `$projectConfig = Read-ProjectConfig -ConfigPath `$configPath
-                            if (-not [string]::IsNullOrWhiteSpace([string]`$projectConfig.serviceId)) {
-                                `$serviceLabel = [string]`$projectConfig.serviceId
-                            }
-                        }
-                        catch {
-                        }
-                    }
-                }
-
-                `$aliasNote = ""
-                if (-not (Get-Alias -Name `$projectId -ErrorAction SilentlyContinue)) {
-                    `$aliasNote = " (alias unavailable)"
-                }
-
-                Write-Host "  `$projectId" -ForegroundColor Magenta -NoNewline
-                Write-Host " -> `$serviceLabel`$aliasNote" -ForegroundColor DarkGray
-            }
-        } else {
-            Write-Host "  (no projects found)" -ForegroundColor Yellow
-        }
-    } else {
-        Write-Host "  (no projects found)" -ForegroundColor Yellow
-    }
-    Write-Host ""
-    Write-Host "To run a project:"
-    Write-Host "  [project-id]"
-    Write-Host "  [project-id] [extra args]"
-    Write-Host ""
-}
-
-Write-Host ""
-Write-Host "========================================"
-Write-Host "stdiolink Development Environment"
-Write-Host "========================================"
-Write-Host ""
-Write-Host "Environment configured:"
-Write-Host "  - bin\ added to PATH"
-Write-Host "  - Driver aliases created"
-Write-Host "  - Project aliases created"
-Write-Host ""
-Write-Host "To list all drivers:"
-Write-Host "  drivers"
-Write-Host ""
-Write-Host "To list all services:"
-Write-Host "  services"
-Write-Host ""
-Write-Host "To list all projects:"
-Write-Host "  projects"
-Write-Host ""
-Write-Host "To run a driver:"
-Write-Host "  [driver-name] --export-meta"
-Write-Host "  [driver-name] [args...]"
-Write-Host ""
-Write-Host "To run a project:"
-Write-Host "  [project-id]"
-Write-Host "  [project-id] [extra args]"
-Write-Host ""
-Write-Host "To start the server:"
-Write-Host ("  stdiolink_server --data-root=""{0}""" -f (Join-Path `$global:stdiolinkDevScriptDir "data_root"))
-Write-Host ""
-"@
-
-Set-Content -LiteralPath $devPs1 -Value $devPs1Content -Encoding utf8
+# ── Release launcher templates ───────────────────────────────────────
+Write-Host "Copying release launcher scripts..."
+Copy-ReleaseScriptFiles -TemplateDir $releaseScriptTemplateDir -DestinationDir $packageDir
 
 $manifestPath = Join-Path $packageDir "RELEASE_MANIFEST.txt"
 $manifestLines = @()
@@ -830,11 +545,11 @@ Write-Host "  Manifest: $manifestPath"
 Write-Host ""
 Write-Host "To start the server:"
 Write-Host "  cd $packageDir"
-Write-Host "  .\start.bat              (cmd)"
+Write-Host "  .\start.bat              (batch wrapper -> PowerShell)"
 Write-Host "  .\start.ps1              (PowerShell)"
 Write-Host "  .\start.bat --port=6200  (custom port)"
 Write-Host ""
 Write-Host "For development (with driver aliases):"
-Write-Host "  .\dev.bat                (opens cmd with configured environment)"
+Write-Host "  .\dev.bat                (batch wrapper -> interactive PowerShell)"
 Write-Host "  .\dev.ps1                (PowerShell with configured environment)"
 

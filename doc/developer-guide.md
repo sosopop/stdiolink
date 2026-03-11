@@ -247,7 +247,7 @@ export LD_LIBRARY_PATH=$PWD/build/runtime_debug/bin:$LD_LIBRARY_PATH
 ./build/runtime_debug/data_root/drivers/stdio.drv.echo/stdio.drv.echo --export-meta
 ```
 
-如果你已经通过发布脚本生成了发布包，可使用包根目录下的 `dev.bat` / `dev.ps1` 自动配置环境；`build/runtime_*` 目录本身默认不包含这两个脚本。
+如果你已经通过发布脚本生成了发布包，可使用包根目录下的 Windows `dev.bat` / `dev.ps1` 或 Unix `dev.sh` 自动配置环境；`build/runtime_*` 目录本身默认不包含这些脚本。
 
 ## 4. 开发 Service（JavaScript）
 
@@ -595,7 +595,7 @@ release/stdiolink_<timestamp>_<git>/
 │   ├── webui/              # WebUI 静态文件
 │   └── config.json         # 默认配置（publish_release.* 生成时默认端口 6200）
 ├── start.bat / start.sh    # 启动脚本
-├── dev.bat / dev.ps1       # 开发环境脚本
+├── dev.bat / dev.ps1 / dev.sh  # 开发环境脚本
 └── RELEASE_MANIFEST.txt    # 发布清单
 ```
 
@@ -625,12 +625,16 @@ cd build/runtime_release
 
 ### 7.4 开发环境
 
-`dev.bat` / `dev.ps1` 由 `tools/publish_release.ps1` / `tools/publish_release.sh` 在发布包根目录生成，不会出现在 `build/runtime_*`。如果你已经生成发布包，可这样使用：
+Windows 的 `dev.bat` / `dev.ps1` 与 Unix 的 `dev.sh` 由 `tools/publish_release.ps1` / `tools/publish_release.sh` 在发布包根目录生成，不会出现在 `build/runtime_*`。如果你已经生成发布包，可这样使用：
 
 ```bash
 # Windows (PowerShell)
 cd release/<package-name>
 .\dev.ps1
+
+# Linux/macOS
+cd release/<package-name>
+./dev.sh
 
 # 列出所有 Driver
 drivers

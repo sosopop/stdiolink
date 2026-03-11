@@ -15,8 +15,9 @@
 
 - 运行联调优先看 `build/runtime_debug/`
 - 发布验证优先看 `release/<pkg>/`
-- `build/runtime_*` 默认没有发布包根脚本；`dev.ps1`、`start.*` 来自发布脚本
-- 发布包里的 `dev.ps1` 会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
+- `build/runtime_*` 默认没有发布包根脚本；Windows 模板在 `tools/release_scripts/`，Unix 模板在 `tools/release_scripts_unix/`，分别由 `tools/publish_release.ps1` / `tools/publish_release.sh` 直接拷贝
+- Windows 发布包里的 `dev.bat` / `dev.ps1` 会在启动时扫描 `data_root/drivers/`；`dev.ps1` 还会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
+- Unix 发布包里的 `dev.sh` 会打开带环境变量和 alias 的交互式 bash，并按 `data_root/drivers/`、`data_root/projects/*/config.json` 动态注册 Driver / Project 入口
 
 ## Modify Entry
 
