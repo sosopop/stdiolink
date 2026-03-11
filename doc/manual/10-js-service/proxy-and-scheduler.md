@@ -34,23 +34,18 @@ await openDriver(program, args?, options?) → Proxy
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `profilePolicy` | `string` | `"auto"` | Profile 注入策略 |
 | `metaTimeoutMs` | `number` | `5000` | 元数据查询超时（正整数） |
-
-**profilePolicy 取值：**
-
-| 值 | 行为 |
-|----|------|
-| `"auto"` | 如果 args 中没有 `--profile=` 参数，自动追加 `--profile=keepalive` |
-| `"force-keepalive"` | 移除 args 中已有的 `--profile=` 参数，强制追加 `--profile=keepalive` |
-| `"preserve"` | 不修改 args，保持原样 |
 
 `openDriver()` 内部执行以下步骤：
 
-1. 根据 `profilePolicy` 处理启动参数
+1. 过滤 `args` 中已有的 `--profile=` 参数，并统一追加 `--profile=keepalive`
 2. 创建 `Driver` 实例并调用 `start()`
 3. 调用 `queryMeta(metaTimeoutMs)` 获取元数据
 4. 返回 Proxy 对象，将命令名映射为异步方法
+
+说明：
+- `openDriver()` 是 keepalive-only 的高层 API，不提供上层 profile 切换入口。
+- 如果需要自己控制 `--profile=oneshot|keepalive`，请改用底层 `Driver.start()`。
 
 ### 保留字段
 

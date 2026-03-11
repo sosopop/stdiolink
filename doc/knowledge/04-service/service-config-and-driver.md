@@ -23,7 +23,8 @@
 
 - 推荐：`resolveDriver("stdio.drv.xxx")` 后再 `openDriver(path)`
 - `resolveDriver()` 默认按 `data_root/drivers/*/` 查找
-- oneshot Service 需要显式 `drv.$close()`
+- `openDriver(path, args?, options?)` 统一按 keepalive 方式启动 Driver；即使 `args` 中带了 `--profile=...`，也会被覆盖为 `--profile=keepalive`。
+- 如果需要保留底层生命周期控制（例如自己决定 `queryMeta()` 时机、自己消费 `Task`、自己传 `--profile=oneshot|keepalive`），改用 `new Driver()`。
 - 命令名包含 `.` 时用 `proxy["cmd.name"]()`
 
 ## Modify Entry

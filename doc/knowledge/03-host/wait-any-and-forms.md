@@ -9,6 +9,8 @@
 - 入口：`src/stdiolink/host/wait_any.*`
 - 作用：在多个 `Task` 之间按事件/完成态推进调度。
 - 高风险改动：Driver 提前退出、事件流丢失、某个 Task 永久不结束。
+- Driver 早退时应返回 `msg.status === "error"`，不是 `null`。
+- `null` 只应用在空任务组、超时或所有任务都已结束且没有新消息。
 
 ## Form Generation
 

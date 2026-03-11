@@ -203,10 +203,16 @@ TEST_F(DriverIntegrationTest, WaitNextFastFailsWhenDriverExitsWithoutTerminal) {
     Message msg;
     const bool got = t.waitNext(msg, 1000);
 
-    EXPECT_FALSE(got);
+    EXPECT_TRUE(got);
+    EXPECT_EQ(msg.status, "error");
+    EXPECT_EQ(msg.code, 1001);
     EXPECT_TRUE(t.isDone());
     EXPECT_EQ(t.exitCode(), 1001);
     EXPECT_TRUE(t.errorText().contains("program="));
+
+    Message terminal;
+    EXPECT_FALSE(t.waitNext(terminal, 10));
+    EXPECT_TRUE(t.isDone());
     EXPECT_LT(timer.elapsed(), 900);
 }
 
@@ -226,4 +232,20 @@ TEST_F(DriverIntegrationTest, RequestAfterTerminateReturnsErrorWithoutLongBlock)
     EXPECT_EQ(msg.code, 1001);
     EXPECT_TRUE(msg.payload.toObject().value("message").toString().contains("program="));
     EXPECT_LT(requestElapsedMs, 200);
+}
+
+TEST_F(DriverIntegrationTest, TryNextReturnsErrorWhenDriverAlreadyExited) {
+    Driver d;
+    ASSERT_TRUE(d.start(m_driverPath));
+    d.terminate();
+
+    Task t = d.request("echo", QJsonObject{{"msg", "x"}});
+
+    Message msg;
+    EXPECT_TRUE(t.tryNext(msg));
+    EXPECT_EQ(msg.status, "error");
+    EXPECT_EQ(msg.code, 1001);
+    EXPECT_TRUE(t.isDone());
+    EXPECT_EQ(t.exitCode(), 1001);
+    EXPECT_TRUE(msg.payload.toObject().value("message").toString().contains("program="));
 }

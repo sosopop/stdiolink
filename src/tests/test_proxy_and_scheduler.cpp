@@ -273,6 +273,26 @@ TEST_F(JsProxyTest, T09_OldSignatureRemainsCompatible) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
 }
 
+TEST_F(JsProxyTest, WaitAnyReturnsErrorMessageWhenDriverExitsWithoutTerminal) {
+    const QString driverPath = slowCommandDriverPath();
+    ASSERT_TRUE(QFileInfo::exists(driverPath));
+
+    const QString scriptPath = writeScript(
+        m_tmpDir, "wait_any_driver_exit_error.js",
+        QString("import { openDriver, waitAny } from 'stdiolink';\n"
+                "(async () => {\n"
+                "  const drv = await openDriver('%1');\n"
+                "  const task = drv.$rawRequest('delayed_exit', { delayMs: 20 });\n"
+                "  const result = await waitAny([task], 1000);\n"
+                "  globalThis.ok = (result && result.msg && result.msg.status === 'error' && result.msg.code === 1001) ? 1 : 0;\n"
+                "})();\n")
+            .arg(escapeJsString(driverPath)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+}
+
 TEST_F(JsProxyTest, T10_CommandTimeoutOptionsSuccessPath) {
     const QString driverPath = slowCommandDriverPath();
     ASSERT_TRUE(QFileInfo::exists(driverPath));
@@ -619,9 +639,9 @@ TEST_F(JsProxyTest, CloseTerminatesDriver) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "runningAfter"), 0);
 }
 
-// ── M48: profilePolicy tests ──
+// ── M48: openDriver keepalive-only tests ──
 
-TEST_F(JsProxyTest, ProfilePolicyAutoInjectsKeepaliveWhenMissing) {
+TEST_F(JsProxyTest, OpenDriverInjectsKeepaliveWhenMissing) {
     const QString driverPath = calculatorDriverPath();
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
@@ -642,52 +662,25 @@ TEST_F(JsProxyTest, ProfilePolicyAutoInjectsKeepaliveWhenMissing) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
 }
 
-TEST_F(JsProxyTest, ProfilePolicyForceKeepaliveOverridesExistingProfile) {
+TEST_F(JsProxyTest, OpenDriverOverridesExistingProfileToKeepalive) {
     const QString driverPath = calculatorDriverPath();
     ASSERT_TRUE(QFileInfo::exists(driverPath));
 
     const QString scriptPath = writeScript(
-        m_tmpDir, "profile_force_keepalive.js",
+        m_tmpDir, "profile_override_keepalive.js",
         QString("import { openDriver } from 'stdiolink';\n"
                 "(async () => {\n"
-                "  const calc = await openDriver('%1', ['--profile=oneshot'], {\n"
-                "    profilePolicy: 'force-keepalive'\n"
-                "  });\n"
+                "  const calc = await openDriver('%1', ['--profile=oneshot']);\n"
                 "  const r1 = await calc.add({ a: 1, b: 2 });\n"
                 "  const r2 = await calc.add({ a: 3, b: 4 });\n"
-                "  globalThis.forceOk = (r1.result === 3 && r2.result === 7) ? 1 : 0;\n"
+                "  globalThis.ok = (r1.result === 3 && r2.result === 7) ? 1 : 0;\n"
                 "  calc.$close();\n"
                 "})();\n")
             .arg(escapeJsString(driverPath)));
     ASSERT_FALSE(scriptPath.isEmpty());
 
     EXPECT_EQ(runScript(scriptPath), 0);
-    EXPECT_EQ(readGlobalInt(m_engine->context(), "forceOk"), 1);
-}
-
-TEST_F(JsProxyTest, ProfilePolicyPreservePassesArgsThroughUnchanged) {
-    const QString driverPath = calculatorDriverPath();
-    ASSERT_TRUE(QFileInfo::exists(driverPath));
-
-    // preserve with explicit --profile=keepalive: args pass through unchanged,
-    // so two commands should succeed (proving preserve didn't strip the profile).
-    const QString scriptPath = writeScript(
-        m_tmpDir, "profile_preserve.js",
-        QString("import { openDriver } from 'stdiolink';\n"
-                "(async () => {\n"
-                "  const calc = await openDriver('%1', ['--profile=keepalive'], {\n"
-                "    profilePolicy: 'preserve'\n"
-                "  });\n"
-                "  const r1 = await calc.add({ a: 1, b: 2 });\n"
-                "  const r2 = await calc.add({ a: 3, b: 4 });\n"
-                "  globalThis.preserveOk = (r1.result === 3 && r2.result === 7) ? 1 : 0;\n"
-                "  calc.$close();\n"
-                "})();\n")
-            .arg(escapeJsString(driverPath)));
-    ASSERT_FALSE(scriptPath.isEmpty());
-
-    EXPECT_EQ(runScript(scriptPath), 0);
-    EXPECT_EQ(readGlobalInt(m_engine->context(), "preserveOk"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
 }
 
 // ── M48: metaTimeoutMs tests ──
@@ -777,7 +770,7 @@ TEST_F(JsProxyTest, OpenDriverOptionsUnknownKeyThrowsTypeError) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "unknownKey"), 1);
 }
 
-TEST_F(JsProxyTest, OpenDriverInvalidProfilePolicyThrowsTypeError) {
+TEST_F(JsProxyTest, OpenDriverProfilePolicyOptionIsRejectedAsUnknownKey) {
     const QString scriptPath = writeScript(
         m_tmpDir, "opts_bad_profile.js",
         "import { openDriver } from 'stdiolink';\n"
@@ -786,7 +779,7 @@ TEST_F(JsProxyTest, OpenDriverInvalidProfilePolicyThrowsTypeError) {
         "  try {\n"
         "    await openDriver('dummy', [], { profilePolicy: 'bogus' });\n"
         "  } catch (e) {\n"
-        "    caught = (e instanceof TypeError) ? 1 : 0;\n"
+        "    caught = (e instanceof TypeError && String(e).includes('profilePolicy')) ? 1 : 0;\n"
         "  }\n"
         "  globalThis.badProfile = caught;\n"
         "})();\n");

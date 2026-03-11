@@ -38,6 +38,11 @@ d.start('./driver');
 d.terminate();
 ```
 
+说明：
+- `Driver` 是底层原语，不会像 `openDriver()` 那样自动强制 keepalive。
+- 如果要先 `queryMeta()` 再继续对同一进程发送业务命令，请自行在 `start()` 参数中传 `--profile=keepalive`。
+- 如果需要更易用的 keepalive proxy，优先使用 `openDriver()`。
+
 ## Task 类
 
 Task 由 `Driver.request()` 创建，不支持直接构造。

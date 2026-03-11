@@ -151,9 +151,6 @@ JSValue jsDriverRequest(JSContext* ctx, JSValueConst thisVal, int argc, JSValueC
     if (argc < 1 || !JS_IsString(argv[0])) {
         return JS_ThrowTypeError(ctx, "request(cmd, data?): cmd must be a string");
     }
-    if (!opaque->driver->isRunning()) {
-        return JS_ThrowInternalError(ctx, "driver is not running");
-    }
 
     const char* cmdC = JS_ToCString(ctx, argv[0]);
     if (!cmdC) {

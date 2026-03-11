@@ -18,6 +18,8 @@ Host code -> `Driver::start()` -> `QProcess` 启动 Driver -> `request()` 发送
 ## Key Constraints
 
 - 必须正确处理 Driver 早退；否则 `waitNext` / `waitAnyNext` 会悬挂或丢错误。
+- `request()` 遇到已退出 Driver，返回失败 `Task`；不会自动重启进程。
+- `Task.tryNext()` / `waitNext()` 在 Driver 早退场景下应产出 terminal `error` message，而不是静默返回空。
 - `Task` 不是简单 future；它需要保留中间 `event`。
 - 改 `Driver` 生命周期时要检查 JS 绑定，因为 Service 底层复用 Host 能力。
 

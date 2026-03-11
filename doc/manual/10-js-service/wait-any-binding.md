@@ -39,6 +39,9 @@ const result = await waitAny(tasks, timeoutMs?);
 - 指定超时且超时
 - 所有 Task 已完成且没有可消费消息
 
+说明：
+- Driver 早退不是 `null`；此时会返回 `msg.status === "error"`。
+
 ## 示例
 
 ```js

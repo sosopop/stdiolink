@@ -19,9 +19,6 @@ struct TaskRef {
 
 QHash<quintptr, WaitAnyScheduler*> s_schedulers;
 
-constexpr int kDriverExitedCode = 1001;
-const char* kDriverExitedMessage = "driver process exited before terminal response";
-
 JSValue messageToJs(JSContext* ctx, const stdiolink::Message& msg) {
     JSValue obj = JS_NewObject(ctx);
     JS_SetPropertyStr(ctx, obj, "status", JS_NewString(ctx, msg.status.toUtf8().constData()));
@@ -188,37 +185,6 @@ bool WaitAnyScheduler::poll(int timeoutMs) {
             if (effectiveWaitMs < 0 || remainingMs < effectiveWaitMs) {
                 effectiveWaitMs = remainingMs;
             }
-        }
-    }
-    if (m_pending.isEmpty()) {
-        return false;
-    }
-
-    for (int i = m_pending.size() - 1; i >= 0; --i) {
-        PendingGroup& group = m_pending[i];
-        bool settled = false;
-        for (int taskIndex = 0; taskIndex < group.tasks.size(); ++taskIndex) {
-            stdiolink::Task& task = group.tasks[taskIndex];
-            if (!task.isValid() || task.isDone()) {
-                continue;
-            }
-            stdiolink::Driver* owner = task.owner();
-            if (!owner) {
-                continue;
-            }
-            if (!owner->isRunning()) {
-                task.forceTerminal(kDriverExitedCode, QString::fromUtf8(kDriverExitedMessage));
-                stdiolink::Message msg;
-                msg.status = "error";
-                msg.code = kDriverExitedCode;
-                msg.payload = QJsonObject{{"message", QString::fromUtf8(kDriverExitedMessage)}};
-                settleGroup(i, waitAnyResultToJs(m_ctx, taskIndex, msg), false);
-                settled = true;
-                break;
-            }
-        }
-        if (settled) {
-            continue;
         }
     }
     if (m_pending.isEmpty()) {

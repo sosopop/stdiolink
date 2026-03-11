@@ -90,6 +90,8 @@ const result = await calc.add({ a: 1, b: 2 });
 calc.$close();
 ```
 
+`openDriver()` 固定按 keepalive 方式启动；如果需要自己控制 `--profile=oneshot|keepalive`，改用 `new Driver()`。
+
 ### 使用 config.schema.json 管理配置
 
 将外部参数通过配置系统管理，而非硬编码：

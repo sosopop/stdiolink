@@ -134,6 +134,10 @@ stdiolink_service ./my_service --dump-config-schema
 **解决方案：**
 先在终端直接运行 Driver 确认可正常启动。
 
+补充：
+- `openDriver()` 现在固定使用 keepalive；不要再传 `profilePolicy` 之类旧选项。
+- 如果 Driver 启动后很快退出，后续通常会通过 `Task` / `waitAny()` 收到 `error`，而不是长期静默返回 `null`。
+
 ### DriverBusyError
 
 **症状：** `DriverBusyError: request already in flight`

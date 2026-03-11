@@ -189,3 +189,28 @@ TEST_F(JsDriverBindingTest, QueryMetaReturnsObject) {
     EXPECT_EQ(readGlobalInt(m_engine->context(), "hasMeta"), 1);
     EXPECT_EQ(readGlobalInt(m_engine->context(), "hasCommands"), 1);
 }
+
+TEST_F(JsDriverBindingTest, RequestAfterTerminateReturnsFailedTask) {
+    const QString bin = driverBinaryPath();
+    ASSERT_TRUE(QFileInfo::exists(bin));
+
+    const QString scriptPath =
+        writeScript(m_tmpDir, "request_after_terminate.js",
+                    QString("import { Driver } from 'stdiolink';\n"
+                            "const d = new Driver();\n"
+                            "if (!d.start('%1')) throw new Error('start failed');\n"
+                            "d.terminate();\n"
+                            "const t = d.request('add', { a: 1, b: 2 });\n"
+                            "const m = t.tryNext();\n"
+                            "globalThis.ok = (m && m.status === 'error' && m.code === 1001) ? 1 : 0;\n"
+                            "globalThis.doneAfterFirst = t.done ? 1 : 0;\n"
+                            "const m2 = t.waitNext(10);\n"
+                            "globalThis.doneAfterDrain = (!m2 && t.done) ? 1 : 0;\n")
+                        .arg(escapeForSingleQuoteJs(bin)));
+    ASSERT_FALSE(scriptPath.isEmpty());
+
+    EXPECT_EQ(runScript(scriptPath), 0);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "ok"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "doneAfterFirst"), 1);
+    EXPECT_EQ(readGlobalInt(m_engine->context(), "doneAfterDrain"), 1);
+}

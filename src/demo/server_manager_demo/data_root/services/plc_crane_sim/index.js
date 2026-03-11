@@ -21,39 +21,48 @@ const runParams = {
 };
 
 (async () => {
-    const driverPath = resolveDriver("stdio.drv.plc_crane_sim");
+    try {
+        const driverPath = resolveDriver("stdio.drv.plc_crane_sim");
 
-    logger.info("starting plc_crane_sim service", {
-        driverPath,
-        runParams
-    });
+        logger.info("starting plc_crane_sim service", {
+            driverPath,
+            runParams
+        });
 
-    const driver = await openDriver(driverPath, [], { profilePolicy: "preserve" });
-    const runTask = driver.$rawRequest("run", runParams);
+        const driver = await openDriver(driverPath);
+        logger.info("driver opened");
 
-    while (true) {
-        const next = await waitAny([runTask], 60000);
-        if (!next) {
-            await sleep(1000);
-            continue;
-        }
+        const runTask = driver.$rawRequest("run", runParams);
 
-        if (next.msg.status === "event") {
-            const payload = next.msg.data ?? {};
-            if (payload.event === "sim_heartbeat") {
-                logger.debug("heartbeat", payload.data ?? {});
-            } else {
-                logger.info("driver event", payload);
+        while (true) {
+            const next = await waitAny([runTask], 60000);
+            if (!next) {
+                await sleep(1000);
+                continue;
             }
-            continue;
-        }
 
-        if (next.msg.status === "error") {
-            logger.error("run failed", next.msg.data ?? {});
-            throw new Error("plc_crane_sim run failed");
-        }
+            if (next.msg.status === "event") {
+                const payload = next.msg.data ?? {};
+                if (payload.event === "sim_heartbeat") {
+                    logger.debug("heartbeat", payload.data ?? {});
+                } else {
+                    logger.info("driver event", payload);
+                }
+                continue;
+            }
 
-        logger.warn("run finished unexpectedly", next.msg);
-        break;
+            if (next.msg.status === "error") {
+                logger.error("run failed", next.msg.data ?? {});
+                throw new Error("plc_crane_sim run failed");
+            }
+
+            logger.warn("run finished unexpectedly", next.msg);
+            break;
+        }
+    } catch (error) {
+        logger.error("service crashed", {
+            message: error?.message ?? String(error)
+        });
+        throw error;
     }
 })();

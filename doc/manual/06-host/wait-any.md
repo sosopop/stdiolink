@@ -29,6 +29,14 @@ bool waitAnyNext(QVector<Task>& tasks,
 | timeoutMs | int | 超时毫秒 |
 | breakFlag | function | 中断条件 |
 
+返回 `false` 的典型情况：
+- `tasks` 为空
+- 超时
+- 所有 Task 都已结束且没有新消息
+
+说明：
+- Driver 早退时，`waitAnyNext` 应优先返回 `error` 消息，而不是把该场景当成普通超时。
+
 ## 使用示例
 
 ```cpp

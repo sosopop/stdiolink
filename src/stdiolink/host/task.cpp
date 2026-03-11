@@ -1,5 +1,6 @@
 #include "task.h"
 #include <QEventLoop>
+#include <QJsonObject>
 #include <QTimer>
 #include "driver.h"
 
@@ -38,14 +39,25 @@ void Task::forceTerminal(int code, const QString& error) {
         return;
     }
 
+    const QJsonObject payload{{"message", error}};
     m_st->terminal = true;
     m_st->exitCode = code;
     m_st->errorText = error;
+    m_st->finalPayload = payload;
+    m_st->queue.push_back(Message{"error", code, payload});
 }
 
 bool Task::tryNext(Message& out) {
-    if (!m_st || m_st->queue.empty())
+    if (!m_st)
         return false;
+
+    if (m_st->queue.empty() && m_drv && !m_st->terminal && !m_drv->isRunning()) {
+        forceTerminal(1001, QStringLiteral("driver process exited without sending a response: %1")
+                                .arg(m_drv->exitContext()));
+    }
+    if (m_st->queue.empty())
+        return false;
+
     out = std::move(m_st->queue.front());
     m_st->queue.pop_front();
     return true;
@@ -91,7 +103,7 @@ bool Task::waitNext(Message& out, int timeoutMs) {
         if (tryNext(out))
             return true;
         forceTerminal(1001, exitedMsg());
-        return false;
+        return tryNext(out);
     }
 
     if (timeoutMs >= 0) {

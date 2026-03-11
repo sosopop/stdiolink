@@ -31,6 +31,8 @@
 ## Constraints
 
 - JS 层大多是 C++ Host 能力的包装；底层行为异常先回到 `src/stdiolink/host/` 查。
+- `openDriver()` 是高层 keepalive proxy；`new Driver()` 是底层原语。
+- `drv.xxx()` 会把 terminal `error` message 转成异常；`$rawRequest()` 保持返回 `Task`。
 - 改内置模块导出名时，同时检查手册、示例 Service 和绑定测试。
 
 ## Tests

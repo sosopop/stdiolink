@@ -149,9 +149,15 @@ TEST_F(WaitAnyTest, DriverExitWithoutTerminalDoesNotHangWaitAny) {
     timer.start();
     const bool got = waitAnyNext(tasks, item, 1000);
 
-    EXPECT_FALSE(got);
+    EXPECT_TRUE(got);
+    EXPECT_EQ(item.taskIndex, 0);
+    EXPECT_EQ(item.msg.status, "error");
+    EXPECT_EQ(item.msg.code, 1001);
     EXPECT_TRUE(tasks[0].isDone());
     EXPECT_EQ(tasks[0].exitCode(), 1001);
     EXPECT_TRUE(tasks[0].errorText().contains("program="));
+
+    EXPECT_FALSE(waitAnyNext(tasks, item, 50));
+    EXPECT_TRUE(tasks[0].isDone());
     EXPECT_LT(timer.elapsed(), 500);
 }
