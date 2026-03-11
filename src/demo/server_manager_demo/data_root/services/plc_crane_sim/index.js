@@ -8,7 +8,7 @@ const logger = createLogger({ service: "plc_crane_sim" });
 
 const runParams = {
     listen_address: String(cfg.listen_address ?? "127.0.0.1"),
-    listen_port: Number(cfg.listen_port ?? 1502),
+    listen_port: Number(cfg.listen_port ?? 502),
     unit_id: Number(cfg.unit_id ?? 1),
     event_mode: String(cfg.event_mode ?? "write"),
     data_area_size: Number(cfg.data_area_size ?? 256),

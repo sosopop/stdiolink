@@ -514,7 +514,7 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
       "view_mode": false
     },
     "cranes": [
-      { "id": "crane_a", "host": "127.0.0.1", "port": 1502, "unit_id": 1, "timeout_ms": 3000 }
+      { "id": "crane_a", "host": "127.0.0.1", "port": 502, "unit_id": 1, "timeout_ms": 3000 }
     ]
   }
 }
@@ -539,7 +539,7 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
       "view_mode": false
     },
     "cranes": [
-      { "id": "crane_a", "host": "127.0.0.1", "port": 1502, "unit_id": 1, "timeout_ms": 3000 }
+      { "id": "crane_a", "host": "127.0.0.1", "port": 502, "unit_id": 1, "timeout_ms": 3000 }
     ]
   }
 }

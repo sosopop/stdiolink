@@ -1,6 +1,6 @@
 {
   "listen_address": "127.0.0.1",
-  "listen_port": 1502,
+  "listen_port": 502,
   "unit_id": 1,
   "event_mode": "write",
   "data_area_size": 256,

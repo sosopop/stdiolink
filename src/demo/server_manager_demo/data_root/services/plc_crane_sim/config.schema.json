@@ -6,7 +6,7 @@
   },
   "listen_port": {
     "type": "int",
-    "default": 1502,
+    "default": 502,
     "description": "ModbusTCP 监听端口",
     "constraints": {
       "min": 1,
@@ -27,7 +27,12 @@
     "default": "write",
     "description": "事件模式",
     "constraints": {
-      "enumValues": ["write", "read", "all", "none"]
+      "enumValues": [
+        "write",
+        "read",
+        "all",
+        "none"
+      ]
     }
   },
   "data_area_size": {

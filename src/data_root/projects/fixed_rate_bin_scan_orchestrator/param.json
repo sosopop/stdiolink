@@ -10,7 +10,7 @@
     {
       "id": "crane_a",
       "host": "127.0.0.1",
-      "port": 1502,
+      "port": 502,
       "unit_id": 1,
       "timeout_ms": 3000
     }

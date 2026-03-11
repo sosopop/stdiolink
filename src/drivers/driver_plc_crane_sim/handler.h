@@ -4,14 +4,14 @@
 #include <QJsonObject>
 #include <QTimer>
 
-#include "sim_device.h"
 #include "driver_modbustcp_server/modbus_tcp_server.h"
+#include "sim_device.h"
 #include "stdiolink/driver/meta_command_handler.h"
 #include "stdiolink/driver/stdio_responder.h"
 
 struct SimRunConfig {
     QString listenAddress;
-    int listenPort = 1502;
+    int listenPort = 502;
     quint8 unitId = 1;
     int dataAreaSize = 256;
 

@@ -113,7 +113,7 @@ void SimPlcCraneHandler::buildMeta() {
                                          .defaultValue("")
                                          .description("监听地址（空=所有接口）"))
                               .param(FieldBuilder("listen_port", FieldType::Int)
-                                         .defaultValue(1502)
+                                         .defaultValue(502)
                                          .range(1, 65535)
                                          .description("监听端口"))
                               .param(FieldBuilder("unit_id", FieldType::Int)
@@ -162,7 +162,7 @@ void SimPlcCraneHandler::handleRun(const QJsonObject& data, stdiolink::IResponde
 
     SimRunConfig cfg;
     cfg.listenAddress = data.value("listen_address").toString();
-    cfg.listenPort = data.value("listen_port").toInt(1502);
+    cfg.listenPort = data.value("listen_port").toInt(502);
     cfg.unitId = static_cast<quint8>(data.value("unit_id").toInt(1));
     cfg.dataAreaSize = data.value("data_area_size").toInt(256);
     cfg.cylinderUpDelayMs = data.value("cylinder_up_delay").toInt(2500);
