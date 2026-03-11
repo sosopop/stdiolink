@@ -9,5 +9,5 @@
   "valve_open_delay": 1300,
   "valve_close_delay": 1100,
   "tick_ms": 50,
-  "heartbeat_ms": 1000
+  "heartbeat_ms": 0
 }
