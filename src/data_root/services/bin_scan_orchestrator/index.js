@@ -1,4 +1,4 @@
-import { getConfig, openDriver } from "stdiolink";
+import { Driver, getConfig } from "stdiolink";
 import { resolveDriver } from "stdiolink/driver";
 import { writeJson } from "stdiolink/fs";
 import { createLogger } from "stdiolink/log";
@@ -60,6 +60,100 @@ function buildResult(config, scanStartedAt, visionLog) {
     };
 }
 
+function buildDriverArgs(args) {
+    const src = Array.isArray(args) ? args : [];
+    return src.some((item) => item.startsWith("--profile="))
+        ? src.slice()
+        : [...src, "--profile=keepalive"];
+}
+
+function commandTimeout(timeoutMs) {
+    if (timeoutMs == null) {
+        return 0;
+    }
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 0) {
+        throw new RangeError("timeoutMs must be a non-negative integer");
+    }
+    return timeoutMs;
+}
+
+function terminalError(task, cmd) {
+    const err = new Error(task.errorText || `driver exited during command: ${cmd}`);
+    err.code = task.exitCode;
+    return err;
+}
+
+async function waitTaskDone(driver, cmd, task, timeoutMs) {
+    const deadline = timeoutMs > 0 ? Date.now() + timeoutMs : 0;
+
+    while (true) {
+        const waitMs = timeoutMs > 0 ? Math.max(0, deadline - Date.now()) : -1;
+        const msg = task.waitNext(waitMs);
+        if (!msg) {
+            if (task.done) {
+                throw terminalError(task, cmd);
+            }
+            if (timeoutMs > 0) {
+                driver.terminate();
+                const err = new Error(`Command timeout: ${cmd} (${timeoutMs}ms)`);
+                err.code = "ETIMEDOUT";
+                throw err;
+            }
+            throw new Error(`Command ended without terminal response: ${cmd}`);
+        }
+        if (msg.status === "event") {
+            continue;
+        }
+        if (msg.status === "error") {
+            const data = (msg.data && typeof msg.data === "object") ? msg.data : {};
+            const err = new Error(data.message || `Command failed: ${cmd}`);
+            err.code = msg.code;
+            err.data = msg.data;
+            throw err;
+        }
+        if (msg.status === "done") {
+            return msg.data;
+        }
+
+        driver.terminate();
+        throw new Error(`Unexpected task status: ${msg.status}`);
+    }
+}
+
+async function openKnownDriver(driverName, commandNames, args = []) {
+    const program = resolveDriver(driverName);
+    const driver = new Driver();
+    if (!driver.start(program, buildDriverArgs(args))) {
+        throw new Error(`Failed to start driver: ${program}`);
+    }
+
+    let busy = false;
+    const proxy = {
+        $driver: driver,
+        $close() {
+            driver.terminate();
+        }
+    };
+
+    for (const commandName of commandNames) {
+        proxy[commandName] = async (params = {}, options) => {
+            if (busy) {
+                throw new Error("DriverBusyError: request already in flight");
+            }
+            busy = true;
+            try {
+                const timeoutMs = commandTimeout(options?.timeoutMs ?? 0);
+                const task = driver.request(commandName, params);
+                return await waitTaskDone(driver, commandName, task, timeoutMs);
+            } finally {
+                busy = false;
+            }
+        };
+    }
+
+    return proxy;
+}
+
 async function writeResultFile(config, result) {
     const outputPath = String(config.result_output_path ?? "").trim();
     if (!outputPath) {
@@ -70,7 +164,11 @@ async function writeResultFile(config, result) {
 }
 
 async function openVision(visionCfg) {
-    const driver = await openDriver(resolveDriver(VISION_DRIVER_NAME));
+    const driver = await openKnownDriver(VISION_DRIVER_NAME, [
+        "login",
+        "vessel.command",
+        "vessellog.last"
+    ]);
     try {
         const loginResult = await driver.login(
             {
@@ -100,7 +198,10 @@ async function openCranes(craneCfgList) {
     const out = [];
     try {
         for (const craneCfg of craneCfgList) {
-            const driver = await openDriver(resolveDriver(PLC_DRIVER_NAME));
+            const driver = await openKnownDriver(PLC_DRIVER_NAME, [
+                "set_mode",
+                "read_status"
+            ]);
             out.push({ cfg: craneCfg, driver });
         }
         logger.info("cranes opened", { count: out.length });

@@ -14,6 +14,7 @@
 
 - `config.schema.json` 使用项目自定义 schema，底层复用 `FieldMeta`，不是标准 JSON Schema。
 - 运行时通过 `getConfig()` 读取。
+- 调整具体 Service 的时间/重试类约束时，`config.schema.json` 的 min/max 必须和实现真实可承受范围一致；约束过严会直接卡住 GTest/Smoke 里的快速配置。
 - 相关实现：`src/stdiolink_service/config/service_config_schema.*`
 - `--config-file` 只按传入字符串和当前工作目录 `QFile::open()`；不会相对 `--data-root` 自动解析。
 - 写 CLI 示例时，如果 `--config-file` 用相对路径，必须同时明确命令执行时的 `cwd`。

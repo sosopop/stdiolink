@@ -61,7 +61,9 @@ bool Driver::start(const QString& program, const QStringList& args) {
 void Driver::terminate() {
     if (m_proc.state() != QProcess::NotRunning) {
         m_proc.kill();
-        m_proc.waitForFinished(1000);
+        // kill() is forceful; keep the post-kill wait short so caller teardown
+        // does not pay a 1s penalty per driver process in common test/runtime paths.
+        m_proc.waitForFinished(200);
     }
 }
 

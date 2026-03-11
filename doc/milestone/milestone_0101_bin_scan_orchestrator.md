@@ -144,14 +144,14 @@ stderr 日志 + 可选 result.json + 退出码
       }
     }
   },
-  "crane_poll_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 100, "max": 10000 } },
-  "crane_wait_timeout_ms": { "type": "int", "default": 60000, "constraints": { "min": 1000, "max": 600000 } },
-  "scan_request_timeout_ms": { "type": "int", "default": 8000, "constraints": { "min": 500, "max": 60000 } },
+  "crane_poll_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 20, "max": 10000 } },
+  "crane_wait_timeout_ms": { "type": "int", "default": 60000, "constraints": { "min": 200, "max": 600000 } },
+  "scan_request_timeout_ms": { "type": "int", "default": 8000, "constraints": { "min": 100, "max": 60000 } },
   "scan_start_retry_count": { "type": "int", "default": 2, "constraints": { "min": 0, "max": 10 } },
   "scan_start_retry_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 0, "max": 30000 } },
-  "scan_poll_interval_ms": { "type": "int", "default": 3000, "constraints": { "min": 200, "max": 60000 } },
+  "scan_poll_interval_ms": { "type": "int", "default": 3000, "constraints": { "min": 20, "max": 60000 } },
   "scan_poll_fail_limit": { "type": "int", "default": 5, "constraints": { "min": 1, "max": 100 } },
-  "scan_timeout_ms": { "type": "int", "default": 120000, "constraints": { "min": 1000, "max": 1800000 } },
+  "scan_timeout_ms": { "type": "int", "default": 120000, "constraints": { "min": 200, "max": 1800000 } },
   "clock_skew_tolerance_ms": { "type": "int", "default": 2000, "constraints": { "min": 0, "max": 60000 } },
   "on_error_set_manual": { "type": "bool", "default": true },
   "result_output_path": { "type": "string", "default": "" }
@@ -420,14 +420,14 @@ function isFreshLog(logInfo, scanStartedAt, toleranceMs) {
       }
     }
   },
-  "crane_poll_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 100, "max": 10000 } },
-  "crane_wait_timeout_ms": { "type": "int", "default": 60000, "constraints": { "min": 1000, "max": 600000 } },
-  "scan_request_timeout_ms": { "type": "int", "default": 8000, "constraints": { "min": 500, "max": 60000 } },
+  "crane_poll_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 20, "max": 10000 } },
+  "crane_wait_timeout_ms": { "type": "int", "default": 60000, "constraints": { "min": 200, "max": 600000 } },
+  "scan_request_timeout_ms": { "type": "int", "default": 8000, "constraints": { "min": 100, "max": 60000 } },
   "scan_start_retry_count": { "type": "int", "default": 2, "constraints": { "min": 0, "max": 10 } },
   "scan_start_retry_interval_ms": { "type": "int", "default": 1000, "constraints": { "min": 0, "max": 30000 } },
-  "scan_poll_interval_ms": { "type": "int", "default": 3000, "constraints": { "min": 200, "max": 60000 } },
+  "scan_poll_interval_ms": { "type": "int", "default": 3000, "constraints": { "min": 20, "max": 60000 } },
   "scan_poll_fail_limit": { "type": "int", "default": 5, "constraints": { "min": 1, "max": 100 } },
-  "scan_timeout_ms": { "type": "int", "default": 120000, "constraints": { "min": 1000, "max": 1800000 } },
+  "scan_timeout_ms": { "type": "int", "default": 120000, "constraints": { "min": 200, "max": 1800000 } },
   "clock_skew_tolerance_ms": { "type": "int", "default": 2000, "constraints": { "min": 0, "max": 60000 } },
   "on_error_set_manual": { "type": "bool", "default": true },
   "result_output_path": { "type": "string", "default": "" }

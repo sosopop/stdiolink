@@ -75,19 +75,19 @@
     "type": "int",
     "default": 1000,
     "description": "Crane 状态轮询间隔(ms)",
-    "constraints": { "min": 100, "max": 10000 }
+    "constraints": { "min": 20, "max": 10000 }
   },
   "crane_wait_timeout_ms": {
     "type": "int",
     "default": 60000,
     "description": "等待 Crane 就绪超时(ms)",
-    "constraints": { "min": 1000, "max": 600000 }
+    "constraints": { "min": 200, "max": 600000 }
   },
   "scan_request_timeout_ms": {
     "type": "int",
     "default": 8000,
     "description": "3DVision 单次命令超时(ms)",
-    "constraints": { "min": 500, "max": 60000 }
+    "constraints": { "min": 100, "max": 60000 }
   },
   "scan_start_retry_count": {
     "type": "int",
@@ -105,7 +105,7 @@
     "type": "int",
     "default": 3000,
     "description": "vessellog.last 轮询间隔(ms)",
-    "constraints": { "min": 200, "max": 60000 }
+    "constraints": { "min": 20, "max": 60000 }
   },
   "scan_poll_fail_limit": {
     "type": "int",
@@ -117,7 +117,7 @@
     "type": "int",
     "default": 120000,
     "description": "扫描总超时(ms)",
-    "constraints": { "min": 1000, "max": 1800000 }
+    "constraints": { "min": 200, "max": 1800000 }
   },
   "clock_skew_tolerance_ms": {
     "type": "int",

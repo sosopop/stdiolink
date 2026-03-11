@@ -138,9 +138,11 @@ public:
             return;
         }
         m_proc.terminate();
-        if (!m_proc.waitForFinished(1500)) {
+        // The simulator is test-only and often does not honor graceful termination promptly.
+        // Keep the grace window short to avoid paying a large per-test shutdown tax.
+        if (!m_proc.waitForFinished(150)) {
             m_proc.kill();
-            m_proc.waitForFinished(3000);
+            m_proc.waitForFinished(500);
         }
     }
 

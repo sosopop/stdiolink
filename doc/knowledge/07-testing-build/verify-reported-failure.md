@@ -25,6 +25,7 @@
    - 判断测试程序来自 `build/runtime_debug/bin`、`build/runtime_release/bin` 还是其他目录
 4. 用最短命令复现同一条测试
    - GTest 优先直接跑测试程序并加 `--gtest_filter=...`
+   - 需要回测偶发失败时，可用 `tools/replay_gtest_failures.ps1` 对目标 case 和相邻 case 做重复回放，只在失败时落日志
    - Smoke 优先跑对应 `run_smoke.py --plan ...`
    - WebUI 优先跑对应测试文件或用例
 5. 记录复现结论
@@ -42,6 +43,7 @@ rg -n "SuiteName|TestName" src/tests
 ctest --test-dir build -N -V
 build\runtime_release\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
 build\runtime_debug\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
+tools/replay_gtest_failures.ps1 --target SuiteName.TestName --source-file src/tests/test_xxx.cpp --adjacent 1 --repeat 100
 ```
 
 ### Smoke
