@@ -2,7 +2,7 @@
   "id": "daemon_health_check",
   "name": "Daemon Health Check",
   "serviceId": "api_health_check_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "daemon",
     "restartDelayMs": 5000,

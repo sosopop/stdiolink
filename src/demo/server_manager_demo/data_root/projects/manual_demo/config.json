@@ -2,7 +2,7 @@
   "id": "manual_demo",
   "name": "Manual Demo",
   "serviceId": "quick_start_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "manual"
   }

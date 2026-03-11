@@ -2,7 +2,7 @@
   "id": "fixed_rate_demo",
   "name": "Fixed Rate Demo",
   "serviceId": "quick_start_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "fixed_rate",
     "intervalMs": 2000,

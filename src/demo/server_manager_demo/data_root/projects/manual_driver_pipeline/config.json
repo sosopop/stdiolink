@@ -2,7 +2,7 @@
   "id": "manual_driver_pipeline",
   "name": "Manual Driver Pipeline",
   "serviceId": "driver_pipeline_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "manual"
   }

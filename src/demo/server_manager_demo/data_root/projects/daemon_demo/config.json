@@ -2,7 +2,7 @@
   "id": "daemon_demo",
   "name": "Daemon Crash Loop Demo",
   "serviceId": "quick_start_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "daemon",
     "restartDelayMs": 500,

@@ -2,7 +2,7 @@
   "id": "manual_process_exec",
   "name": "Manual Process Exec",
   "serviceId": "process_exec_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "manual"
   }

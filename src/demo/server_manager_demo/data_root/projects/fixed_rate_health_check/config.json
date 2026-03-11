@@ -2,7 +2,7 @@
   "id": "fixed_rate_health_check",
   "name": "Fixed Rate Health Check",
   "serviceId": "api_health_check_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "fixed_rate",
     "intervalMs": 10000,

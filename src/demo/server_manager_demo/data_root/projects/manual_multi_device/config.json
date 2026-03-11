@@ -2,7 +2,7 @@
   "id": "manual_multi_device",
   "name": "多设备演示（手动）",
   "serviceId": "multi_device_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "manual"
   }

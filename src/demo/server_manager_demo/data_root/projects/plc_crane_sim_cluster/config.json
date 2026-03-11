@@ -2,7 +2,7 @@
   "id": "plc_crane_sim_cluster",
   "name": "PLC Crane Sim Cluster Node A",
   "serviceId": "plc_crane_sim",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "manual"
   }

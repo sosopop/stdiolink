@@ -2,7 +2,7 @@
   "id": "manual_system_info",
   "name": "Manual System Info",
   "serviceId": "system_info_service",
-  "enabled": true,
+  "enabled": false,
   "schedule": {
     "type": "manual"
   }
