@@ -11,15 +11,6 @@
 - `triage-test-failure.md`：先分构建、运行目录、环境、并发、真实回归。
 - `test-artifact-and-runtime-layout.md`：解释 `build/`、`runtime_*`、CTest 和直接运行测试程序的关系。
 
-## Read Order
-
-1. `test-matrix.md`
-2. `choose-test-entry.md`
-3. `verify-reported-failure.md`
-4. `triage-test-failure.md`
-5. `test-artifact-and-runtime-layout.md`
-6. `build-release.md`
-
 ## Source Anchors
 
 - `build.bat` / `build.sh`

@@ -7,11 +7,6 @@
 - `server-lifecycle.md`：Service/Project/Instance 模型、子系统职责、主要修改入口。
 - `server-api-realtime.md`：REST API、SSE、DriverLab WebSocket 的边界与实现落点。
 
-## Read Order
-
-1. `server-lifecycle.md`
-2. `server-api-realtime.md`
-
 ## Source Anchors
 
 - `src/stdiolink_server/`

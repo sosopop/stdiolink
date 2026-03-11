@@ -7,11 +7,6 @@
 - `system-map.md`：系统分层、核心对象、源码主入口、典型数据流。
 - `runtime-layout.md`：`build/`、`runtime_*`、`data_root/` 布局与运行时查找规则。
 
-## Read Order
-
-1. `system-map.md`
-2. `runtime-layout.md`
-
 ## Source Anchors
 
 - `doc/developer-guide.md`

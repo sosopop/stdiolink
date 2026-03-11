@@ -10,14 +10,6 @@
 - `update-knowledge-base.md`：功能开发后如何判断和更新知识库。
 - `reflect-and-update-knowledge-base.md`：从一次真实问答或排障过程反思并补齐知识路径。
 
-## Read Order
-
-- 新增 Driver：`add-driver.md`
-- 新增 Service/Project：`add-service-or-project.md`
-- 排查需求落点：`debug-change-entry.md`
-- 同步知识库：`update-knowledge-base.md`
-- 从一次过程反思并优化知识路径：`reflect-and-update-knowledge-base.md`
-
 ## Source Anchors
 
 - `src/drivers/`

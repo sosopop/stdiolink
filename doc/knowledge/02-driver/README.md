@@ -7,11 +7,6 @@
 - `driver-lifecycle.md`：`DriverCore`、运行模式、处理链和新增 Driver 时的落点。
 - `driver-meta.md`：`IMetaCommandHandler`、`MetaBuilder`、导出与消费方。
 
-## Read Order
-
-1. `driver-lifecycle.md`
-2. `driver-meta.md`
-
 ## Source Anchors
 
 - `src/stdiolink/driver/`

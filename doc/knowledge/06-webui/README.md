@@ -5,14 +5,9 @@
 ## Files
 
 - `webui-structure.md`：目录结构、页面/API/stores 分工、主要改动入口。
+- `project-detail-save-flow.md`：Project 详情页保存配置/调度的接口链路与约束。
 - `driverlab-and-events.md`：SSE、WebSocket、DriverLab 的前端消费方式。
 - `projects-config-and-test-commands.md`：Projects 配置页测试命令、导出配置和路径展示规则。
-
-## Read Order
-
-1. `webui-structure.md`
-2. `projects-config-and-test-commands.md`
-3. `driverlab-and-events.md`
 
 ## Source Anchors
 

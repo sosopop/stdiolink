@@ -7,11 +7,6 @@
 - `driver-task-flow.md`：`Driver`/`Task` 基本链路、早退处理、关键入口。
 - `wait-any-and-forms.md`：并发等待与表单生成的实现落点和风险。
 
-## Read Order
-
-1. `driver-task-flow.md`
-2. `wait-any-and-forms.md`
-
 ## Source Anchors
 
 - `src/stdiolink/host/`

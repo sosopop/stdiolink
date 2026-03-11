@@ -1,0 +1,33 @@
+# Project Detail Save Flow
+
+## Purpose
+
+说明 Project 详情页保存 `config` / `schedule` 时，前端为什么必须提交完整 Project payload。
+
+## Runtime Chain
+
+`ProjectDetail` -> `useProjectsStore.updateProject()` -> `projectsApi.update()` -> `PUT /api/projects/:id`
+
+## Key Rule
+
+- `PUT /api/projects/:id` 按全量 `Project` 校验
+- 后端要求 `name`、`serviceId`
+- 前端保存 `config` 或 `schedule` 时不能只传局部字段，必须带上当前 Project 的完整更新体
+
+## Affected UI
+
+- Project 详情页 `Config` tab 保存
+- Project 详情页 `Schedule` tab 保存
+- `setEnabled` 不受影响；它走独立的 `PATCH /api/projects/:id/enabled`
+
+## Modify Entry
+
+- 页面入口：`src/webui/src/pages/Projects/Detail.tsx`
+- Store：`src/webui/src/stores/useProjectsStore.ts`
+- API：`src/webui/src/api/projects.ts`
+- 后端校验：`src/stdiolink_server/model/project.cpp`
+
+## Tests
+
+- `src/webui/src/pages/Projects/__tests__/ProjectDetail.test.tsx`
+- `src/tests/test_api_router.cpp`

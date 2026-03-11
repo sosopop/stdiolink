@@ -46,6 +46,14 @@ export const ProjectDetailPage: React.FC = () => {
   if (error) return <Alert type="error" message={error} data-testid="detail-error" />;
   if (!currentProject) return <Empty description={t('projects.detail.not_found')} data-testid="detail-not-found" />;
 
+  const buildUpdatePayload = (patch: Partial<Pick<typeof currentProject, 'config' | 'schedule'>>) => ({
+    name: currentProject.name,
+    serviceId: currentProject.serviceId,
+    enabled: currentProject.enabled,
+    config: patch.config ?? currentProject.config,
+    schedule: patch.schedule ?? currentProject.schedule,
+  });
+
   const items = [
     {
       key: 'overview',
@@ -70,7 +78,7 @@ export const ProjectDetailPage: React.FC = () => {
           schema={currentService?.configSchemaFields ?? []}
           serviceDir={currentService?.serviceDir ?? null}
           dataRoot={serverStatus?.dataRoot ?? null}
-          onSave={(config) => updateProject(currentProject.id, { config })}
+          onSave={(config) => updateProject(currentProject.id, buildUpdatePayload({ config }))}
         />
       ),
     },
@@ -90,7 +98,7 @@ export const ProjectDetailPage: React.FC = () => {
       children: (
         <ProjectSchedule
           schedule={currentProject.schedule}
-          onSave={(schedule) => updateProject(currentProject.id, { schedule })}
+          onSave={(schedule) => updateProject(currentProject.id, buildUpdatePayload({ schedule }))}
         />
       ),
     },

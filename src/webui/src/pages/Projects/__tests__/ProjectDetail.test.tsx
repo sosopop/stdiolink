@@ -136,6 +136,51 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByRole('tab', { name: 'Schedule' })).toBeDefined();
   });
 
+  it('saves config with full project payload', async () => {
+    const updateProject = vi.fn().mockResolvedValue(true);
+    renderDetail(
+      { updateProject },
+      { currentService: { serviceDir: '/data/services/s1', configSchemaFields: [] } },
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Config' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('save-config-btn')).toBeDefined();
+    });
+    fireEvent.click(screen.getByTestId('save-config-btn'));
+
+    await waitFor(() => {
+      expect(updateProject).toHaveBeenCalledWith('p1', {
+        name: 'Test Project',
+        serviceId: 's1',
+        enabled: true,
+        config: { host: 'localhost' },
+        schedule: { type: 'manual' },
+      });
+    });
+  });
+
+  it('saves schedule with full project payload', async () => {
+    const updateProject = vi.fn().mockResolvedValue(true);
+    renderDetail({ updateProject });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('save-schedule-btn')).toBeDefined();
+    });
+    fireEvent.click(screen.getByTestId('save-schedule-btn'));
+
+    await waitFor(() => {
+      expect(updateProject).toHaveBeenCalledWith('p1', {
+        name: 'Test Project',
+        serviceId: 's1',
+        enabled: true,
+        config: { host: 'localhost' },
+        schedule: { type: 'manual' },
+      });
+    });
+  });
+
   it('shows loading state', () => {
     renderDetail({ loading: true, currentProject: null });
     expect(screen.getByTestId('detail-loading')).toBeDefined();
