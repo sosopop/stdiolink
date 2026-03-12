@@ -112,20 +112,20 @@
             "refresh": "更新"
         },
         "config": {
-            "save": "Save Configuration",
-            "save_success": "Configuration saved",
-            "save_fail": "Failed to save configuration",
-            "test_commands": "Test Commands",
-            "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
-            "expanded_command": "Expanded config arguments",
-            "config_file_command": "Config file mode",
-            "config_file_command_hint": "This snippet switches to {{workingDirectory}} and reuses the saved project param file {{filePath}}.",
-            "test_commands_loading": "Loading service directory and data root...",
-            "test_command_copied": "Command copied",
-            "test_command_copy_failed": "Failed to copy command",
-            "export": "Export Config",
-            "export_success": "Config exported",
-            "export_fail": "Failed to export config"
+            "save": "設定を保存",
+            "save_success": "設定を保存しました",
+            "save_fail": "設定の保存に失敗しました",
+            "test_commands": "テストコマンド",
+            "test_commands_hint": "保存済みのプロジェクト設定を使って、再利用可能な stdiolink_service テストコマンドを生成します。",
+            "expanded_command": "展開済み設定引数",
+            "config_file_command": "設定ファイルモード",
+            "config_file_command_hint": "このスニペットは {{workingDirectory}} に移動し、保存済みプロジェクトのパラメータファイル {{filePath}} を再利用します。",
+            "test_commands_loading": "サービスディレクトリと data root を読み込み中...",
+            "test_command_copied": "コマンドをコピーしました",
+            "test_command_copy_failed": "コマンドのコピーに失敗しました",
+            "export": "設定をエクスポート",
+            "export_success": "設定をエクスポートしました",
+            "export_fail": "設定のエクスポートに失敗しました"
         },
         "schedule": {
             "save": "スケジュール保存",
@@ -161,7 +161,7 @@
             "restart_prefix": "再起動"
         },
         "overview": {
-            "start_project": "プロジェクト開始",
+            "start_project": "開始",
             "stop_confirm": "このプロジェクトを停止しますか？",
             "project_id": "プロジェクトID",
             "display_name": "表示名",
@@ -172,7 +172,9 @@
             "fail": "不合格",
             "schedule_strategy": "スケジュール戦略",
             "active_instances": "アクティブインスタンス",
-            "consecutive_failures": "連続失敗回数"
+            "consecutive_failures": "連続失敗回数",
+            "enable_project": "プロジェクトを有効化",
+            "disable_project": "プロジェクトを無効化"
         }
     },
     "services": {
@@ -325,7 +327,9 @@
             "select_command": "コマンド選択",
             "select_placeholder": "コマンドを選択",
             "execute": "実行",
-            "no_params": "このコマンドにはパラメータがありません"
+            "no_params": "このコマンドにはパラメータがありません",
+            "examples_title": "例",
+            "apply_example": "例のパラメータを適用"
         },
         "toolbar": {
             "clear": "クリア",
@@ -377,7 +381,7 @@
         "child_fields": "{{count}} 個の子フィールド",
         "edit_field": "フィールド編集",
         "field_name": "フィールド名",
-        "field_name_placeholder": "field_name",
+        "field_name_placeholder": "フィールド名",
         "field_name_required": "フィールド名は必須です",
         "field_name_exists": "フィールド名は既に存在します",
         "type": "タイプ",
@@ -405,7 +409,11 @@
         "advanced": "詳細",
         "read_only": "読み取り専用",
         "placeholder": "プレースホルダー",
-        "unit": "単位"
+        "unit": "単位",
+        "items_type": "項目タイプ",
+        "array_item_fields": "配列項目フィールド",
+        "field_name_no_dot": "フィールド名に '.' は使用できません",
+        "add_item": "項目を追加"
     },
     "sse": {
         "live": "ライブ",

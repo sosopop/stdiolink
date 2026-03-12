@@ -100,13 +100,26 @@ describe('useProjectsStore', () => {
   });
 
   it('setEnabled success', async () => {
-    useProjectsStore.setState({ projects: [{ id: 'p1', name: 'P1', serviceId: 's1', enabled: false, valid: true, config: {}, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' }] as any });
+    useProjectsStore.setState({
+      projects: [{ id: 'p1', name: 'P1', serviceId: 's1', enabled: false, valid: true, config: {}, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' }] as any,
+      currentProject: { id: 'p1', name: 'P1', serviceId: 's1', enabled: false, valid: true, config: {}, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' } as any,
+      runtimes: {
+        p1: { id: 'p1', enabled: false, valid: true, status: 'stopped', runningInstances: 0, instances: [], schedule: { type: 'manual', timerActive: false, restartSuppressed: false, consecutiveFailures: 0, shuttingDown: false, autoRestarting: false } },
+      },
+      currentRuntime: { id: 'p1', enabled: false, valid: true, status: 'stopped', runningInstances: 0, instances: [], schedule: { type: 'manual', timerActive: false, restartSuppressed: false, consecutiveFailures: 0, shuttingDown: false, autoRestarting: false } } as any,
+    });
     const updated = { id: 'p1', name: 'P1', serviceId: 's1', enabled: true, valid: true, config: {}, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' };
+    const updatedRuntime = { id: 'p1', enabled: true, valid: true, status: 'running', runningInstances: 1, instances: [], schedule: { type: 'manual', timerActive: false, restartSuppressed: false, consecutiveFailures: 0, shuttingDown: false, autoRestarting: false } };
     vi.mocked(projectsApi.setEnabled).mockResolvedValue(updated as any);
+    vi.mocked(projectsApi.runtime).mockResolvedValue(updatedRuntime as any);
 
     const result = await useProjectsStore.getState().setEnabled('p1', true);
 
     expect(result).toBe(true);
     expect(useProjectsStore.getState().projects[0].enabled).toBe(true);
+    expect(useProjectsStore.getState().currentProject?.enabled).toBe(true);
+    expect(projectsApi.runtime).toHaveBeenCalledWith('p1');
+    expect(useProjectsStore.getState().runtimes.p1).toEqual(updatedRuntime);
+    expect(useProjectsStore.getState().currentRuntime).toEqual(updatedRuntime);
   });
 });

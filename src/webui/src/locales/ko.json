@@ -112,20 +112,20 @@
             "refresh": "새로고침"
         },
         "config": {
-            "save": "Save Configuration",
-            "save_success": "Configuration saved",
-            "save_fail": "Failed to save configuration",
-            "test_commands": "Test Commands",
-            "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
-            "expanded_command": "Expanded config arguments",
-            "config_file_command": "Config file mode",
-            "config_file_command_hint": "This snippet switches to {{workingDirectory}} and reuses the saved project param file {{filePath}}.",
-            "test_commands_loading": "Loading service directory and data root...",
-            "test_command_copied": "Command copied",
-            "test_command_copy_failed": "Failed to copy command",
-            "export": "Export Config",
-            "export_success": "Config exported",
-            "export_fail": "Failed to export config"
+            "save": "구성 저장",
+            "save_success": "구성을 저장했습니다",
+            "save_fail": "구성 저장에 실패했습니다",
+            "test_commands": "테스트 명령",
+            "test_commands_hint": "저장된 프로젝트 구성을 사용해 재현 가능한 stdiolink_service 테스트 명령을 생성합니다.",
+            "expanded_command": "확장된 구성 인자",
+            "config_file_command": "구성 파일 모드",
+            "config_file_command_hint": "이 스니펫은 {{workingDirectory}} 로 이동한 뒤 저장된 프로젝트 파라미터 파일 {{filePath}} 을 재사용합니다.",
+            "test_commands_loading": "서비스 디렉터리와 data root를 불러오는 중...",
+            "test_command_copied": "명령을 복사했습니다",
+            "test_command_copy_failed": "명령 복사에 실패했습니다",
+            "export": "구성 내보내기",
+            "export_success": "구성을 내보냈습니다",
+            "export_fail": "구성 내보내기에 실패했습니다"
         },
         "schedule": {
             "save": "스케줄 저장",
@@ -161,7 +161,7 @@
             "restart_prefix": "재시작"
         },
         "overview": {
-            "start_project": "프로젝트 시작",
+            "start_project": "시작",
             "stop_confirm": "이 프로젝트를 중지하시겠습니까?",
             "project_id": "프로젝트 ID",
             "display_name": "표시 이름",
@@ -172,7 +172,9 @@
             "fail": "실패",
             "schedule_strategy": "스케줄 전략",
             "active_instances": "활성 인스턴스",
-            "consecutive_failures": "연속 실패 횟수"
+            "consecutive_failures": "연속 실패 횟수",
+            "enable_project": "프로젝트 활성화",
+            "disable_project": "프로젝트 비활성화"
         }
     },
     "services": {
@@ -325,7 +327,9 @@
             "select_command": "명령어 선택",
             "select_placeholder": "명령어 선택",
             "execute": "실행",
-            "no_params": "이 명령어에는 매개변수가 없습니다"
+            "no_params": "이 명령어에는 매개변수가 없습니다",
+            "examples_title": "예제",
+            "apply_example": "예제 파라미터 적용"
         },
         "toolbar": {
             "clear": "지우기",
@@ -377,7 +381,7 @@
         "child_fields": "하위 필드 {{count}}개",
         "edit_field": "필드 편집",
         "field_name": "필드 이름",
-        "field_name_placeholder": "field_name",
+        "field_name_placeholder": "필드 이름",
         "field_name_required": "필드 이름은 필수입니다",
         "field_name_exists": "필드 이름이 이미 존재합니다",
         "type": "유형",
@@ -405,7 +409,11 @@
         "advanced": "고급",
         "read_only": "읽기 전용",
         "placeholder": "플레이스홀더",
-        "unit": "단위"
+        "unit": "단위",
+        "items_type": "항목 유형",
+        "array_item_fields": "배열 항목 필드",
+        "field_name_no_dot": "필드 이름에는 '.'을 포함할 수 없습니다",
+        "add_item": "항목 추가"
     },
     "sse": {
         "live": "실시간",

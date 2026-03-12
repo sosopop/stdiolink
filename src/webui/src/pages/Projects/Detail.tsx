@@ -18,7 +18,7 @@ export const ProjectDetailPage: React.FC = () => {
   const tab = searchParams.get('tab');
   const {
     currentProject, currentRuntime, loading, error,
-    fetchProjectDetail, fetchRuntime, startProject, stopProject, reloadProject, updateProject,
+    fetchProjectDetail, fetchRuntime, startProject, stopProject, reloadProject, updateProject, setEnabled,
   } = useProjectsStore();
   const { currentService, fetchServiceDetail } = useServicesStore();
   const { serverStatus, fetchServerStatus } = useDashboardStore();
@@ -65,6 +65,7 @@ export const ProjectDetailPage: React.FC = () => {
           onStart={() => startProject(currentProject.id)}
           onStop={() => stopProject(currentProject.id)}
           onReload={() => reloadProject(currentProject.id)}
+          onToggleEnabled={(enabled) => setEnabled(currentProject.id, enabled)}
         />
       ),
     },

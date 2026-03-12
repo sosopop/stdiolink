@@ -112,20 +112,20 @@
             "refresh": "Aktualisieren"
         },
         "config": {
-            "save": "Save Configuration",
-            "save_success": "Configuration saved",
-            "save_fail": "Failed to save configuration",
-            "test_commands": "Test Commands",
-            "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
-            "expanded_command": "Expanded config arguments",
-            "config_file_command": "Config file mode",
-            "config_file_command_hint": "This snippet switches to {{workingDirectory}} and reuses the saved project param file {{filePath}}.",
-            "test_commands_loading": "Loading service directory and data root...",
-            "test_command_copied": "Command copied",
-            "test_command_copy_failed": "Failed to copy command",
-            "export": "Export Config",
-            "export_success": "Config exported",
-            "export_fail": "Failed to export config"
+            "save": "Konfiguration speichern",
+            "save_success": "Konfiguration gespeichert",
+            "save_fail": "Konfiguration konnte nicht gespeichert werden",
+            "test_commands": "Testbefehle",
+            "test_commands_hint": "Verwenden Sie die gespeicherte Projektkonfiguration, um wiederholbare stdiolink_service-Testbefehle zu erzeugen.",
+            "expanded_command": "Erweiterte Konfigurationsargumente",
+            "config_file_command": "Konfigurationsdatei-Modus",
+            "config_file_command_hint": "Dieses Snippet wechselt in {{workingDirectory}} und verwendet die gespeicherte Projekt-Parametrierungsdatei {{filePath}} erneut.",
+            "test_commands_loading": "Lade Dienstverzeichnis und Data Root...",
+            "test_command_copied": "Befehl kopiert",
+            "test_command_copy_failed": "Befehl konnte nicht kopiert werden",
+            "export": "Konfiguration exportieren",
+            "export_success": "Konfiguration exportiert",
+            "export_fail": "Konfiguration konnte nicht exportiert werden"
         },
         "schedule": {
             "save": "Zeitplan speichern",
@@ -161,7 +161,7 @@
             "restart_prefix": "Neustart"
         },
         "overview": {
-            "start_project": "Projekt starten",
+            "start_project": "Starten",
             "stop_confirm": "Dieses Projekt stoppen?",
             "project_id": "Projekt-ID",
             "display_name": "Anzeigename",
@@ -172,7 +172,9 @@
             "fail": "Fehlgeschlagen",
             "schedule_strategy": "Zeitplanstrategie",
             "active_instances": "Aktive Instanzen",
-            "consecutive_failures": "Aufeinanderfolgende Fehler"
+            "consecutive_failures": "Aufeinanderfolgende Fehler",
+            "enable_project": "Projekt aktivieren",
+            "disable_project": "Projekt deaktivieren"
         }
     },
     "services": {
@@ -325,7 +327,9 @@
             "select_command": "Befehl auswählen",
             "select_placeholder": "Befehl auswählen",
             "execute": "Ausführen",
-            "no_params": "Keine Parameter für diesen Befehl"
+            "no_params": "Keine Parameter für diesen Befehl",
+            "examples_title": "Beispiele",
+            "apply_example": "Beispielparameter anwenden"
         },
         "toolbar": {
             "clear": "Leeren",
@@ -405,7 +409,11 @@
         "advanced": "Erweitert",
         "read_only": "Schreibgeschützt",
         "placeholder": "Platzhalter",
-        "unit": "Einheit"
+        "unit": "Einheit",
+        "items_type": "Elementtyp",
+        "array_item_fields": "Elementfelder",
+        "field_name_no_dot": "Feldname darf keinen '.' enthalten",
+        "add_item": "Element hinzufügen"
     },
     "sse": {
         "live": "Live",

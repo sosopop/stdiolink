@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Descriptions, Tag, Button, Space, Popconfirm, Typography, Card } from 'antd';
-import { PlayCircleOutlined, StopOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, StopOutlined, ReloadOutlined, PoweroffOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
 
@@ -11,14 +11,16 @@ interface ProjectOverviewProps {
   onStart: () => void;
   onStop: () => void;
   onReload: () => void;
+  onToggleEnabled: (enabled: boolean) => Promise<boolean>;
 }
 
 const { Text } = Typography;
 
 export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
-  project, runtime, onStart, onStop, onReload,
+  project, runtime, onStart, onStop, onReload, onToggleEnabled,
 }) => {
   const { t } = useTranslation();
+  const [toggleLoading, setToggleLoading] = useState(false);
   const status = runtime?.status ?? 'stopped';
   const canStart = project.enabled && project.valid && status !== 'running';
   const canStop = status === 'running';
@@ -27,6 +29,19 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
     : status === 'invalid'
       ? 'error'
       : 'stopped';
+  const nextEnabled = !project.enabled;
+  const toggleLabel = project.enabled
+    ? t('projects.overview.disable_project')
+    : t('projects.overview.enable_project');
+
+  const handleToggleEnabled = async () => {
+    setToggleLoading(true);
+    try {
+      await onToggleEnabled(nextEnabled);
+    } finally {
+      setToggleLoading(false);
+    }
+  };
 
   return (
     <div data-testid="project-overview">
@@ -85,6 +100,25 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
             data-testid="reload-btn"
           >
             {t('common.reload')}
+          </Button>
+          <Button
+            danger={project.enabled}
+            icon={project.enabled ? <PoweroffOutlined /> : <CheckCircleOutlined />}
+            loading={toggleLoading}
+            size="large"
+            style={{
+              height: 40,
+              background: project.enabled ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.03)',
+              border: project.enabled ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--surface-border)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 8,
+              color: project.enabled ? undefined : 'var(--text-secondary)',
+              fontWeight: 600
+            }}
+            onClick={handleToggleEnabled}
+            data-testid="toggle-enabled-btn"
+          >
+            {toggleLabel}
           </Button>
         </Space>
 

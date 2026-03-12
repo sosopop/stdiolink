@@ -161,7 +161,9 @@
             "restart_prefix": "restart"
         },
         "overview": {
-            "start_project": "Start Project",
+            "start_project": "Start",
+            "enable_project": "Enable Project",
+            "disable_project": "Disable Project",
             "stop_confirm": "Stop this project?",
             "project_id": "Project ID",
             "display_name": "Display Name",

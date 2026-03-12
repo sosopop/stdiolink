@@ -153,6 +153,7 @@ export const useProjectsStore = create<ProjectsState>()((set, get) => ({
         projects: s.projects.map((p) => (p.id === id ? updated : p)),
         currentProject: s.currentProject?.id === id ? updated : s.currentProject,
       }));
+      await get().fetchRuntime(id);
       return true;
     } catch (e: any) {
       set({ error: e?.error || 'Failed to update enabled state' });

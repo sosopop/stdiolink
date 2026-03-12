@@ -134,13 +134,13 @@
             "type": "排程類型",
             "manual": "手動",
             "daemon": "守護程序",
-        "fixed_rate": "定時執行",
-        "run_timeout": "執行逾時 (ms)",
-        "run_timeout_hint": "0 = 停用",
-        "run_timeout_invalid": "執行逾時必須是大於等於 0 的整數",
-        "restart_delay": "重啟延遲 (ms)",
-        "max_failures": "最大連續失敗次數",
-        "interval": "執行間隔 (ms)",
+            "fixed_rate": "定時執行",
+            "run_timeout": "執行逾時 (ms)",
+            "run_timeout_hint": "0 = 停用",
+            "run_timeout_invalid": "執行逾時必須是大於等於 0 的整數",
+            "restart_delay": "重啟延遲 (ms)",
+            "max_failures": "最大連續失敗次數",
+            "interval": "執行間隔 (ms)",
             "max_concurrent": "最大並行數"
         },
         "instances_tab": {
@@ -161,7 +161,9 @@
             "restart_prefix": "重啟"
         },
         "overview": {
-            "start_project": "啟動專案",
+            "start_project": "啟動",
+            "enable_project": "啟用專案",
+            "disable_project": "停用專案",
             "stop_confirm": "確認停止此專案？",
             "project_id": "專案 ID",
             "display_name": "顯示名稱",
@@ -325,7 +327,9 @@
             "select_command": "選擇命令",
             "select_placeholder": "選擇命令",
             "execute": "執行",
-            "no_params": "此命令無參數"
+            "no_params": "此命令無參數",
+            "examples_title": "範例",
+            "apply_example": "套用範例參數"
         },
         "toolbar": {
             "clear": "清除",
@@ -377,7 +381,7 @@
         "child_fields": "{{count}} 個子欄位",
         "edit_field": "編輯欄位",
         "field_name": "欄位名稱",
-        "field_name_placeholder": "field_name",
+        "field_name_placeholder": "欄位名稱",
         "field_name_required": "欄位名稱不能為空",
         "field_name_exists": "欄位名稱已存在",
         "type": "類型",
@@ -405,7 +409,11 @@
         "advanced": "進階",
         "read_only": "唯讀",
         "placeholder": "佔位符",
-        "unit": "單位"
+        "unit": "單位",
+        "items_type": "項目類型",
+        "array_item_fields": "項目欄位",
+        "field_name_no_dot": "欄位名稱不能包含 '.'",
+        "add_item": "新增項目"
     },
     "sse": {
         "live": "即時",

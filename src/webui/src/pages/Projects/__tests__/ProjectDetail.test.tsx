@@ -136,6 +136,32 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByRole('tab', { name: 'Schedule' })).toBeDefined();
   });
 
+  it('disables project from overview tab', async () => {
+    const setEnabled = vi.fn().mockResolvedValue(true);
+    renderDetail({ setEnabled });
+
+    fireEvent.click(screen.getByTestId('toggle-enabled-btn'));
+
+    await waitFor(() => {
+      expect(setEnabled).toHaveBeenCalledWith('p1', false);
+    });
+  });
+
+  it('enables project from overview tab when currently disabled', async () => {
+    const setEnabled = vi.fn().mockResolvedValue(true);
+    renderDetail({
+      currentProject: { ...mockProject, enabled: false },
+      currentRuntime: { ...mockRuntime, enabled: false, status: 'disabled' },
+      setEnabled,
+    });
+
+    fireEvent.click(screen.getByTestId('toggle-enabled-btn'));
+
+    await waitFor(() => {
+      expect(setEnabled).toHaveBeenCalledWith('p1', true);
+    });
+  });
+
   it('saves config with full project payload', async () => {
     const updateProject = vi.fn().mockResolvedValue(true);
     renderDetail(

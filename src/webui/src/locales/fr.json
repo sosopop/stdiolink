@@ -112,20 +112,20 @@
             "refresh": "Actualiser"
         },
         "config": {
-            "save": "Save Configuration",
-            "save_success": "Configuration saved",
-            "save_fail": "Failed to save configuration",
-            "test_commands": "Test Commands",
-            "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
-            "expanded_command": "Expanded config arguments",
-            "config_file_command": "Config file mode",
-            "config_file_command_hint": "This snippet switches to {{workingDirectory}} and reuses the saved project param file {{filePath}}.",
-            "test_commands_loading": "Loading service directory and data root...",
-            "test_command_copied": "Command copied",
-            "test_command_copy_failed": "Failed to copy command",
-            "export": "Export Config",
-            "export_success": "Config exported",
-            "export_fail": "Failed to export config"
+            "save": "Enregistrer la configuration",
+            "save_success": "Configuration enregistrée",
+            "save_fail": "Échec de l'enregistrement de la configuration",
+            "test_commands": "Commandes de test",
+            "test_commands_hint": "Utilisez la configuration enregistrée du projet pour générer des commandes de test stdiolink_service reproductibles.",
+            "expanded_command": "Arguments de configuration étendus",
+            "config_file_command": "Mode fichier de configuration",
+            "config_file_command_hint": "Cet extrait se place dans {{workingDirectory}} et réutilise le fichier de paramètres enregistré du projet {{filePath}}.",
+            "test_commands_loading": "Chargement du répertoire du service et de la racine de données...",
+            "test_command_copied": "Commande copiée",
+            "test_command_copy_failed": "Échec de la copie de la commande",
+            "export": "Exporter la configuration",
+            "export_success": "Configuration exportée",
+            "export_fail": "Échec de l'export de la configuration"
         },
         "schedule": {
             "save": "Enregistrer la planification",
@@ -161,7 +161,7 @@
             "restart_prefix": "redémarrage"
         },
         "overview": {
-            "start_project": "Démarrer le projet",
+            "start_project": "Démarrer",
             "stop_confirm": "Arrêter ce projet ?",
             "project_id": "ID du projet",
             "display_name": "Nom d'affichage",
@@ -172,7 +172,9 @@
             "fail": "Échoué",
             "schedule_strategy": "Stratégie de planification",
             "active_instances": "Instances actives",
-            "consecutive_failures": "Échecs consécutifs"
+            "consecutive_failures": "Échecs consécutifs",
+            "enable_project": "Activer le projet",
+            "disable_project": "Désactiver le projet"
         }
     },
     "services": {
@@ -325,7 +327,9 @@
             "select_command": "Sélectionner une commande",
             "select_placeholder": "Sélectionner une commande",
             "execute": "Exécuter",
-            "no_params": "Aucun paramètre pour cette commande"
+            "no_params": "Aucun paramètre pour cette commande",
+            "examples_title": "Exemples",
+            "apply_example": "Appliquer les paramètres d'exemple"
         },
         "toolbar": {
             "clear": "Effacer",
@@ -405,7 +409,11 @@
         "advanced": "Avancé",
         "read_only": "Lecture seule",
         "placeholder": "Texte indicatif",
-        "unit": "Unité"
+        "unit": "Unité",
+        "items_type": "Type d'élément",
+        "array_item_fields": "Champs d'élément",
+        "field_name_no_dot": "Le nom du champ ne peut pas contenir '.'",
+        "add_item": "Ajouter un élément"
     },
     "sse": {
         "live": "En direct",

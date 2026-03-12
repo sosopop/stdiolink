@@ -112,20 +112,20 @@
             "refresh": "Обновить"
         },
         "config": {
-            "save": "Save Configuration",
-            "save_success": "Configuration saved",
-            "save_fail": "Failed to save configuration",
-            "test_commands": "Test Commands",
-            "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
-            "expanded_command": "Expanded config arguments",
-            "config_file_command": "Config file mode",
-            "config_file_command_hint": "This snippet switches to {{workingDirectory}} and reuses the saved project param file {{filePath}}.",
-            "test_commands_loading": "Loading service directory and data root...",
-            "test_command_copied": "Command copied",
-            "test_command_copy_failed": "Failed to copy command",
-            "export": "Export Config",
-            "export_success": "Config exported",
-            "export_fail": "Failed to export config"
+            "save": "Сохранить конфигурацию",
+            "save_success": "Конфигурация сохранена",
+            "save_fail": "Не удалось сохранить конфигурацию",
+            "test_commands": "Тестовые команды",
+            "test_commands_hint": "Используйте сохраненную конфигурацию проекта для генерации повторяемых тестовых команд stdiolink_service.",
+            "expanded_command": "Развернутые аргументы конфигурации",
+            "config_file_command": "Режим файла конфигурации",
+            "config_file_command_hint": "Этот фрагмент переключается в {{workingDirectory}} и повторно использует сохраненный файл параметров проекта {{filePath}}.",
+            "test_commands_loading": "Загрузка каталога сервиса и data root...",
+            "test_command_copied": "Команда скопирована",
+            "test_command_copy_failed": "Не удалось скопировать команду",
+            "export": "Экспорт конфигурации",
+            "export_success": "Конфигурация экспортирована",
+            "export_fail": "Не удалось экспортировать конфигурацию"
         },
         "schedule": {
             "save": "Сохранить расписание",
@@ -161,7 +161,7 @@
             "restart_prefix": "перезапуск"
         },
         "overview": {
-            "start_project": "Запустить проект",
+            "start_project": "Запустить",
             "stop_confirm": "Остановить этот проект?",
             "project_id": "ID проекта",
             "display_name": "Отображаемое имя",
@@ -172,7 +172,9 @@
             "fail": "Не пройдена",
             "schedule_strategy": "Стратегия расписания",
             "active_instances": "Активные экземпляры",
-            "consecutive_failures": "Последовательные сбои"
+            "consecutive_failures": "Последовательные сбои",
+            "enable_project": "Включить проект",
+            "disable_project": "Отключить проект"
         }
     },
     "services": {
@@ -325,7 +327,9 @@
             "select_command": "Выбор команды",
             "select_placeholder": "Выберите команду",
             "execute": "Выполнить",
-            "no_params": "У этой команды нет параметров"
+            "no_params": "У этой команды нет параметров",
+            "examples_title": "Примеры",
+            "apply_example": "Применить параметры примера"
         },
         "toolbar": {
             "clear": "Очистить",
@@ -405,7 +409,11 @@
         "advanced": "Расширенные",
         "read_only": "Только для чтения",
         "placeholder": "Заполнитель",
-        "unit": "Единица измерения"
+        "unit": "Единица измерения",
+        "items_type": "Тип элемента",
+        "array_item_fields": "Поля элемента массива",
+        "field_name_no_dot": "Имя поля не может содержать '.'",
+        "add_item": "Добавить элемент"
     },
     "sse": {
         "live": "В эфире",
