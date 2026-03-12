@@ -80,7 +80,9 @@ public:
 
 private:
     QByteArray buildRequest(FunctionCode fc, const QByteArray& pdu);
-    ModbusResult sendRequest(const QByteArray& request, FunctionCode expectedFc);
+    QByteArray readResponse(quint16 expectedTransactionId, QString& errorMessage);
+    ModbusResult sendRequest(const QByteArray& request, FunctionCode expectedFc,
+                             QByteArray* responseOut);
     ModbusResult parseReadBitsResponse(const QByteArray& response, uint16_t count);
     ModbusResult parseReadRegistersResponse(const QByteArray& response);
     ModbusResult parseWriteResponse(const QByteArray& response);

@@ -34,3 +34,7 @@ export function normalizeCommandExamples(input: unknown): CommandExampleMeta[] {
   }
   return out;
 }
+
+export function selectDriverLabExamples(input: unknown): CommandExampleMeta[] {
+  return normalizeCommandExamples(input).filter((example) => example.mode === 'stdio');
+}

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { ConfigProvider } from 'antd';
+import i18n from '@/i18n';
 import { CommandPanel } from '../CommandPanel';
 
 const mockCommands = [
@@ -123,14 +124,40 @@ describe('CommandPanel', () => {
   });
 
   it('applies selected example params', () => {
+    const expectedTitle = i18n.t('driverlab.command.examples_title');
     const { props } = renderPanel({ selectedCommand: 'add' });
     fireEvent.click(screen.getByTestId('apply-example-0'));
-    expect(props.onParamsChange).toHaveBeenCalledWith({ a: 1, b: 2 });
-    expect(screen.getByTestId('apply-example-1')).toBeDefined();
+    expect(props.onParamsChange).toHaveBeenCalledWith({ a: 11, b: 22 });
+    expect(screen.queryByTestId('apply-example-1')).toBeNull();
+    expect(screen.getByTestId('example-description-0').textContent).toBe(expectedTitle);
+    expect(screen.queryByText('console')).toBeNull();
   });
 
   it('does not render examples block when command has no examples', () => {
     renderPanel({ selectedCommand: 'ping' });
+    expect(screen.queryByTestId('command-examples')).toBeNull();
+  });
+
+  it('does not render examples block when command has only console examples', () => {
+    renderPanel({
+      commands: [
+        {
+          name: 'inspect',
+          description: 'Inspect values',
+          params: [],
+          returns: { type: 'string' as const },
+          examples: [
+            {
+              description: 'console only',
+              mode: 'console',
+              params: { value: 1 },
+            },
+          ],
+        },
+      ],
+      selectedCommand: 'inspect',
+    });
+
     expect(screen.queryByTestId('command-examples')).toBeNull();
   });
 
@@ -139,6 +166,6 @@ describe('CommandPanel', () => {
     expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=9 --b=9');
 
     fireEvent.click(screen.getByTestId('apply-example-0'));
-    expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=1 --b=2');
+    expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=11 --b=22');
   });
 });

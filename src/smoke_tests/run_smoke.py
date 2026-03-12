@@ -11,6 +11,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 PLAN_SCRIPTS = {
+    "m102_webui_i18n_alignment": SCRIPT_DIR / "m102_webui_i18n_alignment.py",
     "m98_json_cli_normalization": SCRIPT_DIR / "m98_json_cli_normalization.py",
     "m99_cli_example_unification": SCRIPT_DIR / "m99_cli_example_unification.py",
     "m100_cli_docs_and_migration": SCRIPT_DIR / "m100_cli_docs_and_migration.py",
@@ -22,6 +23,7 @@ PLAN_SCRIPTS = {
     "m97_plc_crane_sim": SCRIPT_DIR / "m97_plc_crane_sim_smoke.py",
 }
 LEGACY_MILESTONE_ALIASES = {
+    "102": "m102_webui_i18n_alignment",
     "98": "m98_json_cli_normalization",
     "99": "m99_cli_example_unification",
     "100": "m100_cli_docs_and_migration",

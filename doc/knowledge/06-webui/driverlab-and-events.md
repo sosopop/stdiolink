@@ -15,6 +15,7 @@
 - 入口：`src/webui/src/api/driverlab-ws.ts`
 - 后端：`src/stdiolink_server/http/driverlab_ws_*`
 - 依赖：Driver 元数据、命令表单、执行结果流
+- 指令面板示例区默认只展示 `mode=stdio` 的示例；界面不显示 mode 标签
 
 ## High Risk Changes
 

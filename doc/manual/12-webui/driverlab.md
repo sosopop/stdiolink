@@ -59,5 +59,5 @@ DriverLab 是 WebUI 内置的 Driver 实时调试工具，通过 WebSocket 与 D
 
 - `meta.examples` 提供结构化 `params` 与 `mode`
 - 前端按统一规则把结构化参数渲染成 CLI 预览
-- console 示例用于展示路径展开后的命令行
-- stdio 示例保留 JSON 请求语义，不会被 console 示例覆盖
+- DriverLab 指令面板默认只展示 `stdio` 示例
+- 示例卡片标题统一显示为“示例”，界面不暴露具体 mode

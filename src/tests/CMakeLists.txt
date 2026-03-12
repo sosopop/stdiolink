@@ -72,6 +72,8 @@ set(TEST_SOURCES
     test_modbusrtu_server_handler.cpp
     test_modbusrtu_serial_server.cpp
     test_modbusrtu_serial.cpp
+    test_modbustcp_client.cpp
+    test_limaco_radar.cpp
     test_plc_crane.cpp
     test_plc_crane_sim.cpp
     test_driver_resolve.cpp
@@ -137,6 +139,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/utils/server_logger.cpp
     # M79-M83 驱动源文件
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu/modbus_types.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu/modbus_rtu_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp/modbus_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp_server/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp_server/modbus_tcp_server.cpp
@@ -146,6 +149,10 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial_server/modbus_rtu_serial_server.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_transport.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_decode.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_1_radar/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_5_radar/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane_sim/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane_sim/sim_device.cpp

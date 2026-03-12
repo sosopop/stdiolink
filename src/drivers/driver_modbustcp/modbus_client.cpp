@@ -1,7 +1,18 @@
 #include "modbus_client.h"
 #include <QDataStream>
+#include <QElapsedTimer>
 
 namespace modbus {
+
+namespace {
+
+quint16 readUInt16BE(const QByteArray& data, int offset)
+{
+    return static_cast<quint16>((static_cast<quint8>(data[offset]) << 8) |
+                                static_cast<quint8>(data[offset + 1]));
+}
+
+} // namespace
 
 ModbusClient::ModbusClient(int timeout)
     : m_timeout(timeout)
@@ -60,7 +71,66 @@ QByteArray ModbusClient::buildRequest(FunctionCode fc, const QByteArray& pdu)
     return request;
 }
 
-ModbusResult ModbusClient::sendRequest(const QByteArray& request, FunctionCode expectedFc)
+QByteArray ModbusClient::readResponse(quint16 expectedTransactionId, QString& errorMessage)
+{
+    QByteArray response;
+    QElapsedTimer timer;
+    timer.start();
+    int expectedLength = -1;
+
+    while (timer.elapsed() < m_timeout) {
+        if (expectedLength > 0 && response.size() >= expectedLength) {
+            return response.left(expectedLength);
+        }
+
+        const int remaining = m_timeout - static_cast<int>(timer.elapsed());
+        const int waitMs = remaining > 100 ? 100 : remaining;
+        if (waitMs <= 0) {
+            break;
+        }
+
+        if (!m_socket.waitForReadyRead(waitMs)) {
+            continue;
+        }
+
+        response.append(m_socket.readAll());
+
+        if (expectedLength < 0 && response.size() >= 7) {
+            const quint16 transactionId = readUInt16BE(response, 0);
+            if (transactionId != expectedTransactionId) {
+                errorMessage = "Unexpected transaction id";
+                return {};
+            }
+
+            const quint16 protocolId = readUInt16BE(response, 2);
+            if (protocolId != 0) {
+                errorMessage = "Unexpected protocol id";
+                return {};
+            }
+
+            const quint16 length = readUInt16BE(response, 4);
+            if (length < 2) {
+                errorMessage = "Invalid MBAP length";
+                return {};
+            }
+
+            expectedLength = 6 + length;
+        }
+    }
+
+    if (expectedLength > 0 && response.size() < expectedLength) {
+        errorMessage = "Response truncated";
+    } else if (response.isEmpty()) {
+        errorMessage = "Read timeout";
+    } else {
+        errorMessage = "Response too short";
+    }
+
+    return {};
+}
+
+ModbusResult ModbusClient::sendRequest(const QByteArray& request, FunctionCode expectedFc,
+                                       QByteArray* responseOut)
 {
     ModbusResult result;
 
@@ -76,15 +146,12 @@ ModbusResult ModbusClient::sendRequest(const QByteArray& request, FunctionCode e
         return result;
     }
 
-    // 等待响应
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        result.errorMessage = "Read timeout";
+    const quint16 expectedTransactionId = readUInt16BE(request, 0);
+    const QByteArray response = readResponse(expectedTransactionId, result.errorMessage);
+    if (response.isEmpty()) {
         return result;
     }
 
-    QByteArray response = m_socket.readAll();
-
-    // 最小响应长度: MBAP(7) + FC(1) = 8
     if (response.size() < 8) {
         result.errorMessage = "Response too short";
         return result;
@@ -105,6 +172,9 @@ ModbusResult ModbusClient::sendRequest(const QByteArray& request, FunctionCode e
     }
 
     result.success = true;
+    if (responseOut) {
+        *responseOut = response;
+    }
     return result;
 }
 
@@ -182,27 +252,11 @@ ModbusResult ModbusClient::readCoils(uint16_t address, uint16_t count)
     stream << address << count;
 
     QByteArray request = buildRequest(FunctionCode::ReadCoils, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::ReadCoils, &response);
+    if (!result.success) {
+        return result;
     }
-
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseReadBitsResponse(response, count);
 }
 
@@ -214,26 +268,11 @@ ModbusResult ModbusClient::readDiscreteInputs(uint16_t address, uint16_t count)
     stream << address << count;
 
     QByteArray request = buildRequest(FunctionCode::ReadDiscreteInputs, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::ReadDiscreteInputs, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseReadBitsResponse(response, count);
 }
 
@@ -245,26 +284,11 @@ ModbusResult ModbusClient::readHoldingRegisters(uint16_t address, uint16_t count
     stream << address << count;
 
     QByteArray request = buildRequest(FunctionCode::ReadHoldingRegisters, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::ReadHoldingRegisters, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseReadRegistersResponse(response);
 }
 
@@ -276,26 +300,11 @@ ModbusResult ModbusClient::readInputRegisters(uint16_t address, uint16_t count)
     stream << address << count;
 
     QByteArray request = buildRequest(FunctionCode::ReadInputRegisters, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::ReadInputRegisters, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseReadRegistersResponse(response);
 }
 
@@ -307,26 +316,11 @@ ModbusResult ModbusClient::writeSingleCoil(uint16_t address, bool value)
     stream << address << quint16(value ? 0xFF00 : 0x0000);
 
     QByteArray request = buildRequest(FunctionCode::WriteSingleCoil, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::WriteSingleCoil, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseWriteResponse(response);
 }
 
@@ -338,26 +332,11 @@ ModbusResult ModbusClient::writeSingleRegister(uint16_t address, uint16_t value)
     stream << address << value;
 
     QByteArray request = buildRequest(FunctionCode::WriteSingleRegister, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::WriteSingleRegister, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseWriteResponse(response);
 }
 
@@ -379,26 +358,11 @@ ModbusResult ModbusClient::writeMultipleCoils(uint16_t address, const QVector<bo
     pdu.append(coilData);
 
     QByteArray request = buildRequest(FunctionCode::WriteMultipleCoils, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::WriteMultipleCoils, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseWriteResponse(response);
 }
 
@@ -418,26 +382,11 @@ ModbusResult ModbusClient::writeMultipleRegisters(uint16_t address, const QVecto
     pdu.append(regData);
 
     QByteArray request = buildRequest(FunctionCode::WriteMultipleRegisters, pdu);
-    m_socket.write(request);
-
-    if (!m_socket.waitForBytesWritten(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Write timeout", {}, {}};
+    QByteArray response;
+    ModbusResult result = sendRequest(request, FunctionCode::WriteMultipleRegisters, &response);
+    if (!result.success) {
+        return result;
     }
-    if (!m_socket.waitForReadyRead(m_timeout)) {
-        return ModbusResult{false, ExceptionCode::None, "Read timeout", {}, {}};
-    }
-
-    QByteArray response = m_socket.readAll();
-    if (response.size() < 8) {
-        return ModbusResult{false, ExceptionCode::None, "Response too short", {}, {}};
-    }
-
-    uint8_t fc = static_cast<uint8_t>(response[7]);
-    if (fc & 0x80) {
-        auto ex = static_cast<ExceptionCode>(response[8]);
-        return ModbusResult{false, ex, exceptionMessage(ex), {}, {}};
-    }
-
     return parseWriteResponse(response);
 }
 

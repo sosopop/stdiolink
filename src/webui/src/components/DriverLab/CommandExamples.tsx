@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Tag, Typography } from 'antd';
+import { Button, Typography } from 'antd';
 import type { CommandExampleMeta } from '@/types/driver';
 
 interface CommandExamplesProps {
@@ -39,11 +39,8 @@ export const CommandExamples: React.FC<CommandExamplesProps> = ({ examples, onAp
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <Typography.Text data-testid={`example-description-${index}`} strong style={{ margin: 0 }}>
-                {ex.description}
+                {t('driverlab.command.examples_title')}
               </Typography.Text>
-              <Tag data-testid={`example-mode-${index}`} color={ex.mode === 'console' ? 'blue' : 'default'}>
-                {ex.mode}
-              </Tag>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Typography.Text

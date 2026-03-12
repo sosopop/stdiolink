@@ -49,6 +49,7 @@
 - 改 Service/Server 编排：补 GTest，必要时补 Smoke
 - 改需要端到端覆盖的功能：补对应 smoke 脚本，并同时注册到 `run_smoke.py` 和 `CMakeLists.txt`
 - 改 WebUI：补 Vitest；跨页面流程补 Playwright
+- 改 WebUI 多语言词条结构：补 locale 对齐 smoke（`python src/smoke_tests/run_smoke.py --plan m102_webui_i18n_alignment`）
 
 ## Smoke Registration Rule
 

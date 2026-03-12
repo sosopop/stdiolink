@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeCommandExamples } from '../exampleMeta';
+import { normalizeCommandExamples, selectDriverLabExamples } from '../exampleMeta';
 
 describe('normalizeCommandExamples', () => {
   it('returns empty array for empty input', () => {
@@ -34,5 +34,33 @@ describe('normalizeCommandExamples', () => {
     ]);
     expect(out).toHaveLength(1);
     expect(out[0].expectedOutput).toEqual({ ok: true });
+  });
+
+  it('selects only stdio examples for driverlab', () => {
+    const out = selectDriverLabExamples([
+      {
+        description: 'stdio demo',
+        mode: 'stdio',
+        params: { host: '127.0.0.1' },
+      },
+      {
+        description: 'console demo',
+        mode: 'console',
+        params: { host: '127.0.0.1' },
+      },
+      {
+        description: 'custom demo',
+        mode: 'custom',
+        params: { host: '127.0.0.1' },
+      },
+    ]);
+
+    expect(out).toEqual([
+      {
+        description: 'stdio demo',
+        mode: 'stdio',
+        params: { host: '127.0.0.1' },
+      },
+    ]);
   });
 });

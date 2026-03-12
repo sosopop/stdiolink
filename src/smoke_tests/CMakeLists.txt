@@ -1,6 +1,21 @@
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_test(
+    NAME smoke_m102_webui_i18n_alignment
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m102_webui_i18n_alignment
+)
+
+set_tests_properties(
+    smoke_m102_webui_i18n_alignment
+    PROPERTIES
+        LABELS "smoke;m102"
+        TIMEOUT 60
+)
+
+add_test(
     NAME smoke_m101_bin_scan_orchestrator
     COMMAND
         ${Python3_EXECUTABLE}

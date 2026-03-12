@@ -1,6 +1,8 @@
 # drivers 目录 CMakeLists.txt
 
 add_subdirectory(driver_3dvision)
+add_subdirectory(driver_limaco_1_radar)
+add_subdirectory(driver_limaco_5_radar)
 add_subdirectory(driver_modbustcp)
 add_subdirectory(driver_modbusrtu)
 add_subdirectory(driver_modbustcp_server)
