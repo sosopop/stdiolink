@@ -39,6 +39,7 @@
 
 - `ctest` 注册的是测试命令，不一定是单个 GTest case
 - 当前仓库中，`stdiolink_tests` 常作为一个整体测试程序被 CTest 注册
+- `BinScanOrchestratorServiceTest` 已拆到独立的 `bin_scan_orchestrator_service_tests`，不再包含在 `stdiolink_tests` 里
 - 要复现单个 GTest case，优先直接运行 `stdiolink_tests.exe --gtest_filter=...`
 - 在判断失败是否仍存在前，先用 `ctest --test-dir build -N -V` 确认实际注册命令和工作目录
 

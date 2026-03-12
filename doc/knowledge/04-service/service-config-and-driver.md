@@ -16,6 +16,9 @@
 - 运行时通过 `getConfig()` 读取。
 - 调整具体 Service 的时间/重试类约束时，`config.schema.json` 的 min/max 必须和实现真实可承受范围一致；约束过严会直接卡住 GTest/Smoke 里的快速配置。
 - 相关实现：`src/stdiolink_service/config/service_config_schema.*`
+- `stdiolink_service --config.*` 已复用共享 `JsonCliCodec` 路径语法；支持 `foo.bar`、`foo[0].bar`、`foo[]`、`foo["quoted.key"]`，与 driver CLI 和 WebUI expanded command 保持一致。
+- `stdiolink_service --config.*` 现在也会按 `config.schema.json` 先做字段级类型解析，再交给 `JsonCliCodec` 聚合；`string/enum` 字段会像 driver 一样保留 `123456`、`1` 这类数字样式字符串。
+- 路径命中的叶子 override 会按 schema 严格解析；完整容器 literal 仍要求合法 JSON 字面量，不会递归重写内部字段类型。
 - `--config-file` 只按传入字符串和当前工作目录 `QFile::open()`；不会相对 `--data-root` 自动解析。
 - 写 CLI 示例时，如果 `--config-file` 用相对路径，必须同时明确命令执行时的 `cwd`。
 

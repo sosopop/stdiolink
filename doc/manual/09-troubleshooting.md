@@ -66,6 +66,14 @@ if (!d.start(path)) {
 stdio.drv.example --cmd=login --password="123456"
 ```
 
+对于 `stdiolink_service --config.*`，现在也会按 `config.schema.json` 的字段类型先解析：
+
+```bash
+stdiolink_service ./my_service --config.vision.password=123456
+```
+
+如果 `vision.password` 在 schema 中是 `string`，上面的写法会保留为字符串，不再误判成 number。
+
 ### `units: expected array` / `expected object`
 
 **症状：** 在 PowerShell 5.1、cmd 中传 `--units=[{"id":1}]` 或复杂对象参数时失败，错误消息包含 `expected array` 或 `expected object`
@@ -77,6 +85,8 @@ stdio.drv.example --cmd=login --password="123456"
 ```bash
 --units[0].id=1 --units[0].size=10000
 ```
+
+`stdiolink_service --config.*` 也一样：路径叶子 override 推荐写成 `--config.units[0].id=1`，不要依赖 `--config.units=[{"id":1}]` 这种完整 JSON 在 shell 中被原样保留。
 
 ### PowerShell 5.1 / cmd 兼容性
 
@@ -91,6 +101,10 @@ stdio.drv.example --cmd=login --password="123456"
 | `--units=[{"id":1}]` | `expected array` | `--units[0].id=1` |
 | `--password=123456` | `expected string` | `--password="123456"` |
 | `--a={"b":1} --a.c=2` | `path conflict` / 校验失败 | 统一使用完整 JSON 或统一使用子路径 |
+
+补充：
+- `stdiolink_service --config.password=123456` 现在在 schema 字段为 `string/enum` 时会像 driver console 一样保留字符串。
+- `stdiolink_service --config.obj={"k":1}` 这类完整容器 literal 仍要求 shell 正确保留 JSON 引号；在 PowerShell 5.1 / cmd 下依旧更脆弱。
 
 ## JS Service 问题
 

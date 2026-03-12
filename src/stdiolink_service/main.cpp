@@ -18,6 +18,7 @@
 #include "bindings/js_wait_any_scheduler.h"
 #include "bindings/js_task_scheduler.h"
 #include "config/service_args.h"
+#include "stdiolink/console/cli_schema_parser.h"
 #include "stdiolink/guard/process_guard_client.h"
 #include "config/service_config_help.h"
 #include "config/service_config_schema.h"
@@ -174,10 +175,34 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    QJsonObject cliConfig;
+    if (!parsed.rawCliConfigArgs.isEmpty()) {
+        QString cliParseErr;
+        int cliParseErrIndex = -1;
+        if (!stdiolink::CliSchemaParser::parseArgs(parsed.rawCliConfigArgs,
+                                                   schema.fields,
+                                                   cliConfig,
+                                                   &cliParseErr,
+                                                   &cliParseErrIndex)) {
+            const auto& rawArg = parsed.rawCliConfigArgs.at(
+                cliParseErrIndex >= 0 ? cliParseErrIndex : (parsed.rawCliConfigArgs.size() - 1));
+            QTextStream err(stderr);
+            err << "Error: invalid config argument '--config."
+                << rawArg.path
+                << "="
+                << rawArg.rawValue
+                << "': "
+                << cliParseErr
+                << "\n";
+            err.flush();
+            return 2;
+        }
+    }
+
     // Merge and validate config (cli > file > defaults)
     QJsonObject mergedConfig;
     auto vr = ServiceConfigValidator::mergeAndValidate(
-        schema, fileConfig, parsed.rawConfigValues,
+        schema, fileConfig, cliConfig,
         UnknownFieldPolicy::Reject, mergedConfig);
     if (!vr.valid) {
         QTextStream err(stderr);

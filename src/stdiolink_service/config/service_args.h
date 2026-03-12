@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QJsonObject>
 #include <QStringList>
+#include "stdiolink/console/json_cli_codec.h"
 
 namespace stdiolink_service {
 
@@ -14,25 +15,19 @@ inline QString normalizeDataRoot(const QString &raw) {
 class ServiceArgs {
 public:
     struct ParseResult {
-        QString serviceDir;           // 服务目录路径
-        QJsonObject rawConfigValues;  // --config.* 解析结果（叶子值均为 raw string）
-        QString configFilePath;       // --config-file 路径
-        QString guardName;            // --guard=<name>，为空表示未指定
-        QString dataRoot;             // --data-root=<path>，空表示未指定
-        bool dumpSchema = false;      // --dump-config-schema
+        QString serviceDir;                       // 服务目录路径
+        QList<stdiolink::RawCliArg> rawCliConfigArgs; // 原始 --config.* 参数
+        QString configFilePath;                  // --config-file 路径
+        QString guardName;                       // --guard=<name>，为空表示未指定
+        QString dataRoot;                        // --data-root=<path>，空表示未指定
+        bool dumpSchema = false;                 // --dump-config-schema
         bool help = false;
         bool version = false;
-        QString error;                // 解析错误信息
+        QString error;                           // 解析错误信息
     };
 
     static ParseResult parse(const QStringList& appArgs);
     static QJsonObject loadConfigFile(const QString& filePath, QString& error);
-
-private:
-    static bool setNestedRawValue(QJsonObject& root,
-                                  const QStringList& path,
-                                  const QString& rawValue,
-                                  QString& error);
 };
 
 } // namespace stdiolink_service

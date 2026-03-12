@@ -32,6 +32,7 @@ set(HOST_SOURCES
 
 set(CONSOLE_SOURCES
     console/console_args.cpp
+    console/cli_schema_parser.cpp
     console/json_cli_codec.cpp
     console/console_responder.cpp
     console/system_options.cpp

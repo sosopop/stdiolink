@@ -424,6 +424,42 @@ protected:
         return result;
     }
 
+    RunResult runServiceWithArgs(const QStringList& extraArgs, int timeoutMs = 40000) const {
+        QProcess proc;
+        proc.setProcessEnvironment(childEnv());
+        QStringList args{
+            serviceDirPath(),
+            "--data-root=" + m_dataRoot,
+        };
+        args.append(extraArgs);
+        proc.start(serviceExecutablePath(), args);
+
+        RunResult result;
+        if (!proc.waitForStarted(3000)) {
+            result.stderrText = "failed to start stdiolink_service";
+            return result;
+        }
+
+        QElapsedTimer timer;
+        timer.start();
+        while (timer.elapsed() < timeoutMs) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+            if (proc.waitForFinished(20)) {
+                result.finished = true;
+                break;
+            }
+        }
+        if (!result.finished) {
+            proc.kill();
+            proc.waitForFinished(3000);
+        }
+
+        result.exitCode = proc.exitCode();
+        result.stdoutText = QString::fromUtf8(proc.readAllStandardOutput());
+        result.stderrText = QString::fromUtf8(proc.readAllStandardError());
+        return result;
+    }
+
     QTemporaryDir m_tmpDir;
     QString m_dataRoot;
 };
@@ -453,6 +489,60 @@ TEST_F(BinScanOrchestratorServiceTest, T01_ValidConfigEntersMainFlow) {
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_FALSE(r.stderrText.contains("required field"));
     EXPECT_FALSE(r.stderrText.contains("config validation"));
+}
+
+TEST_F(BinScanOrchestratorServiceTest, T01A_ExpandedCliArgsSupportIndexedCraneConfig) {
+    FakeVisionServer vision;
+    ASSERT_TRUE(vision.isListening());
+    vision.enqueueLoginDone("token-1");
+    vision.enqueueScanDone();
+    vision.enqueueLastLogNewerThanNow();
+
+    PlcCraneSimHandle crane = PlcCraneSimHandle::create();
+    ASSERT_TRUE(crane.start()) << qPrintable(crane.error());
+
+    const QString cliResultPath = resultPath("cli_result.json");
+    const QStringList args{
+        "--config.clock_skew_tolerance_ms=2000",
+        "--config.crane_poll_interval_ms=50",
+        "--config.crane_wait_timeout_ms=600",
+        "--config.cranes[0].host=" + crane.host(),
+        "--config.cranes[0].id=crane_a",
+        "--config.cranes[0].port=" + QString::number(static_cast<int>(crane.port())),
+        "--config.cranes[0].timeout_ms=1000",
+        "--config.cranes[0].unit_id=" + QString::number(static_cast<int>(crane.unitId())),
+        "--config.on_error_set_manual=true",
+        "--config.result_output_path=" + cliResultPath,
+        "--config.scan_poll_fail_limit=5",
+        "--config.scan_poll_interval_ms=50",
+        "--config.scan_request_timeout_ms=1000",
+        "--config.scan_start_retry_count=2",
+        "--config.scan_start_retry_interval_ms=20",
+        "--config.scan_timeout_ms=600",
+        "--config.vessel_id=15",
+        "--config.vision.addr=" + vision.baseUrl().mid(QString("http://").size()),
+        "--config.vision.password=123456",
+        "--config.vision.user_name=admin",
+        "--config.vision.view_mode=false",
+    };
+    SCOPED_TRACE(caseTrace(
+        QJsonObject{
+            {"mode", "expanded-cli"},
+            {"args", QJsonArray::fromStringList(args)},
+        },
+        {
+            "expanded CLI args should parse array-index paths the same way as driver and WebUI generated commands",
+            "if this still fails with unknown configuration field, service CLI parsing is not using JsonCliCodec semantics end-to-end",
+        }));
+
+    const RunResult r = runServiceWithArgs(args, 3000);
+    EXPECT_TRUE(r.finished || r.stderrText.contains("scan workflow finished"))
+        << qPrintable(r.stderrText);
+    if (r.finished) {
+        EXPECT_EQ(r.exitCode, 0) << qPrintable(r.stderrText);
+    }
+    EXPECT_FALSE(r.stderrText.contains("unknown configuration field")) << qPrintable(r.stderrText);
+    EXPECT_TRUE(QFileInfo::exists(cliResultPath));
 }
 
 TEST_F(BinScanOrchestratorServiceTest, T02_EmptyCraneListRejected) {

@@ -4,39 +4,9 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <cstdio>
+#include "stdiolink/console/json_cli_codec.h"
 
 namespace stdiolink_service {
-
-bool ServiceArgs::setNestedRawValue(QJsonObject& root,
-                                    const QStringList& path,
-                                    const QString& rawValue,
-                                    QString& error) {
-    if (path.isEmpty()) {
-        error = "empty config key path";
-        return false;
-    }
-
-    for (const auto& seg : path) {
-        if (seg.isEmpty()) {
-            error = "invalid config key path: empty segment";
-            return false;
-        }
-    }
-
-    if (path.size() == 1) {
-        root[path.first()] = rawValue;
-        return true;
-    }
-
-    const QString& key = path.first();
-    QJsonObject child = root.value(key).toObject();
-    QStringList rest = path.mid(1);
-    if (!setNestedRawValue(child, rest, rawValue, error)) {
-        return false;
-    }
-    root[key] = child;
-    return true;
-}
 
 ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
     ParseResult result;
@@ -85,10 +55,15 @@ ServiceArgs::ParseResult ServiceArgs::parse(const QStringList& appArgs) {
             }
             const QString keyPath = arg.mid(9, eqPos - 9); // len("--config.") == 9
             const QString rawValue = arg.mid(eqPos + 1);
-            const QStringList segments = keyPath.split('.');
 
+            result.rawCliConfigArgs.append(stdiolink::RawCliArg{keyPath, rawValue});
             QString err;
-            if (!setNestedRawValue(result.rawConfigValues, segments, rawValue, err)) {
+            QJsonObject parsedForValidation;
+            if (!stdiolink::JsonCliCodec::parseArgs(
+                    result.rawCliConfigArgs,
+                    stdiolink::CliParseOptions{stdiolink::CliValueMode::Friendly},
+                    parsedForValidation,
+                    &err)) {
                 result.error = QString("invalid config argument '%1': %2").arg(arg, err);
                 return result;
             }

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <QJsonArray>
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
@@ -19,7 +20,9 @@ TEST_F(ServiceArgsTest, ParseSimpleConfigArg) {
     auto result = ServiceArgs::parse(args);
     EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
     EXPECT_EQ(result.serviceDir, "./my_service");
-    EXPECT_EQ(result.rawConfigValues["port"].toString(), "6200");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, "port");
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "6200");
 }
 
 TEST_F(ServiceArgsTest, ParseNestedConfigArg) {
@@ -28,36 +31,39 @@ TEST_F(ServiceArgsTest, ParseNestedConfigArg) {
                         "--config.server.port=3000"};
     auto result = ServiceArgs::parse(args);
     EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
-    auto server = result.rawConfigValues["server"].toObject();
-    EXPECT_EQ(server["host"].toString(), "localhost");
-    EXPECT_EQ(server["port"].toString(), "3000");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 2);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, "server.host");
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "localhost");
+    EXPECT_EQ(result.rawCliConfigArgs[1].path, "server.port");
+    EXPECT_EQ(result.rawCliConfigArgs[1].rawValue, "3000");
 }
 
 TEST_F(ServiceArgsTest, RejectInvalidPathSegment) {
-    QStringList args = {"stdiolink_service", "./my_service", "--config..port=1"};
+    QStringList args = {"stdiolink_service", "./my_service", "--config.units[-1].id=1"};
     auto result = ServiceArgs::parse(args);
     EXPECT_FALSE(result.error.isEmpty());
+    EXPECT_TRUE(result.error.contains("invalid array index"));
 }
 
-TEST_F(ServiceArgsTest, KeepBoolLiteralAsRawString) {
+TEST_F(ServiceArgsTest, KeepBoolLiteralRaw) {
     QStringList args = {"stdiolink_service", "./svc", "--config.debug=true"};
     auto result = ServiceArgs::parse(args);
-    EXPECT_TRUE(result.rawConfigValues["debug"].isString());
-    EXPECT_EQ(result.rawConfigValues["debug"].toString(), "true");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "true");
 }
 
-TEST_F(ServiceArgsTest, KeepDoubleLiteralAsRawString) {
+TEST_F(ServiceArgsTest, KeepDoubleLiteralRaw) {
     QStringList args = {"stdiolink_service", "./svc", "--config.ratio=0.75"};
     auto result = ServiceArgs::parse(args);
-    EXPECT_TRUE(result.rawConfigValues["ratio"].isString());
-    EXPECT_EQ(result.rawConfigValues["ratio"].toString(), "0.75");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "0.75");
 }
 
-TEST_F(ServiceArgsTest, KeepStringLiteralAsRawString) {
+TEST_F(ServiceArgsTest, KeepBareStringLiteralRaw) {
     QStringList args = {"stdiolink_service", "./svc", "--config.name=hello"};
     auto result = ServiceArgs::parse(args);
-    EXPECT_TRUE(result.rawConfigValues["name"].isString());
-    EXPECT_EQ(result.rawConfigValues["name"].toString(), "hello");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "hello");
 }
 
 TEST_F(ServiceArgsTest, ExtractConfigFilePath) {
@@ -80,18 +86,20 @@ TEST_F(ServiceArgsTest, MissingServiceDir) {
     EXPECT_FALSE(result.error.isEmpty());
 }
 
-TEST_F(ServiceArgsTest, KeepJsonArrayLiteralAsRawString) {
+TEST_F(ServiceArgsTest, ParseJsonArrayLiteral) {
     QStringList args = {"stdiolink_service", "./svc", "--config.tags=[1,2,3]"};
     auto result = ServiceArgs::parse(args);
-    EXPECT_TRUE(result.rawConfigValues["tags"].isString());
-    EXPECT_EQ(result.rawConfigValues["tags"].toString(), "[1,2,3]");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, "tags");
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "[1,2,3]");
 }
 
-TEST_F(ServiceArgsTest, KeepJsonObjectLiteralAsRawString) {
+TEST_F(ServiceArgsTest, ParseJsonObjectLiteral) {
     QStringList args = {"stdiolink_service", "./svc", R"(--config.opts={"a":1})"};
     auto result = ServiceArgs::parse(args);
-    EXPECT_TRUE(result.rawConfigValues["opts"].isString());
-    EXPECT_EQ(result.rawConfigValues["opts"].toString(), R"({"a":1})");
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, "opts");
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, R"({"a":1})");
 }
 
 TEST_F(ServiceArgsTest, MultipleConfigArgs) {
@@ -101,7 +109,53 @@ TEST_F(ServiceArgsTest, MultipleConfigArgs) {
                         "--config.debug=false"};
     auto result = ServiceArgs::parse(args);
     EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
-    EXPECT_EQ(result.rawConfigValues.size(), 3);
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 3);
+    EXPECT_EQ(result.rawCliConfigArgs[2].path, "debug");
+    EXPECT_EQ(result.rawCliConfigArgs[2].rawValue, "false");
+}
+
+TEST_F(ServiceArgsTest, ParseArrayIndexPath) {
+    QStringList args = {"stdiolink_service", "./svc",
+                        "--config.cranes[0].host=127.0.0.1",
+                        "--config.cranes[0].port=502",
+                        "--config.cranes[0].unit_id=1"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 3);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, "cranes[0].host");
+    EXPECT_EQ(result.rawCliConfigArgs[1].path, "cranes[0].port");
+    EXPECT_EQ(result.rawCliConfigArgs[2].path, "cranes[0].unit_id");
+}
+
+TEST_F(ServiceArgsTest, ParseAppendPath) {
+    QStringList args = {"stdiolink_service", "./svc",
+                        "--config.tags[]=1",
+                        "--config.tags[]=2"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 2);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, "tags[]");
+    EXPECT_EQ(result.rawCliConfigArgs[1].path, "tags[]");
+}
+
+TEST_F(ServiceArgsTest, ParseQuotedKeyPath) {
+    QStringList args = {"stdiolink_service", "./svc",
+                        R"(--config.labels["app.kubernetes.io/name"]="demo")"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_TRUE(result.error.isEmpty()) << result.error.toStdString();
+    ASSERT_EQ(result.rawCliConfigArgs.size(), 1);
+    EXPECT_EQ(result.rawCliConfigArgs[0].path, R"(labels["app.kubernetes.io/name"])");
+    EXPECT_EQ(result.rawCliConfigArgs[0].rawValue, "\"demo\"");
+}
+
+TEST_F(ServiceArgsTest, RejectPathConflictWithCurrentArgumentContext) {
+    QStringList args = {"stdiolink_service", "./svc",
+                        "--config.tags[]=1",
+                        "--config.tags[0]=2"};
+    auto result = ServiceArgs::parse(args);
+    EXPECT_FALSE(result.error.isEmpty());
+    EXPECT_TRUE(result.error.contains("--config.tags[0]=2"));
+    EXPECT_TRUE(result.error.contains("append vs explicit index"));
 }
 
 TEST_F(ServiceArgsTest, LoadConfigFileValid) {

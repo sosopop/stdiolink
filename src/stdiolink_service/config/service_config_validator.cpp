@@ -12,82 +12,6 @@ using stdiolink::meta::ValidationResult;
 
 namespace stdiolink_service {
 
-namespace {
-
-QJsonValue parseAnyJsonLiteral(const QString& raw) {
-    QJsonParseError err;
-    QByteArray wrapped = raw.toUtf8();
-    wrapped.prepend('[');
-    wrapped.append(']');
-    QJsonDocument doc = QJsonDocument::fromJson(wrapped, &err);
-    if (err.error != QJsonParseError::NoError || !doc.isArray()) {
-        return QJsonValue(QJsonValue::Undefined);
-    }
-    QJsonArray arr = doc.array();
-    if (arr.size() != 1) {
-        return QJsonValue(QJsonValue::Undefined);
-    }
-    return arr.at(0);
-}
-
-QJsonValue convertSingleRawValue(const QString& raw, FieldType type) {
-    switch (type) {
-    case FieldType::Bool:
-        if (raw == "true") return QJsonValue(true);
-        if (raw == "false") return QJsonValue(false);
-        return QJsonValue(QJsonValue::Undefined);
-
-    case FieldType::Int: {
-        bool ok = false;
-        const int v = raw.toInt(&ok);
-        if (ok) return QJsonValue(v);
-        return QJsonValue(QJsonValue::Undefined);
-    }
-
-    case FieldType::Int64: {
-        bool ok = false;
-        const qint64 v = raw.toLongLong(&ok);
-        if (ok) return QJsonValue(static_cast<double>(v));
-        return QJsonValue(QJsonValue::Undefined);
-    }
-
-    case FieldType::Double: {
-        bool ok = false;
-        const double v = raw.toDouble(&ok);
-        if (ok) return QJsonValue(v);
-        return QJsonValue(QJsonValue::Undefined);
-    }
-
-    case FieldType::String:
-    case FieldType::Enum:
-        return QJsonValue(raw);
-
-    case FieldType::Array:
-    case FieldType::Object:
-    case FieldType::Any: {
-        QJsonParseError err;
-        QJsonDocument doc = QJsonDocument::fromJson(raw.toUtf8(), &err);
-        if (err.error == QJsonParseError::NoError) {
-            if (doc.isArray()) return QJsonValue(doc.array());
-            if (doc.isObject()) return QJsonValue(doc.object());
-        }
-        if (type == FieldType::Any) {
-            QJsonValue literal = parseAnyJsonLiteral(raw);
-            if (!literal.isUndefined()) {
-                return literal;
-            }
-            return QJsonValue(raw);
-        }
-        return QJsonValue(QJsonValue::Undefined);
-    }
-
-    default:
-        return QJsonValue(raw);
-    }
-}
-
-} // namespace
-
 QJsonObject ServiceConfigValidator::deepMerge(const QJsonObject& base,
                                                const QJsonObject& override) {
     QJsonObject result = base;
@@ -103,53 +27,15 @@ QJsonObject ServiceConfigValidator::deepMerge(const QJsonObject& base,
     return result;
 }
 
-QJsonObject ServiceConfigValidator::convertRawValues(const ServiceConfigSchema& schema,
-                                                      const QJsonObject& raw) {
-    QJsonObject result;
-    for (auto it = raw.begin(); it != raw.end(); ++it) {
-        const FieldMeta* field = schema.findField(it.key());
-        if (!field) {
-            // Unknown field: pass through as-is
-            result[it.key()] = it.value();
-            continue;
-        }
-
-        if (it.value().isString()) {
-            QJsonValue converted = convertSingleRawValue(it.value().toString(), field->type);
-            if (converted.isUndefined()) {
-                // Conversion failed, keep raw string (validation will catch it)
-                result[it.key()] = it.value();
-            } else {
-                result[it.key()] = converted;
-            }
-        } else if (it.value().isObject() && field->type == FieldType::Object) {
-            // Recurse into nested objects if schema has nested fields
-            if (!field->fields.isEmpty()) {
-                ServiceConfigSchema nested;
-                nested.fields = field->fields;
-                result[it.key()] = convertRawValues(nested, it.value().toObject());
-            } else {
-                result[it.key()] = it.value();
-            }
-        } else {
-            result[it.key()] = it.value();
-        }
-    }
-    return result;
-}
-
 ValidationResult ServiceConfigValidator::mergeAndValidate(
     const ServiceConfigSchema& schema,
     const QJsonObject& fileConfig,
-    const QJsonObject& rawCliConfig,
+    const QJsonObject& cliConfig,
     UnknownFieldPolicy unknownFieldPolicy,
     QJsonObject& mergedOut) {
 
-    // Convert raw CLI string values to typed values based on schema
-    QJsonObject typedCliConfig = convertRawValues(schema, rawCliConfig);
-
     // Merge: cli > file > defaults
-    QJsonObject merged = deepMerge(fileConfig, typedCliConfig);
+    QJsonObject merged = deepMerge(fileConfig, cliConfig);
 
     // Fill defaults from schema
     merged = fillDefaults(schema, merged);

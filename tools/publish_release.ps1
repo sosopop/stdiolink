@@ -360,7 +360,7 @@ if (-not $skipTests) {
     $gtestBin = Join-Path $runtimeBinDir "stdiolink_tests.exe"
     if (Test-Path -LiteralPath $gtestBin -PathType Leaf) {
         Write-Host "--- GTest (C++) ---"
-        & $gtestBin "--gtest_brief=1"
+        & $gtestBin
         if ($LASTEXITCODE -ne 0) {
             Write-Error "GTest failed (exit code $LASTEXITCODE)"
             exit 1

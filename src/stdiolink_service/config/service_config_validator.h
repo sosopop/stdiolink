@@ -19,7 +19,7 @@ public:
     static ValidationResult mergeAndValidate(
         const ServiceConfigSchema& schema,
         const QJsonObject& fileConfig,
-        const QJsonObject& rawCliConfig,
+        const QJsonObject& cliConfig,
         UnknownFieldPolicy unknownFieldPolicy,
         QJsonObject& mergedOut);
 
@@ -40,8 +40,6 @@ public:
 
 private:
     static QJsonObject deepMerge(const QJsonObject& base, const QJsonObject& override);
-    static QJsonObject convertRawValues(const ServiceConfigSchema& schema,
-                                        const QJsonObject& raw);
 };
 
 } // namespace stdiolink_service

@@ -10,6 +10,7 @@ set(TEST_SOURCES
     test_host_driver.cpp
     test_wait_any.cpp
     test_console.cpp
+    test_cli_schema_parser.cpp
     test_json_cli_codec.cpp
     test_driver_core_console_stub.cpp
     test_meta_types.cpp
@@ -32,7 +33,6 @@ set(TEST_SOURCES
     test_proxy_and_scheduler.cpp
     test_js_integration.cpp
     test_js_stress.cpp
-    test_bin_scan_orchestrator_service.cpp
     test_service_config_schema.cpp
     test_service_args.cpp
     test_service_config_validator.cpp
@@ -211,6 +211,47 @@ target_compile_definitions(stdiolink_tests PRIVATE STDIOLINK_TESTING)
 
 if(TARGET stdiolink_service)
     add_dependencies(stdiolink_tests stdiolink_service)
+endif()
+
+add_executable(bin_scan_orchestrator_service_tests
+    test_main.cpp
+    test_bin_scan_orchestrator_service.cpp
+)
+
+target_include_directories(bin_scan_orchestrator_service_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp
+    ${CMAKE_SOURCE_DIR}/src/drivers
+)
+
+target_link_libraries(bin_scan_orchestrator_service_tests PRIVATE
+    stdiolink
+    GTest::gtest
+    Qt6::Network
+    Qt6::HttpServer
+    Qt6::Test
+)
+
+set_target_properties(bin_scan_orchestrator_service_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
+)
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS bin_scan_orchestrator_service_tests)
+
+add_test(NAME bin_scan_orchestrator_service_tests
+    COMMAND "${_stdiolink_tests_runtime_dir}/bin/bin_scan_orchestrator_service_tests${CMAKE_EXECUTABLE_SUFFIX}"
+    WORKING_DIRECTORY "${_stdiolink_tests_runtime_dir}/bin"
+)
+set_tests_properties(bin_scan_orchestrator_service_tests PROPERTIES
+    DEPENDS assemble_runtime
+)
+
+target_compile_definitions(bin_scan_orchestrator_service_tests PRIVATE STDIOLINK_TESTING)
+
+if(TARGET stdiolink_service)
+    add_dependencies(bin_scan_orchestrator_service_tests stdiolink_service)
 endif()
 
 # test_driver (用于单元测试的辅助 Driver 程序)

@@ -118,7 +118,7 @@ TEST_F(ServiceConfigValidatorTest, FillDefaults) {
 TEST_F(ServiceConfigValidatorTest, MergePriority) {
     auto schema = makeSchema();
     QJsonObject fileConfig{{"port", 3000}, {"name", "file"}, {"debug", true}};
-    QJsonObject cliConfig{{"port", "6200"}};
+    QJsonObject cliConfig{{"port", 6200}};
     QJsonObject merged;
     auto r = ServiceConfigValidator::mergeAndValidate(
         schema, fileConfig, cliConfig, UnknownFieldPolicy::Reject, merged);
@@ -161,7 +161,7 @@ TEST_F(ServiceConfigValidatorTest, DeepMergeObject) {
         {"server", QJsonObject{{"host", "127.0.0.1"}, {"port", 3000}}}
     };
     QJsonObject cliConfig{
-        {"server", QJsonObject{{"port", "6200"}}}
+        {"server", QJsonObject{{"port", 6200}}}
     };
     QJsonObject merged;
     auto r = ServiceConfigValidator::mergeAndValidate(
@@ -181,7 +181,7 @@ TEST_F(ServiceConfigValidatorTest, ArrayReplaceInsteadOfMerge) {
     schema.fields = {tags};
 
     QJsonObject fileConfig{{"tags", QJsonArray{"a", "b"}}};
-    QJsonObject cliConfig{{"tags", "[\"x\"]"}};
+    QJsonObject cliConfig{{"tags", QJsonArray{"x"}}};
     QJsonObject merged;
     auto r = ServiceConfigValidator::mergeAndValidate(
         schema, fileConfig, cliConfig, UnknownFieldPolicy::Allow, merged);
@@ -203,20 +203,20 @@ TEST_F(ServiceConfigValidatorTest, RejectUnknownFieldByDefault) {
     EXPECT_EQ(r.errorField, "unknown");
 }
 
-TEST_F(ServiceConfigValidatorTest, RawStringConversion) {
+TEST_F(ServiceConfigValidatorTest, TypedCliConfigPassesThrough) {
     auto schema = makeSchema();
-    QJsonObject rawCli{
-        {"port", "6200"}, {"name", "test"}, {"debug", "true"}
+    QJsonObject cliConfig{
+        {"port", 6200}, {"name", "test"}, {"debug", true}
     };
     QJsonObject merged;
     auto r = ServiceConfigValidator::mergeAndValidate(
-        schema, QJsonObject{}, rawCli, UnknownFieldPolicy::Reject, merged);
+        schema, QJsonObject{}, cliConfig, UnknownFieldPolicy::Reject, merged);
     EXPECT_TRUE(r.valid) << r.toString().toStdString();
     EXPECT_EQ(merged["port"].toInt(), 6200);
     EXPECT_EQ(merged["debug"].toBool(), true);
 }
 
-TEST_F(ServiceConfigValidatorTest, AnyFieldParsesJsonLiteralFromCli) {
+TEST_F(ServiceConfigValidatorTest, AnyFieldUsesTypedCliValue) {
     ServiceConfigSchema schema;
     FieldMeta anyField;
     anyField.name = "anyv";
@@ -224,10 +224,10 @@ TEST_F(ServiceConfigValidatorTest, AnyFieldParsesJsonLiteralFromCli) {
     anyField.required = true;
     schema.fields = {anyField};
 
-    QJsonObject rawCli{{"anyv", "1"}};
+    QJsonObject cliConfig{{"anyv", 1}};
     QJsonObject merged;
     auto r = ServiceConfigValidator::mergeAndValidate(
-        schema, QJsonObject{}, rawCli, UnknownFieldPolicy::Reject, merged);
+        schema, QJsonObject{}, cliConfig, UnknownFieldPolicy::Reject, merged);
     EXPECT_TRUE(r.valid) << r.toString().toStdString();
     EXPECT_TRUE(merged["anyv"].isDouble());
     EXPECT_EQ(merged["anyv"].toInt(), 1);
@@ -244,12 +244,12 @@ TEST_F(ServiceConfigValidatorTest, RejectUnknownNestedField) {
     server.fields = {host};
     schema.fields = {server};
 
-    QJsonObject rawCli{
+    QJsonObject cliConfig{
         {"server", QJsonObject{{"bad", "1"}}}
     };
     QJsonObject merged;
     auto r = ServiceConfigValidator::mergeAndValidate(
-        schema, QJsonObject{}, rawCli, UnknownFieldPolicy::Reject, merged);
+        schema, QJsonObject{}, cliConfig, UnknownFieldPolicy::Reject, merged);
     EXPECT_FALSE(r.valid);
     EXPECT_EQ(r.errorField, "server.bad");
 }
