@@ -12,6 +12,7 @@
 - `src/webui/src/components/`：共享组件
 - `src/webui/src/types/`：前端类型
 - `src/webui/src/hooks/` / `utils/`：公共逻辑
+- `src/webui/src/locales/`：WebUI 多语言文案事实源，默认以 `en.json` 为结构基准
 
 ## API Entry
 
@@ -25,6 +26,7 @@
 - 前端事实源是 Server API，不直接读取 `data_root`
 - 接口变更必须联动 `types/`、`api/`、页面消费点
 - 实时逻辑变更同时检查 SSE 和 DriverLab WS
+- 新增或修改文案 key 时，同时检查所有 locale；不要只改 `en/zh/zh-TW`
 
 ## UI Baseline
 
