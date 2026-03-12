@@ -489,6 +489,7 @@ TEST_F(BinScanOrchestratorServiceTest, T01_ValidConfigEntersMainFlow) {
     EXPECT_EQ(r.exitCode, 0);
     EXPECT_FALSE(r.stderrText.contains("required field"));
     EXPECT_FALSE(r.stderrText.contains("config validation"));
+    EXPECT_TRUE(vision.subscribedTopics().contains("vessel.notify"));
 }
 
 TEST_F(BinScanOrchestratorServiceTest, T01A_ExpandedCliArgsSupportIndexedCraneConfig) {
@@ -582,6 +583,7 @@ TEST_F(BinScanOrchestratorServiceTest, T03_SingleCraneSuccess) {
     EXPECT_TRUE(r.finished) << qPrintable(r.stderrText);
     EXPECT_EQ(r.exitCode, 0) << qPrintable(r.stderrText);
     EXPECT_TRUE(r.stderrText.contains("scan completed")) << qPrintable(r.stderrText);
+    EXPECT_TRUE(vision.subscribedTopics().contains("vessel.notify"));
     EXPECT_EQ(vision.lastLoginBody().value("userName").toString(), "admin");
     EXPECT_EQ(vision.lastLoginBody().value("password").toString(), "123456");
     EXPECT_EQ(vision.lastLoginBody().value("viewMode").toBool(), false);
@@ -792,6 +794,84 @@ TEST_F(BinScanOrchestratorServiceTest, T09A_ProxyTimeoutAppliesToSingleScanReque
     EXPECT_FALSE(vision.lastScanBody().contains("timeout"))
         << "timeout must be passed via proxy options, not 3dvision command params";
     EXPECT_TRUE(r.stderrText.contains("ETIMEDOUT") || r.stderrText.contains("timeout"));
+}
+
+TEST_F(BinScanOrchestratorServiceTest, T09B_ScannerErrorEventFailsScanImmediately) {
+    FakeVisionServer vision;
+    ASSERT_TRUE(vision.isListening());
+    vision.enqueueLoginDone("token-1");
+    vision.enqueueScanDone();
+    vision.enqueueScannerErrorEvent("DevError.ExecTimeout", 20);
+
+    PlcCraneSimHandle crane = PlcCraneSimHandle::create();
+    ASSERT_TRUE(crane.start()) << qPrintable(crane.error());
+
+    const QJsonObject cfg = baseConfig(vision.baseUrl().mid(QString("http://").size()),
+                                       QJsonArray{craneConfig(crane, "crane_a")});
+    SCOPED_TRACE(caseTrace(
+        cfg,
+        {
+            "scanner.error websocket event should abort scan without waiting for poll timeout",
+            "if this still times out, inspect waitTaskDone event handling and ws.connect/ws.subscribe setup in the service",
+        }));
+
+    const RunResult r = runService(writeConfig(cfg));
+    EXPECT_TRUE(r.finished);
+    EXPECT_NE(r.exitCode, 0);
+    EXPECT_TRUE(r.stderrText.contains("scanner.error: DevError.ExecTimeout")) << qPrintable(r.stderrText);
+    EXPECT_EQ(vision.scanCallCount(), 1);
+    EXPECT_TRUE(waitUntil([&]() { return crane.isManualMode(); }, 1000));
+    EXPECT_FALSE(QFileInfo::exists(resultPath()));
+}
+
+TEST_F(BinScanOrchestratorServiceTest, T09C_WebSocketConnectFailureAbortsBeforeScan) {
+    FakeVisionServer vision;
+    ASSERT_TRUE(vision.isListening());
+    vision.enqueueLoginDone("token-1");
+    vision.rejectNextWsConnect();
+
+    PlcCraneSimHandle crane = PlcCraneSimHandle::create();
+    ASSERT_TRUE(crane.start()) << qPrintable(crane.error());
+
+    const QJsonObject cfg = baseConfig(vision.baseUrl().mid(QString("http://").size()),
+                                       QJsonArray{craneConfig(crane, "crane_a")});
+    SCOPED_TRACE(caseTrace(
+        cfg,
+        {
+            "ws.connect is now a hard dependency; connect failure should stop before PLC preparation and scan",
+            "if scanCallCount is non-zero, openVision no longer gates the workflow correctly",
+        }));
+
+    const RunResult r = runService(writeConfig(cfg));
+    EXPECT_TRUE(r.finished);
+    EXPECT_NE(r.exitCode, 0);
+    EXPECT_EQ(vision.scanCallCount(), 0);
+    EXPECT_FALSE(QFileInfo::exists(resultPath()));
+}
+
+TEST_F(BinScanOrchestratorServiceTest, T09D_WebSocketSubscribeFailureAbortsBeforeScan) {
+    FakeVisionServer vision;
+    ASSERT_TRUE(vision.isListening());
+    vision.enqueueLoginDone("token-1");
+    vision.disconnectAfterNextWsConnect();
+
+    PlcCraneSimHandle crane = PlcCraneSimHandle::create();
+    ASSERT_TRUE(crane.start()) << qPrintable(crane.error());
+
+    const QJsonObject cfg = baseConfig(vision.baseUrl().mid(QString("http://").size()),
+                                       QJsonArray{craneConfig(crane, "crane_a")});
+    SCOPED_TRACE(caseTrace(
+        cfg,
+        {
+            "if the websocket drops after ws.connect, ws.subscribe should fail and abort the workflow",
+            "if this passes, subscribe is no longer being treated as a strict dependency",
+        }));
+
+    const RunResult r = runService(writeConfig(cfg));
+    EXPECT_TRUE(r.finished);
+    EXPECT_NE(r.exitCode, 0);
+    EXPECT_EQ(vision.scanCallCount(), 0);
+    EXPECT_FALSE(QFileInfo::exists(resultPath()));
 }
 
 TEST_F(BinScanOrchestratorServiceTest, LoginEmptyTokenClosesVisionDriver) {

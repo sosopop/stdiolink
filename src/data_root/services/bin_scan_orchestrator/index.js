@@ -83,7 +83,30 @@ function terminalError(task, cmd) {
     return err;
 }
 
-async function waitTaskDone(driver, cmd, task, timeoutMs) {
+function parseDriverEventMessage(msg) {
+    const payload = (msg?.data && typeof msg.data === "object") ? msg.data : {};
+    const eventName = typeof payload.event === "string" ? payload.event : "";
+    const eventData = (payload?.data && typeof payload.data === "object")
+        ? payload.data
+        : payload;
+    return { eventName, eventData };
+}
+
+function throwIfScanFailedEvent(msg) {
+    const { eventName, eventData } = parseDriverEventMessage(msg);
+    if (eventName !== "scanner.error") {
+        return;
+    }
+
+    const failure = String(eventData.error ?? eventData.message ?? "scanner.error");
+    const err = new Error(`scanner.error: ${failure}`);
+    err.code = eventData.error ?? "scanner.error";
+    err.data = eventData;
+    err.scanFailedEvent = true;
+    throw err;
+}
+
+async function waitTaskDone(driver, cmd, task, timeoutMs, onEvent) {
     const deadline = timeoutMs > 0 ? Date.now() + timeoutMs : 0;
 
     while (true) {
@@ -102,6 +125,9 @@ async function waitTaskDone(driver, cmd, task, timeoutMs) {
             throw new Error(`Command ended without terminal response: ${cmd}`);
         }
         if (msg.status === "event") {
+            if (typeof onEvent === "function") {
+                onEvent(msg);
+            }
             continue;
         }
         if (msg.status === "error") {
@@ -144,7 +170,7 @@ async function openKnownDriver(driverName, commandNames, args = []) {
             try {
                 const timeoutMs = commandTimeout(options?.timeoutMs ?? 0);
                 const task = driver.request(commandName, params);
-                return await waitTaskDone(driver, commandName, task, timeoutMs);
+                return await waitTaskDone(driver, commandName, task, timeoutMs, options?.onEvent);
             } finally {
                 busy = false;
             }
@@ -167,9 +193,12 @@ async function openVision(visionCfg) {
     const driver = await openKnownDriver(VISION_DRIVER_NAME, [
         "login",
         "vessel.command",
-        "vessellog.last"
+        "vessellog.last",
+        "ws.connect",
+        "ws.subscribe"
     ]);
     try {
+        const timeoutMs = numberOr(cfg.scan_request_timeout_ms, 8000);
         const loginResult = await driver.login(
             {
                 addr: String(visionCfg.addr),
@@ -177,12 +206,20 @@ async function openVision(visionCfg) {
                 password: String(visionCfg.password),
                 viewMode: Boolean(visionCfg.view_mode)
             },
-            { timeoutMs: numberOr(cfg.scan_request_timeout_ms, 8000) }
+            { timeoutMs }
         );
         const token = String(loginResult?.token ?? "");
         if (!token) {
             throw new Error("vision login returned empty token");
         }
+        await driver["ws.connect"](
+            { addr: String(visionCfg.addr) },
+            { timeoutMs }
+        );
+        await driver["ws.subscribe"](
+            { topic: "vessel.notify" },
+            { timeoutMs }
+        );
         logger.info("vision login success", { addr: String(visionCfg.addr) });
         return { driver, token };
     } catch (err) {
@@ -271,11 +308,17 @@ async function startScan(visionDriver, config, token) {
                     id: Number(config.vessel_id),
                     cmd: "scan"
                 },
-                { timeoutMs }
+                {
+                    timeoutMs,
+                    onEvent: throwIfScanFailedEvent
+                }
             );
             logger.info("scan start success", { attempt });
             return Date.now();
         } catch (err) {
+            if (err?.scanFailedEvent === true) {
+                throw err;
+            }
             if (attempt >= maxAttempts) {
                 throw new Error(`scan start failed after ${maxAttempts} attempts: ${describeError(err)}`);
             }
@@ -313,7 +356,10 @@ async function pollScanCompleted(visionDriver, config, scanStartedAt) {
                     addr: String(config.vision.addr),
                     id: Number(config.vessel_id)
                 },
-                { timeoutMs }
+                {
+                    timeoutMs,
+                    onEvent: throwIfScanFailedEvent
+                }
             );
 
             if (isFreshLog(logInfo, scanStartedAt, toleranceMs)) {
@@ -325,6 +371,9 @@ async function pollScanCompleted(visionDriver, config, scanStartedAt) {
             logger.info("scan poll stale log", { polls });
         } catch (err) {
             consecutiveFailures += 1;
+            if (err?.scanFailedEvent === true) {
+                throw err;
+            }
             logger.warn("scan poll failed", {
                 polls,
                 consecutiveFailures,

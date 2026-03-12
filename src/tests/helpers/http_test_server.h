@@ -47,8 +47,23 @@ public:
         return QString("http://127.0.0.1:%1").arg(serverPort());
     }
 
+protected:
+    virtual bool shouldHandleSocketRead(QTcpSocket* sock) const {
+        Q_UNUSED(sock)
+        return true;
+    }
+
+    virtual bool handleUpgradeRequest(QTcpSocket* sock, const Request& req) {
+        Q_UNUSED(sock)
+        Q_UNUSED(req)
+        return false;
+    }
+
 private:
     void handleData(QTcpSocket* sock) {
+        if (!shouldHandleSocketRead(sock)) {
+            return;
+        }
         m_buffers[sock].append(sock->readAll());
         const QByteArray& buf = m_buffers[sock];
 
@@ -79,6 +94,14 @@ private:
                 QByteArray val = trimmed.mid(colon + 1).trimmed();
                 req.headers[key] = val;
             }
+        }
+
+        if (req.headers.value("upgrade").toLower() == "websocket") {
+            m_buffers.remove(sock);
+            if (!handleUpgradeRequest(sock, req)) {
+                sendError(sock, 400);
+            }
+            return;
         }
 
         // Check Content-Length for body

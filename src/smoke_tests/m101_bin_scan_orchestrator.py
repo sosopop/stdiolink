@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import json
 import os
 import shutil
@@ -191,11 +193,24 @@ class FakeVisionServer:
         self.last_log_call_count = 0
         self.login_call_count = 0
         self._lock = threading.Lock()
+        self._ws_clients: dict[socket.socket, set[str]] = {}
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), self._make_handler())
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
 
     def close(self) -> None:
+        with self._lock:
+            clients = list(self._ws_clients.keys())
+            self._ws_clients.clear()
+        for conn in clients:
+            try:
+                conn.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
+                conn.close()
+            except OSError:
+                pass
         self._server.shutdown()
         self._server.server_close()
         self._thread.join(timeout=2.0)
@@ -223,6 +238,35 @@ class FakeVisionServer:
         parent = self
 
         class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def do_GET(self) -> None:  # noqa: N802
+                if self.path != "/ws":
+                    self.send_response(501)
+                    self.end_headers()
+                    return
+
+                if self.headers.get("Upgrade", "").lower() != "websocket":
+                    self.send_response(400)
+                    self.end_headers()
+                    return
+
+                key = self.headers.get("Sec-WebSocket-Key", "").strip()
+                if not key:
+                    self.send_response(400)
+                    self.end_headers()
+                    return
+
+                accept = base64.b64encode(
+                    hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode("utf-8")).digest()
+                ).decode("ascii")
+                self.send_response(101, "Switching Protocols")
+                self.send_header("Upgrade", "websocket")
+                self.send_header("Connection", "Upgrade")
+                self.send_header("Sec-WebSocket-Accept", accept)
+                self.end_headers()
+                parent._serve_ws_client(self.connection)
+
             def do_POST(self) -> None:  # noqa: N802
                 length = int(self.headers.get("Content-Length", "0"))
                 body = self.rfile.read(length) if length else b""
@@ -296,6 +340,104 @@ class FakeVisionServer:
                 return
 
         return Handler
+
+    def _serve_ws_client(self, conn: socket.socket) -> None:
+        with self._lock:
+            self._ws_clients[conn] = set()
+
+        try:
+            while True:
+                message = self._recv_ws_text(conn)
+                if message is None:
+                    return
+                try:
+                    obj = json.loads(message)
+                except json.JSONDecodeError:
+                    continue
+
+                msg_type = obj.get("type")
+                topic = str(obj.get("topic", ""))
+                with self._lock:
+                    topics = self._ws_clients.get(conn)
+                    if topics is None:
+                        return
+                    if msg_type == "sub" and topic:
+                        topics.add(topic)
+                    elif msg_type == "unsub" and topic:
+                        topics.discard(topic)
+                if msg_type == "ping":
+                    self._send_ws_frame(conn, b"", opcode=0xA)
+        finally:
+            with self._lock:
+                self._ws_clients.pop(conn, None)
+            try:
+                conn.close()
+            except OSError:
+                pass
+
+    def _recv_exact(self, conn: socket.socket, size: int) -> bytes | None:
+        chunks = bytearray()
+        while len(chunks) < size:
+            try:
+                chunk = conn.recv(size - len(chunks))
+            except OSError:
+                return None
+            if not chunk:
+                return None
+            chunks.extend(chunk)
+        return bytes(chunks)
+
+    def _recv_ws_text(self, conn: socket.socket) -> str | None:
+        header = self._recv_exact(conn, 2)
+        if not header:
+            return None
+
+        b0, b1 = header[0], header[1]
+        opcode = b0 & 0x0F
+        masked = (b1 & 0x80) != 0
+        payload_len = b1 & 0x7F
+
+        if payload_len == 126:
+            extended = self._recv_exact(conn, 2)
+            if not extended:
+                return None
+            payload_len = int.from_bytes(extended, "big")
+        elif payload_len == 127:
+            extended = self._recv_exact(conn, 8)
+            if not extended:
+                return None
+            payload_len = int.from_bytes(extended, "big")
+
+        mask = self._recv_exact(conn, 4) if masked else b""
+        if masked and not mask:
+            return None
+        payload = self._recv_exact(conn, payload_len)
+        if payload is None:
+            return None
+        if masked:
+            payload = bytes(byte ^ mask[i % 4] for i, byte in enumerate(payload))
+
+        if opcode == 0x8:
+            return None
+        if opcode != 0x1:
+            return ""
+        return payload.decode("utf-8", errors="replace")
+
+    def _send_ws_frame(self, conn: socket.socket, payload: bytes, opcode: int = 0x1) -> None:
+        header = bytearray([0x80 | (opcode & 0x0F)])
+        length = len(payload)
+        if length < 126:
+            header.append(length)
+        elif length <= 0xFFFF:
+            header.append(126)
+            header.extend(length.to_bytes(2, "big"))
+        else:
+            header.append(127)
+            header.extend(length.to_bytes(8, "big"))
+        try:
+            conn.sendall(bytes(header) + payload)
+        except OSError:
+            pass
 
 
 def wait_port(host: str, port: int, timeout_s: float) -> bool:

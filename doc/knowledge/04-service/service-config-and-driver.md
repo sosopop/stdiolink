@@ -29,6 +29,8 @@
 - `openDriver(path, args?, options?)` 统一按 keepalive 方式启动 Driver；即使 `args` 中带了 `--profile=...`，也会被覆盖为 `--profile=keepalive`。
 - 如果需要保留底层生命周期控制（例如自己决定 `queryMeta()` 时机、自己消费 `Task`、自己传 `--profile=oneshot|keepalive`），改用 `new Driver()`。
 - 命令名包含 `.` 时用 `proxy["cmd.name"]()`
+- `bin_scan_orchestrator` 现在会在 3dvision `login` 后显式执行 `ws.connect` 和 `ws.subscribe("vessel.notify")`；两者都是强依赖。
+- `bin_scan_orchestrator` 在扫描阶段会消费 driver `event`，一旦收到 `scanner.error` 就立即失败，不再只等 `vessellog.last` 轮询超时。
 
 ## Modify Entry
 
