@@ -12,6 +12,10 @@
   - debug 运行目录，适合本地联调
 - `build/runtime_release/`
   - release 运行目录，也是当前 CTest 常见的测试程序来源
+- `build_vs/runtime_debug/`
+  - Visual Studio debug 运行目录，二进制直接位于 `bin/`
+- `build_vs/runtime_release/`
+  - Visual Studio release 运行目录，二进制直接位于 `bin/`
 - `release/<pkg>/`
   - 发布包验证入口，不等于开发构建目录
 
@@ -30,6 +34,7 @@
 ctest --test-dir build -N -V
 Get-Content build\CTestTestfile.cmake
 Get-Content build\src\CTestTestfile.cmake
+ctest --test-dir build_vs -C Debug -N -V
 ```
 
 ## Direct Run vs CTest
@@ -51,6 +56,7 @@ Get-Content build\src\CTestTestfile.cmake
 ```powershell
 build\runtime_release\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
 build\runtime_debug\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
+build_vs\runtime_debug\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
 ```
 
 ### 跑 CTest
@@ -59,7 +65,18 @@ build\runtime_debug\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
 ctest --test-dir build --output-on-failure
 ctest --test-dir build -R "^stdiolink_tests$" --output-on-failure
 ctest --test-dir build -L smoke --output-on-failure
+ctest --test-dir build_vs -C Debug --output-on-failure
 ```
+
+## Generator Differences
+
+- Ninja 单配置：
+  - 原始可执行文件位于 `build/<config-lower>/`
+  - runtime 位于 `build/runtime_<config-lower>/bin`
+- Visual Studio 多配置：
+  - 原始可执行文件位于 `build_vs/<config-lower>/`
+  - runtime 位于 `build_vs/runtime_<config-lower>/bin`
+  - 不再使用 `build_vs/runtime_<config-lower>/bin/Debug|Release`
 
 ## Common Pitfalls
 

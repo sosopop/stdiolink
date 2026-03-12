@@ -193,9 +193,15 @@ set_target_properties(stdiolink_tests PROPERTIES
 )
 set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS stdiolink_tests)
 
+if(STDIOLINK_IS_MULTI_CONFIG)
+    set(_stdiolink_tests_runtime_dir "${CMAKE_BINARY_DIR}/runtime_$<LOWER_CASE:$<CONFIG>>")
+else()
+    set(_stdiolink_tests_runtime_dir "${STDIOLINK_RUNTIME_DIR}")
+endif()
+
 add_test(NAME stdiolink_tests
-    COMMAND "${STDIOLINK_RUNTIME_DIR}/bin/stdiolink_tests${CMAKE_EXECUTABLE_SUFFIX}"
-    WORKING_DIRECTORY "${STDIOLINK_RUNTIME_DIR}/bin"
+    COMMAND "${_stdiolink_tests_runtime_dir}/bin/stdiolink_tests${CMAKE_EXECUTABLE_SUFFIX}"
+    WORKING_DIRECTORY "${_stdiolink_tests_runtime_dir}/bin"
 )
 set_tests_properties(stdiolink_tests PROPERTIES
     DEPENDS assemble_runtime

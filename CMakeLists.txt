@@ -4,9 +4,15 @@ project(stdiolink)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-string(TOLOWER "${CMAKE_BUILD_TYPE}" _build_type_lower)
-if(_build_type_lower STREQUAL "")
+get_property(STDIOLINK_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
+if(STDIOLINK_IS_MULTI_CONFIG)
     set(_build_type_lower "debug")
+else()
+    string(TOLOWER "${CMAKE_BUILD_TYPE}" _build_type_lower)
+    if(_build_type_lower STREQUAL "")
+        set(_build_type_lower "debug")
+    endif()
 endif()
 
 set(STDIOLINK_RAW_DIR "${CMAKE_BINARY_DIR}/${_build_type_lower}")
@@ -43,6 +49,20 @@ enable_testing()
 
 # 添加子目录
 add_subdirectory(src)
+
+if(STDIOLINK_IS_MULTI_CONFIG)
+    get_property(_all_exe_targets GLOBAL PROPERTY STDIOLINK_EXECUTABLE_TARGETS)
+    foreach(_target IN LISTS _all_exe_targets)
+        if(TARGET ${_target})
+            set_target_properties(${_target} PROPERTIES
+                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/debug"
+                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/release"
+                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/relwithdebinfo"
+                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/minsizerel"
+            )
+        endif()
+    endforeach()
+endif()
 
 # 运行时目录组装
 include(cmake/assemble_runtime.cmake)

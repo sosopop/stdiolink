@@ -20,13 +20,21 @@ foreach(_subdir services projects)
     endif()
 endforeach()
 
+if(STDIOLINK_IS_MULTI_CONFIG)
+    set(_assemble_raw_dir "${CMAKE_BINARY_DIR}/$<LOWER_CASE:$<CONFIG>>")
+    set(_assemble_runtime_dir "${CMAKE_BINARY_DIR}/runtime_$<LOWER_CASE:$<CONFIG>>")
+else()
+    set(_assemble_raw_dir "${STDIOLINK_RAW_DIR}")
+    set(_assemble_runtime_dir "${STDIOLINK_RUNTIME_DIR}")
+endif()
+
 add_custom_target(assemble_runtime ALL
     COMMAND ${CMAKE_COMMAND}
-        -DRAW_DIR="${STDIOLINK_RAW_DIR}"
-        -DRUNTIME_DIR="${STDIOLINK_RUNTIME_DIR}"
+        -DRAW_DIR="${_assemble_raw_dir}"
+        -DRUNTIME_DIR="${_assemble_runtime_dir}"
         -DSOURCE_DIR="${CMAKE_SOURCE_DIR}"
         -P "${CMAKE_SOURCE_DIR}/cmake/assemble_runtime_impl.cmake"
-    COMMENT "Assembling runtime directory: ${STDIOLINK_RUNTIME_DIR}"
+    COMMENT "Assembling runtime directory"
 )
 
 # assemble_runtime 依赖所有可执行 target，确保编译完成后再组装
