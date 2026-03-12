@@ -92,7 +92,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
             <Button
               type="text"
               icon={<SettingOutlined />}
-              onClick={() => navigate(`/projects/${project.id}?tab=config`)}
+              onClick={() => navigate(`/projects/${project.id}?tab=parameters`)}
               className={styles.actionBtn}
             />
           </Tooltip>

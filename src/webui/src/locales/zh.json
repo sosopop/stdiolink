@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "概览",
-            "config": "配置",
+            "config": "参数",
             "instances": "实例",
             "logs": "日志",
-            "schedule": "调度",
+            "schedule": "配置",
             "not_found": "项目未找到"
         },
         "logs": {
             "refresh": "刷新"
         },
         "config": {
-            "save": "保存配置",
-            "save_success": "配置已保存",
-            "save_fail": "保存配置失败",
+            "save": "保存参数",
+            "save_success": "参数已保存",
+            "save_fail": "保存参数失败",
             "test_commands": "测试命令",
             "test_commands_hint": "基于项目当前已保存的配置生成可复用的 stdiolink_service 测试命令。",
             "expanded_command": "展开配置参数",
@@ -175,6 +175,14 @@
             "schedule_strategy": "调度策略",
             "active_instances": "活跃实例",
             "consecutive_failures": "连续失败次数"
+        },
+        "settings": {
+            "save": "保存配置",
+            "save_success": "配置已保存",
+            "save_fail": "保存配置失败",
+            "name": "项目名称",
+            "name_placeholder": "请输入项目名称",
+            "name_required": "项目名称不能为空"
         }
     },
     "services": {

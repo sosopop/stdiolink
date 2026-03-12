@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "Overview",
-            "config": "Config",
+            "config": "Parameters",
             "instances": "Instances",
             "logs": "Logs",
-            "schedule": "Schedule",
+            "schedule": "Configuration",
             "not_found": "Project not found"
         },
         "logs": {
             "refresh": "Refresh"
         },
         "config": {
-            "save": "Save Configuration",
-            "save_success": "Configuration saved",
-            "save_fail": "Failed to save configuration",
+            "save": "Save Parameters",
+            "save_success": "Parameters saved",
+            "save_fail": "Failed to save parameters",
             "test_commands": "Test Commands",
             "test_commands_hint": "Use the saved project configuration to generate repeatable stdiolink_service test commands.",
             "expanded_command": "Expanded config arguments",
@@ -134,13 +134,13 @@
             "type": "Schedule Type",
             "manual": "Manual",
             "daemon": "Daemon",
-        "fixed_rate": "Fixed Rate",
-        "run_timeout": "Run Timeout (ms)",
-        "run_timeout_hint": "0 = disabled",
-        "run_timeout_invalid": "Run timeout must be a non-negative integer",
-        "restart_delay": "Restart Delay (ms)",
-        "max_failures": "Max Consecutive Failures",
-        "interval": "Interval (ms)",
+            "fixed_rate": "Fixed Rate",
+            "run_timeout": "Run Timeout (ms)",
+            "run_timeout_hint": "0 = disabled",
+            "run_timeout_invalid": "Run timeout must be a non-negative integer",
+            "restart_delay": "Restart Delay (ms)",
+            "max_failures": "Max Consecutive Failures",
+            "interval": "Interval (ms)",
             "max_concurrent": "Max Concurrent"
         },
         "instances_tab": {
@@ -175,6 +175,14 @@
             "schedule_strategy": "Schedule Strategy",
             "active_instances": "Active Instances",
             "consecutive_failures": "Consecutive Failures"
+        },
+        "settings": {
+            "save": "Save Configuration",
+            "save_success": "Configuration saved",
+            "save_fail": "Failed to save configuration",
+            "name": "Project Name",
+            "name_placeholder": "Enter project name",
+            "name_required": "Project name cannot be empty"
         }
     },
     "services": {

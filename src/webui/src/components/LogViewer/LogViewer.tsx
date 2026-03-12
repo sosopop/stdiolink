@@ -119,6 +119,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
               icon={autoScroll ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
               onClick={() => setAutoScroll(!autoScroll)}
               style={{ color: autoScroll ? 'var(--color-success)' : 'var(--text-tertiary)' }}
+              data-testid="log-viewer-autoscroll-toggle"
             />
           </Tooltip>
         </div>
@@ -128,6 +129,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
         className={styles.logWindow}
         ref={containerRef}
         onScroll={handleScroll}
+        data-testid="log-viewer-window"
       >
         {filtered.map((line, i) => {
           const { timestamp, level, message } = parseLine(line);
@@ -162,6 +164,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
                 setAutoScroll(true);
                 containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
               }}
+              data-testid="log-viewer-scroll-bottom"
             />
           </div>
         )}

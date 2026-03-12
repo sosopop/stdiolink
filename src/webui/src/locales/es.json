@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "Resumen",
-            "config": "Configuración",
+            "config": "Parámetros",
             "instances": "Instancias",
             "logs": "Registros",
-            "schedule": "Programación",
+            "schedule": "Configuración",
             "not_found": "Proyecto no encontrado"
         },
         "logs": {
             "refresh": "Actualizar"
         },
         "config": {
-            "save": "Guardar configuración",
-            "save_success": "Configuración guardada",
-            "save_fail": "Error al guardar la configuración",
+            "save": "Guardar parámetros",
+            "save_success": "Parámetros guardados",
+            "save_fail": "No se pudieron guardar los parámetros",
             "test_commands": "Comandos de prueba",
             "test_commands_hint": "Use la configuración guardada del proyecto para generar comandos de prueba repetibles de stdiolink_service.",
             "expanded_command": "Argumentos de configuración expandidos",
@@ -175,6 +175,14 @@
             "consecutive_failures": "Fallos consecutivos",
             "enable_project": "Habilitar proyecto",
             "disable_project": "Deshabilitar proyecto"
+        },
+        "settings": {
+            "save": "Guardar configuración",
+            "save_success": "Configuración guardada",
+            "save_fail": "No se pudo guardar la configuración",
+            "name": "Nombre del proyecto",
+            "name_placeholder": "Introduce el nombre del proyecto",
+            "name_required": "El nombre del proyecto no puede estar vacío"
         }
     },
     "services": {

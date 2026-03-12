@@ -89,7 +89,10 @@ export const useProjectsStore = create<ProjectsState>()((set, get) => ({
     try {
       set({ error: null });
       const updated = await projectsApi.update(id, data);
-      set({ currentProject: updated });
+      set((s) => ({
+        projects: s.projects.map((p) => (p.id === id ? updated : p)),
+        currentProject: s.currentProject?.id === id ? updated : s.currentProject,
+      }));
       return true;
     } catch (e: any) {
       set({ error: e?.error || 'Failed to update project' });

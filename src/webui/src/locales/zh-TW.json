@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "概覽",
-            "config": "設定",
+            "config": "參數",
             "instances": "實例",
             "logs": "日誌",
-            "schedule": "排程",
+            "schedule": "配置",
             "not_found": "專案未找到"
         },
         "logs": {
             "refresh": "重新整理"
         },
         "config": {
-            "save": "儲存設定",
-            "save_success": "設定已儲存",
-            "save_fail": "儲存設定失敗",
+            "save": "儲存參數",
+            "save_success": "參數已儲存",
+            "save_fail": "儲存參數失敗",
             "test_commands": "測試命令",
             "test_commands_hint": "根據專案目前已儲存的設定產生可重複使用的 stdiolink_service 測試命令。",
             "expanded_command": "展開設定參數",
@@ -175,6 +175,14 @@
             "schedule_strategy": "排程策略",
             "active_instances": "活躍實例",
             "consecutive_failures": "連續失敗次數"
+        },
+        "settings": {
+            "save": "儲存配置",
+            "save_success": "配置已儲存",
+            "save_fail": "儲存配置失敗",
+            "name": "專案名稱",
+            "name_placeholder": "請輸入專案名稱",
+            "name_required": "專案名稱不能為空"
         }
     },
     "services": {

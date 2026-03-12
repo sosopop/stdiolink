@@ -61,6 +61,10 @@ describe('useProjectsStore', () => {
   });
 
   it('updateProject success', async () => {
+    useProjectsStore.setState({
+      projects: [{ id: 'p1', name: 'P1', serviceId: 's1', enabled: true, valid: true, config: {}, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' }] as any,
+      currentProject: { id: 'p1', name: 'P1', serviceId: 's1', enabled: true, valid: true, config: {}, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' } as any,
+    });
     const updated = { id: 'p1', name: 'Updated', serviceId: 's1', enabled: true, valid: true, config: { host: 'new' }, schedule: { type: 'manual' }, instanceCount: 0, status: 'stopped' };
     vi.mocked(projectsApi.update).mockResolvedValue(updated as any);
 
@@ -68,6 +72,7 @@ describe('useProjectsStore', () => {
 
     expect(result).toBe(true);
     expect(useProjectsStore.getState().currentProject).toEqual(updated);
+    expect(useProjectsStore.getState().projects[0]).toEqual(updated);
   });
 
   it('deleteProject success', async () => {

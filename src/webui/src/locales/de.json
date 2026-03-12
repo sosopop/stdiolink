@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "Übersicht",
-            "config": "Konfiguration",
+            "config": "Parameter",
             "instances": "Instanzen",
             "logs": "Protokolle",
-            "schedule": "Zeitplan",
+            "schedule": "Konfiguration",
             "not_found": "Projekt nicht gefunden"
         },
         "logs": {
             "refresh": "Aktualisieren"
         },
         "config": {
-            "save": "Konfiguration speichern",
-            "save_success": "Konfiguration gespeichert",
-            "save_fail": "Konfiguration konnte nicht gespeichert werden",
+            "save": "Parameter speichern",
+            "save_success": "Parameter gespeichert",
+            "save_fail": "Parameter konnten nicht gespeichert werden",
             "test_commands": "Testbefehle",
             "test_commands_hint": "Verwenden Sie die gespeicherte Projektkonfiguration, um wiederholbare stdiolink_service-Testbefehle zu erzeugen.",
             "expanded_command": "Erweiterte Konfigurationsargumente",
@@ -175,6 +175,14 @@
             "consecutive_failures": "Aufeinanderfolgende Fehler",
             "enable_project": "Projekt aktivieren",
             "disable_project": "Projekt deaktivieren"
+        },
+        "settings": {
+            "save": "Konfiguration speichern",
+            "save_success": "Konfiguration gespeichert",
+            "save_fail": "Konfiguration konnte nicht gespeichert werden",
+            "name": "Projektname",
+            "name_placeholder": "Projektnamen eingeben",
+            "name_required": "Der Projektname darf nicht leer sein"
         }
     },
     "services": {

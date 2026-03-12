@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "개요",
-            "config": "설정",
+            "config": "매개변수",
             "instances": "인스턴스",
             "logs": "로그",
-            "schedule": "스케줄",
+            "schedule": "구성",
             "not_found": "프로젝트를 찾을 수 없습니다"
         },
         "logs": {
             "refresh": "새로고침"
         },
         "config": {
-            "save": "구성 저장",
-            "save_success": "구성을 저장했습니다",
-            "save_fail": "구성 저장에 실패했습니다",
+            "save": "매개변수 저장",
+            "save_success": "매개변수를 저장했습니다",
+            "save_fail": "매개변수 저장에 실패했습니다",
             "test_commands": "테스트 명령",
             "test_commands_hint": "저장된 프로젝트 구성을 사용해 재현 가능한 stdiolink_service 테스트 명령을 생성합니다.",
             "expanded_command": "확장된 구성 인자",
@@ -175,6 +175,14 @@
             "consecutive_failures": "연속 실패 횟수",
             "enable_project": "프로젝트 활성화",
             "disable_project": "프로젝트 비활성화"
+        },
+        "settings": {
+            "save": "구성 저장",
+            "save_success": "구성을 저장했습니다",
+            "save_fail": "구성 저장에 실패했습니다",
+            "name": "프로젝트 이름",
+            "name_placeholder": "프로젝트 이름을 입력하세요",
+            "name_required": "프로젝트 이름은 비워 둘 수 없습니다"
         }
     },
     "services": {

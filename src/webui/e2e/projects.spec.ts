@@ -25,12 +25,9 @@ test.describe('Projects', () => {
 
   test('shows project detail tabs', async ({ page }) => {
     await page.goto('/projects/demo-project');
-    // 验证所有 5 个 tab 存在：Overview, Config, Instances, Logs, Schedule
-    await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Config' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Instances' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Logs' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Schedule' })).toBeVisible();
+    // 验证所有 5 个 tab 存在且顺序正确：Overview, Configuration, Parameters, Instances, Logs
+    const tabs = page.getByRole('tab');
+    await expect(tabs).toHaveText(['Overview', 'Configuration', 'Parameters', 'Instances', 'Logs']);
   });
 
   test('shows project overview with action buttons', async ({ page }) => {
@@ -42,9 +39,9 @@ test.describe('Projects', () => {
     await expect(page.getByTestId('project-config-test-commands')).toHaveCount(0);
   });
 
-  test('shows test commands in config tab', async ({ page }) => {
+  test('shows test commands in parameters tab', async ({ page }) => {
     await page.goto('/projects/demo-project');
-    await page.getByRole('tab', { name: 'Config' }).click();
+    await page.getByRole('tab', { name: 'Parameters' }).click();
     const panel = page.getByTestId('project-config-test-commands');
     await expect(panel).toBeVisible();
     await expect(panel).toContainText('--config-file="projects/demo-project/param.json"');
@@ -53,13 +50,13 @@ test.describe('Projects', () => {
 
   test('switches project detail tabs', async ({ page }) => {
     await page.goto('/projects/demo-project');
-    // 切换到 Config tab
-    await page.getByRole('tab', { name: 'Config' }).click();
-    await expect(page).toHaveURL(/tab=config/);
+    // 切换到 Parameters tab
+    await page.getByRole('tab', { name: 'Parameters' }).click();
+    await expect(page).toHaveURL(/tab=parameters/);
 
-    // 切换到 Schedule tab
-    await page.getByRole('tab', { name: 'Schedule' }).click();
-    await expect(page).toHaveURL(/tab=schedule/);
+    // 切换到 Configuration tab
+    await page.getByRole('tab', { name: 'Configuration' }).click();
+    await expect(page).toHaveURL(/tab=configuration/);
   });
 
   test('opens create project wizard', async ({ page }) => {

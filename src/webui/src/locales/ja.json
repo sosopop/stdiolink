@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "概要",
-            "config": "設定",
+            "config": "パラメータ",
             "instances": "インスタンス",
             "logs": "ログ",
-            "schedule": "スケジュール",
+            "schedule": "設定",
             "not_found": "プロジェクトが見つかりません"
         },
         "logs": {
             "refresh": "更新"
         },
         "config": {
-            "save": "設定を保存",
-            "save_success": "設定を保存しました",
-            "save_fail": "設定の保存に失敗しました",
+            "save": "パラメータを保存",
+            "save_success": "パラメータを保存しました",
+            "save_fail": "パラメータの保存に失敗しました",
             "test_commands": "テストコマンド",
             "test_commands_hint": "保存済みのプロジェクト設定を使って、再利用可能な stdiolink_service テストコマンドを生成します。",
             "expanded_command": "展開済み設定引数",
@@ -175,6 +175,14 @@
             "consecutive_failures": "連続失敗回数",
             "enable_project": "プロジェクトを有効化",
             "disable_project": "プロジェクトを無効化"
+        },
+        "settings": {
+            "save": "設定を保存",
+            "save_success": "設定を保存しました",
+            "save_fail": "設定の保存に失敗しました",
+            "name": "プロジェクト名",
+            "name_placeholder": "プロジェクト名を入力",
+            "name_required": "プロジェクト名は空にできません"
         }
     },
     "services": {

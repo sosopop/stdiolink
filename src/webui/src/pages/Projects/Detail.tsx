@@ -9,7 +9,11 @@ import { ProjectOverview } from './components/ProjectOverview';
 import { ProjectConfig } from './components/ProjectConfig';
 import { ProjectInstances } from './components/ProjectInstances';
 import { ProjectLogs } from './components/ProjectLogs';
-import { ProjectSchedule } from './components/ProjectSchedule';
+import { ProjectSettings } from './components/ProjectSettings';
+
+const DEFAULT_TAB = 'overview';
+const PARAMETERS_TAB = 'parameters';
+const CONFIGURATION_TAB = 'configuration';
 
 export const ProjectDetailPage: React.FC = () => {
   const { t } = useTranslation();
@@ -46,8 +50,8 @@ export const ProjectDetailPage: React.FC = () => {
   if (error) return <Alert type="error" message={error} data-testid="detail-error" />;
   if (!currentProject) return <Empty description={t('projects.detail.not_found')} data-testid="detail-not-found" />;
 
-  const buildUpdatePayload = (patch: Partial<Pick<typeof currentProject, 'config' | 'schedule'>>) => ({
-    name: currentProject.name,
+  const buildUpdatePayload = (patch: Partial<Pick<typeof currentProject, 'name' | 'config' | 'schedule'>>) => ({
+    name: patch.name ?? currentProject.name,
     serviceId: currentProject.serviceId,
     enabled: currentProject.enabled,
     config: patch.config ?? currentProject.config,
@@ -70,7 +74,18 @@ export const ProjectDetailPage: React.FC = () => {
       ),
     },
     {
-      key: 'config',
+      key: CONFIGURATION_TAB,
+      label: t('projects.detail.schedule'),
+      children: (
+        <ProjectSettings
+          projectName={currentProject.name}
+          schedule={currentProject.schedule}
+          onSave={({ name, schedule }) => updateProject(currentProject.id, buildUpdatePayload({ name, schedule }))}
+        />
+      ),
+    },
+    {
+      key: PARAMETERS_TAB,
       label: t('projects.detail.config'),
       children: (
         <ProjectConfig
@@ -93,23 +108,13 @@ export const ProjectDetailPage: React.FC = () => {
       label: t('projects.detail.logs'),
       children: <ProjectLogs projectId={currentProject.id} />,
     },
-    {
-      key: 'schedule',
-      label: t('projects.detail.schedule'),
-      children: (
-        <ProjectSchedule
-          schedule={currentProject.schedule}
-          onSave={(schedule) => updateProject(currentProject.id, buildUpdatePayload({ schedule }))}
-        />
-      ),
-    },
   ];
 
   return (
     <div data-testid="page-project-detail">
       <h2 style={{ marginBottom: 16 }}>{currentProject.name}</h2>
       <Tabs
-        activeKey={tab || 'overview'}
+        activeKey={tab || DEFAULT_TAB}
         items={items}
         onChange={(key) => setSearchParams({ tab: key })}
         data-testid="detail-tabs"

@@ -102,19 +102,19 @@
         },
         "detail": {
             "overview": "Aperçu",
-            "config": "Config",
+            "config": "Paramètres",
             "instances": "Instances",
             "logs": "Journaux",
-            "schedule": "Planification",
+            "schedule": "Configuration",
             "not_found": "Projet introuvable"
         },
         "logs": {
             "refresh": "Actualiser"
         },
         "config": {
-            "save": "Enregistrer la configuration",
-            "save_success": "Configuration enregistrée",
-            "save_fail": "Échec de l'enregistrement de la configuration",
+            "save": "Enregistrer les paramètres",
+            "save_success": "Paramètres enregistrés",
+            "save_fail": "Échec de l'enregistrement des paramètres",
             "test_commands": "Commandes de test",
             "test_commands_hint": "Utilisez la configuration enregistrée du projet pour générer des commandes de test stdiolink_service reproductibles.",
             "expanded_command": "Arguments de configuration étendus",
@@ -175,6 +175,14 @@
             "consecutive_failures": "Échecs consécutifs",
             "enable_project": "Activer le projet",
             "disable_project": "Désactiver le projet"
+        },
+        "settings": {
+            "save": "Enregistrer la configuration",
+            "save_success": "Configuration enregistrée",
+            "save_fail": "Échec de l'enregistrement de la configuration",
+            "name": "Nom du projet",
+            "name_placeholder": "Saisir le nom du projet",
+            "name_required": "Le nom du projet ne peut pas être vide"
         }
     },
     "services": {

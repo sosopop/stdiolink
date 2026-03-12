@@ -46,7 +46,7 @@ const mockRuntime = {
   schedule: { type: 'manual', timerActive: false, restartSuppressed: false, consecutiveFailures: 0, shuttingDown: false, autoRestarting: false },
 };
 
-function renderDetail(projectOverrides = {}, serviceOverrides = {}, dashboardOverrides = {}) {
+function renderDetail(projectOverrides = {}, serviceOverrides = {}, dashboardOverrides = {}, initialEntry = '/projects/p1') {
   const pState = {
     currentProject: mockProject,
     currentRuntime: mockRuntime,
@@ -97,7 +97,7 @@ function renderDetail(projectOverrides = {}, serviceOverrides = {}, dashboardOve
   vi.mocked(useDashboardStore).mockImplementation((sel?: any) => sel ? sel(dState) : dState);
   return render(
     <ConfigProvider>
-      <MemoryRouter initialEntries={['/projects/p1']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
         </Routes>
@@ -116,9 +116,9 @@ describe('ProjectDetailPage', () => {
     expect(screen.queryByTestId('project-config-test-commands')).toBeNull();
   });
 
-  it('shows config test commands in config tab', async () => {
+  it('shows config test commands in parameters tab', async () => {
     renderDetail({}, { currentService: { serviceDir: '/data/services/s1', configSchemaFields: [] } });
-    fireEvent.click(screen.getByRole('tab', { name: 'Config' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Parameters' }));
     await waitFor(() => {
       expect(screen.getByTestId('project-config-test-commands')).toBeDefined();
     });
@@ -129,11 +129,31 @@ describe('ProjectDetailPage', () => {
 
   it('shows all tabs', () => {
     renderDetail();
-    expect(screen.getByRole('tab', { name: 'Overview' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'Config' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'Instances' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'Logs' })).toBeDefined();
-    expect(screen.getByRole('tab', { name: 'Schedule' })).toBeDefined();
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+    expect(tabs).toEqual(['Overview', 'Configuration', 'Parameters', 'Instances', 'Logs']);
+  });
+
+  it('activates parameters tab from query string', async () => {
+    renderDetail(
+      {},
+      { currentService: { serviceDir: '/data/services/s1', configSchemaFields: [] } },
+      {},
+      '/projects/p1?tab=parameters',
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Parameters', selected: true })).toBeDefined();
+    });
+    expect(screen.getByTestId('project-config-test-commands')).toBeDefined();
+  });
+
+  it('activates configuration tab from query string', async () => {
+    renderDetail({}, {}, {}, '/projects/p1?tab=configuration');
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Configuration', selected: true })).toBeDefined();
+    });
+    expect(screen.getByTestId('project-settings')).toBeDefined();
   });
 
   it('disables project from overview tab', async () => {
@@ -169,7 +189,7 @@ describe('ProjectDetailPage', () => {
       { currentService: { serviceDir: '/data/services/s1', configSchemaFields: [] } },
     );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Config' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Parameters' }));
     await waitFor(() => {
       expect(screen.getByTestId('save-config-btn')).toBeDefined();
     });
@@ -186,19 +206,20 @@ describe('ProjectDetailPage', () => {
     });
   });
 
-  it('saves schedule with full project payload', async () => {
+  it('saves settings with updated project name and full project payload', async () => {
     const updateProject = vi.fn().mockResolvedValue(true);
     renderDetail({ updateProject });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Configuration' }));
     await waitFor(() => {
-      expect(screen.getByTestId('save-schedule-btn')).toBeDefined();
+      expect(screen.getByTestId('save-settings-btn')).toBeDefined();
     });
-    fireEvent.click(screen.getByTestId('save-schedule-btn'));
+    fireEvent.change(screen.getByTestId('project-name-input'), { target: { value: 'Renamed Project' } });
+    fireEvent.click(screen.getByTestId('save-settings-btn'));
 
     await waitFor(() => {
       expect(updateProject).toHaveBeenCalledWith('p1', {
-        name: 'Test Project',
+        name: 'Renamed Project',
         serviceId: 's1',
         enabled: true,
         config: { host: 'localhost' },

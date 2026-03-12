@@ -1,8 +1,8 @@
 .container {
     display: flex;
     flex-direction: column;
-    height: 100%;
     gap: 12px;
+    min-height: 0;
 }
 
 .toolbar {
@@ -22,7 +22,8 @@
 }
 
 .logWindow {
-    flex: 1;
+    flex: 1 1 auto;
+    position: relative;
     background: var(--log-bg);
     /* 终端风格背景 */
     border: 1px solid var(--surface-border);
@@ -34,7 +35,8 @@
     overflow-y: auto;
     color: var(--log-text);
     scroll-behavior: smooth;
-    min-height: 400px;
+    min-height: 320px;
+    max-height: clamp(320px, 56vh, 720px);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
