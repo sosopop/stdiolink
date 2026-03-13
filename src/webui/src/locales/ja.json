@@ -22,6 +22,7 @@
         "no": "いいえ",
         "retry": "再試行",
         "reload": "再読み込み",
+        "reset": "リセット",
         "actions": "操作",
         "view_all": "すべて表示",
         "view_detail": "詳細表示",

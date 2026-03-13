@@ -128,6 +128,7 @@ describe('CommandPanel', () => {
 
   it('reset button triggers reset callback', () => {
     const { props } = renderPanel({ selectedCommand: 'add' });
+    expect(screen.getByTestId('reset-btn').textContent).toContain(i18n.t('common.reset'));
     fireEvent.click(screen.getByTestId('reset-btn'));
     expect(props.onReset).toHaveBeenCalled();
   });
