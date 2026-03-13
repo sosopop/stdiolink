@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, Button, Space, Typography } from 'antd';
-import { PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import type { CommandMeta } from '@/types/driver';
 import { ParamForm } from './ParamForm';
 import { CommandLineExample } from './CommandLineExample';
@@ -19,6 +19,7 @@ interface CommandPanelProps {
   onParamsChange: (params: Record<string, unknown>) => void;
   onExec: () => void;
   onCancel: () => void;
+  onReset: () => void;
 }
 
 export const CommandPanel: React.FC<CommandPanelProps> = ({
@@ -32,6 +33,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
   onParamsChange,
   onExec,
   onCancel,
+  onReset,
 }) => {
   const { t } = useTranslation();
 
@@ -105,6 +107,15 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
             style={{ borderRadius: 8, height: 36, padding: '0 20px' }}
           >
             {t('driverlab.command.execute')}
+          </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={onReset}
+            disabled={!currentCmd}
+            data-testid="reset-btn"
+            style={{ borderRadius: 8, height: 36 }}
+          >
+            {t('common.reset')}
           </Button>
           <Button
             icon={<StopOutlined />}

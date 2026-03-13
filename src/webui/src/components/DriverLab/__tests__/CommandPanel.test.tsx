@@ -46,6 +46,7 @@ function renderPanel(overrides = {}) {
     onParamsChange: vi.fn(),
     onExec: vi.fn(),
     onCancel: vi.fn(),
+    onReset: vi.fn(),
     ...overrides,
   };
   return { ...render(<ConfigProvider><CommandPanel {...props} /></ConfigProvider>), props };
@@ -55,6 +56,7 @@ function renderPanelHarness(initialParams: Record<string, unknown>) {
   const onSelectCommand = vi.fn();
   const onExec = vi.fn();
   const onCancel = vi.fn();
+  const onReset = vi.fn();
 
   const Harness = () => {
     const [params, setParams] = React.useState<Record<string, unknown>>(initialParams);
@@ -71,6 +73,7 @@ function renderPanelHarness(initialParams: Record<string, unknown>) {
           onParamsChange={setParams}
           onExec={onExec}
           onCancel={onCancel}
+          onReset={onReset}
         />
       </ConfigProvider>
     );
@@ -121,6 +124,12 @@ describe('CommandPanel', () => {
     expect(btn.closest('button')?.disabled).toBe(false);
     fireEvent.click(btn);
     expect(props.onCancel).toHaveBeenCalled();
+  });
+
+  it('reset button triggers reset callback', () => {
+    const { props } = renderPanel({ selectedCommand: 'add' });
+    fireEvent.click(screen.getByTestId('reset-btn'));
+    expect(props.onReset).toHaveBeenCalled();
   });
 
   it('applies selected example params', () => {

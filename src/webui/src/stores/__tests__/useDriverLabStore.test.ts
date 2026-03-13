@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useDriverLabStore } from '../useDriverLabStore';
 import type { WsMessage } from '@/api/driverlab-ws';
+import type { CommandMeta } from '@/types/driver';
 
 // Mock the DriverLabWsClient
 vi.mock('@/api/driverlab-ws', () => {
@@ -28,6 +29,33 @@ vi.mock('@/api/driverlab-ws', () => {
 });
 
 describe('useDriverLabStore', () => {
+  const testCommands: CommandMeta[] = [
+    {
+      name: 'scan_line',
+      params: [
+        { name: 'timeout_ms', type: 'int', default: 1000 },
+        { name: 'samples', type: 'int', default: 8 },
+      ],
+      returns: { type: 'object' },
+    },
+    {
+      name: 'scan_frame',
+      params: [
+        { name: 'timeout_ms', type: 'int', default: 5000 },
+        { name: 'retries', type: 'int', default: 0 },
+      ],
+      returns: { type: 'object' },
+    },
+    {
+      name: 'status',
+      params: [
+        { name: 'timeout_ms', type: 'int', default: 2000 },
+        { name: 'verbose', type: 'bool', default: false },
+      ],
+      returns: { type: 'object' },
+    },
+  ];
+
   beforeEach(() => {
     vi.useRealTimers();
     useDriverLabStore.setState({
@@ -44,6 +72,7 @@ describe('useDriverLabStore', () => {
       commands: [],
       selectedCommand: null,
       commandParams: {},
+      executedFieldValues: {},
       executing: false,
       autoScroll: true,
       _wsClient: null,
@@ -179,6 +208,7 @@ describe('useDriverLabStore', () => {
     execCommand('add', { a: 1, b: 2 });
     const state = useDriverLabStore.getState();
     expect(state.executing).toBe(true);
+    expect(state.executedFieldValues).toEqual({ a: 1, b: 2 });
     expect(state.messages).toHaveLength(1);
     expect(state.messages[0].direction).toBe('send');
     expect(state.messages[0].type).toBe('exec');
@@ -239,11 +269,57 @@ describe('useDriverLabStore', () => {
     expect(state.messages[0].id).toBe('m-1');
   });
 
-  it('selectCommand updates selection and resets params', () => {
-    useDriverLabStore.setState({ commandParams: { a: 1 } });
-    useDriverLabStore.getState().selectCommand('ping');
+  it('selectCommand uses executed values first and then defaults', () => {
+    useDriverLabStore.setState({
+      commands: testCommands,
+      executedFieldValues: { timeout_ms: 3000 },
+    });
+    useDriverLabStore.getState().selectCommand('scan_frame');
     const state = useDriverLabStore.getState();
-    expect(state.selectedCommand).toBe('ping');
-    expect(state.commandParams).toEqual({});
+    expect(state.selectedCommand).toBe('scan_frame');
+    expect(state.commandParams).toEqual({ timeout_ms: 3000, retries: 0 });
+  });
+
+  it('selectCommand falls back to defaults when no executed value exists', () => {
+    useDriverLabStore.setState({ commands: testCommands });
+    useDriverLabStore.getState().selectCommand('status');
+    const state = useDriverLabStore.getState();
+    expect(state.commandParams).toEqual({ timeout_ms: 2000, verbose: false });
+  });
+
+  it('selectCommand ignores draft values that were never executed', () => {
+    useDriverLabStore.setState({
+      commands: testCommands,
+      commandParams: { timeout_ms: 9000 },
+      executedFieldValues: {},
+      selectedCommand: 'scan_line',
+    });
+    useDriverLabStore.getState().selectCommand('scan_frame');
+    const state = useDriverLabStore.getState();
+    expect(state.commandParams).toEqual({ timeout_ms: 5000, retries: 0 });
+  });
+
+  it('resetCommandParams restores defaults without changing executed memory', () => {
+    useDriverLabStore.setState({
+      commands: testCommands,
+      selectedCommand: 'scan_frame',
+      commandParams: { timeout_ms: 7777, retries: 9 },
+      executedFieldValues: { timeout_ms: 3000 },
+    });
+
+    useDriverLabStore.getState().resetCommandParams();
+
+    const state = useDriverLabStore.getState();
+    expect(state.commandParams).toEqual({ timeout_ms: 5000, retries: 0 });
+    expect(state.executedFieldValues).toEqual({ timeout_ms: 3000 });
+
+    useDriverLabStore.getState().selectCommand('status');
+    expect(useDriverLabStore.getState().commandParams).toEqual({ timeout_ms: 3000, verbose: false });
+  });
+
+  it('connect clears executed field memory for a new session', () => {
+    useDriverLabStore.setState({ executedFieldValues: { timeout_ms: 3000 } });
+    useDriverLabStore.getState().connect('drv1', 'oneshot');
+    expect(useDriverLabStore.getState().executedFieldValues).toEqual({});
   });
 });

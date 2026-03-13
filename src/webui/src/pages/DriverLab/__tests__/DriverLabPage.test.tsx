@@ -46,6 +46,7 @@ function setupMocks(overrides = {}) {
     cancelCommand: vi.fn(),
     selectCommand: vi.fn(),
     setCommandParams: vi.fn(),
+    resetCommandParams: vi.fn(),
     clearMessages: vi.fn(),
     toggleAutoScroll: vi.fn(),
     ...overrides,

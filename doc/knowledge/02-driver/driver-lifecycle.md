@@ -34,6 +34,7 @@
 - Windows 下标准输入读取沿用 Qt 行读取。
 - 用 Qt JSON/IO 类型，不要混入另一套序列化或管道实现。
 - 明确是 `OneShot` 还是 `KeepAlive`；生命周期会影响 Host 和 Service 的关闭行为。
+- `OneShot` 下如果每条命令都显式带连接参数，优先在文档和 meta 中写清默认值来源、是否复用最近一次执行结果、哪些命令是纯无状态。
 
 ## Related
 

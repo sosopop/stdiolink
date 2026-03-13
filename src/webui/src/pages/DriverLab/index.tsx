@@ -42,6 +42,7 @@ export const DriverLabPage: React.FC = () => {
   const cancelCommand = useDriverLabStore((s) => s.cancelCommand);
   const selectCommand = useDriverLabStore((s) => s.selectCommand);
   const setCommandParams = useDriverLabStore((s) => s.setCommandParams);
+  const resetCommandParams = useDriverLabStore((s) => s.resetCommandParams);
   const clearMessages = useDriverLabStore((s) => s.clearMessages);
   const toggleAutoScroll = useDriverLabStore((s) => s.toggleAutoScroll);
 
@@ -126,6 +127,7 @@ export const DriverLabPage: React.FC = () => {
                 onParamsChange={setCommandParams}
                 onExec={handleExec}
                 onCancel={cancelCommand}
+                onReset={resetCommandParams}
               />
             </div>
           </div>

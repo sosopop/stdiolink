@@ -38,12 +38,42 @@ function normalizePayload(msg: WsMessage): unknown {
   return msg;
 }
 
+function getCommandDefaults(command: CommandMeta | undefined): Record<string, unknown> {
+  if (!command) return {};
+
+  return command.params.reduce<Record<string, unknown>>((acc, field) => {
+    if (Object.prototype.hasOwnProperty.call(field, 'default')) {
+      acc[field.name] = field.default;
+    }
+    return acc;
+  }, {});
+}
+
+function buildCommandParams(
+  command: CommandMeta | undefined,
+  executedFieldValues: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!command) return {};
+
+  return command.params.reduce<Record<string, unknown>>((acc, field) => {
+    if (Object.prototype.hasOwnProperty.call(executedFieldValues, field.name)) {
+      acc[field.name] = executedFieldValues[field.name];
+      return acc;
+    }
+    if (Object.prototype.hasOwnProperty.call(field, 'default')) {
+      acc[field.name] = field.default;
+    }
+    return acc;
+  }, {});
+}
+
 interface DriverLabState {
   connection: ConnectionState;
   messages: MessageEntry[];
   commands: CommandMeta[];
   selectedCommand: string | null;
   commandParams: Record<string, unknown>;
+  executedFieldValues: Record<string, unknown>;
   executing: boolean;
   autoScroll: boolean;
 
@@ -53,6 +83,7 @@ interface DriverLabState {
   cancelCommand: () => void;
   selectCommand: (name: string) => void;
   setCommandParams: (params: Record<string, unknown>) => void;
+  resetCommandParams: () => void;
   clearMessages: () => void;
   toggleAutoScroll: () => void;
   appendMessage: (entry: MessageEntry) => void;
@@ -78,6 +109,7 @@ export const useDriverLabStore = create<DriverLabState>()((set, get) => ({
   commands: [],
   selectedCommand: null,
   commandParams: {},
+  executedFieldValues: {},
   executing: false,
   autoScroll: true,
   _wsClient: null,
@@ -102,6 +134,7 @@ export const useDriverLabStore = create<DriverLabState>()((set, get) => ({
       commands: [],
       selectedCommand: null,
       commandParams: {},
+      executedFieldValues: {},
       executing: false,
       _wsClient: client,
     });
@@ -146,7 +179,16 @@ export const useDriverLabStore = create<DriverLabState>()((set, get) => ({
     const client = get()._wsClient;
     if (!client) return;
     client.exec(command, data);
-    set({ executing: true });
+    const executedFieldValues = Object.entries(data).reduce<Record<string, unknown>>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+    set((s) => ({
+      executing: true,
+      executedFieldValues: { ...s.executedFieldValues, ...executedFieldValues },
+    }));
 
     const entry: MessageEntry = {
       id: makeId(),
@@ -179,11 +221,25 @@ export const useDriverLabStore = create<DriverLabState>()((set, get) => ({
   },
 
   selectCommand: (name) => {
-    set({ selectedCommand: name, commandParams: {} });
+    set((s) => ({
+      selectedCommand: name,
+      commandParams: buildCommandParams(
+        s.commands.find((command) => command.name === name),
+        s.executedFieldValues,
+      ),
+    }));
   },
 
   setCommandParams: (params) => {
     set({ commandParams: params });
+  },
+
+  resetCommandParams: () => {
+    set((s) => ({
+      commandParams: getCommandDefaults(
+        s.commands.find((command) => command.name === s.selectedCommand),
+      ),
+    }));
   },
 
   clearMessages: () => {

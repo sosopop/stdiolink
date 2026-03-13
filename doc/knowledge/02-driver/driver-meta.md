@@ -8,6 +8,7 @@
 
 - 优先把 Driver 当成“有元数据的命令集合”而不是只会接 JSON 的黑盒进程。
 - 元数据越完整，Server 扫描、WebUI DriverLab、表单生成、文档导出越稳定。
+- 命令别名如果要参与参数校验、CLI help、DriverLab 表单和默认值填充，必须进入 meta；只在 handler 里手工改名不够。
 
 ## Build Path
 
@@ -31,6 +32,7 @@
 ## Modify Entry
 
 - 改元数据字段时同步查：协议层类型、Driver 导出、Host 缓存、Server 扫描、前端使用点。
+- 有 alias 时优先把 alias 也建成命令，再在 handler 内归一到主命令；否则 `DriverCore` 前置校验、`--help-command` 和 DriverLab 都看不到。
 
 ## Related
 
