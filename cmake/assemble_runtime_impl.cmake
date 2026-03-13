@@ -6,15 +6,25 @@ if(NOT IS_DIRECTORY "${RAW_DIR}")
     message(FATAL_ERROR "RAW_DIR does not exist: ${RAW_DIR}")
 endif()
 
+if(DEFINED PUBLISHED_DRIVER_BASENAMES_RAW AND NOT PUBLISHED_DRIVER_BASENAMES_RAW STREQUAL "")
+    string(REPLACE "|" ";" PUBLISHED_DRIVER_BASENAMES "${PUBLISHED_DRIVER_BASENAMES_RAW}")
+else()
+    set(PUBLISHED_DRIVER_BASENAMES "")
+endif()
+
 set(RUNTIME_BIN "${RUNTIME_DIR}/bin")
 set(RUNTIME_DATA_ROOT "${RUNTIME_DIR}/data_root")
 set(RUNTIME_DEMOS "${RUNTIME_DIR}/demos")
 set(RUNTIME_SCRIPTS "${RUNTIME_DIR}/scripts")
 
-# ── 0. 增量清理：仅清理构建产物目录，保留用户态数据 ──
-# bin/ 和 data_root/drivers/ 由构建系统全权管理，每次重建
+# ── 0. 增量清理：仅清理构建系统托管目录，保留用户态数据 ──
+# bin/ 和 data_root/{drivers,services,projects}/ 由源码与构建系统全权管理，每次重建
 # logs/ workspaces/ config.json 等用户态数据绝不触碰
-foreach(_clean_dir "${RUNTIME_BIN}" "${RUNTIME_DATA_ROOT}/drivers")
+foreach(_clean_dir
+    "${RUNTIME_BIN}"
+    "${RUNTIME_DATA_ROOT}/drivers"
+    "${RUNTIME_DATA_ROOT}/services"
+    "${RUNTIME_DATA_ROOT}/projects")
     if(IS_DIRECTORY "${_clean_dir}")
         file(REMOVE_RECURSE "${_clean_dir}")
     endif()
@@ -56,6 +66,9 @@ file(GLOB _driver_files "${RAW_DIR}/stdio.drv.*")
 foreach(_file IN LISTS _driver_files)
     get_filename_component(_name "${_file}" NAME)
     string(REGEX REPLACE "\\.(exe|app|pdb)$" "" _drv_name "${_name}")
+    if(PUBLISHED_DRIVER_BASENAMES AND NOT _drv_name IN_LIST PUBLISHED_DRIVER_BASENAMES)
+        continue()
+    endif()
     set(_drv_dir "${RUNTIME_DATA_ROOT}/drivers/${_drv_name}")
     file(MAKE_DIRECTORY "${_drv_dir}")
     file(COPY_FILE "${_file}" "${_drv_dir}/${_name}"
@@ -73,14 +86,31 @@ foreach(_entry IN LISTS _raw_entries)
     endif()
 endforeach()
 
-# ── 5. 两层合并 data_root（production + demo） ──
+# ── 5. 合并 data_root：正式 facts 全量复制，demo 仅复制非 service/project 资产 ──
 set(_prod_data "${SOURCE_DIR}/src/data_root")
 set(_demo_data "${SOURCE_DIR}/src/demo/server_manager_demo/data_root")
 if(IS_DIRECTORY "${_prod_data}")
     file(COPY "${_prod_data}/" DESTINATION "${RUNTIME_DATA_ROOT}")
 endif()
 if(IS_DIRECTORY "${_demo_data}")
-    file(COPY "${_demo_data}/" DESTINATION "${RUNTIME_DATA_ROOT}")
+    file(GLOB _demo_entries RELATIVE "${_demo_data}" "${_demo_data}/*")
+    foreach(_entry IN LISTS _demo_entries)
+        if(_entry STREQUAL "services" OR _entry STREQUAL "projects" OR _entry STREQUAL "drivers")
+            continue()
+        endif()
+        set(_entry_src "${_demo_data}/${_entry}")
+        set(_entry_dst "${RUNTIME_DATA_ROOT}/${_entry}")
+        if(IS_DIRECTORY "${_entry_src}")
+            file(MAKE_DIRECTORY "${_entry_dst}")
+            file(COPY "${_entry_src}/" DESTINATION "${_entry_dst}")
+        else()
+            file(COPY_FILE "${_entry_src}" "${_entry_dst}"
+                 RESULT _copy_result)
+            if(NOT _copy_result EQUAL 0)
+                message(FATAL_ERROR "Failed to copy demo data_root entry ${_entry}: ${_copy_result}")
+            endif()
+        endif()
+    endforeach()
 endif()
 
 # ── 6. 复制 demo 资产 ──

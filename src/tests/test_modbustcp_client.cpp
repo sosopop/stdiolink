@@ -58,6 +58,9 @@ public:
                     if (m_socket == socket) {
                         m_socket.clear();
                     }
+                    if (socket->parent() == &m_server) {
+                        socket->setParent(nullptr);
+                    }
                     socket->deleteLater();
                 });
             }
@@ -65,11 +68,9 @@ public:
     }
 
     ~FakeModbusTcpDevice() {
-        if (m_socket) {
-            m_socket->disconnectFromHost();
-            m_socket->deleteLater();
-        }
+        teardownSocket();
         m_server.close();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     }
 
     bool listen() {
@@ -85,6 +86,25 @@ public:
     }
 
 private:
+    void teardownSocket() {
+        if (!m_socket) {
+            return;
+        }
+
+        QTcpSocket* socket = m_socket.data();
+        m_socket.clear();
+
+        socket->disconnect(&m_server);
+        socket->disconnectFromHost();
+        if (socket->state() != QAbstractSocket::UnconnectedState) {
+            socket->abort();
+        }
+        if (socket->parent() == &m_server) {
+            socket->setParent(nullptr);
+        }
+        delete socket;
+    }
+
     void onReadyRead(QTcpSocket* socket) {
         if (!socket) {
             return;

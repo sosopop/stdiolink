@@ -7,8 +7,8 @@
 ## Key Conclusions
 
 - 构建产物分 raw 和 runtime 两层：`build/<config>/` 仅编译输出，`build/runtime_<config>/` 才是可运行目录。
-- Driver 在 runtime 中按子目录分发：`data_root/drivers/<driver-dir>/<exe>`。
-- Service 和 Project 的事实源在 `data_root/services/`、`data_root/projects/`。
+- Driver 在 runtime 中按子目录分发：`data_root/drivers/<driver-dir>/<exe>`；默认仅发布 `src/drivers/` 下注册的正式 Driver，`src/demo/` 下 Driver 不自动进入 runtime。
+- Service 和 Project 的事实源在 `data_root/services/`、`data_root/projects/`；默认以 `src/data_root/` 为发布源。
 - Project 目录采用 `data_root/projects/<projectId>/` 布局，包含 `config.json`、`param.json` 和运行期 `workspace/`。
 - `resolveDriver()`、Server 扫描器、发布包都依赖 runtime 同构布局。
 
@@ -18,6 +18,7 @@
 - `build/runtime_debug/data_root/drivers/`：Driver 可执行文件目录。
 - `build/runtime_debug/data_root/services/`：Service 模板目录。
 - `build/runtime_debug/data_root/projects/`：Project 目录；每个 Project 子目录内含 `config.json`、`param.json`、`workspace/`。
+- `src/demo/server_manager_demo/data_root/`：仅补充 demo 的 `config.json`、`logs/`、`workspaces/`、`scripts/` 等辅助资产，不再发布其中的 `services/`、`projects/`。
 - `release/<pkg>/`：发布包根，结构与 runtime 基本同构。
 
 ## Modify Entry

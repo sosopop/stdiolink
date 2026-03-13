@@ -9,7 +9,7 @@
 1. 在 `src/drivers/driver_<name>/` 建目录，提供 `main.cpp`、handler、`CMakeLists.txt`
 2. `main.cpp` 中创建 `DriverCore` 并注册 handler
 3. 若需要文档/表单/DriverLab，handler 实现 `IMetaCommandHandler`
-4. `CMakeLists.txt` 设置输出名 `stdio.drv.<name>` 并注册 runtime 组装
+4. `CMakeLists.txt` 设置输出名 `stdio.drv.<name>` 并注册 runtime 组装；需要默认发布时放在 `src/drivers/`，`src/demo/` 下示例 Driver 默认不进入 runtime
 5. 构建后确认产物进入 `build/runtime_*/data_root/drivers/<dir>/`
 6. 如需 Server/WebUI 消费，验证 `meta.describe` 输出
 7. 补 GTest；新增里程碑能力时补 Smoke
