@@ -14,10 +14,11 @@
 - 改 Project/调度：`src/stdiolink_server/{model,manager}/`
 - 改 REST/SSE/WS：`src/stdiolink_server/http/` + `src/webui/src/api/`
 - 改前端页面：`src/webui/src/{pages,components,stores}/`
-- 排查 Projects 配置页测试命令由谁生成、路径为何相对化：`../06-webui/projects-config-and-test-commands.md`
+- 排查 Projects 配置页测试命令由谁生成：`../06-webui/project-test-command-panel.md`
+- 排查 Projects 配置页路径为何相对化：`../06-webui/project-command-path-rules.md`
 - 用户贴 `[ FAILED ] ...` 日志，先确认问题是否仍存在：`../07-testing-build/verify-reported-failure.md`
 - 不知道先跑 GTest、Smoke 还是前端测试：`../07-testing-build/choose-test-entry.md`
-- `ctest` 结果和手动运行不一致：`../07-testing-build/test-artifact-and-runtime-layout.md`
+- `ctest` 结果和手动运行不一致：`../07-testing-build/ctest-vs-direct-run.md`
 - 怀疑是环境、端口、残留进程或并发波动：`../07-testing-build/triage-test-failure.md`
 
 ## Minimum Tests

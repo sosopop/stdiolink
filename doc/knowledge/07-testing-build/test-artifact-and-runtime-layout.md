@@ -2,91 +2,34 @@
 
 ## Purpose
 
-说明构建目录、运行目录、CTest 注册命令和直接执行测试程序之间的关系，避免复现路径选错。
+说明构建目录、运行目录和发布目录的边界，避免把测试问题归因到错误目录。
 
 ## Key Paths
 
-- `build/`
-  - CMake/Ninja 产物和 CTest 注册信息
-- `build/runtime_debug/`
-  - debug 运行目录，适合本地联调
-- `build/runtime_release/`
-  - release 运行目录，也是当前 CTest 常见的测试程序来源
-- `build_vs/runtime_debug/`
-  - Visual Studio debug 运行目录，二进制直接位于 `bin/`
-- `build_vs/runtime_release/`
-  - Visual Studio release 运行目录，二进制直接位于 `bin/`
-- `release/<pkg>/`
-  - 发布包验证入口，不等于开发构建目录
-
-## What CTest Knows
-
-- `ctest` 知道的是“注册测试命令”
-- 该命令可能是：
-  - `stdiolink_tests.exe`
-  - `python src/smoke_tests/run_smoke.py --plan ...`
-  - 其他脚本或可执行文件
-- `ctest` 默认不知道 GTest case 级别名称，除非显式做了 `gtest_discover_tests`
-
-## Inspect The Registered Commands
-
-```powershell
-ctest --test-dir build -N -V
-Get-Content build\CTestTestfile.cmake
-Get-Content build\src\CTestTestfile.cmake
-ctest --test-dir build_vs -C Debug -N -V
-```
-
-## Direct Run vs CTest
-
-- 直接运行测试程序
-  - 适合 case 级复现和快速缩小范围
-- 运行 `ctest`
-  - 适合验证当前 CMake 注册命令是否整体通过
-- 两者结果不一致时，优先比较：
-  - 可执行文件路径
-  - 工作目录
-  - 环境变量
-  - 使用的是 debug 还是 release 运行目录
-
-## Typical Commands
-
-### 直接跑 GTest
-
-```powershell
-build\runtime_release\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
-build\runtime_debug\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
-build_vs\runtime_debug\bin\stdiolink_tests.exe --gtest_filter=SuiteName.TestName
-```
-
-### 跑 CTest
-
-```powershell
-ctest --test-dir build --output-on-failure
-ctest --test-dir build -R "^stdiolink_tests$" --output-on-failure
-ctest --test-dir build -L smoke --output-on-failure
-ctest --test-dir build_vs -C Debug --output-on-failure
-```
+- `build/`：CMake/Ninja 产物和 CTest 注册信息，不等于可直接联调的运行目录。
+- `build/runtime_debug/`、`build/runtime_release/`：开发时最常用的可运行目录，包含 `bin/` 和 `data_root/`。
+- `build_vs/runtime_debug/`、`build_vs/runtime_release/`：Visual Studio 多配置构建的可运行目录。
+- `release/<pkg>/`：发布包验证入口，不等于 `build/runtime_*`。
 
 ## Generator Differences
 
-- Ninja 单配置：
-  - 原始可执行文件位于 `build/<config-lower>/`
-  - runtime 位于 `build/runtime_<config-lower>/bin`
-- Visual Studio 多配置：
-  - 原始可执行文件位于 `build_vs/<config-lower>/`
-  - runtime 位于 `build_vs/runtime_<config-lower>/bin`
-  - 不再使用 `build_vs/runtime_<config-lower>/bin/Debug|Release`
+- Ninja 单配置：原始可执行文件在 `build/<config-lower>/`，runtime 在 `build/runtime_<config-lower>/bin`。
+- Visual Studio 多配置：原始可执行文件在 `build_vs/<config-lower>/`，runtime 在 `build_vs/runtime_<config-lower>/bin`。
 
 ## Common Pitfalls
 
-- 认为 `ctest` 里的 `stdiolink_tests` 等于单个 GTest case
-- 在 debug 目录复现通过，就默认 release 也通过
-- 忽略测试程序需要的 `data_root/drivers`、`services`、DLL 和工作目录
-- 把发布包问题放在 `build/runtime_*` 中验证，或反过来
+- 把 `build/`、`runtime_*` 和 `release/<pkg>/` 混成同一类目录。
+- 在 debug 目录复现通过后，直接假设 release 目录也一样。
+- 忽略运行目录里的 `data_root`、DLL、工作目录和资源组装。
+
+## When To Go Deeper
+
+- 想确认 `ctest` 到底运行了什么，转到 `ctest-vs-direct-run.md`。
+- 想确认当前失败更像环境还是行为回归，转到 `triage-test-failure.md`。
 
 ## Related
 
 - `build-release.md`
+- `ctest-vs-direct-run.md`
 - `verify-reported-failure.md`
 - `test-matrix.md`

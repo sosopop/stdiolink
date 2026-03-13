@@ -1,6 +1,6 @@
 # stdiolink AI Knowledge Base
 
-面向 AI 开发检索的高密度知识库。目标是用最少 token 快速定位概念、实现入口、修改链路和相关测试。
+面向 AI 开发检索的高密度知识库。目标是短写直达，用最简短的语言标注注意项，重在引导 AI 快速找到概念、实现入口、修改链路和相关测试，而不是展开教学。
 
 ## Use This Index
 
@@ -35,6 +35,7 @@
 - “前端接新接口/改实时联调” -> `06-webui/webui-structure.md` -> `06-webui/driverlab-and-events.md`
 - “用户贴了一段测试失败日志，先确认问题是否仍存在” -> `07-testing-build/verify-reported-failure.md`
 - “不知道先跑哪层测试最合适” -> `07-testing-build/choose-test-entry.md`
+- “`ctest` 结果和手动运行结果不一致” -> `07-testing-build/ctest-vs-direct-run.md`
 - “测试失败像是环境/产物/运行目录问题” -> `07-testing-build/triage-test-failure.md` -> `07-testing-build/test-artifact-and-runtime-layout.md`
 - “排查改动落点” -> `08-workflows/debug-change-entry.md`
 - “本次改动要更新哪些知识库” -> `08-workflows/update-knowledge-base.md`

@@ -29,7 +29,7 @@
   - 核心 C++ 行为优先 GTest
   - 跨进程链路再补 smoke
 - CTest 和手动运行结果不一致
-  - 先读 `test-artifact-and-runtime-layout.md`
+  - 先读 `ctest-vs-direct-run.md`
   - 比较产物路径、工作目录、环境变量
 - 失败像环境问题或偶发竞争
   - 先读 `triage-test-failure.md`
@@ -72,5 +72,6 @@
 - `verify-reported-failure.md`
 - `triage-test-failure.md`
 - `test-artifact-and-runtime-layout.md`
+- `ctest-vs-direct-run.md`
 - `../08-workflows/add-driver.md`
 - `../08-workflows/add-service-or-project.md`
