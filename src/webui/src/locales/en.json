@@ -337,7 +337,9 @@
             "execute": "Execute",
             "no_params": "No parameters for this command",
             "examples_title": "Examples",
-            "apply_example": "Apply Example Params"
+            "apply_example": "Apply Example Params",
+            "wrap_enable": "Enable line wrap",
+            "wrap_disable": "Disable line wrap"
         },
         "toolbar": {
             "clear": "Clear",

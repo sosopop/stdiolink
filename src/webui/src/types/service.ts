@@ -3,6 +3,7 @@ export interface ServiceInfo {
   name: string;
   version: string;
   serviceDir: string;
+  serviceDirDisplay?: string;
   hasSchema: boolean;
   projectCount: number;
 }

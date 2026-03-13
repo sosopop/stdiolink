@@ -337,7 +337,9 @@
             "execute": "执行",
             "no_params": "此命令无参数",
             "examples_title": "示例",
-            "apply_example": "应用示例参数"
+            "apply_example": "应用示例参数",
+            "wrap_enable": "开启自动换行",
+            "wrap_disable": "关闭自动换行"
         },
         "toolbar": {
             "clear": "清除",

@@ -49,7 +49,10 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
   const examples = selectDriverLabExamples(currentCmd?.examples);
 
   return (
-    <div data-testid="command-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div
+      data-testid="command-panel"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, overflow: 'hidden' }}
+    >
       {/* 顶部固定：命令选择 */}
       <div style={{ marginBottom: 16, flexShrink: 0 }}>
         <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -70,7 +73,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
 
       {/* 中部滚动：参数表单 */}
       {currentCmd && (
-        <div style={{ flex: 1, overflowY: 'auto', marginBottom: 16, paddingRight: 8, minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', marginBottom: 16, paddingRight: 8, minHeight: 0, minWidth: 0 }}>
           {currentCmd.description && (
             <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 16, borderLeft: '3px solid var(--brand-primary)' }}>
               <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>

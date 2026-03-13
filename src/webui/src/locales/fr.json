@@ -337,7 +337,9 @@
             "execute": "Exécuter",
             "no_params": "Aucun paramètre pour cette commande",
             "examples_title": "Exemples",
-            "apply_example": "Appliquer les paramètres d'exemple"
+            "apply_example": "Appliquer les paramètres d'exemple",
+            "wrap_enable": "Activer le retour à la ligne",
+            "wrap_disable": "Désactiver le retour à la ligne"
         },
         "toolbar": {
             "clear": "Effacer",

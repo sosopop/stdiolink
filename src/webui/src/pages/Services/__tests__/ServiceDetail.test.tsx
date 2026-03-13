@@ -24,6 +24,7 @@ const mockService = {
   name: 'Test Service',
   version: '1.0.0',
   serviceDir: '/data/services/svc_test',
+  serviceDirDisplay: 'services/svc_test',
   hasSchema: true,
   projectCount: 2,
   manifest: { manifestVersion: '1', id: 'svc_test', name: 'Test Service', version: '1.0.0', description: 'A test', author: 'dev' },
@@ -70,6 +71,8 @@ describe('ServiceDetailPage', () => {
     expect(screen.getByTestId('page-service-detail')).toBeDefined();
     expect(screen.getByRole('heading', { name: 'Test Service' })).toBeDefined();
     expect(screen.getByTestId('service-overview')).toBeDefined();
+    expect(screen.getByText('services/svc_test')).toBeDefined();
+    expect(screen.queryByText('/data/services/svc_test')).toBeNull();
   });
 
   it('shows tabs for files, schema, projects', () => {

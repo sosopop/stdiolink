@@ -17,7 +17,7 @@ export const ServiceOverview: React.FC<ServiceOverviewProps> = ({ service }) => 
         <Descriptions.Item label={t('services.overview.version')}><Tag>{service.version}</Tag></Descriptions.Item>
         <Descriptions.Item label={t('services.overview.description')}>{service.manifest.description ?? '—'}</Descriptions.Item>
         <Descriptions.Item label={t('services.overview.author')}>{service.manifest.author ?? '—'}</Descriptions.Item>
-        <Descriptions.Item label={t('services.overview.directory')}>{service.serviceDir}</Descriptions.Item>
+        <Descriptions.Item label={t('services.overview.directory')}>{service.serviceDirDisplay ?? '--'}</Descriptions.Item>
         <Descriptions.Item label={t('services.overview.has_schema')}>{service.hasSchema ? t('common.yes') : t('common.no')}</Descriptions.Item>
         <Descriptions.Item label={t('services.overview.projects')}>{service.projectCount}</Descriptions.Item>
       </Descriptions>

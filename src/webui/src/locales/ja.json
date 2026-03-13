@@ -337,7 +337,9 @@
             "execute": "実行",
             "no_params": "このコマンドにはパラメータがありません",
             "examples_title": "例",
-            "apply_example": "例のパラメータを適用"
+            "apply_example": "例のパラメータを適用",
+            "wrap_enable": "折り返しを有効化",
+            "wrap_disable": "折り返しを無効化"
         },
         "toolbar": {
             "clear": "クリア",

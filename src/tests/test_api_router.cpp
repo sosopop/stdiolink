@@ -42,6 +42,18 @@ bool writeText(const QString& path, const QString& content) {
     return file.error() == QFile::NoError;
 }
 
+bool copyExecutable(const QString& fromPath, const QString& toPath) {
+    QFile::remove(toPath);
+    if (!QFile::copy(fromPath, toPath)) {
+        return false;
+    }
+    const QFileDevice::Permissions perms =
+        QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner
+        | QFileDevice::ReadGroup | QFileDevice::ExeGroup
+        | QFileDevice::ReadOther | QFileDevice::ExeOther;
+    return QFile::setPermissions(toPath, perms);
+}
+
 void writeService(const QString& root, const QString& id) {
     const QString serviceDir = root + "/services/" + id;
     ASSERT_TRUE(QDir().mkpath(serviceDir));
@@ -758,6 +770,140 @@ TEST(ApiRouterTest, DriverDetailReturns404ForMissing) {
     ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/drivers/nonexistent"), QByteArray(), status, body, error))
         << qPrintable(error);
     EXPECT_EQ(status, 404);
+}
+
+TEST(ApiRouterTest, ServicePathsExposeOnlyDataRootRelativeDisplayPath) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+
+    writeService(root, "demo");
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    const QJsonArray services = obj.value("services").toArray();
+    ASSERT_EQ(services.size(), 1);
+    EXPECT_EQ(services[0].toObject().value("serviceDirDisplay").toString(), "services/demo");
+    EXPECT_EQ(services[0].toObject().value("serviceDir").toString(), root + "/services/demo");
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("serviceDirDisplay").toString(), "services/demo");
+
+    auto& servicesMap = const_cast<QMap<QString, ServiceInfo>&>(manager.services());
+    servicesMap["demo"].serviceDir = QDir::cleanPath(tmp.path() + "/../outside/demo");
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/services/demo"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("serviceDirDisplay").toString(), "--");
+    EXPECT_EQ(obj.value("serviceDir").toString(), QDir::cleanPath(tmp.path() + "/../outside/demo"));
+}
+
+TEST(ApiRouterTest, DriverPathsExposeOnlyDataRootRelativeDisplayPath) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+
+    const QString root = tmp.path();
+    ASSERT_TRUE(QDir().mkpath(root + "/services"));
+    ASSERT_TRUE(QDir().mkpath(root + "/projects"));
+    ASSERT_TRUE(QDir().mkpath(root + "/workspaces"));
+    ASSERT_TRUE(QDir().mkpath(root + "/logs"));
+    ASSERT_TRUE(QDir().mkpath(root + "/drivers/demo"));
+
+    const QString driverBinary = testBinaryPath("test_meta_driver");
+    ASSERT_TRUE(QFileInfo::exists(driverBinary));
+    ASSERT_TRUE(copyExecutable(driverBinary,
+                               root + "/drivers/demo/stdio.drv.driver_under_test" + exeSuffix()));
+
+    ServerConfig cfg;
+    ServerManager manager(root, cfg);
+    QString initError;
+    ASSERT_TRUE(manager.initialize(initError));
+    ASSERT_TRUE(manager.driverCatalog()->hasDriver("test-meta-driver"));
+
+    QHttpServer server;
+    ApiRouter router(&manager);
+    router.registerRoutes(server);
+
+    QTcpServer tcpServer;
+    if (!tcpServer.listen(QHostAddress::AnyIPv4, 0)) {
+        GTEST_SKIP() << "Cannot listen";
+    }
+    if (!server.bind(&tcpServer)) {
+        GTEST_SKIP() << "Cannot bind";
+    }
+
+    const QString base = QString("http://127.0.0.1:%1").arg(tcpServer.serverPort());
+
+    int status = 0;
+    QByteArray body;
+    QString error;
+    QJsonObject obj;
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/drivers"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    const QJsonArray drivers = obj.value("drivers").toArray();
+    ASSERT_EQ(drivers.size(), 1);
+    EXPECT_EQ(drivers[0].toObject().value("programDisplay").toString(),
+              "drivers/demo/stdio.drv.driver_under_test" + exeSuffix());
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/drivers/test-meta-driver"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("programDisplay").toString(),
+              "drivers/demo/stdio.drv.driver_under_test" + exeSuffix());
+
+    stdiolink::DriverConfig outsideConfig = manager.driverCatalog()->getConfig("test-meta-driver");
+    outsideConfig.program = QDir::cleanPath(tmp.path() + "/../outside/stdio.drv.driver_under_test" + exeSuffix());
+    QHash<QString, stdiolink::DriverConfig> configs;
+    configs.insert(outsideConfig.id, outsideConfig);
+    manager.driverCatalog()->replaceAll(configs);
+
+    ASSERT_TRUE(sendRequest("GET", QUrl(base + "/api/drivers/test-meta-driver"), QByteArray(), status, body, error))
+        << qPrintable(error);
+    EXPECT_EQ(status, 200);
+    ASSERT_TRUE(parseJsonObject(body, obj));
+    EXPECT_EQ(obj.value("programDisplay").toString(), "--");
+    EXPECT_EQ(obj.value("program").toString(),
+              QDir::cleanPath(tmp.path() + "/../outside/stdio.drv.driver_under_test" + exeSuffix()));
 }
 
 TEST(ApiRouterTest, ProjectListPaginationAndFiltering) {

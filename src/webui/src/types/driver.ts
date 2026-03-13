@@ -3,6 +3,7 @@ import type { FieldMeta, UIHint } from './service';
 export interface DriverListItem {
   id: string;
   program: string;
+  programDisplay?: string;
   metaHash: string;
   name?: string;
   version?: string;
@@ -11,6 +12,7 @@ export interface DriverListItem {
 export interface DriverDetail {
   id: string;
   program: string;
+  programDisplay?: string;
   metaHash: string;
   meta: DriverMeta | null;
 }

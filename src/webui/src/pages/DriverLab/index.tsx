@@ -110,11 +110,11 @@ export const DriverLabPage: React.FC = () => {
         <div style={{ flex: 1, display: 'flex', gap: 16, minHeight: 0, overflow: 'hidden', padding: 4 }}>
 
           {/* Left: Command Palette */}
-          <div className="glass-panel" style={{ width: 420, display: 'flex', flexDirection: 'column', padding: 16 }}>
+          <div className="glass-panel" style={{ width: 420, minWidth: 0, display: 'flex', flexDirection: 'column', padding: 16, overflow: 'hidden' }}>
             <div style={{ marginBottom: 12 }}>
               <Title level={5} style={{ margin: 0 }}>{t('driverlab.command_palette')}</Title>
             </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <CommandPanel
                 commands={commands}
                 selectedCommand={selectedCommand}

@@ -57,14 +57,17 @@ export const DriversTable: React.FC<DriversTableProps> = ({ drivers }) => {
     },
     {
       title: t('drivers.table.executable_path'),
-      dataIndex: 'program',
-      key: 'program',
+      dataIndex: 'programDisplay',
+      key: 'programDisplay',
       ellipsis: true,
-      render: (p: string) => (
-        <Text type="secondary" style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }} title={p}>
-          {p}
-        </Text>
-      )
+      render: (p?: string) => {
+        const displayPath = p || '--';
+        return (
+          <Text type="secondary" style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }} title={displayPath}>
+            {displayPath}
+          </Text>
+        );
+      }
     },
     {
       title: t('drivers.table.actions'),

@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
+import i18n from '@/i18n';
 import { ProjectCreateWizard } from '../components/ProjectCreateWizard';
 import type { ServiceInfo } from '@/types/service';
 
 const mockServices: ServiceInfo[] = [
-  { id: 's1', name: 'Service One', version: '1.0', serviceDir: '/d', hasSchema: true, projectCount: 0 },
-  { id: 's2', name: 'Service Two', version: '2.0', serviceDir: '/d', hasSchema: false, projectCount: 1 },
+  { id: 's1', name: 'Service One', version: '1.0', serviceDir: '/d', serviceDirDisplay: 'services/s1', hasSchema: true, projectCount: 0 },
+  { id: 's2', name: 'Service Two', version: '2.0', serviceDir: '/d', serviceDirDisplay: 'services/s2', hasSchema: false, projectCount: 1 },
 ];
 
 function renderWizard(props: Partial<Parameters<typeof ProjectCreateWizard>[0]> = {}) {
@@ -23,6 +24,18 @@ function renderWizard(props: Partial<Parameters<typeof ProjectCreateWizard>[0]> 
 
 describe('ProjectCreateWizard', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('uses localized title and cancel text', async () => {
+    const previousLanguage = i18n.language;
+    await i18n.changeLanguage('zh');
+    try {
+      renderWizard();
+      expect(screen.getByText('创建项目')).toBeDefined();
+      expect(screen.getByTestId('wizard-cancel').textContent?.replace(/\s+/g, '')).toBe('取消');
+    } finally {
+      await i18n.changeLanguage(previousLanguage);
+    }
+  });
 
   it('renders service selection on step 0', () => {
     renderWizard();

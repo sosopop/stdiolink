@@ -11,8 +11,8 @@ import { DriversPage } from '../index';
 import { useDriversStore } from '@/stores/useDriversStore';
 
 const mockDrivers = [
-  { id: 'drv1', program: '/bin/drv1', metaHash: 'a', name: 'Driver One', version: '1.0' },
-  { id: 'drv2', program: '/bin/drv2', metaHash: 'b', name: 'Driver Two', version: '2.0' },
+  { id: 'drv1', program: '/abs/bin/drv1', programDisplay: 'drivers/drv1/stdio.drv.drv1', metaHash: 'a', name: 'Driver One', version: '1.0' },
+  { id: 'drv2', program: '/abs/bin/drv2', programDisplay: 'drivers/drv2/stdio.drv.drv2', metaHash: 'b', name: 'Driver Two', version: '2.0' },
 ];
 
 function setup(overrides = {}) {
@@ -58,6 +58,8 @@ describe('DriversPage', () => {
     setup();
     expect(screen.getByText('drv1')).toBeDefined();
     expect(screen.getByText('drv2')).toBeDefined();
+    expect(screen.getByText('drivers/drv1/stdio.drv.drv1')).toBeDefined();
+    expect(screen.queryByText('/abs/bin/drv1')).toBeNull();
   });
 
   it('shows empty state when no drivers', () => {

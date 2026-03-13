@@ -105,11 +105,12 @@ export const ProjectCreateWizard: React.FC<ProjectCreateWizardProps> = ({
 
   return (
     <Modal
-      title="Create Project"
+      title={t('projects.create_wizard.title')}
       open={open}
       onOk={handleOk}
       onCancel={handleCancel}
       okText={step < 3 ? t('projects.create_wizard.next') : t('projects.create_wizard.create')}
+      cancelText={t('common.cancel')}
       okButtonProps={okButtonProps}
       cancelButtonProps={cancelButtonProps}
       width={720}

@@ -337,7 +337,9 @@
             "execute": "Ausführen",
             "no_params": "Keine Parameter für diesen Befehl",
             "examples_title": "Beispiele",
-            "apply_example": "Beispielparameter anwenden"
+            "apply_example": "Beispielparameter anwenden",
+            "wrap_enable": "Zeilenumbruch aktivieren",
+            "wrap_disable": "Zeilenumbruch deaktivieren"
         },
         "toolbar": {
             "clear": "Leeren",

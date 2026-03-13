@@ -337,7 +337,9 @@
             "execute": "실행",
             "no_params": "이 명령어에는 매개변수가 없습니다",
             "examples_title": "예제",
-            "apply_example": "예제 파라미터 적용"
+            "apply_example": "예제 파라미터 적용",
+            "wrap_enable": "자동 줄바꿈 켜기",
+            "wrap_disable": "자동 줄바꿈 끄기"
         },
         "toolbar": {
             "clear": "지우기",

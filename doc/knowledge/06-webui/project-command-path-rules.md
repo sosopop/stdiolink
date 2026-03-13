@@ -2,17 +2,19 @@
 
 ## Purpose
 
-说明 Projects 配置页测试命令里的路径为何显示为相对路径，以及 `--config-file` 指向什么。
+说明 WebUI 中需要展示路径时，何时显示相对 `data_root` 的路径，以及 Projects 测试命令里的 `--config-file` 指向什么。
 
 ## What Frontend Knows
 
 - 前端能拿到 `serverStatus.dataRoot` 和 `currentService.serviceDir` 的绝对路径。
 - 前端不能直接拿到“发布根目录”；这个概念由 `dataRoot` 的父目录推导。
+- Drivers / Services 列表与详情页优先消费后端返回的 `programDisplay` / `serviceDirDisplay`，不再直接展示绝对路径。
 
 ## Relative Path Rule
 
 - 只有 `dataRoot` 末段是 `data_root` 时，才尝试做相对化。
 - 相对化基准是 `dataRoot` 的父目录；这只影响展示和复制命令，不改变后端运行行为。
+- Drivers / Services 的目录展示由后端按 `data_root` 根目录相对化；路径不在 `data_root` 下时统一显示 `--`。
 
 ## Config File Rule
 

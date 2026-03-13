@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QFuture>
 #include <QHttpServerResponder>
 #include <QJsonArray>
@@ -84,6 +85,34 @@ QJsonObject manifestToJson(const stdiolink_service::ServiceManifest& manifest) {
         out["author"] = manifest.author;
     }
     return out;
+}
+
+QString normalizedAbsolutePath(const QString& path) {
+    if (path.isEmpty()) {
+        return QString();
+    }
+    return QDir::cleanPath(QDir::fromNativeSeparators(QFileInfo(path).absoluteFilePath()));
+}
+
+QString displayPathRelativeToDataRoot(const QString& path, const QString& dataRoot) {
+    const QString normalizedRoot = normalizedAbsolutePath(dataRoot);
+    const QString normalizedPath = normalizedAbsolutePath(path);
+    if (normalizedRoot.isEmpty() || normalizedPath.isEmpty()) {
+        return "--";
+    }
+
+    QString compareRoot = normalizedRoot;
+    QString comparePath = normalizedPath;
+#ifdef Q_OS_WIN
+    compareRoot = compareRoot.toLower();
+    comparePath = comparePath.toLower();
+#endif
+
+    if (comparePath != compareRoot && !comparePath.startsWith(compareRoot + "/")) {
+        return "--";
+    }
+
+    return QDir::fromNativeSeparators(QDir(normalizedRoot).relativeFilePath(normalizedPath));
 }
 
 QString projectStatus(const Project& project, int runningCount) {
@@ -437,6 +466,7 @@ QHttpServerResponse ApiRouter::handleServiceList(const QHttpServerRequest& req) 
         obj["name"] = service.name;
         obj["version"] = service.version;
         obj["serviceDir"] = service.serviceDir;
+        obj["serviceDirDisplay"] = displayPathRelativeToDataRoot(service.serviceDir, m_manager->dataRoot());
         obj["hasSchema"] = service.hasSchema;
         obj["projectCount"] = projectCount;
         services.append(obj);
@@ -467,6 +497,7 @@ QHttpServerResponse ApiRouter::handleServiceDetail(const QString& id,
     result["name"] = service.name;
     result["version"] = service.version;
     result["serviceDir"] = service.serviceDir;
+    result["serviceDirDisplay"] = displayPathRelativeToDataRoot(service.serviceDir, m_manager->dataRoot());
     result["manifest"] = manifestToJson(service.manifest);
     result["configSchema"] = service.rawConfigSchema;
     result["configSchemaFields"] = service.configSchema.toFieldMetaArray();
@@ -1622,6 +1653,7 @@ QHttpServerResponse ApiRouter::handleDriverList(const QHttpServerRequest& req) {
         QJsonObject obj;
         obj["id"] = cfg.id;
         obj["program"] = cfg.program;
+        obj["programDisplay"] = displayPathRelativeToDataRoot(cfg.program, m_manager->dataRoot());
         obj["metaHash"] = cfg.metaHash;
         if (cfg.meta) {
             obj["name"] = cfg.meta->info.name;
@@ -1735,6 +1767,7 @@ QHttpServerResponse ApiRouter::handleDriverDetail(const QString& id,
     QJsonObject result;
     result["id"] = cfg.id;
     result["program"] = cfg.program;
+    result["programDisplay"] = displayPathRelativeToDataRoot(cfg.program, m_manager->dataRoot());
     result["metaHash"] = cfg.metaHash;
     if (cfg.meta) {
         result["meta"] = cfg.meta->toJson();

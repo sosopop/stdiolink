@@ -337,7 +337,9 @@
             "execute": "Ejecutar",
             "no_params": "Sin parámetros para este comando",
             "examples_title": "Ejemplos",
-            "apply_example": "Aplicar parámetros de ejemplo"
+            "apply_example": "Aplicar parámetros de ejemplo",
+            "wrap_enable": "Activar ajuste de línea",
+            "wrap_disable": "Desactivar ajuste de línea"
         },
         "toolbar": {
             "clear": "Limpiar",
