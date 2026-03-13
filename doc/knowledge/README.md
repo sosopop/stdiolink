@@ -38,7 +38,7 @@
 - “测试失败像是环境/产物/运行目录问题” -> `07-testing-build/triage-test-failure.md` -> `07-testing-build/test-artifact-and-runtime-layout.md`
 - “排查改动落点” -> `08-workflows/debug-change-entry.md`
 - “本次改动要更新哪些知识库” -> `08-workflows/update-knowledge-base.md`
-- “根据这次问答/排障过程反思并优化知识库路径” -> `08-workflows/reflect-and-update-knowledge-base.md`
+- “根据这次问答/排障过程反思并优化知识库路径” -> `08-workflows/update-knowledge-base.md`
 
 ## Source of Truth
 

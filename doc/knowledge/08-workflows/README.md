@@ -7,8 +7,7 @@
 - `add-driver.md`：新增或重构 C++ Driver 的完整落点。
 - `add-service-or-project.md`：新增 JS Service、Project 或两者联动配置。
 - `debug-change-entry.md`：按需求类型反查源码入口和测试入口。
-- `update-knowledge-base.md`：功能开发后如何判断和更新知识库。
-- `reflect-and-update-knowledge-base.md`：从一次真实问答或排障过程反思并补齐知识路径。
+- `update-knowledge-base.md`：知识库常规更新与反思型更新的统一入口。
 
 ## Source Anchors
 

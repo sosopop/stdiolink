@@ -46,6 +46,13 @@
 - 前端 CI 失败
   - 先缩小到单文件 Vitest 或单 spec Playwright
 
+## Stream Transport Bugs
+
+- 短包、半包、粘包、分段到达这类现象，先按流式接收问题处理，不要默认把一次读取当成一帧。
+- 先补源码层 GTest 复现；TCP 用本地假服务端分段回包，串口/管道用测试桩分块喂数据。
+- 至少保留两个对照：整帧一次到达通过、同一帧分多次到达也通过或稳定报超时。
+- 修复点优先看“累计缓冲 + 按边界判完整”；只有涉及 runtime、跨进程或真机兼容性时再升级到 smoke。
+
 ## Minimal Command Templates
 
 ### C++ / GTest
