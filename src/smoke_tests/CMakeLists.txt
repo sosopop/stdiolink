@@ -149,3 +149,18 @@ set_tests_properties(
         LABELS "smoke;m97"
         TIMEOUT 180
 )
+
+add_test(
+    NAME smoke_m103_3d_scan_robot
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m103_3d_scan_robot
+)
+
+set_tests_properties(
+    smoke_m103_3d_scan_robot
+    PROPERTIES
+        LABELS "smoke;m103"
+        TIMEOUT 120
+)

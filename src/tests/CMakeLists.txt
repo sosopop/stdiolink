@@ -80,6 +80,7 @@ set(TEST_SOURCES
     test_multiscan_driver.cpp
     test_3dvision_websocket.cpp
     test_manual_docs.cpp
+    test_3d_scan_robot.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -158,6 +159,12 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_plc_crane_sim/sim_device.cpp
     ${CMAKE_SOURCE_DIR}/src/demo/multiscan_driver/multiscan_driver.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3dvision/websocket_client.cpp
+    # M103 3D Scan Robot 驱动源文件
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_scan_robot/protocol_codec.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_scan_robot/radar_transport.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_scan_robot/radar_session.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_scan_robot/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/tests/helpers/fake_3d_scan_robot_device.cpp
 )
 
 target_include_directories(stdiolink_tests PRIVATE
@@ -167,6 +174,7 @@ target_include_directories(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbustcp
     ${CMAKE_SOURCE_DIR}/src/drivers
+    ${CMAKE_SOURCE_DIR}/src/tests
 )
 
 find_package(Qt6 COMPONENTS SerialPort Test REQUIRED)

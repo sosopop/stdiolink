@@ -58,20 +58,20 @@
 | `status` | 本地虚拟命令 | 返回驱动存活状态 |
 | `test_com` / `test` | 控制命令 | 测试主协议通信 |
 | `get_addr` / `set_addr` | 寄存器读写 | 读取/设置设备地址 |
-| `get_mode` / `set_mode` | 寄存器读写 | 读取/设置工作模式 |
-| `get_temp` | 寄存器读 | 返回 MCU / 板卡温度 |
+| `get_mode` / `set_mode` | 寄存器读写 | 读取/设置工作模式，支持 `10/20/30/40` 四种模式 |
+| `get_temp` | 寄存器读 | 返回 MCU / 板卡温度的原始值与摄氏度语义值 |
 | `get_state` | 寄存器读 | 返回状态字与已确认位拆解 |
 | `get_fw_ver` | 寄存器读 | 返回固件版本 |
 | `get_direction` | 寄存器读 | 返回 X/Y 当前角度 |
-| `get_sw0` / `get_sw1` | 寄存器读 | 返回接近开关状态 |
-| `get_calib0` / `get_calib1` | 寄存器读 | 返回校准状态 |
+| `get_sw0` / `get_sw1` | 寄存器读 | 返回接近开关语义状态与原始状态码 |
+| `get_calib0` / `get_calib1` | 寄存器读 | 返回校准语义状态与原始状态码 |
 | `calib` / `calib0` / `calib1` | 长任务 | 全量/单轴校准 |
 | `move_dist` | 长任务 | 移动到指定角度并返回该点测距结果 |
 | `move` | 长任务 | 绝对角度移动 |
 | `get_dist` | 测量命令 | 单点测距 |
 | `get_reg` / `set_reg` | 原始寄存器读写 | 调试与兼容迁移用途 |
 | `get_line` / `get_frame` | 扫描命令 | 单命令完成扫描、轮询和分段聚合 |
-| `get_data` | 数据命令 | 拉取最近一次扫描对应的大量数据分段并聚合返回 |
+| `get_data` | 数据命令 | 按显式 `total_bytes` 拉取大量数据分段并聚合返回 |
 | `res` | 查询命令 | 返回最近一次长任务的执行结果摘要 |
 | `wait` | 查询命令 | 轮询等待最近一次长任务完成并返回结果摘要 |
 | `insert_test` | 中断式命令 | 测试中断式通信 |
@@ -123,6 +123,7 @@ bool collectScanData(ScanAggregateResult* result,
 ```json
 {"cmd":"test_com","data":{"port":"COM3","addr":1,"value":1000}}
 {"cmd":"set_mode","data":{"port":"COM3","addr":1,"mode":"imaging"}}
+{"cmd":"set_mode","data":{"port":"COM3","addr":1,"mode":"sleep"}}
 {"cmd":"move","data":{"port":"COM3","addr":1,"x_deg":90.5,"y_deg":45.25}}
 {"cmd":"move_dist","data":{"port":"COM3","addr":1,"x_deg":90.0,"y_deg":45.0}}
 {"cmd":"get_line","data":{"port":"COM3","addr":1,"angle_x_deg":97.0,"begin_y_mm":1.0,"end_y_mm":100.0,"step_y_mm":1.0,"sample_count":10}}
@@ -273,7 +274,8 @@ stdiolink::meta::ensureCommandExamples(m_meta);
 - 命令名优先贴近 MatLab 现场习惯，但输入格式统一为 JSON。
 - `get_state` 仅拆解已确认状态位；无法确认的位只保留在 `raw_state` 中。
 - `wait` / `res` 为 MatLab 兼容包装命令，本质上复用同一套最近任务结果查询能力。
-- `get_data` 允许独立调用，用于兼容 MatLab 的“扫描后再取数”工作流；同时 `get_line/get_frame` 仍保留单命令返回结果的便捷模式。
+- `get_data` 继续保持 oneshot 无状态接口，调用方必须显式提供 `total_bytes`；同时 `get_line/get_frame` 仍保留单命令返回结果的便捷模式。
+- `get_temp`、`get_sw0/get_sw1`、`get_calib0/get_calib1` 返回语义字段，并保留原始状态码或原始值。
 - 后续若补高层点云语义，应在新里程碑中扩展，不修改本里程碑字段名。
 
 ## 4. 实现步骤
@@ -584,7 +586,7 @@ S05: fake helper 返回设备失败 -> status:error, code=2
 - 断言: 返回体含目标角度与距离值
 
 **T26 — get_data 独立拉取最近一次扫描数据**
-- 前置条件: fake 已缓存最近一次扫描数据
+- 前置条件: fake 已就绪，调用方明确提供 `total_bytes`
 - 输入: handler 执行 `get_data`
 - 预期: 成功
 - 断言: 返回体含 `segment_count`、`byte_count`、`data_base64`
@@ -780,6 +782,7 @@ TEST(ThreeDScanRobotHandlerTest, T27_InsertStateReturnsFrameProgress) {
   - 本里程碑明确不实现 `show` / `show_trans`、点云成像和坐标系转换，因此只返回原始聚合数据，不增加高层成像语义。
 - 实施约束:
   - `get_line` / `get_frame` / `get_data` 返回 `task_counter`、`task_command`、`segment_count`、`byte_count`、`data_base64`、可选 `result_code`。
+  - `get_data` 额外要求调用方显式传入 `total_bytes`，不跨命令保存最近一次扫描上下文。
   - 不在首版返回点云、坐标系变换结果、图像或渲染数据结构。
 
 ### D3. 命令号与时序兼容策略

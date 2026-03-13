@@ -49,6 +49,7 @@ protected:
         failDriverPath = testBinaryPath("test_driver");
         ASSERT_TRUE(QFileInfo::exists(metaDriverPath));
         ASSERT_TRUE(QFileInfo::exists(failDriverPath));
+        scanRobotDriverPath = testBinaryPath("stdio.drv.3d_scan_robot");
     }
 
     QString createDriverDirWithBinary(const QString& name, const QString& sourceBinary) {
@@ -63,6 +64,7 @@ protected:
     QString driversDir;
     QString metaDriverPath;
     QString failDriverPath;
+    QString scanRobotDriverPath;
 };
 
 TEST_F(DriverManagerScannerTest, NonExistentDirectory) {
@@ -181,4 +183,22 @@ TEST_F(DriverManagerScannerTest, ValidMetaButNonConformingExeIsSkipped) {
     EXPECT_EQ(stats2.updated, 0);
     EXPECT_EQ(stats2.newlyFailed, 0);
     EXPECT_TRUE(QFileInfo::exists(dir));
+}
+
+TEST_F(DriverManagerScannerTest, ExportMetaFor3DScanRobotDriver) {
+    if (!QFileInfo::exists(scanRobotDriverPath)) {
+        GTEST_SKIP() << "stdio.drv.3d_scan_robot binary is not available in the test output directory";
+    }
+
+    const QString dir = createDriverDirWithBinary("scan-robot", scanRobotDriverPath);
+
+    DriverManagerScanner scanner;
+    DriverManagerScanner::ScanStats stats;
+    const auto result = scanner.scan(driversDir, false, &stats);
+
+    ASSERT_TRUE(QFileInfo::exists(dir + "/driver.meta.json"));
+    EXPECT_EQ(stats.scanned, 1);
+    EXPECT_EQ(stats.updated, 1);
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_TRUE(result.contains("stdio.drv.3d_scan_robot"));
 }
