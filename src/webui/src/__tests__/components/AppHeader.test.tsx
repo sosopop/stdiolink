@@ -18,6 +18,7 @@ describe('AppHeader', () => {
     const link = screen.getByRole('link', { name: /STDIOLINK/i });
     expect(link).toBeDefined();
     expect(link.getAttribute('href')).toBe('/');
+    expect(screen.getByText('Unified Service Orchestration Scheduler')).toBeDefined();
   });
 
   it('renders sse status indicator', () => {

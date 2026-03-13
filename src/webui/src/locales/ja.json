@@ -32,9 +32,12 @@
         "status_stopping": "停止中",
         "status_failed": "失敗",
         "status_crashed": "クラッシュ",
-        "status_invalid": "無効"
+        "status_invalid": "無効",
+        "status_disabled": "無効化"
     },
     "layout": {
+        "brand_title": "STDIOLINK",
+        "brand_subtitle": "統合サービスオーケストレーションスケジューラ",
         "dashboard": "ダッシュボード",
         "services": "サービス",
         "projects": "プロジェクト",

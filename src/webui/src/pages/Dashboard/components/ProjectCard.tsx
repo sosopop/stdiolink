@@ -5,6 +5,7 @@ import { PlayCircleOutlined, StopOutlined, EyeOutlined, SettingOutlined } from '
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
+import { translateProjectStatus, translateScheduleType } from '@/utils/projectLabels';
 import styles from '../dashboard.module.css';
 
 interface ProjectCardProps {
@@ -47,7 +48,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
           </div>
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>{t('dashboard.project_card.strategy')}</span>
-            <span className={styles.metaValue} style={{ textTransform: 'capitalize' }}>{project.schedule.type}</span>
+            <span className={styles.metaValue}>{translateScheduleType(t, project.schedule.type)}</span>
           </div>
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>{t('dashboard.project_card.status')}</span>
@@ -55,7 +56,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, runtime, onSt
               color: isRunning ? 'var(--color-success)' : 'var(--text-tertiary)',
               fontWeight: 700
             }}>
-              {t(`common.status_${status}`, status)}
+              {translateProjectStatus(t, status)}
             </span>
           </div>
           <div className={styles.metaItem}>

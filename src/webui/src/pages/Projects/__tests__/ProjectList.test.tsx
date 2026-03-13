@@ -76,6 +76,8 @@ describe('ProjectsPage (List)', () => {
     expect(screen.getByRole('table')).toBeDefined();
     expect(screen.getByText('p_alpha')).toBeDefined();
     expect(screen.getByText('p_beta')).toBeDefined();
+    expect(screen.getByText('Manual')).toBeDefined();
+    expect(screen.getByText('Daemon')).toBeDefined();
   });
 
   it('filters by search', () => {

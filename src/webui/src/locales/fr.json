@@ -32,9 +32,12 @@
         "status_stopping": "Arrêt en cours",
         "status_failed": "Échoué",
         "status_crashed": "Planté",
-        "status_invalid": "Invalide"
+        "status_invalid": "Invalide",
+        "status_disabled": "Désactivé"
     },
     "layout": {
+        "brand_title": "STDIOLINK",
+        "brand_subtitle": "Système unifié d'orchestration et de planification des services",
         "dashboard": "Tableau de bord",
         "services": "Services",
         "projects": "Projets",

@@ -32,9 +32,12 @@
         "status_stopping": "Останавливается",
         "status_failed": "Сбой",
         "status_crashed": "Аварийный останов",
-        "status_invalid": "Недействителен"
+        "status_invalid": "Недействителен",
+        "status_disabled": "Отключен"
     },
     "layout": {
+        "brand_title": "STDIOLINK",
+        "brand_subtitle": "Единая система оркестрации и планирования сервисов",
         "dashboard": "Панель управления",
         "services": "Сервисы",
         "projects": "Проекты",

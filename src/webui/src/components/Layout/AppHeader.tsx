@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Switch, Space, Button, Tooltip } from 'antd';
 import { SunOutlined, MoonOutlined, ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons';
@@ -9,6 +10,7 @@ import { LanguageSwitcher } from '../LanguageSwitcher';
 import styles from './AppLayout.module.css';
 
 export const AppHeader: React.FC = () => {
+  const { t } = useTranslation();
   const themeMode = useLayoutStore((s) => s.themeMode);
   const toggleTheme = useLayoutStore((s) => s.toggleTheme);
   const zoomLevel = useLayoutStore((s) => s.zoomLevel);
@@ -43,7 +45,10 @@ export const AppHeader: React.FC = () => {
               </linearGradient>
             </defs>
           </svg>
-          <span className={styles.logoText}>STDIOLINK</span>
+          <span className={styles.brandCopy}>
+            <span className={styles.logoText}>{t('layout.brand_title')}</span>
+            <span className={styles.logoSubtitle}>{t('layout.brand_subtitle')}</span>
+          </span>
         </Link>
       </div>
 

@@ -4,6 +4,7 @@ import { Descriptions, Tag, Button, Space, Popconfirm, Typography, Card } from '
 import { PlayCircleOutlined, StopOutlined, ReloadOutlined, PoweroffOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
+import { translateProjectStatus, translateScheduleType } from '@/utils/projectLabels';
 
 interface ProjectOverviewProps {
   project: Project;
@@ -124,7 +125,7 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 100, border: '1px solid var(--surface-border)' }}>
           <StatusDot status={dotStatus} />
-          <Text strong style={{ fontSize: 14, textTransform: 'capitalize' }}>{t(`common.status_${status}`, status)}</Text>
+          <Text strong style={{ fontSize: 14, textTransform: 'capitalize' }}>{translateProjectStatus(t, status)}</Text>
         </div>
       </div>
 
@@ -143,7 +144,7 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({
           </Descriptions.Item>
           <Descriptions.Item label={t('projects.overview.enabled')}>{project.enabled ? <Tag color="success">{t('common.yes')}</Tag> : <Tag>{t('common.no')}</Tag>}</Descriptions.Item>
           <Descriptions.Item label={t('projects.overview.validation')}>{project.valid ? <Tag color="success">{t('projects.overview.pass')}</Tag> : <Tag color="error">{t('projects.overview.fail')}: {project.error}</Tag>}</Descriptions.Item>
-          <Descriptions.Item label={t('projects.overview.schedule_strategy')}><Text code>{project.schedule.type}</Text></Descriptions.Item>
+          <Descriptions.Item label={t('projects.overview.schedule_strategy')}><Text code>{translateScheduleType(t, project.schedule.type)}</Text></Descriptions.Item>
           {runtime && (
             <>
               <Descriptions.Item label={t('projects.overview.active_instances')}>{runtime.runningInstances}</Descriptions.Item>

@@ -32,9 +32,12 @@
         "status_stopping": "停止中",
         "status_failed": "失败",
         "status_crashed": "崩溃",
-        "status_invalid": "无效"
+        "status_invalid": "无效",
+        "status_disabled": "已禁用"
     },
     "layout": {
+        "brand_title": "STDIOLINK",
+        "brand_subtitle": "统一服务编排调度系统",
         "dashboard": "仪表盘",
         "services": "服务",
         "projects": "项目",

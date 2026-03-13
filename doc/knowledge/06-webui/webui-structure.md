@@ -27,6 +27,7 @@
 - 接口变更必须联动 `types/`、`api/`、页面消费点
 - 实时逻辑变更同时检查 SSE 和 DriverLab WS
 - 新增或修改文案 key 时，同时检查所有 locale；不要只改 `en/zh/zh-TW`
+- Project 状态、调度策略、Header 品牌副标题这类展示文案也必须走 locale，不要直接渲染枚举值或硬编码标题
 
 ## UI Baseline
 

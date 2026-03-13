@@ -48,6 +48,7 @@ describe('ProjectOverview', () => {
     renderComponent();
     expect(screen.getByTestId('project-overview')).toBeDefined();
     expect(screen.getByText('p1')).toBeDefined();
+    expect(screen.getByText('Manual')).toBeDefined();
   });
 
   it('enables start button when project is valid and stopped', () => {
@@ -76,6 +77,11 @@ describe('ProjectOverview', () => {
   it('shows enable button for disabled projects', () => {
     renderComponent({ project: { ...mockProject, enabled: false } });
     expect(screen.getByTestId('toggle-enabled-btn').textContent).toContain('Enable Project');
+  });
+
+  it('shows translated disabled runtime status', () => {
+    renderComponent({ runtime: { ...mockRuntime, status: 'disabled' } });
+    expect(screen.getByText('Disabled')).toBeDefined();
   });
 
   it('toggles enabled state with inverse value', async () => {

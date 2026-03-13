@@ -18,6 +18,7 @@ describe('AppLayout', () => {
   it('renders header with logo', () => {
     renderWithRouter();
     expect(screen.getByText('STDIOLINK')).toBeDefined();
+    expect(screen.getByText('Unified Service Orchestration Scheduler')).toBeDefined();
   });
 
   it('renders sidebar navigation', () => {

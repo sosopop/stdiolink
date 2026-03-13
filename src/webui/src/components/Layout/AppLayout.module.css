@@ -48,6 +48,13 @@
   gap: 14px;
 }
 
+.brandCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
 .brandIcon {
   width: 32px;
   height: 32px;
@@ -69,6 +76,20 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.logoSubtitle {
+  display: block;
+  max-width: min(36vw, 320px);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(99, 102, 241, 0.08);
 }
 
 .headerRight {

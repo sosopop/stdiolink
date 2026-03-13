@@ -32,9 +32,12 @@
         "status_stopping": "중지 중",
         "status_failed": "실패",
         "status_crashed": "비정상 종료",
-        "status_invalid": "유효하지 않음"
+        "status_invalid": "유효하지 않음",
+        "status_disabled": "비활성화됨"
     },
     "layout": {
+        "brand_title": "STDIOLINK",
+        "brand_subtitle": "통합 서비스 오케스트레이션 스케줄링 시스템",
         "dashboard": "대시보드",
         "services": "서비스",
         "projects": "프로젝트",

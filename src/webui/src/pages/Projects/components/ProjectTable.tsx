@@ -5,6 +5,7 @@ import { PlayCircleOutlined, StopOutlined, DeleteOutlined, SettingOutlined, Cloc
 import { useNavigate } from 'react-router-dom';
 import { StatusDot } from '@/components/StatusDot/StatusDot';
 import type { Project, ProjectRuntime } from '@/types/project';
+import { translateProjectStatus, translateScheduleType } from '@/utils/projectLabels';
 
 interface ProjectTableProps {
   projects: Project[];
@@ -67,7 +68,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         return (
           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: 100, display: 'inline-flex', alignItems: 'center', gap: 10, border: '1px solid var(--surface-border)' }}>
             <StatusDot status={dotStatus} size={10} />
-            <Text style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{t(`common.status_${status}`, status)}</Text>
+            <Text style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{translateProjectStatus(t, status)}</Text>
           </div>
         );
       },
@@ -80,7 +81,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         const sType = record.schedule?.type;
         const icon = sType === 'daemon' ? <SyncOutlined /> : sType === 'fixed_rate' ? <ClockCircleOutlined /> : <ThunderboltOutlined />;
         const color = sType === 'daemon' ? 'var(--color-success)' : sType === 'fixed_rate' ? 'var(--brand-primary)' : 'var(--text-tertiary)';
-        const label = sType === 'fixed_rate' ? 'fixed_rate' : (sType ?? 'manual');
+        const label = translateScheduleType(t, sType);
         const detail = sType === 'fixed_rate' && record.schedule?.intervalMs
           ? `${(record.schedule.intervalMs / 1000).toFixed(0)}s`
           : sType === 'daemon' && record.schedule?.restartDelayMs
