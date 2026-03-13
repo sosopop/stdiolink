@@ -1,8 +1,7 @@
 {
   "manifestVersion": "1",
   "id": "plc_crane_sim",
-  "name": "PLC Crane Simulator",
+  "name": "PLC升降装置仿真服务",
   "version": "1.0.0",
-  "description": "PLC 升降装置仿真服务，驱动仅保留 run 命令，运行后通过 ModbusTCP 通讯"
+  "description": "PLC 升降装置仿真服务"
 }
-

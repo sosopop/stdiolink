@@ -1,6 +1,6 @@
 {
-  "id": "fixed_rate_bin_scan_orchestrator",
-  "name": "Fixed Rate Bin Scan Orchestrator",
+  "id": "bin_scan_orchestrator",
+  "name": "PLC升降装置和智慧仓储的扫描调度项目",
   "serviceId": "bin_scan_orchestrator",
   "enabled": false,
   "schedule": {

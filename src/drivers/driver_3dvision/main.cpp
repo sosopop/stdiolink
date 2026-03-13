@@ -166,8 +166,8 @@ void Vision3DHandler::buildMeta() {
     m_meta =
         DriverMetaBuilder()
             .schemaVersion("1.0")
-            .info("3dvision.api", "3DVision API Driver", "1.0.0",
-                  "3D 视觉工业料仓监测系统的 HTTP API 驱动程序")
+            .info("3dvision.api", "智慧仓储管理系统CLI", "1.0.0",
+                  "智慧仓储管理系统的 HTTP API 驱动程序")
             .vendor("3DVision")
 
             // ========== User Management ==========

@@ -1,7 +1,7 @@
 {
   "manifestVersion": "1",
   "id": "bin_scan_orchestrator",
-  "name": "Bin Scan Orchestrator",
+  "name": "PLC升降装置和智慧仓储的扫描调度服务",
   "version": "1.0.0",
-  "description": "One-shot bin scan orchestration service based on plc_crane and 3dvision drivers"
+  "description": "基于PLC升降装置和智慧仓储的扫描调度服务"
 }

@@ -176,7 +176,7 @@ static FieldBuilder connectionParam(const QString& name) {
 void PlcCraneHandler::buildMeta() {
     m_meta = DriverMetaBuilder()
                  .schemaVersion("1.0")
-                 .info("plc.crane", "PLC Crane Controller", "1.0.0",
+                 .info("plc.crane", "PLC汽动升降装置", "1.0.0",
                        "PLC 升降装置 Modbus TCP 驱动，将寄存器地址映射为语义化命令")
                  .vendor("stdiolink")
                  .command(CommandBuilder("status").description("获取驱动状态"))

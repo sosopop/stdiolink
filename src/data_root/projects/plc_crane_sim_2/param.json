@@ -1,7 +1,7 @@
 {
   "listen_address": "127.0.0.1",
-  "listen_port": 1512,
-  "unit_id": 2,
+  "listen_port": 512,
+  "unit_id": 1,
   "event_mode": "all",
   "data_area_size": 256,
   "cylinder_up_delay": 2200,

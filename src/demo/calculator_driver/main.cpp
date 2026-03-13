@@ -28,9 +28,7 @@ public:
 
     const DriverMeta& driverMeta() const override { return m_meta; }
 
-    void handle(const QString& cmd, const QJsonValue& data,
-                IResponder& resp) override
-    {
+    void handle(const QString& cmd, const QJsonValue& data, IResponder& resp) override {
         QJsonObject params = data.toObject();
 
         if (cmd == "add") {
@@ -65,92 +63,88 @@ private:
     DriverMeta m_meta;
 };
 
-void CalculatorHandler::buildMeta()
-{
-    m_meta = DriverMetaBuilder()
-        .schemaVersion("1.0")
-        .info("demo.calculator", "Calculator Driver", "1.0.0",
-              "数学计算器，演示数值约束和事件流")
-        .vendor("stdiolink-demo")
-        .command(CommandBuilder("add")
-            .description("加法运算")
-            .param(FieldBuilder("a", FieldType::Double)
-                .required()
-                .description("第一个操作数"))
-            .param(FieldBuilder("b", FieldType::Double)
-                .required()
-                .description("第二个操作数"))
-            .returns(FieldType::Double, "计算结果"))
-        .command(CommandBuilder("subtract")
-            .description("减法运算")
-            .param(FieldBuilder("a", FieldType::Double).required())
-            .param(FieldBuilder("b", FieldType::Double).required()))
-        .command(CommandBuilder("multiply")
-            .description("乘法运算")
-            .param(FieldBuilder("a", FieldType::Double).required())
-            .param(FieldBuilder("b", FieldType::Double).required()))
-        .command(CommandBuilder("divide")
-            .description("除法运算")
-            .param(FieldBuilder("a", FieldType::Double).required())
-            .param(FieldBuilder("b", FieldType::Double)
-                .required()
-                .description("除数（不能为0）")))
-        .command(CommandBuilder("power")
-            .description("幂运算")
-            .param(FieldBuilder("base", FieldType::Double)
-                .required()
-                .description("底数"))
-            .param(FieldBuilder("exponent", FieldType::Int)
-                .required()
-                .range(-10, 10)
-                .description("指数 (-10 到 10)")))
-        .command(CommandBuilder("batch")
-            .description("批量计算，演示事件流")
-            .param(FieldBuilder("operations", FieldType::Array)
-                .required()
-                .minItems(1)
-                .maxItems(10)
-                .items(FieldBuilder("op", FieldType::Object)
-                    .addField(FieldBuilder("type", FieldType::Enum)
-                        .required()
-                        .enumValues(QStringList{"add", "sub", "mul", "div"}))
-                    .addField(FieldBuilder("a", FieldType::Double).required())
-                    .addField(FieldBuilder("b", FieldType::Double).required())))
-            .event("progress", "计算进度"))
-        .command(CommandBuilder("statistics")
-            .description("统计计算")
-            .param(FieldBuilder("numbers", FieldType::Array)
-                .required()
-                .minItems(1)
-                .maxItems(100)
-                .items(FieldBuilder("n", FieldType::Double))))
-        .build();
+void CalculatorHandler::buildMeta() {
+    m_meta =
+        DriverMetaBuilder()
+            .schemaVersion("1.0")
+            .info("demo.calculator", "计算器", "1.0.0", "数学计算器，演示数值约束和事件流")
+            .vendor("stdiolink-demo")
+            .command(
+                CommandBuilder("add")
+                    .description("加法运算")
+                    .param(
+                        FieldBuilder("a", FieldType::Double).required().description("第一个操作数"))
+                    .param(
+                        FieldBuilder("b", FieldType::Double).required().description("第二个操作数"))
+                    .returns(FieldType::Double, "计算结果"))
+            .command(CommandBuilder("subtract")
+                         .description("减法运算")
+                         .param(FieldBuilder("a", FieldType::Double).required())
+                         .param(FieldBuilder("b", FieldType::Double).required()))
+            .command(CommandBuilder("multiply")
+                         .description("乘法运算")
+                         .param(FieldBuilder("a", FieldType::Double).required())
+                         .param(FieldBuilder("b", FieldType::Double).required()))
+            .command(CommandBuilder("divide")
+                         .description("除法运算")
+                         .param(FieldBuilder("a", FieldType::Double).required())
+                         .param(FieldBuilder("b", FieldType::Double)
+                                    .required()
+                                    .description("除数（不能为0）")))
+            .command(
+                CommandBuilder("power")
+                    .description("幂运算")
+                    .param(FieldBuilder("base", FieldType::Double).required().description("底数"))
+                    .param(FieldBuilder("exponent", FieldType::Int)
+                               .required()
+                               .range(-10, 10)
+                               .description("指数 (-10 到 10)")))
+            .command(
+                CommandBuilder("batch")
+                    .description("批量计算，演示事件流")
+                    .param(
+                        FieldBuilder("operations", FieldType::Array)
+                            .required()
+                            .minItems(1)
+                            .maxItems(10)
+                            .items(FieldBuilder("op", FieldType::Object)
+                                       .addField(
+                                           FieldBuilder("type", FieldType::Enum)
+                                               .required()
+                                               .enumValues(QStringList{"add", "sub", "mul", "div"}))
+                                       .addField(FieldBuilder("a", FieldType::Double).required())
+                                       .addField(FieldBuilder("b", FieldType::Double).required())))
+                    .event("progress", "计算进度"))
+            .command(CommandBuilder("statistics")
+                         .description("统计计算")
+                         .param(FieldBuilder("numbers", FieldType::Array)
+                                    .required()
+                                    .minItems(1)
+                                    .maxItems(100)
+                                    .items(FieldBuilder("n", FieldType::Double))))
+            .build();
     ensureCommandExamples(m_meta);
 }
 
-void CalculatorHandler::handleAdd(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handleAdd(const QJsonObject& params, IResponder& resp) {
     double a = params["a"].toDouble();
     double b = params["b"].toDouble();
     resp.done(0, QJsonObject{{"result", a + b}});
 }
 
-void CalculatorHandler::handleSubtract(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handleSubtract(const QJsonObject& params, IResponder& resp) {
     double a = params["a"].toDouble();
     double b = params["b"].toDouble();
     resp.done(0, QJsonObject{{"result", a - b}});
 }
 
-void CalculatorHandler::handleMultiply(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handleMultiply(const QJsonObject& params, IResponder& resp) {
     double a = params["a"].toDouble();
     double b = params["b"].toDouble();
     resp.done(0, QJsonObject{{"result", a * b}});
 }
 
-void CalculatorHandler::handleDivide(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handleDivide(const QJsonObject& params, IResponder& resp) {
     double a = params["a"].toDouble();
     double b = params["b"].toDouble();
     if (b == 0) {
@@ -160,15 +154,13 @@ void CalculatorHandler::handleDivide(const QJsonObject& params, IResponder& resp
     resp.done(0, QJsonObject{{"result", a / b}});
 }
 
-void CalculatorHandler::handlePower(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handlePower(const QJsonObject& params, IResponder& resp) {
     double base = params["base"].toDouble();
     int exp = params["exponent"].toInt();
     resp.done(0, QJsonObject{{"result", std::pow(base, exp)}});
 }
 
-void CalculatorHandler::handleBatch(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handleBatch(const QJsonObject& params, IResponder& resp) {
     QJsonArray ops = params["operations"].toArray();
     QJsonArray results;
     int total = ops.size();
@@ -180,22 +172,24 @@ void CalculatorHandler::handleBatch(const QJsonObject& params, IResponder& resp)
         double b = op["b"].toDouble();
         double result = 0;
 
-        if (type == "add") result = a + b;
-        else if (type == "sub") result = a - b;
-        else if (type == "mul") result = a * b;
-        else if (type == "div") result = (b != 0) ? a / b : 0;
+        if (type == "add")
+            result = a + b;
+        else if (type == "sub")
+            result = a - b;
+        else if (type == "mul")
+            result = a * b;
+        else if (type == "div")
+            result = (b != 0) ? a / b : 0;
 
         results.append(result);
-        resp.event("progress", 0, QJsonObject{
-            {"current", i + 1}, {"total", total}, {"result", result}
-        });
+        resp.event("progress", 0,
+                   QJsonObject{{"current", i + 1}, {"total", total}, {"result", result}});
     }
 
     resp.done(0, QJsonObject{{"results", results}});
 }
 
-void CalculatorHandler::handleStatistics(const QJsonObject& params, IResponder& resp)
-{
+void CalculatorHandler::handleStatistics(const QJsonObject& params, IResponder& resp) {
     QJsonArray nums = params["numbers"].toArray();
     double sum = 0, min = 0, max = 0;
     int count = nums.size();
@@ -203,18 +197,22 @@ void CalculatorHandler::handleStatistics(const QJsonObject& params, IResponder& 
     for (int i = 0; i < count; ++i) {
         double v = nums[i].toDouble();
         sum += v;
-        if (i == 0) { min = max = v; }
-        else { if (v < min) min = v; if (v > max) max = v; }
+        if (i == 0) {
+            min = max = v;
+        } else {
+            if (v < min)
+                min = v;
+            if (v > max)
+                max = v;
+        }
     }
 
-    resp.done(0, QJsonObject{
-        {"count", count}, {"sum", sum},
-        {"avg", sum / count}, {"min", min}, {"max", max}
-    });
+    resp.done(
+        0, QJsonObject{
+               {"count", count}, {"sum", sum}, {"avg", sum / count}, {"min", min}, {"max", max}});
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
     CalculatorHandler handler;
     DriverCore core;

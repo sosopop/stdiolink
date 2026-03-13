@@ -1,6 +1,6 @@
 {
-  "id": "manual_modbustcp_server",
-  "name": "Manual Modbus TCP Server",
+  "id": "modbustcp_server",
+  "name": "Modbus TCP 服务器",
   "serviceId": "modbustcp_server_service",
   "enabled": false,
   "schedule": {

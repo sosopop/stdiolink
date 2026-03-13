@@ -1,6 +1,6 @@
 {
   "id": "plc_crane_sim_1",
-  "name": "PLC Crane Sim 1",
+  "name": "PLC升降装置仿真1",
   "serviceId": "plc_crane_sim",
   "enabled": false,
   "schedule": {

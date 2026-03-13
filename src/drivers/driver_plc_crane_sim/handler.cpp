@@ -103,7 +103,7 @@ void SimPlcCraneHandler::handle(const QString& cmd, const QJsonValue& data,
 void SimPlcCraneHandler::buildMeta() {
     m_meta = DriverMetaBuilder()
                  .schemaVersion("1.0")
-                 .info("plc.crane.sim", "PLC Crane Simulator", "1.0.0",
+                 .info("plc.crane.sim", "PLC汽动升降装置仿真", "1.0.0",
                        "PLC 升降装置仿真驱动，仅提供 run 命令，启动后通过 ModbusTCP 通讯")
                  .vendor("stdiolink")
                  .profile("keepalive")

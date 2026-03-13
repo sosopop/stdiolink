@@ -1,6 +1,6 @@
 {
-  "id": "manual_modbusrtu_serial_server",
-  "name": "Manual Modbus RTU Serial Server",
+  "id": "modbusrtu_serial_server",
+  "name": "Modbus RTU 串口服务器",
   "serviceId": "modbusrtu_serial_server_service",
   "enabled": false,
   "schedule": {
