@@ -39,7 +39,7 @@ public:
     void enqueueWriteRegisterSuccess(quint8 addr, quint8 counter,
                                       quint16 regId, quint32 value);
 
-    // Convenience: enqueue a test_com echo (bitwise complement)
+    // Convenience: enqueue a test echo (bitwise complement)
     void enqueueTestComSuccess(quint8 addr, quint8 counter, quint32 inputValue);
 
     // Convenience: enqueue a simple command response with u32 payload
@@ -57,7 +57,7 @@ public:
     // Convenience: enqueue a segment size register read success
     void enqueueSegmentSizeResponse(quint8 addr, quint8 counter, quint16 segSize);
 
-    // Convenience: enqueue interrupt progress (insert_state)
+    // Convenience: enqueue interrupt progress (scan_progress)
     void enqueueInterruptProgress(quint8 addr, quint8 counter,
                                    quint16 currentLine, quint16 totalLines);
 
@@ -66,11 +66,6 @@ public:
 
     // Convenience: enqueue interrupt test reply
     void enqueueInterruptTestReply(quint8 addr, quint8 counter, quint32 value);
-
-    // Convenience: enqueue response time reply (cmd=17, 8 bytes: 4xu16)
-    void enqueueResponseTimeReply(quint8 addr, quint8 counter,
-                                   quint16 tMin, quint16 tMax,
-                                   quint16 tAve, quint16 goodCounter);
 
     // ── Inspection ──────────────────────────────────────
     bool isOpen() const { return m_open; }

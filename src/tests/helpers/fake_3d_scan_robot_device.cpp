@@ -144,20 +144,6 @@ void Fake3DScanRobotDevice::enqueueInterruptTestReply(quint8 addr, quint8 counte
     m_responseQueue.append(frame);
 }
 
-void Fake3DScanRobotDevice::enqueueResponseTimeReply(quint8 addr, quint8 counter,
-                                                       quint16 tMin, quint16 tMax,
-                                                       quint16 tAve, quint16 goodCounter) {
-    QByteArray payload;
-    payload.reserve(8);
-    quint8 buf[2];
-    qToBigEndian(tMin, buf); payload.append(reinterpret_cast<const char*>(buf), 2);
-    qToBigEndian(tMax, buf); payload.append(reinterpret_cast<const char*>(buf), 2);
-    qToBigEndian(tAve, buf); payload.append(reinterpret_cast<const char*>(buf), 2);
-    qToBigEndian(goodCounter, buf); payload.append(reinterpret_cast<const char*>(buf), 2);
-    QByteArray frame = encodeFrame(counter, addr, CmdId::RadarGetRespTime, payload);
-    m_responseQueue.append(frame);
-}
-
 QByteArray Fake3DScanRobotDevice::lastSentFrame() const {
     return m_sentFrames.isEmpty() ? QByteArray() : m_sentFrames.last();
 }

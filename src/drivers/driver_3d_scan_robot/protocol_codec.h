@@ -7,20 +7,19 @@
 namespace scan_robot {
 
 // ── 主命令号（JD3D 通道）──────────────────────────────────
-// 编号来源: MatLab 3D SCANNER CONFIG V615 + 参考 C++ v3dradarproto.h
+// 编号来源: 协议文档 + 参考 C++ v3dradarproto
 namespace CmdId {
 constexpr quint8 RegRead            = 1;
 constexpr quint8 RegWrite           = 2;
 constexpr quint8 TestCom            = 3;   // 同时用于 get_addr（广播地址255）
 constexpr quint8 Calibration        = 4;
-constexpr quint8 MoveDist           = 5;   // MatLab 独有，协议文档"获取指定角度距离"
+constexpr quint8 MoveDist           = 5;   // 协议文档“获取指定角度的距离”
 constexpr quint8 Query              = 6;
 constexpr quint8 Move               = 7;
 constexpr quint8 GetDistance         = 8;
 constexpr quint8 ScanLine           = 10;
 constexpr quint8 ScanFrame          = 11;
 constexpr quint8 GetData            = 12;
-constexpr quint8 RadarGetRespTime   = 17;  // MatLab 独有，与 RegId 17 不同
 } // namespace CmdId
 
 // ── 中断式命令号（JD3I 通道）──────────────────────────────
@@ -113,10 +112,10 @@ DecodeStatus tryDecodeFrame(const QByteArray& buffer,
 QByteArray makeU32Payload(quint32 value);
 QByteArray makeRegPayload(quint16 regAddr, quint32 value);
 QByteArray makeScanLinePayload(quint16 angleX, quint16 beginY, quint16 endY,
-                               quint16 stepY, quint16 sampleCount);
+                               quint16 stepY, quint16 speedY);
 QByteArray makeScanFramePayload(quint16 beginX, quint16 endX, quint16 stepX,
                                 quint16 beginY, quint16 endY, quint16 stepY,
-                                quint16 sampleCount);
+                                quint16 speedY);
 
 // ── 便捷 payload 解析 ──────────────────────────────────
 bool parseRegResponse(const QByteArray& payload, quint16* regAddr, quint32* value);

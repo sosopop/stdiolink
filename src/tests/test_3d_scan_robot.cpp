@@ -405,7 +405,7 @@ TEST_F(ThreeDScanRobotHandlerTest, T20_TransportErrorReturnsCode1) {
     // Open will succeed, but read will fail
     fake.setReadTimeout(true);
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("test_com", baseParams(), resp);
+    handler.handle("test", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "error");
@@ -419,7 +419,7 @@ TEST_F(ThreeDScanRobotHandlerTest, T21_ProtocolErrorReturnsCode2) {
     fake.enqueueRawResponse(badFrame);
 
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("test_com", baseParams(), resp);
+    handler.handle("test", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "error");
@@ -430,7 +430,7 @@ TEST_F(ThreeDScanRobotHandlerTest, MainCommandRejectsInterruptFrameWithCode2) {
     fake.enqueueInterruptTestReply(1, 0, 42);
 
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("test_com", baseParams(), resp);
+    handler.handle("test", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "error");
@@ -441,7 +441,7 @@ TEST_F(ThreeDScanRobotHandlerTest, InterruptCommandRejectsMainFrameWithCode2) {
     fake.enqueueTestComSuccess(1, 0, 1000);
 
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("insert_test", baseParams(), resp);
+    handler.handle("interrupt_test", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "error");
@@ -468,8 +468,8 @@ TEST_F(ThreeDScanRobotHandlerTest, T22_UnknownCommandReturns404) {
     EXPECT_EQ(resp.responses.back().code, 404);
 }
 
-// T23 — get_line returns aggregated raw result
-TEST_F(ThreeDScanRobotHandlerTest, T23_GetLineReturnsAggregatedRawResult) {
+// T23 — scan_line returns aggregated raw result
+TEST_F(ThreeDScanRobotHandlerTest, T23_ScanLineReturnsAggregatedRawResult) {
     // 1. Response to scan line command
     fake.enqueueSimpleResponse(1, 0, CmdId::ScanLine, makeU32Payload(0));
 
@@ -487,24 +487,24 @@ TEST_F(ThreeDScanRobotHandlerTest, T23_GetLineReturnsAggregatedRawResult) {
     auto handler = makeHandlerBorrowing(&fake);
 
     QJsonObject p = longTaskParams();
-    p["angle_x_deg"] = 97.0;
-    p["begin_y_mm"] = 1.0;
-    p["end_y_mm"] = 100.0;
-    p["step_y_mm"] = 1.0;
-    p["sample_count"] = 10.0;
-    handler.handle("get_line", p, resp);
+    p["angle_x"] = 97.0;
+    p["begin_y"] = 1.0;
+    p["end_y"] = 100.0;
+    p["step_y"] = 1.0;
+    p["speed_y"] = 10.0;
+    handler.handle("scan_line", p, resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
     QJsonObject result = resp.responses.back().payload.toObject();
-    EXPECT_EQ(result["task_command"].toString(), "get_line");
+    EXPECT_EQ(result["task_command"].toString(), "scan_line");
     EXPECT_EQ(result["segment_count"].toInt(), 2);
     EXPECT_EQ(result["byte_count"].toInt(), 64);
     EXPECT_FALSE(result["data_base64"].toString().isEmpty());
 }
 
-// T24 — get_frame returns aggregated raw result
-TEST_F(ThreeDScanRobotHandlerTest, T24_GetFrameReturnsAggregatedRawResult) {
+// T24 — scan_frame returns aggregated raw result
+TEST_F(ThreeDScanRobotHandlerTest, T24_ScanFrameReturnsAggregatedRawResult) {
     // 1. Response to scan frame command
     fake.enqueueSimpleResponse(1, 0, CmdId::ScanFrame, makeU32Payload(0));
 
@@ -522,27 +522,27 @@ TEST_F(ThreeDScanRobotHandlerTest, T24_GetFrameReturnsAggregatedRawResult) {
     auto handler = makeHandlerBorrowing(&fake);
 
     QJsonObject p = longTaskParams();
-    p["begin_x_deg"] = 0.0;
-    p["end_x_deg"] = 185.0;
-    p["step_x_deg"] = 5.0;
-    p["begin_y_mm"] = 1.0;
-    p["end_y_mm"] = 100.0;
-    p["step_y_mm"] = 1.0;
-    p["sample_count"] = 10.0;
-    handler.handle("get_frame", p, resp);
+    p["begin_x"] = 0.0;
+    p["end_x"] = 185.0;
+    p["step_x"] = 5.0;
+    p["begin_y"] = 1.0;
+    p["end_y"] = 100.0;
+    p["step_y"] = 1.0;
+    p["speed_y"] = 10.0;
+    handler.handle("scan_frame", p, resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
     QJsonObject result = resp.responses.back().payload.toObject();
-    EXPECT_EQ(result["task_command"].toString(), "get_frame");
+    EXPECT_EQ(result["task_command"].toString(), "scan_frame");
     EXPECT_EQ(result["segment_count"].toInt(), 2);
     EXPECT_EQ(result["byte_count"].toInt(), 128);
     EXPECT_FALSE(result["data_base64"].toString().isEmpty());
 }
 
-// T25 — move_dist returns target angles and distance
-TEST_F(ThreeDScanRobotHandlerTest, T25_MoveDistReturnsDistanceAtTargetAngles) {
-    // 1. Response to move_dist command
+// T25 — get_distance_at returns target angles and distance
+TEST_F(ThreeDScanRobotHandlerTest, T25_GetDistanceAtReturnsDistanceAtTargetAngles) {
+    // 1. Response to get_distance_at command
     fake.enqueueSimpleResponse(1, 0, CmdId::MoveDist, makeU32Payload(0));
 
     // 2. Query response: counter=0, cmd=5, resultCode = distance in mm
@@ -553,7 +553,7 @@ TEST_F(ThreeDScanRobotHandlerTest, T25_MoveDistReturnsDistanceAtTargetAngles) {
     QJsonObject p = longTaskParams();
     p["x_deg"] = 90.0;
     p["y_deg"] = 45.0;
-    handler.handle("move_dist", p, resp);
+    handler.handle("get_distance_at", p, resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
@@ -586,12 +586,12 @@ TEST_F(ThreeDScanRobotHandlerTest, T26_GetDataIndependentPull) {
     EXPECT_EQ(result["byte_count"].toInt(), 32);
 }
 
-// T27 — insert_state returns frame progress
-TEST_F(ThreeDScanRobotHandlerTest, T27_InsertStateReturnsFrameProgress) {
+// T27 — scan_progress returns frame progress
+TEST_F(ThreeDScanRobotHandlerTest, T27_ScanProgressReturnsFrameProgress) {
     fake.enqueueInterruptProgress(1, 0, 50, 200);
 
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("insert_state", baseParams(), resp);
+    handler.handle("scan_progress", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
@@ -600,12 +600,12 @@ TEST_F(ThreeDScanRobotHandlerTest, T27_InsertStateReturnsFrameProgress) {
     EXPECT_EQ(result["total_lines"].toInt(), 200);
 }
 
-// T28 — insert_stop returns stop confirmation
-TEST_F(ThreeDScanRobotHandlerTest, T28_InsertStopReturnsConfirmation) {
+// T28 — scan_cancel returns stop confirmation
+TEST_F(ThreeDScanRobotHandlerTest, T28_ScanCancelReturnsConfirmation) {
     fake.enqueueInterruptStopReply(1, 0, 12345);
 
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("insert_stop", baseParams(), resp);
+    handler.handle("scan_cancel", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
@@ -613,24 +613,9 @@ TEST_F(ThreeDScanRobotHandlerTest, T28_InsertStopReturnsConfirmation) {
     EXPECT_EQ(result["value"].toInt(), 12345);
 }
 
-// T29 — test_com/test/insert_test communication test
-TEST_F(ThreeDScanRobotHandlerTest, T29_TestComAndInsertTest) {
-    // test_com (main protocol)
-    {
-        Fake3DScanRobotDevice f;
-        f.enqueueTestComSuccess(1, 0, 1000);
-        auto handler = makeHandlerBorrowing(&f);
-        MockResponder r;
-        QJsonObject p = baseParams();
-        p["value"] = 1000;
-        handler.handle("test_com", p, r);
-        ASSERT_FALSE(r.responses.empty());
-        EXPECT_EQ(r.responses.back().status, "done");
-        quint32 expected = ~static_cast<quint32>(1000);
-        EXPECT_EQ(static_cast<quint32>(r.responses.back().payload.toObject()["echo"].toInteger()), expected);
-    }
-
-    // test alias
+// T29 — test / interrupt_test communication test
+TEST_F(ThreeDScanRobotHandlerTest, T29_TestAndInterruptTest) {
+    // test (main protocol)
     {
         Fake3DScanRobotDevice f;
         f.enqueueTestComSuccess(1, 0, 1000);
@@ -641,9 +626,11 @@ TEST_F(ThreeDScanRobotHandlerTest, T29_TestComAndInsertTest) {
         handler.handle("test", p, r);
         ASSERT_FALSE(r.responses.empty());
         EXPECT_EQ(r.responses.back().status, "done");
+        quint32 expected = ~static_cast<quint32>(1000);
+        EXPECT_EQ(static_cast<quint32>(r.responses.back().payload.toObject()["echo"].toInteger()), expected);
     }
 
-    // insert_test (interrupt protocol)
+    // interrupt_test (interrupt protocol)
     {
         Fake3DScanRobotDevice f;
         f.enqueueInterruptTestReply(1, 0, 42);
@@ -651,50 +638,24 @@ TEST_F(ThreeDScanRobotHandlerTest, T29_TestComAndInsertTest) {
         MockResponder r;
         QJsonObject p = baseParams();
         p["value"] = 1000;
-        handler.handle("insert_test", p, r);
+        handler.handle("interrupt_test", p, r);
         ASSERT_FALSE(r.responses.empty());
         EXPECT_EQ(r.responses.back().status, "done");
         EXPECT_EQ(r.responses.back().payload.toObject()["value"].toInt(), 42);
     }
 }
 
-// T30 — radar_get_response_time / rgrt returns timing stats
-TEST_F(ThreeDScanRobotHandlerTest, T30_RadarGetResponseTimeReturnsTiming) {
-    fake.enqueueResponseTimeReply(1, 0, 10, 500, 250, 100);
-
-    auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("radar_get_response_time", baseParams(), resp);
-
-    ASSERT_FALSE(resp.responses.empty());
-    EXPECT_EQ(resp.responses.back().status, "done");
-    QJsonObject result = resp.responses.back().payload.toObject();
-    EXPECT_EQ(result["t_min"].toInt(), 10);
-    EXPECT_EQ(result["t_max"].toInt(), 500);
-    EXPECT_EQ(result["t_ave"].toInt(), 250);
-    EXPECT_EQ(result["good_counter"].toInt(), 100);
-}
-
-// T30b — rgrt alias works
-TEST_F(ThreeDScanRobotHandlerTest, T30b_RgrtAlias) {
-    fake.enqueueResponseTimeReply(1, 0, 10, 500, 250, 100);
-
-    auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("rgrt", baseParams(), resp);
-
-    ASSERT_FALSE(resp.responses.empty());
-    EXPECT_EQ(resp.responses.back().status, "done");
-    EXPECT_EQ(resp.responses.back().payload.toObject()["t_min"].toInt(), 10);
-}
-
-// T31 — wait/res return last task result summary
-TEST_F(ThreeDScanRobotHandlerTest, T31_WaitResReturnTaskResultSummary) {
-    // res command
+// T30 — query returns last task result summary
+TEST_F(ThreeDScanRobotHandlerTest, T30_QueryReturnsTaskResultSummary) {
+    // query op=100
     {
         Fake3DScanRobotDevice f;
         f.enqueueQueryResponse(1, 0, 5, CmdId::Move, TaskResult::Success);
         auto handler = makeHandlerBorrowing(&f);
         MockResponder r;
-        handler.handle("res", baseParams(), r);
+        QJsonObject p = baseParams();
+        p["op"] = 100;
+        handler.handle("query", p, r);
         ASSERT_FALSE(r.responses.empty());
         EXPECT_EQ(r.responses.back().status, "done");
         QJsonObject result = r.responses.back().payload.toObject();
@@ -703,21 +664,20 @@ TEST_F(ThreeDScanRobotHandlerTest, T31_WaitResReturnTaskResultSummary) {
         EXPECT_EQ(result["result"].toInt(), TaskResult::Success);
     }
 
-    // wait command
+    // query op=200
     {
         Fake3DScanRobotDevice f;
-        // First query: still running
-        f.enqueueQueryResponse(1, 0, 5, CmdId::Move, TaskResult::StillRunning);
-        // Second query: completed
         f.enqueueQueryResponse(1, 0, 5, CmdId::Move, TaskResult::Success);
-
         auto handler = makeHandlerBorrowing(&f);
         MockResponder r;
-        QJsonObject p = longTaskParams();
-        handler.handle("wait", p, r);
+        QJsonObject p = baseParams();
+        p["op"] = 200;
+        handler.handle("query", p, r);
         ASSERT_FALSE(r.responses.empty());
         EXPECT_EQ(r.responses.back().status, "done");
         QJsonObject result = r.responses.back().payload.toObject();
+        EXPECT_EQ(result["counter"].toInt(), 5);
+        EXPECT_EQ(result["command"].toInt(), CmdId::Move);
         EXPECT_EQ(result["result"].toInt(), TaskResult::Success);
     }
 }
@@ -734,19 +694,30 @@ TEST(ThreeDScanRobotMetaTest, MetaDescribeContainsAllCommands) {
     EXPECT_EQ(meta.schemaVersion, "1.0");
 
     QStringList expectedCmds = {
-        "status", "test_com", "test", "get_addr", "set_addr",
-        "get_mode", "set_mode", "get_temp", "get_state", "state",
-        "get_fw_ver", "get_ver", "get_direction", "get_dir", "get_sw0", "get_sw1",
-        "get_calib0", "get_calib1", "calib", "calib0", "calib1",
-        "move", "move_dist", "get_dist", "dist", "get_reg", "gr", "set_reg", "sr",
-        "get_line", "get_frame", "get_data", "res", "wait",
-        "insert_test", "insert_state", "insert_stop",
-        "radar_get_response_time", "rgrt"
+        "status", "test", "get_addr", "set_addr",
+        "get_mode", "set_mode", "get_temp", "get_state",
+        "get_version", "get_angles", "get_switch_x", "get_switch_y",
+        "get_calib_x", "get_calib_y", "calib", "calib_x", "calib_y",
+        "move", "get_distance_at", "get_distance", "get_reg", "set_reg",
+        "scan_line", "scan_frame", "get_data", "query",
+        "interrupt_test", "scan_progress", "scan_cancel"
     };
 
     for (const auto& name : expectedCmds) {
         EXPECT_NE(meta.findCommand(name), nullptr)
             << "Missing command: " << name.toStdString();
+    }
+
+    QStringList removedCmds = {
+        "test_com", "get_fw_ver", "get_direction", "get_sw0", "get_sw1",
+        "get_calib0", "get_calib1", "calib0", "calib1", "move_dist",
+        "get_dist", "get_line", "get_frame", "res", "wait",
+        "insert_test", "insert_state", "insert_stop", "radar_get_response_time",
+        "dist", "state", "get_ver", "get_dir", "gr", "sr", "rgrt"
+    };
+    for (const auto& name : removedCmds) {
+        EXPECT_EQ(meta.findCommand(name), nullptr)
+            << "Removed command still present: " << name.toStdString();
     }
 }
 
@@ -758,6 +729,43 @@ TEST(ThreeDScanRobotMetaTest, StatusCommand) {
     EXPECT_EQ(resp.responses.back().status, "done");
     EXPECT_EQ(resp.responses.back().code, 0);
     EXPECT_EQ(resp.responses.back().payload.toObject()["status"].toString(), "ready");
+}
+
+TEST(ThreeDScanRobotMetaTest, ScanCommandsUseProtocolParameterNamesAndDefaults) {
+    ThreeDScanRobotHandler handler;
+    const auto& meta = handler.driverMeta();
+
+    const auto* scanLineCmd = meta.findCommand("scan_line");
+    const auto* scanFrameCmd = meta.findCommand("scan_frame");
+    ASSERT_NE(scanLineCmd, nullptr);
+    ASSERT_NE(scanFrameCmd, nullptr);
+
+    auto findParam = [](const stdiolink::meta::CommandMeta* cmd, const QString& name)
+        -> const stdiolink::meta::FieldMeta* {
+        for (const auto& param : cmd->params) {
+            if (param.name == name) {
+                return &param;
+            }
+        }
+        return nullptr;
+    };
+
+    const auto* angleX = findParam(scanLineCmd, "angle_x");
+    const auto* speedYLine = findParam(scanLineCmd, "speed_y");
+    const auto* beginX = findParam(scanFrameCmd, "begin_x");
+    const auto* speedYFrame = findParam(scanFrameCmd, "speed_y");
+    ASSERT_NE(angleX, nullptr);
+    ASSERT_NE(speedYLine, nullptr);
+    ASSERT_NE(beginX, nullptr);
+    ASSERT_NE(speedYFrame, nullptr);
+
+    EXPECT_EQ(angleX->defaultValue.toDouble(), 0.0);
+    EXPECT_EQ(speedYLine->defaultValue.toDouble(), 10.0);
+    EXPECT_EQ(beginX->defaultValue.toDouble(), 0.0);
+    EXPECT_EQ(speedYFrame->defaultValue.toDouble(), 10.0);
+    EXPECT_TRUE(speedYLine->description.contains(QString::fromUtf8("Y 轴旋转速度")));
+    EXPECT_FALSE(speedYLine->description.contains("sample_count"));
+    EXPECT_FALSE(angleX->name.contains("_deg"));
 }
 
 // ══════════════════════════════════════════════════════════
@@ -814,10 +822,10 @@ TEST_F(ThreeDScanRobotHandlerTest, SetModeSupportsStandbyAndSleep) {
     }
 }
 
-TEST_F(ThreeDScanRobotHandlerTest, GetDistReturnsDistance) {
+TEST_F(ThreeDScanRobotHandlerTest, GetDistanceReturnsDistance) {
     fake.enqueueSimpleResponse(1, 0, CmdId::GetDistance, makeU32Payload(4567));
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("get_dist", baseParams(), resp);
+    handler.handle("get_distance", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
@@ -825,12 +833,12 @@ TEST_F(ThreeDScanRobotHandlerTest, GetDistReturnsDistance) {
     EXPECT_EQ(result["distance_mm"].toInt(), 4567);
 }
 
-TEST_F(ThreeDScanRobotHandlerTest, GetDirectionReturnsAngles) {
+TEST_F(ThreeDScanRobotHandlerTest, GetAnglesReturnsAngles) {
     // X=90.50° (9050), Y=45.25° (4525) packed as upper16=9050, lower16=4525
     quint32 packed = (9050u << 16) | 4525u;
     fake.enqueueReadRegisterSuccess(1, 0, RegId::DirectionAngle, packed);
     auto handler = makeHandlerBorrowing(&fake);
-    handler.handle("get_direction", baseParams(), resp);
+    handler.handle("get_angles", baseParams(), resp);
 
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
@@ -860,7 +868,7 @@ TEST_F(ThreeDScanRobotHandlerTest, GetSwitchAndCalibrationReturnSemanticState) {
         f.enqueueReadRegisterSuccess(1, 0, RegId::XProximitySwitch, 10);
         auto handler = makeHandlerBorrowing(&f);
         MockResponder r;
-        handler.handle("get_sw0", baseParams(), r);
+        handler.handle("get_switch_x", baseParams(), r);
         ASSERT_FALSE(r.responses.empty());
         EXPECT_EQ(r.responses.back().payload.toObject()["state"].toString(), "near");
         EXPECT_EQ(r.responses.back().payload.toObject()["state_code"].toInt(), 10);
@@ -870,7 +878,7 @@ TEST_F(ThreeDScanRobotHandlerTest, GetSwitchAndCalibrationReturnSemanticState) {
         f.enqueueReadRegisterSuccess(1, 0, RegId::YMotorCalib, 20);
         auto handler = makeHandlerBorrowing(&f);
         MockResponder r;
-        handler.handle("get_calib1", baseParams(), r);
+        handler.handle("get_calib_y", baseParams(), r);
         ASSERT_FALSE(r.responses.empty());
         EXPECT_EQ(r.responses.back().payload.toObject()["state"].toString(), "uncalibrated");
         EXPECT_EQ(r.responses.back().payload.toObject()["state_code"].toInt(), 20);
@@ -909,6 +917,96 @@ TEST_F(ThreeDScanRobotHandlerTest, MoveSuccess) {
     ASSERT_FALSE(resp.responses.empty());
     EXPECT_EQ(resp.responses.back().status, "done");
     EXPECT_EQ(resp.responses.back().payload.toObject()["result"].toString(), "ok");
+}
+
+TEST_F(ThreeDScanRobotHandlerTest, ScanLineEncodesAnglesAndSpeedAsCentiDegrees) {
+    fake.setCustomHandler([](const QByteArray&, Fake3DScanRobotDevice&) {});
+    auto handler = makeHandlerBorrowing(&fake);
+
+    QJsonObject p = longTaskParams();
+    p["angle_x"] = 12.34;
+    p["begin_y"] = 1.25;
+    p["end_y"] = 8.75;
+    p["step_y"] = 0.5;
+    p["speed_y"] = 3.21;
+    handler.handle("scan_line", p, resp);
+
+    ASSERT_FALSE(resp.responses.empty());
+    EXPECT_EQ(resp.responses.back().status, "error");
+    ASSERT_GE(fake.sentFrameCount(), 1);
+
+    RadarFrame sent;
+    QString error;
+    ASSERT_EQ(tryDecodeFrame(fake.lastSentFrame(), 1, CmdId::ScanLine, &sent, &error),
+              DecodeStatus::Ok) << error.toStdString();
+    const uchar* data = reinterpret_cast<const uchar*>(sent.payload.constData());
+    ASSERT_EQ(sent.payload.size(), 10);
+    EXPECT_EQ(qFromBigEndian<quint16>(data), 1234);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 2), 125);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 4), 875);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 6), 50);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 8), 321);
+}
+
+TEST_F(ThreeDScanRobotHandlerTest, ScanFrameEncodesAnglesAndSpeedAsCentiDegrees) {
+    fake.setCustomHandler([](const QByteArray&, Fake3DScanRobotDevice&) {});
+    auto handler = makeHandlerBorrowing(&fake);
+
+    QJsonObject p = longTaskParams();
+    p["begin_x"] = 0.0;
+    p["end_x"] = 180.0;
+    p["step_x"] = 5.0;
+    p["begin_y"] = 1.0;
+    p["end_y"] = 100.0;
+    p["step_y"] = 0.25;
+    p["speed_y"] = 9.99;
+    handler.handle("scan_frame", p, resp);
+
+    ASSERT_FALSE(resp.responses.empty());
+    EXPECT_EQ(resp.responses.back().status, "error");
+    ASSERT_GE(fake.sentFrameCount(), 1);
+
+    RadarFrame sent;
+    QString error;
+    ASSERT_EQ(tryDecodeFrame(fake.lastSentFrame(), 1, CmdId::ScanFrame, &sent, &error),
+              DecodeStatus::Ok) << error.toStdString();
+    const uchar* data = reinterpret_cast<const uchar*>(sent.payload.constData());
+    ASSERT_EQ(sent.payload.size(), 14);
+    EXPECT_EQ(qFromBigEndian<quint16>(data), 0);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 2), 18000);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 4), 500);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 6), 100);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 8), 10000);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 10), 25);
+    EXPECT_EQ(qFromBigEndian<quint16>(data + 12), 999);
+}
+
+TEST_F(ThreeDScanRobotHandlerTest, LegacyCommandNamesReturn404) {
+    auto handler = makeHandlerBorrowing(&fake);
+
+    handler.handle("get_line", longTaskParams(), resp);
+
+    ASSERT_FALSE(resp.responses.empty());
+    EXPECT_EQ(resp.responses.back().status, "error");
+    EXPECT_EQ(resp.responses.back().code, 404);
+}
+
+TEST_F(ThreeDScanRobotHandlerTest, LegacyScanParameterNamesFailValidationAtMetaLayer) {
+    auto handler = makeHandlerBorrowing(&fake);
+    const auto* scanLineCmd = handler.driverMeta().findCommand("scan_line");
+    ASSERT_NE(scanLineCmd, nullptr);
+    auto hasParam = [&](const QString& name) {
+        for (const auto& param : scanLineCmd->params) {
+            if (param.name == name) {
+                return true;
+            }
+        }
+        return false;
+    };
+    EXPECT_FALSE(hasParam("angle_x_deg"));
+    EXPECT_FALSE(hasParam("sample_count"));
+    EXPECT_TRUE(hasParam("angle_x"));
+    EXPECT_TRUE(hasParam("speed_y"));
 }
 
 TEST_F(ThreeDScanRobotHandlerTest, SessionHandlesFragmentedAndCoalescedFrames) {

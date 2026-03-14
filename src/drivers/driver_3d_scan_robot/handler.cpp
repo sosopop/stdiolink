@@ -1,6 +1,5 @@
 #include "driver_3d_scan_robot/handler.h"
 
-#include <QElapsedTimer>
 #include <QJsonObject>
 #include <QSet>
 #include <QThread>
@@ -106,9 +105,9 @@ static RadarTransportParams parseTransportParams(const QJsonObject& p) {
 
 static int resolveTaskTimeout(const RadarTransportParams& tp, const QString& cmd) {
     if (tp.taskTimeoutMs > 0) return tp.taskTimeoutMs;
-    if (cmd == "get_frame") return 1000000;
-    if (cmd == "get_line") return 100000;
-    // move, move_dist, calib*, wait, res
+    if (cmd == "scan_frame") return 1000000;
+    if (cmd == "scan_line") return 100000;
+    // move, get_distance_at, calib*
     return 180000;
 }
 
@@ -176,30 +175,18 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── 别名映射 ────────────────────────────────────────
-    QString resolvedCmd = cmd;
-    if (cmd == "test") resolvedCmd = "test_com";
-    else if (cmd == "dist") resolvedCmd = "get_dist";
-    else if (cmd == "state") resolvedCmd = "get_state";
-    else if (cmd == "get_ver") resolvedCmd = "get_fw_ver";
-    else if (cmd == "get_dir") resolvedCmd = "get_direction";
-    else if (cmd == "gr") resolvedCmd = "get_reg";
-    else if (cmd == "sr") resolvedCmd = "set_reg";
-    else if (cmd == "rgrt") resolvedCmd = "radar_get_response_time";
-
     // ── 未知命令早期检测 ────────────────────────────────
     static const QSet<QString> knownCommands = {
-        "test_com", "get_addr", "set_addr", "get_mode", "set_mode",
-        "get_temp", "get_state", "get_fw_ver", "get_direction",
-        "get_sw0", "get_sw1", "get_calib0", "get_calib1",
-        "calib", "calib0", "calib1", "move", "move_dist",
-        "get_dist", "get_reg", "set_reg",
-        "get_line", "get_frame", "get_data",
-        "res", "wait",
-        "insert_test", "insert_state", "insert_stop",
-        "radar_get_response_time",
+        "test", "get_addr", "set_addr", "get_mode", "set_mode",
+        "get_temp", "get_state", "get_version", "get_angles",
+        "get_switch_x", "get_switch_y", "get_calib_x", "get_calib_y",
+        "calib", "calib_x", "calib_y", "move", "get_distance_at",
+        "get_distance", "get_reg", "set_reg",
+        "scan_line", "scan_frame", "get_data",
+        "query",
+        "interrupt_test", "scan_progress", "scan_cancel",
     };
-    if (!knownCommands.contains(resolvedCmd)) {
+    if (!knownCommands.contains(cmd)) {
         responder.error(404, QJsonObject{{"message", "Unknown command: " + cmd}});
         return;
     }
@@ -226,8 +213,8 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── test_com ────────────────────────────────────────
-    if (resolvedCmd == "test_com") {
+    // ── test ────────────────────────────────────────────
+    if (cmd == "test") {
         quint32 value = static_cast<quint32>(p["value"].toInt(1000));
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
@@ -236,7 +223,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
         if (resp.payload.size() < 4) {
-            responder.error(2, QJsonObject{{"message", "Invalid test_com response"}});
+            responder.error(2, QJsonObject{{"message", "Invalid test response"}});
             return;
         }
         quint32 fb = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(resp.payload.constData()));
@@ -245,8 +232,8 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
     }
 
     // ── get_addr ────────────────────────────────────────
-    if (resolvedCmd == "get_addr") {
-        // Send test_com to broadcast addr 255 to discover actual address
+    if (cmd == "get_addr") {
+        // Send test to broadcast addr 255 to discover actual address
         quint32 value = static_cast<quint32>(p["value"].toInt(1000));
         quint8 ctr = session.nextCounter();
         QByteArray frame = encodeFrame(ctr, 255, CmdId::TestCom, makeU32Payload(value));
@@ -296,7 +283,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         responder.done(0, QJsonObject{{"register", regId}, {"value", static_cast<qint64>(value)}});
     };
 
-    if (resolvedCmd == "get_mode") {
+    if (cmd == "get_mode") {
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::RegRead, makeRegPayload(RegId::WorkMode, 100), &resp, &err, false, &errorKind)) {
@@ -313,7 +300,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "set_mode") {
+    if (cmd == "set_mode") {
         QString mode = p["mode"].toString();
         quint32 modeCode = 0;
         if (mode == "boot") modeCode = 10;
@@ -344,7 +331,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "set_addr") {
+    if (cmd == "set_addr") {
         quint32 newAddr = static_cast<quint32>(p["new_addr"].toInt());
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
@@ -361,7 +348,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "get_temp") {
+    if (cmd == "get_temp") {
         RadarFrame resp1, resp2;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::RegRead, makeRegPayload(RegId::McuTemperature, 100), &resp1, &err, false, &errorKind)) {
@@ -389,7 +376,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "get_state") {
+    if (cmd == "get_state") {
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::RegRead, makeRegPayload(RegId::DeviceStatus, 100), &resp, &err, false, &errorKind)) {
@@ -408,9 +395,9 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         });
         return;
     }
-    if (resolvedCmd == "get_fw_ver") { handleRegRead(RegId::FirmwareVersion); return; }
-    if (resolvedCmd == "get_sw0" || resolvedCmd == "get_sw1") {
-        const quint16 regId = resolvedCmd == "get_sw0" ? RegId::XProximitySwitch : RegId::YProximitySwitch;
+    if (cmd == "get_version") { handleRegRead(RegId::FirmwareVersion); return; }
+    if (cmd == "get_switch_x" || cmd == "get_switch_y") {
+        const quint16 regId = cmd == "get_switch_x" ? RegId::XProximitySwitch : RegId::YProximitySwitch;
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::RegRead, makeRegPayload(regId, 100), &resp, &err, false, &errorKind)) {
@@ -429,8 +416,8 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         });
         return;
     }
-    if (resolvedCmd == "get_calib0" || resolvedCmd == "get_calib1") {
-        const quint16 regId = resolvedCmd == "get_calib0" ? RegId::XMotorCalib : RegId::YMotorCalib;
+    if (cmd == "get_calib_x" || cmd == "get_calib_y") {
+        const quint16 regId = cmd == "get_calib_x" ? RegId::XMotorCalib : RegId::YMotorCalib;
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::RegRead, makeRegPayload(regId, 100), &resp, &err, false, &errorKind)) {
@@ -450,7 +437,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "get_direction") {
+    if (cmd == "get_angles") {
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::RegRead, makeRegPayload(RegId::DirectionAngle, 100), &resp, &err, false, &errorKind)) {
@@ -470,13 +457,13 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
     }
 
     // ── get_reg / set_reg ───────────────────────────────
-    if (resolvedCmd == "get_reg") {
+    if (cmd == "get_reg") {
         quint16 regAddr = static_cast<quint16>(p["register"].toInt());
         handleRegRead(regAddr);
         return;
     }
 
-    if (resolvedCmd == "set_reg") {
+    if (cmd == "set_reg") {
         quint16 regAddr = static_cast<quint16>(p["register"].toInt());
         quint32 value = static_cast<quint32>(p["value"].toInt());
         RadarFrame resp;
@@ -494,8 +481,8 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── get_dist ────────────────────────────────────────
-    if (resolvedCmd == "get_dist") {
+    // ── get_distance ────────────────────────────────────
+    if (cmd == "get_distance") {
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(CmdId::GetDistance, makeU32Payload(100), &resp, &err, false, &errorKind)) {
@@ -503,7 +490,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
         if (resp.payload.size() < 4) {
-            responder.error(2, QJsonObject{{"message", "Invalid get_dist response"}});
+            responder.error(2, QJsonObject{{"message", "Invalid get_distance response"}});
             return;
         }
         quint32 distMm = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(resp.payload.constData()));
@@ -533,14 +520,14 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return true;
     };
 
-    // ── calib / calib0 / calib1 ─────────────────────────
-    if (resolvedCmd == "calib" || resolvedCmd == "calib0" || resolvedCmd == "calib1") {
+    // ── calib / calib_x / calib_y ───────────────────────
+    if (cmd == "calib" || cmd == "calib_x" || cmd == "calib_y") {
         quint32 calibValue = 300;
-        if (resolvedCmd == "calib0") calibValue = 100;
-        else if (resolvedCmd == "calib1") calibValue = 200;
+        if (cmd == "calib_x") calibValue = 100;
+        else if (cmd == "calib_y") calibValue = 200;
 
         QueryTaskResult tr;
-        if (!execLongTaskWithResult(CmdId::Calibration, makeU32Payload(calibValue), resolvedCmd, &tr))
+        if (!execLongTaskWithResult(CmdId::Calibration, makeU32Payload(calibValue), cmd, &tr))
             return;
 
         if (tr.resultCode == TaskResult::Success)
@@ -551,7 +538,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
     }
 
     // ── move ────────────────────────────────────────────
-    if (resolvedCmd == "move") {
+    if (cmd == "move") {
         double xDeg = p["x_deg"].toDouble();
         double yDeg = p["y_deg"].toDouble();
         quint16 ax = static_cast<quint16>(qRound(xDeg * 100));
@@ -559,7 +546,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         quint32 n = (static_cast<quint32>(ax) << 16) | ay;
 
         QueryTaskResult tr;
-        if (!execLongTaskWithResult(CmdId::Move, makeU32Payload(n), resolvedCmd, &tr))
+        if (!execLongTaskWithResult(CmdId::Move, makeU32Payload(n), cmd, &tr))
             return;
 
         if (tr.resultCode == TaskResult::Success)
@@ -569,8 +556,8 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── move_dist ───────────────────────────────────────
-    if (resolvedCmd == "move_dist") {
+    // ── get_distance_at ─────────────────────────────────
+    if (cmd == "get_distance_at") {
         double xDeg = p["x_deg"].toDouble();
         double yDeg = p["y_deg"].toDouble();
         quint16 ax = static_cast<quint16>(qRound(xDeg * 100));
@@ -578,10 +565,10 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         quint32 n = (static_cast<quint32>(ax) << 16) | ay;
 
         QueryTaskResult tr;
-        if (!execLongTaskWithResult(CmdId::MoveDist, makeU32Payload(n), resolvedCmd, &tr))
+        if (!execLongTaskWithResult(CmdId::MoveDist, makeU32Payload(n), cmd, &tr))
             return;
 
-        // resultCode contains the distance in mm for move_dist
+        // resultCode contains the distance in mm for get_distance_at
         responder.done(0, QJsonObject{
             {"x_deg", xDeg}, {"y_deg", yDeg},
             {"distance_mm", static_cast<qint64>(tr.resultCode)}
@@ -589,15 +576,15 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── get_line ────────────────────────────────────────
-    if (resolvedCmd == "get_line") {
-        quint16 angleX     = static_cast<quint16>(qRound(p["angle_x_deg"].toDouble() * 100));
-        quint16 beginY     = static_cast<quint16>(qRound(p["begin_y_mm"].toDouble() * 100));
-        quint16 endY       = static_cast<quint16>(qRound(p["end_y_mm"].toDouble() * 100));
-        quint16 stepY      = static_cast<quint16>(qRound(p["step_y_mm"].toDouble() * 100));
-        quint16 sampleCount = static_cast<quint16>(qRound(p["sample_count"].toDouble() * 100));
+    // ── scan_line ───────────────────────────────────────
+    if (cmd == "scan_line") {
+        quint16 angleX = static_cast<quint16>(qRound(p["angle_x"].toDouble() * 100));
+        quint16 beginY = static_cast<quint16>(qRound(p["begin_y"].toDouble() * 100));
+        quint16 endY   = static_cast<quint16>(qRound(p["end_y"].toDouble() * 100));
+        quint16 stepY  = static_cast<quint16>(qRound(p["step_y"].toDouble() * 100));
+        quint16 speedY = static_cast<quint16>(qRound(p["speed_y"].toDouble() * 100));
 
-        QByteArray payload = makeScanLinePayload(angleX, beginY, endY, stepY, sampleCount);
+        QByteArray payload = makeScanLinePayload(angleX, beginY, endY, stepY, speedY);
 
         RadarFrame initResp;
         if (!session.sendAndReceive(CmdId::ScanLine, payload, &initResp, &err)) {
@@ -605,7 +592,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
 
-        int taskTimeout = resolveTaskTimeout(tp, resolvedCmd);
+        int taskTimeout = resolveTaskTimeout(tp, cmd);
         quint8 expectedCtr = initResp.counter;
         QueryTaskResult tr;
         if (!session.waitTaskCompleted(expectedCtr, CmdId::ScanLine, taskTimeout,
@@ -637,7 +624,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
 
         responder.done(0, QJsonObject{
             {"task_counter", scanResult.taskCounter},
-            {"task_command", "get_line"},
+            {"task_command", "scan_line"},
             {"result_code", static_cast<qint64>(scanResult.resultCode)},
             {"segment_count", scanResult.segmentCount},
             {"byte_count", scanResult.byteCount},
@@ -646,17 +633,17 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── get_frame ───────────────────────────────────────
-    if (resolvedCmd == "get_frame") {
-        quint16 beginX      = static_cast<quint16>(qRound(p["begin_x_deg"].toDouble() * 100));
-        quint16 endX        = static_cast<quint16>(qRound(p["end_x_deg"].toDouble() * 100));
-        quint16 stepX       = static_cast<quint16>(qRound(p["step_x_deg"].toDouble() * 100));
-        quint16 beginY      = static_cast<quint16>(qRound(p["begin_y_mm"].toDouble() * 100));
-        quint16 endY        = static_cast<quint16>(qRound(p["end_y_mm"].toDouble() * 100));
-        quint16 stepY       = static_cast<quint16>(qRound(p["step_y_mm"].toDouble() * 100));
-        quint16 sampleCount = static_cast<quint16>(qRound(p["sample_count"].toDouble() * 100));
+    // ── scan_frame ──────────────────────────────────────
+    if (cmd == "scan_frame") {
+        quint16 beginX = static_cast<quint16>(qRound(p["begin_x"].toDouble() * 100));
+        quint16 endX   = static_cast<quint16>(qRound(p["end_x"].toDouble() * 100));
+        quint16 stepX  = static_cast<quint16>(qRound(p["step_x"].toDouble() * 100));
+        quint16 beginY = static_cast<quint16>(qRound(p["begin_y"].toDouble() * 100));
+        quint16 endY   = static_cast<quint16>(qRound(p["end_y"].toDouble() * 100));
+        quint16 stepY  = static_cast<quint16>(qRound(p["step_y"].toDouble() * 100));
+        quint16 speedY = static_cast<quint16>(qRound(p["speed_y"].toDouble() * 100));
 
-        QByteArray payload = makeScanFramePayload(beginX, endX, stepX, beginY, endY, stepY, sampleCount);
+        QByteArray payload = makeScanFramePayload(beginX, endX, stepX, beginY, endY, stepY, speedY);
 
         RadarFrame initResp;
         if (!session.sendAndReceive(CmdId::ScanFrame, payload, &initResp, &err)) {
@@ -664,7 +651,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
 
-        int taskTimeout = resolveTaskTimeout(tp, resolvedCmd);
+        int taskTimeout = resolveTaskTimeout(tp, cmd);
         quint8 expectedCtr = initResp.counter;
         QueryTaskResult tr;
         if (!session.waitTaskCompleted(expectedCtr, CmdId::ScanFrame, taskTimeout,
@@ -695,7 +682,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
 
         responder.done(0, QJsonObject{
             {"task_counter", scanResult.taskCounter},
-            {"task_command", "get_frame"},
+            {"task_command", "scan_frame"},
             {"result_code", static_cast<qint64>(scanResult.resultCode)},
             {"segment_count", scanResult.segmentCount},
             {"byte_count", scanResult.byteCount},
@@ -705,7 +692,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
     }
 
     // ── get_data ────────────────────────────────────────
-    if (resolvedCmd == "get_data") {
+    if (cmd == "get_data") {
         int totalBytes = p["total_bytes"].toInt();
         if (totalBytes <= 0 || totalBytes >= 1000000) {
             responder.error(2, QJsonObject{{"message", "total_bytes out of range"}});
@@ -729,11 +716,12 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    // ── res / wait ──────────────────────────────────────
-        if (resolvedCmd == "res") {
+    // ── query ───────────────────────────────────────────
+    if (cmd == "query") {
+        const quint32 op = static_cast<quint32>(p["op"].toInt(100));
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
-        if (!session.sendAndReceive(CmdId::Query, makeU32Payload(100), &resp, &err, false, &errorKind)) {
+        if (!session.sendAndReceive(CmdId::Query, makeU32Payload(op), &resp, &err, false, &errorKind)) {
             respondSessionError(errorKind, err);
             return;
         }
@@ -749,34 +737,8 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "wait") {
-        int taskTimeout = resolveTaskTimeout(tp, resolvedCmd);
-        // Poll for any completed task
-        QElapsedTimer timer;
-        timer.start();
-        while (timer.elapsed() < taskTimeout) {
-            QThread::msleep(static_cast<unsigned long>(tp.queryIntervalMs));
-            RadarFrame resp;
-            SessionErrorKind errorKind = SessionErrorKind::None;
-            if (!session.sendAndReceive(CmdId::Query, makeU32Payload(100), &resp, &err, false, &errorKind))
-                continue;
-            quint8 lastCtr, lastCmd; quint32 resultCode;
-            if (!parseQueryResponse(resp.payload, &lastCtr, &lastCmd, &resultCode))
-                continue;
-            if (resultCode != TaskResult::StillRunning) {
-                responder.done(0, QJsonObject{
-                    {"counter", lastCtr}, {"command", lastCmd},
-                    {"result", static_cast<qint64>(resultCode)}
-                });
-                return;
-            }
-        }
-        responder.error(2, QJsonObject{{"message", "Wait timeout"}});
-        return;
-    }
-
     // ── 中断式命令 ──────────────────────────────────────
-    if (resolvedCmd == "insert_test") {
+    if (cmd == "interrupt_test") {
         quint32 value = static_cast<quint32>(p["value"].toInt(1000));
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
@@ -785,7 +747,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
         if (resp.payload.size() < 4) {
-            responder.error(2, QJsonObject{{"message", "Invalid insert_test response"}});
+            responder.error(2, QJsonObject{{"message", "Invalid interrupt_test response"}});
             return;
         }
         quint32 fb = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(resp.payload.constData()));
@@ -793,7 +755,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "insert_state") {
+    if (cmd == "scan_progress") {
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(InsertCmdId::ScanProgress, makeU32Payload(1000), &resp, &err, true, &errorKind)) {
@@ -801,7 +763,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
         if (resp.payload.size() < 4) {
-            responder.error(2, QJsonObject{{"message", "Invalid insert_state response"}});
+            responder.error(2, QJsonObject{{"message", "Invalid scan_progress response"}});
             return;
         }
         quint32 raw = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(resp.payload.constData()));
@@ -814,7 +776,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         return;
     }
 
-    if (resolvedCmd == "insert_stop") {
+    if (cmd == "scan_cancel") {
         RadarFrame resp;
         SessionErrorKind errorKind = SessionErrorKind::None;
         if (!session.sendAndReceive(InsertCmdId::ScanCancel, makeU32Payload(1000), &resp, &err, true, &errorKind)) {
@@ -822,34 +784,11 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
         if (resp.payload.size() < 4) {
-            responder.error(2, QJsonObject{{"message", "Invalid insert_stop response"}});
+            responder.error(2, QJsonObject{{"message", "Invalid scan_cancel response"}});
             return;
         }
         quint32 fb = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(resp.payload.constData()));
         responder.done(0, QJsonObject{{"value", static_cast<qint64>(fb)}});
-        return;
-    }
-
-    // ── radar_get_response_time ─────────────────────────
-    if (resolvedCmd == "radar_get_response_time") {
-        RadarFrame resp;
-        SessionErrorKind errorKind = SessionErrorKind::None;
-        if (!session.sendAndReceive(CmdId::RadarGetRespTime, makeU32Payload(100), &resp, &err, false, &errorKind)) {
-            respondSessionError(errorKind, err);
-            return;
-        }
-        if (resp.payload.size() < 8) {
-            responder.error(2, QJsonObject{{"message", "Invalid radar_get_response_time response"}});
-            return;
-        }
-        const auto* d = reinterpret_cast<const uchar*>(resp.payload.constData());
-        quint16 tMin  = qFromBigEndian<quint16>(d);
-        quint16 tMax  = qFromBigEndian<quint16>(d + 2);
-        quint16 tAve  = qFromBigEndian<quint16>(d + 4);
-        quint16 goodCtr = qFromBigEndian<quint16>(d + 6);
-        responder.done(0, QJsonObject{
-            {"t_min", tMin}, {"t_max", tMax}, {"t_ave", tAve}, {"good_counter", goodCtr}
-        });
         return;
     }
 
@@ -864,23 +803,19 @@ void ThreeDScanRobotHandler::buildMeta() {
     auto statusCmd = CommandBuilder("status")
         .description(QString::fromUtf8("返回驱动存活状态"));
 
-    // test_com / test
-    auto testComCmd = CommandBuilder("test_com")
+    // test
+    auto testCmd = CommandBuilder("test")
         .description(QString::fromUtf8("测试主协议通信"));
-    addConnectionParams(testComCmd);
-    testComCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
-        .description(QString::fromUtf8("测试值")));
-
-    auto testAliasCmd = CommandBuilder("test")
-        .description(QString::fromUtf8("`test_com` 的兼容别名"));
-    addConnectionParams(testAliasCmd);
-    testAliasCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
+    addConnectionParams(testCmd);
+    testCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
         .description(QString::fromUtf8("测试值")));
 
     // get_addr
     auto getAddrCmd = CommandBuilder("get_addr")
         .description(QString::fromUtf8("读取设备地址（广播探测）"));
     addConnectionParams(getAddrCmd);
+    getAddrCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
+        .description(QString::fromUtf8("测试值，用于校验返回地址")));
 
     // set_addr
     auto setAddrCmd = CommandBuilder("set_addr")
@@ -914,58 +849,46 @@ void ThreeDScanRobotHandler::buildMeta() {
         .description(QString::fromUtf8("返回原始状态字和已确认状态位"));
     addConnectionParams(getStateCmd);
 
-    auto stateAliasCmd = CommandBuilder("state")
-        .description(QString::fromUtf8("`get_state` 的兼容别名"));
-    addConnectionParams(stateAliasCmd);
-
-    // get_fw_ver
-    auto getFwVerCmd = CommandBuilder("get_fw_ver")
+    // get_version
+    auto getVersionCmd = CommandBuilder("get_version")
         .description(QString::fromUtf8("返回固件版本"));
-    addConnectionParams(getFwVerCmd);
+    addConnectionParams(getVersionCmd);
 
-    auto getVerAliasCmd = CommandBuilder("get_ver")
-        .description(QString::fromUtf8("`get_fw_ver` 的兼容别名"));
-    addConnectionParams(getVerAliasCmd);
-
-    // get_direction
-    auto getDirectionCmd = CommandBuilder("get_direction")
+    // get_angles
+    auto getAnglesCmd = CommandBuilder("get_angles")
         .description(QString::fromUtf8("返回 X/Y 当前角度"));
-    addConnectionParams(getDirectionCmd);
+    addConnectionParams(getAnglesCmd);
 
-    auto getDirAliasCmd = CommandBuilder("get_dir")
-        .description(QString::fromUtf8("`get_direction` 的兼容别名"));
-    addConnectionParams(getDirAliasCmd);
-
-    // get_sw0 / get_sw1
-    auto getSw0Cmd = CommandBuilder("get_sw0")
+    // get_switch_x / get_switch_y
+    auto getSwitchXCmd = CommandBuilder("get_switch_x")
         .description(QString::fromUtf8("返回 X 轴接近开关语义状态"));
-    addConnectionParams(getSw0Cmd);
+    addConnectionParams(getSwitchXCmd);
 
-    auto getSw1Cmd = CommandBuilder("get_sw1")
+    auto getSwitchYCmd = CommandBuilder("get_switch_y")
         .description(QString::fromUtf8("返回 Y 轴接近开关语义状态"));
-    addConnectionParams(getSw1Cmd);
+    addConnectionParams(getSwitchYCmd);
 
-    // get_calib0 / get_calib1
-    auto getCalib0Cmd = CommandBuilder("get_calib0")
+    // get_calib_x / get_calib_y
+    auto getCalibXCmd = CommandBuilder("get_calib_x")
         .description(QString::fromUtf8("返回 X 轴校准语义状态"));
-    addConnectionParams(getCalib0Cmd);
+    addConnectionParams(getCalibXCmd);
 
-    auto getCalib1Cmd = CommandBuilder("get_calib1")
+    auto getCalibYCmd = CommandBuilder("get_calib_y")
         .description(QString::fromUtf8("返回 Y 轴校准语义状态"));
-    addConnectionParams(getCalib1Cmd);
+    addConnectionParams(getCalibYCmd);
 
-    // calib / calib0 / calib1
+    // calib / calib_x / calib_y
     auto calibCmd = CommandBuilder("calib")
         .description(QString::fromUtf8("全量校准"));
     addLongTaskParams(calibCmd);
 
-    auto calib0Cmd = CommandBuilder("calib0")
+    auto calibXCmd = CommandBuilder("calib_x")
         .description(QString::fromUtf8("X 轴校准"));
-    addLongTaskParams(calib0Cmd);
+    addLongTaskParams(calibXCmd);
 
-    auto calib1Cmd = CommandBuilder("calib1")
+    auto calibYCmd = CommandBuilder("calib_y")
         .description(QString::fromUtf8("Y 轴校准"));
-    addLongTaskParams(calib1Cmd);
+    addLongTaskParams(calibYCmd);
 
     // move
     auto moveCmd = CommandBuilder("move")
@@ -976,35 +899,25 @@ void ThreeDScanRobotHandler::buildMeta() {
     moveCmd.param(FieldBuilder("y_deg", FieldType::Double).required().range(0, 186)
         .description(QString::fromUtf8("Y 角度（°）")));
 
-    // move_dist
-    auto moveDistCmd = CommandBuilder("move_dist")
-        .description(QString::fromUtf8("移动到指定角度并返回该点测距结果"));
-    addLongTaskParams(moveDistCmd);
-    moveDistCmd.param(FieldBuilder("x_deg", FieldType::Double).required().range(0, 186)
+    // get_distance_at
+    auto getDistanceAtCmd = CommandBuilder("get_distance_at")
+        .description(QString::fromUtf8("获取指定角度的距离"));
+    addLongTaskParams(getDistanceAtCmd);
+    getDistanceAtCmd.param(FieldBuilder("x_deg", FieldType::Double).required().range(0, 186)
         .description(QString::fromUtf8("X 角度（°）")));
-    moveDistCmd.param(FieldBuilder("y_deg", FieldType::Double).required().range(0, 101)
+    getDistanceAtCmd.param(FieldBuilder("y_deg", FieldType::Double).required().range(0, 101)
         .description(QString::fromUtf8("Y 角度（°）")));
 
-    // get_dist
-    auto getDistCmd = CommandBuilder("get_dist")
+    // get_distance
+    auto getDistanceCmd = CommandBuilder("get_distance")
         .description(QString::fromUtf8("单点测距"));
-    addConnectionParams(getDistCmd);
-
-    auto distAliasCmd = CommandBuilder("dist")
-        .description(QString::fromUtf8("`get_dist` 的兼容别名"));
-    addConnectionParams(distAliasCmd);
+    addConnectionParams(getDistanceCmd);
 
     // get_reg / set_reg
     auto getRegCmd = CommandBuilder("get_reg")
         .description(QString::fromUtf8("原始寄存器读"));
     addConnectionParams(getRegCmd);
     getRegCmd.param(FieldBuilder("register", FieldType::Int).required().range(0, 500)
-        .description(QString::fromUtf8("寄存器地址")));
-
-    auto grAliasCmd = CommandBuilder("gr")
-        .description(QString::fromUtf8("`get_reg` 的兼容别名"));
-    addConnectionParams(grAliasCmd);
-    grAliasCmd.param(FieldBuilder("register", FieldType::Int).required().range(0, 500)
         .description(QString::fromUtf8("寄存器地址")));
 
     auto setRegCmd = CommandBuilder("set_reg")
@@ -1015,47 +928,39 @@ void ThreeDScanRobotHandler::buildMeta() {
     setRegCmd.param(FieldBuilder("value", FieldType::Int).required()
         .description(QString::fromUtf8("写入值")));
 
-    auto srAliasCmd = CommandBuilder("sr")
-        .description(QString::fromUtf8("`set_reg` 的兼容别名"));
-    addConnectionParams(srAliasCmd);
-    srAliasCmd.param(FieldBuilder("register", FieldType::Int).required().range(0, 500)
-        .description(QString::fromUtf8("寄存器地址")));
-    srAliasCmd.param(FieldBuilder("value", FieldType::Int).required()
-        .description(QString::fromUtf8("写入值")));
-
-    // get_line
-    auto getLineCmd = CommandBuilder("get_line")
+    // scan_line
+    auto scanLineCmd = CommandBuilder("scan_line")
         .description(QString::fromUtf8("单线扫描（启动 + 轮询 + 分段聚合）"));
-    addLongTaskParams(getLineCmd);
-    getLineCmd.param(FieldBuilder("angle_x_deg", FieldType::Double).required()
-        .range(0, 186).description(QString::fromUtf8("X 角度（°）")));
-    getLineCmd.param(FieldBuilder("begin_y_mm", FieldType::Double).required()
-        .range(1, 100).description(QString::fromUtf8("Y 起始（mm）")));
-    getLineCmd.param(FieldBuilder("end_y_mm", FieldType::Double).required()
-        .range(1, 100).description(QString::fromUtf8("Y 终止（mm）")));
-    getLineCmd.param(FieldBuilder("step_y_mm", FieldType::Double).required()
-        .range(0.25, 99).description(QString::fromUtf8("Y 步长（mm）")));
-    getLineCmd.param(FieldBuilder("sample_count", FieldType::Double).required()
-        .range(0.1, 10).description(QString::fromUtf8("采样计数")));
+    addLongTaskParams(scanLineCmd);
+    scanLineCmd.param(FieldBuilder("angle_x", FieldType::Double).required()
+        .defaultValue(0).range(0, 186).description(QString::fromUtf8("X 角度，单位 deg，编码时 ×100")));
+    scanLineCmd.param(FieldBuilder("begin_y", FieldType::Double).required()
+        .defaultValue(1).range(1, 100).description(QString::fromUtf8("Y 起始角度，单位 deg，编码时 ×100")));
+    scanLineCmd.param(FieldBuilder("end_y", FieldType::Double).required()
+        .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度，单位 deg，编码时 ×100")));
+    scanLineCmd.param(FieldBuilder("step_y", FieldType::Double).required()
+        .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长，单位 deg，编码时 ×100")));
+    scanLineCmd.param(FieldBuilder("speed_y", FieldType::Double).required()
+        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度，单位 deg/s，编码时 ×100")));
 
-    // get_frame
-    auto getFrameCmd = CommandBuilder("get_frame")
+    // scan_frame
+    auto scanFrameCmd = CommandBuilder("scan_frame")
         .description(QString::fromUtf8("帧扫描（启动 + 轮询 + 分段聚合）"));
-    addLongTaskParams(getFrameCmd);
-    getFrameCmd.param(FieldBuilder("begin_x_deg", FieldType::Double).required()
-        .range(0, 186).description(QString::fromUtf8("X 起始角度（°）")));
-    getFrameCmd.param(FieldBuilder("end_x_deg", FieldType::Double).required()
-        .range(0, 186).description(QString::fromUtf8("X 终止角度（°）")));
-    getFrameCmd.param(FieldBuilder("step_x_deg", FieldType::Double).required()
-        .range(0.01, 186).description(QString::fromUtf8("X 步长（°）")));
-    getFrameCmd.param(FieldBuilder("begin_y_mm", FieldType::Double).required()
-        .range(1, 151).description(QString::fromUtf8("Y 起始（mm）")));
-    getFrameCmd.param(FieldBuilder("end_y_mm", FieldType::Double).required()
-        .range(1, 151).description(QString::fromUtf8("Y 终止（mm）")));
-    getFrameCmd.param(FieldBuilder("step_y_mm", FieldType::Double).required()
-        .range(0.25, 150).description(QString::fromUtf8("Y 步长（mm）")));
-    getFrameCmd.param(FieldBuilder("sample_count", FieldType::Double).required()
-        .range(0.01, 10).description(QString::fromUtf8("采样计数")));
+    addLongTaskParams(scanFrameCmd);
+    scanFrameCmd.param(FieldBuilder("begin_x", FieldType::Double).required()
+        .defaultValue(0).range(0, 186).description(QString::fromUtf8("X 起始角度，单位 deg，编码时 ×100")));
+    scanFrameCmd.param(FieldBuilder("end_x", FieldType::Double).required()
+        .defaultValue(180).range(0, 186).description(QString::fromUtf8("X 终止角度，单位 deg，编码时 ×100")));
+    scanFrameCmd.param(FieldBuilder("step_x", FieldType::Double).required()
+        .defaultValue(5).range(0.25, 186).description(QString::fromUtf8("X 角度步长，单位 deg，编码时 ×100")));
+    scanFrameCmd.param(FieldBuilder("begin_y", FieldType::Double).required()
+        .defaultValue(1).range(1, 100).description(QString::fromUtf8("Y 起始角度，单位 deg，编码时 ×100")));
+    scanFrameCmd.param(FieldBuilder("end_y", FieldType::Double).required()
+        .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度，单位 deg，编码时 ×100")));
+    scanFrameCmd.param(FieldBuilder("step_y", FieldType::Double).required()
+        .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长，单位 deg，编码时 ×100")));
+    scanFrameCmd.param(FieldBuilder("speed_y", FieldType::Double).required()
+        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度，单位 deg/s，编码时 ×100")));
 
     // get_data
     auto getDataCmd = CommandBuilder("get_data")
@@ -1065,41 +970,30 @@ void ThreeDScanRobotHandler::buildMeta() {
     getDataCmd.param(FieldBuilder("total_bytes", FieldType::Int).required()
         .range(1, 999999).description(QString::fromUtf8("数据总字节数")));
 
-    // res
-    auto resCmd = CommandBuilder("res")
-        .description(QString::fromUtf8("返回最近一次长任务的执行结果摘要"));
-    addConnectionParams(resCmd);
+    // query
+    auto queryCmd = CommandBuilder("query")
+        .description(QString::fromUtf8("查询或重置最近一次长任务结果"));
+    addConnectionParams(queryCmd);
+    queryCmd.param(FieldBuilder("op", FieldType::Int).defaultValue(100)
+        .range(100, 200)
+        .description(QString::fromUtf8("100=查询最近一次结果，200=重置最近一次结果")));
 
-    // wait
-    auto waitCmd = CommandBuilder("wait")
-        .description(QString::fromUtf8("轮询等待最近一次长任务完成"));
-    addLongTaskParams(waitCmd);
-
-    // insert_test
-    auto insertTestCmd = CommandBuilder("insert_test")
+    // interrupt_test
+    auto interruptTestCmd = CommandBuilder("interrupt_test")
         .description(QString::fromUtf8("测试中断式通信"));
-    addConnectionParams(insertTestCmd);
-    insertTestCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
+    addConnectionParams(interruptTestCmd);
+    interruptTestCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
         .description(QString::fromUtf8("测试值")));
 
-    // insert_state
-    auto insertStateCmd = CommandBuilder("insert_state")
-        .description(QString::fromUtf8("获取帧扫描状态"));
-    addConnectionParams(insertStateCmd);
+    // scan_progress
+    auto scanProgressCmd = CommandBuilder("scan_progress")
+        .description(QString::fromUtf8("获取帧扫描进度"));
+    addConnectionParams(scanProgressCmd);
 
-    // insert_stop
-    auto insertStopCmd = CommandBuilder("insert_stop")
+    // scan_cancel
+    auto scanCancelCmd = CommandBuilder("scan_cancel")
         .description(QString::fromUtf8("停止当前帧扫描"));
-    addConnectionParams(insertStopCmd);
-
-    // radar_get_response_time
-    auto rgrtCmd = CommandBuilder("radar_get_response_time")
-        .description(QString::fromUtf8("获取雷达响应时间统计"));
-    addConnectionParams(rgrtCmd);
-
-    auto rgrtAliasCmd = CommandBuilder("rgrt")
-        .description(QString::fromUtf8("`radar_get_response_time` 的兼容别名"));
-    addConnectionParams(rgrtAliasCmd);
+    addConnectionParams(scanCancelCmd);
 
     m_meta = DriverMetaBuilder()
         .schemaVersion("1.0")
@@ -1109,44 +1003,34 @@ void ThreeDScanRobotHandler::buildMeta() {
               QString::fromUtf8("3D 扫描机器人协议基础驱动"))
         .vendor("stdiolink")
         .command(statusCmd)
-        .command(testComCmd)
-        .command(testAliasCmd)
+        .command(testCmd)
         .command(getAddrCmd)
         .command(setAddrCmd)
         .command(getModeCmd)
         .command(setModeCmd)
         .command(getTempCmd)
         .command(getStateCmd)
-        .command(stateAliasCmd)
-        .command(getFwVerCmd)
-        .command(getVerAliasCmd)
-        .command(getDirectionCmd)
-        .command(getDirAliasCmd)
-        .command(getSw0Cmd)
-        .command(getSw1Cmd)
-        .command(getCalib0Cmd)
-        .command(getCalib1Cmd)
+        .command(getVersionCmd)
+        .command(getAnglesCmd)
+        .command(getSwitchXCmd)
+        .command(getSwitchYCmd)
+        .command(getCalibXCmd)
+        .command(getCalibYCmd)
         .command(calibCmd)
-        .command(calib0Cmd)
-        .command(calib1Cmd)
+        .command(calibXCmd)
+        .command(calibYCmd)
         .command(moveCmd)
-        .command(moveDistCmd)
-        .command(getDistCmd)
-        .command(distAliasCmd)
+        .command(getDistanceAtCmd)
+        .command(getDistanceCmd)
         .command(getRegCmd)
-        .command(grAliasCmd)
         .command(setRegCmd)
-        .command(srAliasCmd)
-        .command(getLineCmd)
-        .command(getFrameCmd)
+        .command(scanLineCmd)
+        .command(scanFrameCmd)
         .command(getDataCmd)
-        .command(resCmd)
-        .command(waitCmd)
-        .command(insertTestCmd)
-        .command(insertStateCmd)
-        .command(insertStopCmd)
-        .command(rgrtCmd)
-        .command(rgrtAliasCmd)
+        .command(queryCmd)
+        .command(interruptTestCmd)
+        .command(scanProgressCmd)
+        .command(scanCancelCmd)
         .build();
     stdiolink::meta::ensureCommandExamples(m_meta);
 }

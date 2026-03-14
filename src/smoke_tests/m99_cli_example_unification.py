@@ -14,12 +14,17 @@ EXE_SUFFIX = '.exe' if os.name == 'nt' else ''
 
 
 def candidate_bin_dirs() -> list[Path]:
-    return [
+    dirs: list[Path] = []
+    env_bin = os.environ.get('STDIOLINK_BIN_DIR')
+    if env_bin:
+        dirs.append(Path(env_bin))
+    dirs.extend([
         ROOT_DIR / 'build' / 'release',
         ROOT_DIR / 'build' / 'debug',
         ROOT_DIR / 'build' / 'runtime_release' / 'bin',
         ROOT_DIR / 'build' / 'runtime_debug' / 'bin',
-    ]
+    ])
+    return dirs
 
 
 def find_exe(base_name: str) -> Path | None:

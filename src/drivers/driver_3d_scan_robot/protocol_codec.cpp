@@ -224,19 +224,19 @@ QByteArray makeRegPayload(quint16 regAddr, quint32 value) {
 }
 
 QByteArray makeScanLinePayload(quint16 angleX, quint16 beginY, quint16 endY,
-                               quint16 stepY, quint16 sampleCount) {
+                               quint16 stepY, quint16 speedY) {
     quint8 buf[10];
     qToBigEndian(angleX, buf);
     qToBigEndian(beginY, buf + 2);
     qToBigEndian(endY, buf + 4);
     qToBigEndian(stepY, buf + 6);
-    qToBigEndian(sampleCount, buf + 8);
+    qToBigEndian(speedY, buf + 8);
     return QByteArray(reinterpret_cast<const char*>(buf), 10);
 }
 
 QByteArray makeScanFramePayload(quint16 beginX, quint16 endX, quint16 stepX,
                                 quint16 beginY, quint16 endY, quint16 stepY,
-                                quint16 sampleCount) {
+                                quint16 speedY) {
     quint8 buf[14];
     qToBigEndian(beginX, buf);
     qToBigEndian(endX, buf + 2);
@@ -244,7 +244,7 @@ QByteArray makeScanFramePayload(quint16 beginX, quint16 endX, quint16 stepX,
     qToBigEndian(beginY, buf + 6);
     qToBigEndian(endY, buf + 8);
     qToBigEndian(stepY, buf + 10);
-    qToBigEndian(sampleCount, buf + 12);
+    qToBigEndian(speedY, buf + 12);
     return QByteArray(reinterpret_cast<const char*>(buf), 14);
 }
 

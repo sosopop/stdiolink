@@ -82,14 +82,13 @@ def parse_jsonl(stdout_text: str) -> list[dict]:
 DRIVER_NAME = "stdio.drv.3d_scan_robot"
 
 EXPECTED_COMMANDS = [
-    "status", "test_com", "get_addr", "set_addr",
+    "status", "test", "get_addr", "set_addr",
     "get_mode", "set_mode", "get_temp", "get_state",
-    "get_fw_ver", "get_direction", "get_sw0", "get_sw1",
-    "get_calib0", "get_calib1", "calib", "calib0", "calib1",
-    "move", "move_dist", "get_dist", "get_reg", "set_reg",
-    "get_line", "get_frame", "get_data", "res", "wait",
-    "insert_test", "insert_state", "insert_stop",
-    "radar_get_response_time",
+    "get_version", "get_angles", "get_switch_x", "get_switch_y",
+    "get_calib_x", "get_calib_y", "calib", "calib_x", "calib_y",
+    "move", "get_distance_at", "get_distance", "get_reg", "set_reg",
+    "scan_line", "scan_frame", "get_data", "query",
+    "interrupt_test", "scan_progress", "scan_cancel",
 ]
 
 
@@ -144,7 +143,7 @@ def case_s03_transport_error() -> CaseResult:
             str(exe),
             "--profile=oneshot",
             "--mode=console",
-            "--cmd=test_com",
+            "--cmd=test",
             "--port=COM_NONEXISTENT_99",
             "--addr=1",
             "--value=1234",

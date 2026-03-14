@@ -4,6 +4,9 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <QTemporaryDir>
 
 #include "stdiolink_server/scanner/driver_manager_scanner.h"
@@ -201,4 +204,24 @@ TEST_F(DriverManagerScannerTest, ExportMetaFor3DScanRobotDriver) {
     EXPECT_EQ(stats.updated, 1);
     ASSERT_EQ(result.size(), 1);
     EXPECT_TRUE(result.contains("stdio.drv.3d_scan_robot"));
+
+    QFile metaFile(dir + "/driver.meta.json");
+    ASSERT_TRUE(metaFile.open(QIODevice::ReadOnly));
+    const auto metaDoc = QJsonDocument::fromJson(metaFile.readAll());
+    ASSERT_TRUE(metaDoc.isObject());
+    const auto commands = metaDoc.object().value("commands").toArray();
+
+    QStringList commandNames;
+    for (const auto& value : commands) {
+        commandNames.append(value.toObject().value("name").toString());
+    }
+
+    EXPECT_TRUE(commandNames.contains("scan_line"));
+    EXPECT_TRUE(commandNames.contains("scan_frame"));
+    EXPECT_TRUE(commandNames.contains("query"));
+    EXPECT_TRUE(commandNames.contains("interrupt_test"));
+    EXPECT_FALSE(commandNames.contains("get_line"));
+    EXPECT_FALSE(commandNames.contains("get_frame"));
+    EXPECT_FALSE(commandNames.contains("insert_test"));
+    EXPECT_FALSE(commandNames.contains("wait"));
 }
