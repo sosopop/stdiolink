@@ -283,6 +283,10 @@ function Should-SkipBinary {
 
     $base = [System.IO.Path]::GetFileNameWithoutExtension($Name)
 
+    if ($base -eq "bin_scan_orchestrator_service_tests") {
+        return $true
+    }
+
     if (-not $WithTests) {
         if ($base -eq "stdiolink_tests" -or $base.StartsWith("test_") -or $base -eq "gtest") {
             return $true

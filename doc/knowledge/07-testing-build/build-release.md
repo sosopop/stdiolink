@@ -20,6 +20,7 @@
 - runtime / 发布包里的 Service、Project 模板默认只来自 `src/data_root/`；`src/demo/server_manager_demo/data_root/` 仅补充 demo 配置、日志、工作区与脚本
 - 测试构建会额外把 `stdio.drv.calculator` 注入 `runtime_*` 作为测试资产；这一步仅服务 GTest/JS 集成测试，不属于默认发布内容
 - `tools/publish_release.ps1` 发布前默认直接运行 `runtime_release/bin/stdiolink_tests`；不会自动跑独立注册的 `bin_scan_orchestrator_service_tests`
+- `tools/publish_release.ps1` 在复制 `runtime_release/bin` 时会始终排除 `bin_scan_orchestrator_service_tests`；即使传了 `--with-tests`，该二进制也不会进入发布包
 - Windows 发布包里的 `dev.bat` / `dev.ps1` 会在启动时扫描 `data_root/drivers/`；`dev.ps1` 还会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
 - Unix 发布包里的 `dev.sh` 会打开带环境变量和 alias 的交互式 bash，并按 `data_root/drivers/`、`data_root/projects/*/config.json` 动态注册 Driver / Project 入口
 
