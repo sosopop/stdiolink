@@ -293,6 +293,7 @@ The release package includes:
 
 ## Documentation
 
+- [AI Knowledge Base](doc/knowledge/README.md) — the recommended development entry point; use it first to route work by subsystem, constraints, test entry, and documentation dependencies
 - [User Manual](doc/manual/README.md) — comprehensive guide covering protocol, Driver/Host development, JS runtime, and server management
 - [HTTP API Reference](doc/http_api.md) — complete REST API documentation
 - [Architecture Overview](doc/manual/03-architecture.md) — system design and data flow
