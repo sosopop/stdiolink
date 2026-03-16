@@ -9,6 +9,12 @@ const schema: FieldMeta[] = [
   { name: 'port', type: 'int', description: 'Server port' },
 ];
 
+const execRunnerSchema: FieldMeta[] = [
+  { name: 'program', type: 'string', description: 'Executable path' },
+  { name: 'args', type: 'array', description: 'Args', items: { name: 'arg', type: 'string' } },
+  { name: 'success_exit_codes', type: 'array', description: 'Success codes', items: { name: 'code', type: 'int' } },
+];
+
 function renderComponent(props: Partial<Parameters<typeof ProjectConfig>[0]> = {}) {
   return render(
     <ConfigProvider>
@@ -74,6 +80,18 @@ describe('ProjectConfig', () => {
 
     expect(screen.getByTestId('project-config-test-commands').textContent)
       .toContain('stdiolink_service "data_root/services/demo" --data-root="data_root" --config.host="saved-host" --config.port=6200');
+  });
+
+  it('renders scalar arrays as compact rows in project config', () => {
+    renderComponent({
+      schema: execRunnerSchema,
+      config: { program: 'cmd.exe', args: ['/c', 'echo'], success_exit_codes: [0, 2] },
+    });
+
+    expect(screen.getByTestId('compact-array-args')).toBeDefined();
+    expect(screen.getByTestId('compact-array-success_exit_codes')).toBeDefined();
+    expect(screen.getByTestId('compact-array-row-args-0')).toBeDefined();
+    expect(screen.getByTestId('compact-array-row-success_exit_codes-1')).toBeDefined();
   });
 });
 

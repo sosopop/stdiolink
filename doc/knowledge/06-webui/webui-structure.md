@@ -9,7 +9,7 @@
 - `src/webui/src/pages/`：页面入口和路由页面
 - `src/webui/src/api/`：REST/SSE/WS 客户端
 - `src/webui/src/stores/`：状态管理
-- `src/webui/src/components/`：共享组件
+- `src/webui/src/components/`：共享组件；其中 `SchemaForm/` 负责 Project/Service 配置 schema 渲染，primitive array 使用紧凑单行列表，`object[]` 保持卡片式编辑
 - `src/webui/src/types/`：前端类型
 - `src/webui/src/hooks/` / `utils/`：公共逻辑
 - `src/webui/src/locales/`：WebUI 多语言文案事实源，默认以 `en.json` 为结构基准

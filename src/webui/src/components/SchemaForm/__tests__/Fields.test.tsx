@@ -66,6 +66,12 @@ describe('ArrayField', () => {
     expect(screen.getByTestId('add-item-tags')).toBeDefined();
   });
 
+  it('renders compact rows for string arrays', () => {
+    render(<ConfigProvider><ArrayField field={{ name: 'args', type: 'array', items: { name: 'arg', type: 'string' } }} value={['--help']} onChange={vi.fn()} /></ConfigProvider>);
+    expect(screen.getByTestId('compact-array-args')).toBeDefined();
+    expect(screen.getByTestId('compact-array-row-args-0')).toBeDefined();
+  });
+
   it('adds item on click', () => {
     const onChange = vi.fn();
     render(<ConfigProvider><ArrayField field={{ name: 'tags', type: 'array', items: { name: 'item', type: 'string' } }} value={['a']} onChange={onChange} /></ConfigProvider>);
@@ -80,6 +86,35 @@ describe('ArrayField', () => {
     expect(onChange).toHaveBeenCalledWith(['b']);
   });
 
+  it('edits string item in compact mode', () => {
+    const onChange = vi.fn();
+    render(<ConfigProvider><ArrayField field={{ name: 'args', type: 'array', items: { name: 'arg', type: 'string' } }} value={['--help']} onChange={onChange} /></ConfigProvider>);
+    fireEvent.change(screen.getByTestId('compact-array-input-args-0'), { target: { value: '--verbose' } });
+    expect(onChange).toHaveBeenCalledWith(['--verbose']);
+  });
+
+  it('edits int item in compact mode', () => {
+    const onChange = vi.fn();
+    render(<ConfigProvider><ArrayField field={{ name: 'codes', type: 'array', items: { name: 'code', type: 'int', min: 0, max: 9 } }} value={[0]} onChange={onChange} /></ConfigProvider>);
+    const input = screen.getByTestId('compact-array-input-codes-0');
+    fireEvent.change(input, { target: { value: '2' } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith([2]);
+  });
+
+  it('toggles bool item in compact mode', () => {
+    const onChange = vi.fn();
+    render(<ConfigProvider><ArrayField field={{ name: 'flags', type: 'array', items: { name: 'flag', type: 'bool' } }} value={[true]} onChange={onChange} /></ConfigProvider>);
+    fireEvent.click(screen.getByTestId('compact-array-input-flags-0'));
+    expect(onChange).toHaveBeenCalledWith([false]);
+  });
+
+  it('renders enum item in compact mode', () => {
+    render(<ConfigProvider><ArrayField field={{ name: 'modes', type: 'array', items: { name: 'mode', type: 'enum', enum: ['fast', 'slow'] } }} value={['fast']} onChange={vi.fn()} /></ConfigProvider>);
+    expect(screen.getByTestId('compact-array-row-modes-0')).toBeDefined();
+    expect(screen.getByTestId('compact-array-input-modes-0')).toBeDefined();
+  });
+
   it('disables remove when at minItems', () => {
     render(<ConfigProvider><ArrayField field={{ name: 'tags', type: 'array', items: { name: 'item', type: 'string' }, minItems: 1 }} value={['a']} onChange={vi.fn()} /></ConfigProvider>);
     const btn = screen.getByTestId('remove-item-0');
@@ -90,6 +125,20 @@ describe('ArrayField', () => {
     render(<ConfigProvider><ArrayField field={{ name: 'tags', type: 'array', items: { name: 'item', type: 'string' }, maxItems: 2 }} value={['a', 'b']} onChange={vi.fn()} /></ConfigProvider>);
     const btn = screen.getByTestId('add-item-tags');
     expect(btn.closest('button')?.disabled).toBe(true);
+  });
+
+  it('keeps object arrays on card layout', () => {
+    render(
+      <ConfigProvider>
+        <ArrayField
+          field={{ name: 'radars', type: 'array', items: { name: 'radar', type: 'object', fields: [{ name: 'id', type: 'string' }] } }}
+          value={[{ id: 'r1' }]}
+          onChange={vi.fn()}
+        />
+      </ConfigProvider>,
+    );
+    expect(screen.queryByTestId('compact-array-radars')).toBeNull();
+    expect(screen.getByTestId('array-item-0')).toBeDefined();
   });
 });
 

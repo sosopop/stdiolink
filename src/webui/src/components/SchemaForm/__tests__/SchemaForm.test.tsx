@@ -134,6 +134,20 @@ describe('SchemaForm', () => {
     expect(screen.getByTestId('add-item-tags')).toBeDefined();
   });
 
+  it('renders primitive arrays in compact mode', () => {
+    renderForm([
+      { name: 'args', type: 'array', items: { name: 'arg', type: 'string' } },
+      { name: 'success_exit_codes', type: 'array', items: { name: 'code', type: 'int' } },
+    ], {
+      args: ['--help'],
+      success_exit_codes: [0],
+    });
+    expect(screen.getByTestId('compact-array-args')).toBeDefined();
+    expect(screen.getByTestId('compact-array-success_exit_codes')).toBeDefined();
+    expect(screen.getByTestId('compact-array-row-args-0')).toBeDefined();
+    expect(screen.getByTestId('compact-array-row-success_exit_codes-0')).toBeDefined();
+  });
+
   it('renders required label', () => {
     renderForm([{ name: 'host', type: 'string', required: true }]);
     expect(screen.getByTestId('field-host')).toBeDefined();
