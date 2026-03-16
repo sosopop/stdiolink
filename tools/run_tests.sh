@@ -37,10 +37,20 @@ RUN_PLAYWRIGHT=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --build-dir)
+            if [[ $# -lt 2 ]]; then
+                echo "Missing value for --build-dir" >&2
+                usage
+                exit 1
+            fi
             BUILD_DIR="${2:-}"
             shift 2
             ;;
         --config)
+            if [[ $# -lt 2 ]]; then
+                echo "Missing value for --config" >&2
+                usage
+                exit 1
+            fi
             BUILD_CONFIG="${2:-}"
             shift 2
             ;;
@@ -168,6 +178,10 @@ if [[ "${RUN_VITEST}" -eq 1 ]]; then
         echo "SKIP: node_modules not found in ${WEBUI_DIR}"
         FAILED=$((FAILED + 1))
         FAILED_NAMES="${FAILED_NAMES}  - Vitest (node_modules not found)\n"
+    elif ! command -v npm >/dev/null 2>&1; then
+        echo "SKIP: npm not found"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="${FAILED_NAMES}  - Vitest (npm not found)\n"
     else
         pushd "${WEBUI_DIR}" > /dev/null
         if npm run test; then
@@ -189,6 +203,10 @@ if [[ "${RUN_PLAYWRIGHT}" -eq 1 ]]; then
         echo "SKIP: node_modules not found in ${WEBUI_DIR}"
         FAILED=$((FAILED + 1))
         FAILED_NAMES="${FAILED_NAMES}  - Playwright (node_modules not found)\n"
+    elif ! command -v npx >/dev/null 2>&1; then
+        echo "SKIP: npx not found"
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="${FAILED_NAMES}  - Playwright (npx not found)\n"
     else
         pushd "${WEBUI_DIR}" > /dev/null
         if npx playwright install chromium && npx playwright test; then

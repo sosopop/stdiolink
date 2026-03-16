@@ -65,6 +65,16 @@ command_name_from_path() {
     printf '%s\n' "${name}"
 }
 
+is_driver_binary() {
+    local path="$1"
+
+    if [[ "${path}" == *.exe ]]; then
+        return 0
+    fi
+
+    [[ -x "${path}" ]]
+}
+
 read_project_service_id() {
     local config_path="$1"
 
@@ -92,6 +102,7 @@ PY
 }
 
 register_driver_aliases() {
+    local driver_dir=""
     local exe=""
     local alias_name=""
     local alias_command=""
@@ -100,17 +111,23 @@ register_driver_aliases() {
         return
     fi
 
-    while IFS= read -r -d '' exe; do
-        alias_name="$(command_name_from_path "${exe}")"
-        if type -t "${alias_name}" >/dev/null 2>&1; then
-            echo "WARNING: Skipping driver alias '${alias_name}': command name already exists" >&2
-            continue
-        fi
+    while IFS= read -r -d '' driver_dir; do
+        while IFS= read -r -d '' exe; do
+            if ! is_driver_binary "${exe}"; then
+                continue
+            fi
 
-        alias_command="$(quote_command "${exe}")"
-        alias "${alias_name}=${alias_command}"
-        DRIVER_ALIASES+=("${alias_name}")
-    done < <(find "${DRIVERS_DIR}" -mindepth 2 -maxdepth 2 -type f -print0)
+            alias_name="$(command_name_from_path "${exe}")"
+            if type -t "${alias_name}" >/dev/null 2>&1; then
+                echo "WARNING: Skipping driver alias '${alias_name}': command name already exists" >&2
+                continue
+            fi
+
+            alias_command="$(quote_command "${exe}")"
+            alias "${alias_name}=${alias_command}"
+            DRIVER_ALIASES+=("${alias_name}")
+        done < <(find "${driver_dir}" -mindepth 1 -maxdepth 1 -type f -print0 | sort -z)
+    done < <(find "${DRIVERS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
 }
 
 register_project_aliases() {
@@ -143,6 +160,8 @@ register_project_aliases() {
                 echo "WARNING: Skipping project alias '${project_id}': failed to parse ${config_path}" >&2
                 continue
             fi
+        else
+            continue
         fi
 
         if [[ -z "${service_id}" ]]; then
@@ -159,7 +178,7 @@ register_project_aliases() {
         param_path="${project_dir}/param.json"
         alias_command="$(quote_command stdiolink_service "${service_dir}" "--data-root=${DATA_ROOT}" "--config-file=${param_path}")"
         alias "${project_id}=${alias_command}"
-    done < <(find "${PROJECTS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
+    done < <(find "${PROJECTS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
 }
 
 drivers() {
@@ -178,14 +197,19 @@ drivers() {
 
 services() {
     local service_dir=""
+    local found_any=0
 
     echo
     echo "Available services:"
     echo
     if [[ -d "${SERVICES_DIR}" ]]; then
         while IFS= read -r -d '' service_dir; do
+            found_any=1
             echo "  $(basename "${service_dir}")"
         done < <(find "${SERVICES_DIR}" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z 2>/dev/null || find "${SERVICES_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
+        if [[ "${found_any}" -eq 0 ]]; then
+            echo "  (no services found)"
+        fi
     else
         echo "  (no services found)"
     fi
@@ -201,12 +225,14 @@ projects() {
     local service_label=""
     local config_path=""
     local alias_note=""
+    local found_any=0
 
     echo
     echo "Available projects:"
     echo
     if [[ -d "${PROJECTS_DIR}" ]]; then
         while IFS= read -r -d '' project_dir; do
+            found_any=1
             project_id="$(basename "${project_dir}")"
             config_path="${project_dir}/config.json"
             service_label="(service unknown)"
@@ -228,7 +254,10 @@ projects() {
             fi
 
             echo "  ${project_id} -> ${service_label}${alias_note}"
-        done < <(find "${PROJECTS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0)
+        done < <(find "${PROJECTS_DIR}" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+        if [[ "${found_any}" -eq 0 ]]; then
+            echo "  (no projects found)"
+        fi
     else
         echo "  (no projects found)"
     fi

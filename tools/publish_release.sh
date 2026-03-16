@@ -69,6 +69,10 @@ should_skip_binary() {
     local name="$1"
     local stem="${name%.*}"
 
+    if [[ "${stem}" == "bin_scan_orchestrator_service_tests" ]]; then
+        return 0
+    fi
+
     if [[ "${WITH_TESTS}" -eq 0 ]]; then
         case "${stem}" in
             stdiolink_tests|test_*|gtest)
