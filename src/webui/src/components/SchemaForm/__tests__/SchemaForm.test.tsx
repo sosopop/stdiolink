@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
@@ -15,6 +16,19 @@ function renderForm(schema: FieldMeta[], value: Record<string, unknown> = {}, pr
     </ConfigProvider>,
   );
   return { ...result, onChange };
+}
+
+function renderControlledForm(schema: FieldMeta[], initialValue: Record<string, unknown> = {}) {
+  const Wrapper = () => {
+    const [value, setValue] = React.useState<Record<string, unknown>>(initialValue);
+    return (
+      <ConfigProvider>
+        <SchemaForm schema={schema} value={value} onChange={setValue} />
+      </ConfigProvider>
+    );
+  };
+
+  return render(<Wrapper />);
 }
 
 describe('SchemaForm', () => {
@@ -53,6 +67,65 @@ describe('SchemaForm', () => {
     }]);
     expect(screen.getByTestId('field-database')).toBeDefined();
     expect(screen.getByTestId('object-fields-database')).toBeDefined();
+  });
+
+  it('renders add-entry control for object additionalProperties field', () => {
+    renderForm([{
+      name: 'env',
+      type: 'object',
+      additionalProperties: true,
+    }]);
+    expect(screen.getByTestId('add-entry-env')).toBeDefined();
+  });
+
+  it('treats omitted additionalProperties as enabled for plain object fields', () => {
+    renderForm([{
+      name: 'env',
+      type: 'object',
+    }]);
+    expect(screen.getByTestId('add-entry-env')).toBeDefined();
+  });
+
+  it('adds and edits object additionalProperties entries', () => {
+    const { onChange } = renderForm([{
+      name: 'env',
+      type: 'object',
+      additionalProperties: true,
+    }], {
+      env: {},
+    });
+
+    fireEvent.click(screen.getByTestId('add-entry-env'));
+    expect(onChange).toHaveBeenCalledWith({ env: { key1: '' } });
+  });
+
+  it('updates existing object additionalProperties entry value', () => {
+    const { onChange } = renderForm([{
+      name: 'env',
+      type: 'object',
+      additionalProperties: true,
+    }], {
+      env: { PATH_EXT: 'tools' },
+    });
+
+    fireEvent.change(screen.getByTestId('object-entry-value-env-0'), { target: { value: 'bin' } });
+    expect(onChange).toHaveBeenCalledWith({ env: { PATH_EXT: 'bin' } });
+  });
+
+  it('keeps focus while editing object additionalProperties key', () => {
+    renderControlledForm([{
+      name: 'env',
+      type: 'object',
+      additionalProperties: true,
+    }], {
+      env: { PATH_EXT: 'tools' },
+    });
+
+    const keyInput = screen.getByTestId('object-entry-key-env-0');
+    keyInput.focus();
+    fireEvent.change(keyInput, { target: { value: 'PATH_EXTRA' } });
+
+    expect(screen.getByTestId('object-entry-key-env-0')).toHaveFocus();
   });
 
   it('renders array field with add button', () => {
