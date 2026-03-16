@@ -2,6 +2,10 @@
 # 由 assemble_runtime target 通过 cmake -P 调用
 # 输入变量: RAW_DIR, RUNTIME_DIR, SOURCE_DIR
 
+if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+endif()
+
 if(NOT IS_DIRECTORY "${RAW_DIR}")
     message(FATAL_ERROR "RAW_DIR does not exist: ${RAW_DIR}")
 endif()
