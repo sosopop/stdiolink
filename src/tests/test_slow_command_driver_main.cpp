@@ -8,6 +8,7 @@
 #include "stdiolink/driver/meta_builder.h"
 #include "stdiolink/driver/meta_command_handler.h"
 #include "stdiolink/driver/stdio_responder.h"
+#include "stdiolink/guard/force_fast_exit.h"
 
 using namespace stdiolink;
 using namespace stdiolink::meta;
@@ -74,7 +75,7 @@ public:
         if (cmd == "delayed_exit") {
             const int delayMs = delayFrom(obj);
             QTimer::singleShot(delayMs, qApp, []() {
-                std::exit(0);
+                stdiolink::forceFastExit(0);
             });
             return;
         }

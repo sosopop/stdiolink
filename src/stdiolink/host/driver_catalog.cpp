@@ -76,8 +76,12 @@ QString DriverScanner::findExecutableInDirectory(const QString& dirPath) {
     QStringList exeFilters;
     exeFilters << PlatformUtils::executableFilter();
     const QStringList exeFiles = dir.entryList(exeFilters, QDir::Files | QDir::Executable);
+    const QString executableSuffix = PlatformUtils::executableSuffix();
     for (const QString& file : exeFiles) {
-        const QString stem = QFileInfo(file).completeBaseName();
+        QString stem = file;
+        if (!executableSuffix.isEmpty() && stem.endsWith(executableSuffix, Qt::CaseInsensitive)) {
+            stem.chop(executableSuffix.size());
+        }
         if (PlatformUtils::isDriverExecutableName(stem)) {
             return dir.absoluteFilePath(file);
         }

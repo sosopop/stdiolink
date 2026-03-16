@@ -22,6 +22,7 @@ Host code -> `Driver::start()` -> `QProcess` 启动 Driver -> `request()` 发送
 - `Task.tryNext()` / `waitNext()` 在 Driver 早退场景下应产出 terminal `error` message，而不是静默返回空。
 - `Task` 不是简单 future；它需要保留中间 `event`。
 - 改 `Driver` 生命周期时要检查 JS 绑定，因为 Service 底层复用 Host 能力。
+- Driver 可执行名判断要按“仅去掉平台后缀后匹配 `stdio.drv.<name>`”处理；不要依赖 `QFileInfo::completeBaseName()`，否则 Linux 下多点号文件名会被误判。
 
 ## Tests
 

@@ -12,6 +12,26 @@ protected:
         m_catalog.clear();
     }
 
+    QString executableSuffix() const {
+#ifdef Q_OS_WIN
+        return ".exe";
+#else
+        return "";
+#endif
+    }
+
+    QString createExecutable(const QString& dir, const QString& fileName) {
+        QDir().mkpath(dir);
+        const QString path = dir + "/" + fileName + executableSuffix();
+        QFile exe(path);
+        EXPECT_TRUE(exe.open(QIODevice::WriteOnly));
+        exe.close();
+#ifndef Q_OS_WIN
+        EXPECT_TRUE(exe.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner));
+#endif
+        return path;
+    }
+
     DriverScanner m_scanner;
     DriverCatalog m_catalog;
 };
@@ -113,6 +133,28 @@ TEST_F(DriverCatalogTest, ScanDirectoryWithMeta) {
     auto config = m_catalog.getConfig("scanner");
     EXPECT_TRUE(config.meta != nullptr);
     EXPECT_EQ(config.meta->info.name, "Scanner");
+}
+
+TEST_F(DriverCatalogTest, ScanDirectoryFindsExecutableWithDotsInName) {
+    QTemporaryDir tempDir;
+    ASSERT_TRUE(tempDir.isValid());
+
+    const QString driverDir = tempDir.path() + "/driver_with_dots";
+    QDir().mkpath(driverDir);
+
+    QFile metaFile(driverDir + "/driver.meta.json");
+    ASSERT_TRUE(metaFile.open(QIODevice::WriteOnly));
+    metaFile.write(R"({
+        "schemaVersion": "1.0",
+        "info": {"id": "driver.with.dots", "name": "Driver With Dots", "version": "1.0.0"}
+    })");
+    metaFile.close();
+
+    const QString exePath = createExecutable(driverDir, "stdio.drv.driver_under_test");
+
+    auto scanned = m_scanner.scanDirectory(tempDir.path());
+    ASSERT_TRUE(scanned.contains("driver.with.dots"));
+    EXPECT_EQ(scanned.value("driver.with.dots").program, exePath);
 }
 
 TEST_F(DriverCatalogTest, ScanStats) {

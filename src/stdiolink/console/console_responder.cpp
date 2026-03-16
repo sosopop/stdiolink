@@ -4,6 +4,22 @@
 
 namespace stdiolink {
 
+namespace {
+
+constexpr int kPortableProcessErrorExitCode = 3;
+
+int normalizeExitCode(int code) {
+    if (code == 0) {
+        return 1;
+    }
+    if (code > 255) {
+        return kPortableProcessErrorExitCode;
+    }
+    return code;
+}
+
+} // namespace
+
 void ConsoleResponder::event(int code, const QJsonValue& payload) {
     writeToStdout("event", code, payload);
 }
@@ -22,7 +38,7 @@ void ConsoleResponder::done(int code, const QJsonValue& payload) {
 }
 
 void ConsoleResponder::error(int code, const QJsonValue& payload) {
-    m_exitCode = code != 0 ? code : 1;
+    m_exitCode = normalizeExitCode(code);
     m_hasResult = true;
     writeToStdout("error", code, payload);
 }
