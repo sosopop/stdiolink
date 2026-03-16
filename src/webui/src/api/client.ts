@@ -9,9 +9,15 @@ const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ error?: string }>) => {
+  (error: AxiosError<{ error?: string | { code?: string; message?: string } }>) => {
+    const payloadError = error.response?.data?.error;
+    const normalizedError =
+      typeof payloadError === 'string'
+        ? payloadError
+        : payloadError?.message || error.message || 'Request failed';
+
     const apiError: ApiError = {
-      error: error.response?.data?.error || error.message || 'Request failed',
+      error: normalizedError,
       status: error.response?.status || 0,
     };
     return Promise.reject(apiError);

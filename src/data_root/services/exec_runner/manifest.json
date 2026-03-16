@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "exec_runner",
+  "name": "通用进程执行服务",
+  "version": "1.0.0",
+  "description": "启动任意外部进程并实时输出日志"
+}

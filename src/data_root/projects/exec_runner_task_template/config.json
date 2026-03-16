@@ -1,0 +1,12 @@
+{
+  "id": "exec_runner_task_template",
+  "name": "exec_runner 短任务模板",
+  "serviceId": "exec_runner",
+  "enabled": false,
+  "schedule": {
+    "type": "fixed_rate",
+    "intervalMs": 60000,
+    "maxConcurrent": 1,
+    "runTimeoutMs": 30000
+  }
+}

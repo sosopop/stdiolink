@@ -395,3 +395,44 @@ set_target_properties(test_console_meta_driver PROPERTIES
 set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS test_console_meta_driver)
 
 add_dependencies(stdiolink_tests test_console_meta_driver)
+
+# exec_runner_service_tests (M104 exec_runner Service 集成测试)
+add_executable(exec_runner_service_tests
+    test_main.cpp
+    test_exec_runner_service.cpp
+)
+
+target_include_directories(exec_runner_service_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_service
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server
+)
+
+target_link_libraries(exec_runner_service_tests PRIVATE
+    stdiolink
+    GTest::gtest
+    Qt6::Core
+    Qt6::Test
+)
+
+set_target_properties(exec_runner_service_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
+)
+set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS exec_runner_service_tests)
+
+add_test(NAME exec_runner_service_tests
+    COMMAND "${_stdiolink_tests_runtime_dir}/bin/exec_runner_service_tests${CMAKE_EXECUTABLE_SUFFIX}"
+    WORKING_DIRECTORY "${_stdiolink_tests_runtime_dir}/bin"
+)
+set_tests_properties(exec_runner_service_tests PROPERTIES
+    DEPENDS assemble_runtime
+)
+
+target_compile_definitions(exec_runner_service_tests PRIVATE STDIOLINK_TESTING)
+
+if(TARGET stdiolink_service)
+    add_dependencies(exec_runner_service_tests stdiolink_service)
+endif()
+if(TARGET test_process_async_stub)
+    add_dependencies(exec_runner_service_tests test_process_async_stub)
+endif()

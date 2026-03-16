@@ -1,0 +1,7 @@
+{
+  "program": "your_long_running_program",
+  "args": ["--serve"],
+  "success_exit_codes": [0],
+  "log_stdout": true,
+  "log_stderr": true
+}

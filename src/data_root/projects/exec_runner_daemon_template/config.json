@@ -1,0 +1,12 @@
+{
+  "id": "exec_runner_daemon_template",
+  "name": "exec_runner 常驻任务模板",
+  "serviceId": "exec_runner",
+  "enabled": false,
+  "schedule": {
+    "type": "daemon",
+    "restartDelayMs": 5000,
+    "maxConsecutiveFailures": 3,
+    "runTimeoutMs": 0
+  }
+}

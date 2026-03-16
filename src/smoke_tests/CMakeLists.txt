@@ -164,3 +164,18 @@ set_tests_properties(
         LABELS "smoke;m103"
         TIMEOUT 120
 )
+
+add_test(
+    NAME smoke_m104_exec_runner
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m104_exec_runner
+)
+
+set_tests_properties(
+    smoke_m104_exec_runner
+    PROPERTIES
+        LABELS "smoke;m104"
+        TIMEOUT 120
+)

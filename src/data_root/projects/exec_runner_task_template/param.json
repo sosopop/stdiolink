@@ -1,0 +1,7 @@
+{
+  "program": "your_program",
+  "args": ["--do-work"],
+  "success_exit_codes": [0],
+  "log_stdout": true,
+  "log_stderr": true
+}

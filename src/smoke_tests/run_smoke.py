@@ -22,6 +22,7 @@ PLAN_SCRIPTS = {
     "m96_3dvision_ws": SCRIPT_DIR / "m96_3dvision_ws.py",
     "m97_plc_crane_sim": SCRIPT_DIR / "m97_plc_crane_sim_smoke.py",
     "m103_3d_scan_robot": SCRIPT_DIR / "m103_3d_scan_robot.py",
+    "m104_exec_runner": SCRIPT_DIR / "m104_exec_runner.py",
 }
 LEGACY_MILESTONE_ALIASES = {
     "102": "m102_webui_i18n_alignment",
@@ -35,6 +36,7 @@ LEGACY_MILESTONE_ALIASES = {
     "96": "m96_3dvision_ws",
     "97": "m97_plc_crane_sim",
     "103": "m103_3d_scan_robot",
+    "104": "m104_exec_runner",
 }
 
 

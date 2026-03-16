@@ -1,0 +1,47 @@
+{
+  "program": {
+    "type": "string",
+    "required": true,
+    "description": "要启动的可执行文件路径或名称",
+    "constraints": {
+      "minLength": 1
+    }
+  },
+  "args": {
+    "type": "array",
+    "default": [],
+    "description": "命令行参数数组，按顺序透传给目标进程",
+    "items": {
+      "type": "string"
+    }
+  },
+  "cwd": {
+    "type": "string",
+    "default": "",
+    "description": "工作目录；空字符串表示沿用 Service 当前工作目录"
+  },
+  "env": {
+    "type": "object",
+    "default": {},
+    "description": "附加环境变量；与系统环境合并",
+    "additionalProperties": true
+  },
+  "success_exit_codes": {
+    "type": "array",
+    "default": [0],
+    "description": "视为成功的退出码列表",
+    "items": {
+      "type": "int"
+    }
+  },
+  "log_stdout": {
+    "type": "bool",
+    "default": true,
+    "description": "是否将 stdout chunk 实时输出到日志"
+  },
+  "log_stderr": {
+    "type": "bool",
+    "default": true,
+    "description": "是否将 stderr chunk 实时输出到日志"
+  }
+}

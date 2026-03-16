@@ -50,3 +50,15 @@
 - `../04-service/service-runtime.md`
 - `../04-service/service-config-and-driver.md`
 - `../05-server/server-lifecycle.md`
+
+## exec_runner Service
+
+`exec_runner` 是通用进程执行 Service（M104），只使用 `spawn()` 启动任意外部进程。
+
+- 三件套位置：`src/data_root/services/exec_runner/`
+- 配置字段：`program`（必填）、`args`、`cwd`、`env`、`success_exit_codes`、`log_stdout`、`log_stderr`
+- 不含 `mode`、`command`、`timeout_ms`、`input` 字段
+- 调度超时统一使用 `Project.schedule.runTimeoutMs`
+- Project 模板：`exec_runner_task_template`（短任务）、`exec_runner_daemon_template`（常驻）
+- 集成测试：`src/tests/test_exec_runner_service.cpp`
+- Smoke：`src/smoke_tests/m104_exec_runner.py`

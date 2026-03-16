@@ -69,6 +69,26 @@ describe('apiClient', () => {
     });
   });
 
+  it('error interceptor flattens object payload errors to message text', async () => {
+    await import('../client');
+    const instance = getMockInstance();
+    const [, errorHandler] = instance.interceptors.response.use.mock.calls[0];
+
+    const axiosError = {
+      response: {
+        data: { error: { code: 'E_CONN', message: 'Connection refused' } },
+        status: 503,
+      },
+      message: 'Request failed',
+      isAxiosError: true,
+    } as unknown as AxiosError;
+
+    await expect(errorHandler(axiosError)).rejects.toEqual({
+      error: 'Connection refused',
+      status: 503,
+    });
+  });
+
   it('error interceptor handles missing response', async () => {
     await import('../client');
     const instance = getMockInstance();
