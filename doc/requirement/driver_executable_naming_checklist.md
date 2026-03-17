@@ -98,7 +98,7 @@
 
 ### 4.3 发布脚本
 
-- [ ] 修改 `tools/publish_release.ps1`
+- [ ] 修改 `tools/release.py`
   - `_driver$` 和 `driver_` 的匹配模式改为识别 `stdio.drv.` 前缀，否则打包会漏掉所有 driver
 
 ## 5. 测试改造（必须）

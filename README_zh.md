@@ -258,7 +258,7 @@ stdiolink/
 │   ├── manual/               # 完整用户手册
 │   └── http_api.md           # REST API 参考
 ├── tools/                    # 构建与发布脚本
-├── build.bat / build.sh      # 平台构建脚本
+├── build.bat / build.sh      # tools/release.py build 的兼容包装脚本
 └── CMakeLists.txt
 ```
 
@@ -277,11 +277,18 @@ stdiolink/
 ## 发布打包
 
 ```powershell
-# Windows
-.\tools\publish_release.ps1 --name stdiolink_v1.0
+# 仅编译
+python tools/release.py build --config release
 
-# macOS / Linux
-./tools/publish_release.sh --name stdiolink_v1.0
+# 编译并测试
+python tools/release.py test --config release
+
+# 编译、测试并发布
+python tools/release.py publish --name stdiolink_v1.0
+
+# 便捷封装脚本
+tools/release.sh publish --name stdiolink_v1.0
+tools\release.bat publish --name stdiolink_v1.0
 ```
 
 发布包包含：

@@ -258,7 +258,7 @@ stdiolink/
 │   ├── manual/               # Complete user manual
 │   └── http_api.md           # REST API reference
 ├── tools/                    # Build & release scripts
-├── build.bat / build.sh      # Platform build scripts
+├── build.bat / build.sh      # Compatibility wrappers for tools/release.py build
 └── CMakeLists.txt
 ```
 
@@ -277,11 +277,18 @@ stdiolink/
 ## Release Packaging
 
 ```powershell
-# Windows
-.\tools\publish_release.ps1 --name stdiolink_v1.0
+# Build only
+python tools/release.py build --config release
 
-# macOS / Linux
-./tools/publish_release.sh --name stdiolink_v1.0
+# Build and test
+python tools/release.py test --config release
+
+# Build, test, and publish
+python tools/release.py publish --name stdiolink_v1.0
+
+# Convenience wrappers
+tools/release.sh publish --name stdiolink_v1.0
+tools\release.bat publish --name stdiolink_v1.0
 ```
 
 The release package includes:

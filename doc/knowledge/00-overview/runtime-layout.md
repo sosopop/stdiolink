@@ -24,7 +24,7 @@
 ## Modify Entry
 
 - 构建与组装：根目录 `build.bat` / `build.sh`，以及 CMake `assemble_runtime`
-- 发布：`tools/publish_release.ps1` / `tools/publish_release.sh`
+- 发布：`tools/release.py publish`
 - Driver 查找：`src/stdiolink_service/bindings/js_driver_resolve*`
 - Server 启动参数：`src/stdiolink_server/config/server_args.*`
 

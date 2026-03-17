@@ -519,9 +519,11 @@ ctest --test-dir build -L smoke --output-on-failure
 **测试脚本工具**：
 ```bash
 # 选择性运行测试套件
-tools/run_tests.sh                # 全部执行（GTest + Smoke + Vitest + Playwright）
-tools/run_tests.sh --gtest        # 仅 C++ 单元测试
-tools/run_tests.ps1 --vitest --playwright  # 仅 WebUI 测试
+python tools/release.py test                           # 全部执行（GTest + Vitest + Playwright + Smoke）
+python tools/release.py test --gtest                  # 仅 C++ 单元测试
+python tools/release.py test --vitest --playwright    # 仅 WebUI 测试
+tools/release.sh test --vitest --playwright           # Unix 便捷封装
+tools\release.ps1 test --gtest                        # Windows 便捷封装
 ```
 
 **新增功能测试要求**：
@@ -562,18 +564,28 @@ ctest --test-dir build --output-on-failure
 
 ### 7.2 发布打包
 
-使用 `tools/publish_release.ps1` (Windows) 或 `tools/publish_release.sh` (Unix) 创建发布包。
+使用 `tools/release.py publish` 创建发布包。
 
 **基本用法**：
 ```powershell
-# Windows
-.\tools\publish_release.ps1 --name stdiolink_v1.0
+# 创建发布包
+python tools/release.py publish --name stdiolink_v1.0
 
 # 快速打包（跳过测试和 WebUI）
-.\tools\publish_release.ps1 --skip-tests --skip-webui
+python tools/release.py publish --skip-tests --skip-webui
 
 # 自定义构建目录
-.\tools\publish_release.ps1 --build-dir build_release --output-dir release
+python tools/release.py publish --build-dir build_release --output-dir release
+
+# 仅编译
+python tools/release.py build --config release
+
+# 编译后运行测试
+python tools/release.py test --config release
+
+# 平台便捷封装
+.\tools\release.ps1 publish --name stdiolink_v1.0
+.\tools\release.bat test --vitest --playwright
 ```
 
 **发布流程**：
@@ -593,7 +605,7 @@ release/stdiolink_<timestamp>_<git>/
 │   ├── services/           # Service 模板
 │   ├── projects/           # Project 配置
 │   ├── webui/              # WebUI 静态文件
-│   └── config.json         # 默认配置（publish_release.* 生成时默认端口 6200）
+│   └── config.json         # 默认配置（release.py publish 生成时默认端口 6200）
 ├── start.bat / start.sh    # 启动脚本
 ├── dev.bat / dev.ps1 / dev.sh  # 开发环境脚本
 └── RELEASE_MANIFEST.txt    # 发布清单
@@ -616,16 +628,16 @@ cd build/runtime_release
 
 访问 WebUI：
 - 直接运行 `build/runtime_release/bin/stdiolink_server` 且未提供 `data_root/config.json` 时，默认是 `http://127.0.0.1:6200`
-- 使用 `tools/publish_release.ps1` / `tools/publish_release.sh` 生成的发布包启动时，包内默认 `config.json` 端口是 `6200`
+- 使用 `tools/release.py publish` 生成的发布包启动时，包内默认 `config.json` 端口是 `6200`
 
 说明：
 - `build/runtime_*` 是组装后的开发运行时目录，默认直接运行 `bin/stdiolink_server`。
-- `start.bat` / `start.sh` 是 `tools/publish_release.*` 生成的发布包启动脚本，不在 `build/runtime_*` 中默认提供。
-- 发布包若未自带 `data_root/config.json`，`tools/publish_release.*` 会生成一个默认配置，端口为 `6200`。
+- `start.bat` / `start.sh` 是 `tools/release.py publish` 生成的发布包启动脚本，不在 `build/runtime_*` 中默认提供。
+- 发布包若未自带 `data_root/config.json`，`tools/release.py publish` 会生成一个默认配置，端口为 `6200`。
 
 ### 7.4 开发环境
 
-Windows 的 `dev.bat` / `dev.ps1` 与 Unix 的 `dev.sh` 由 `tools/publish_release.ps1` / `tools/publish_release.sh` 在发布包根目录生成，不会出现在 `build/runtime_*`。如果你已经生成发布包，可这样使用：
+Windows 的 `dev.bat` / `dev.ps1` 与 Unix 的 `dev.sh` 由 `tools/release.py publish` 在发布包根目录生成，不会出现在 `build/runtime_*`。如果你已经生成发布包，可这样使用：
 
 ```bash
 # Windows (PowerShell)
@@ -858,9 +870,9 @@ docs: 更新开发指南
 ---
 
 **快速链接**：
-- 构建：`build.bat Release` / `./build.sh Release`
+- 构建：`build.bat Release` / `./build.sh Release`（兼容包装到 `tools/release.py build`）
 - 启动：`cd build/runtime_release && ./bin/stdiolink_server --data-root=./data_root --webui-dir=./data_root/webui`
 - 测试：`ctest --test-dir build --output-on-failure`
 - WebUI（build/runtime_release 直跑）：`http://127.0.0.1:6200`
-- WebUI（publish_release 生成的发布包默认）：`http://127.0.0.1:6200`
+- WebUI（release.py publish 生成的发布包默认）：`http://127.0.0.1:6200`
 

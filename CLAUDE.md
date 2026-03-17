@@ -21,7 +21,7 @@
 - 构建：`build.bat [Release]` / `./build.sh [Release]`
 - 测试：`ctest --test-dir build --output-on-failure`
 - Smoke：`python src/smoke_tests/run_smoke.py --plan all`
-- 发布：`tools/publish_release.ps1` / `tools/publish_release.sh`
+- 构建/测试/发布：`python tools/release.py <build|test|publish>`
 
 ## 开发硬约束
 

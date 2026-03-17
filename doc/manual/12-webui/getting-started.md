@@ -79,7 +79,7 @@ stdiolink_server --data-root=<data_root>
 - 若 `webuiDir` 是相对路径，则相对于 `data_root` 解析
 - `/api/*` 路径始终保留给后端 API，不会被静态资源覆盖
 
-Windows 发布场景可直接使用 `tools/publish_release.ps1`，默认会构建并打包 WebUI（可通过 `--skip-webui` 关闭）。
+发布场景可直接使用 `tools/release.py publish`，默认会构建并打包 WebUI（可通过 `--skip-webui` 关闭）。
 
 ## 测试
 
