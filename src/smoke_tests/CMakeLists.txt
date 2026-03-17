@@ -179,3 +179,18 @@ set_tests_properties(
         LABELS "smoke;m104"
         TIMEOUT 120
 )
+
+add_test(
+    NAME smoke_m105_pqw_analog_output
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m105_pqw_analog_output
+)
+
+set_tests_properties(
+    smoke_m105_pqw_analog_output
+    PROPERTIES
+        LABELS "smoke;m105"
+        TIMEOUT 120
+)

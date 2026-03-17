@@ -74,6 +74,7 @@ set(TEST_SOURCES
     test_modbusrtu_serial.cpp
     test_modbustcp_client.cpp
     test_limaco_radar.cpp
+    test_pqw_analog_output.cpp
     test_plc_crane.cpp
     test_plc_crane_sim.cpp
     test_driver_resolve.cpp
@@ -150,6 +151,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial_server/modbus_rtu_serial_server.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_pqw_analog_output/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_transport.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_decode.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_1_radar/handler.cpp

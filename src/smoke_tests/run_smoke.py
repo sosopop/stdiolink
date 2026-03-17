@@ -23,6 +23,7 @@ PLAN_SCRIPTS = {
     "m97_plc_crane_sim": SCRIPT_DIR / "m97_plc_crane_sim_smoke.py",
     "m103_3d_scan_robot": SCRIPT_DIR / "m103_3d_scan_robot.py",
     "m104_exec_runner": SCRIPT_DIR / "m104_exec_runner.py",
+    "m105_pqw_analog_output": SCRIPT_DIR / "m105_pqw_analog_output.py",
 }
 LEGACY_MILESTONE_ALIASES = {
     "102": "m102_webui_i18n_alignment",
@@ -37,6 +38,7 @@ LEGACY_MILESTONE_ALIASES = {
     "97": "m97_plc_crane_sim",
     "103": "m103_3d_scan_robot",
     "104": "m104_exec_runner",
+    "105": "m105_pqw_analog_output",
 }
 
 

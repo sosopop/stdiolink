@@ -22,6 +22,7 @@ DRIVERS: dict[str, int] = {
     "stdio.drv.modbusrtu_server": 17,
     "stdio.drv.modbusrtu_serial_server": 17,
     "stdio.drv.3dvision": 43,
+    "stdio.drv.pqw_analog_output": 8,
 }
 
 CONSOLE_EXCEPTION_ALLOWLIST: set[tuple[str, str]] = set()
@@ -266,4 +267,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

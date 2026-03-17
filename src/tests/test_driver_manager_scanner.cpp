@@ -53,6 +53,7 @@ protected:
         ASSERT_TRUE(QFileInfo::exists(metaDriverPath));
         ASSERT_TRUE(QFileInfo::exists(failDriverPath));
         scanRobotDriverPath = testBinaryPath("stdio.drv.3d_scan_robot");
+        pqwAnalogOutputDriverPath = testBinaryPath("stdio.drv.pqw_analog_output");
     }
 
     QString createDriverDirWithBinary(const QString& name, const QString& sourceBinary) {
@@ -68,6 +69,7 @@ protected:
     QString metaDriverPath;
     QString failDriverPath;
     QString scanRobotDriverPath;
+    QString pqwAnalogOutputDriverPath;
 };
 
 TEST_F(DriverManagerScannerTest, NonExistentDirectory) {
@@ -224,4 +226,38 @@ TEST_F(DriverManagerScannerTest, ExportMetaFor3DScanRobotDriver) {
     EXPECT_FALSE(commandNames.contains("get_frame"));
     EXPECT_FALSE(commandNames.contains("insert_test"));
     EXPECT_FALSE(commandNames.contains("wait"));
+}
+
+TEST_F(DriverManagerScannerTest, ExportMetaForPqwAnalogOutputDriver) {
+    if (!QFileInfo::exists(pqwAnalogOutputDriverPath)) {
+        GTEST_SKIP() << "stdio.drv.pqw_analog_output binary is not available in the test output directory";
+    }
+
+    const QString dir = createDriverDirWithBinary("pqw-analog-output", pqwAnalogOutputDriverPath);
+
+    DriverManagerScanner scanner;
+    DriverManagerScanner::ScanStats stats;
+    const auto result = scanner.scan(driversDir, false, &stats);
+
+    ASSERT_TRUE(QFileInfo::exists(dir + "/driver.meta.json"));
+    EXPECT_EQ(stats.scanned, 1);
+    EXPECT_EQ(stats.updated, 1);
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_TRUE(result.contains("stdio.drv.pqw_analog_output"));
+
+    QFile metaFile(dir + "/driver.meta.json");
+    ASSERT_TRUE(metaFile.open(QIODevice::ReadOnly));
+    const auto metaDoc = QJsonDocument::fromJson(metaFile.readAll());
+    ASSERT_TRUE(metaDoc.isObject());
+    const auto commands = metaDoc.object().value("commands").toArray();
+
+    QStringList commandNames;
+    for (const auto& value : commands) {
+        commandNames.append(value.toObject().value("name").toString());
+    }
+
+    EXPECT_TRUE(commandNames.contains("get_config"));
+    EXPECT_TRUE(commandNames.contains("write_output"));
+    EXPECT_TRUE(commandNames.contains("write_outputs"));
+    EXPECT_TRUE(commandNames.contains("clear_outputs"));
 }
