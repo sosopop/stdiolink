@@ -9,6 +9,7 @@
 - 优先把 Driver 当成“有元数据的命令集合”而不是只会接 JSON 的黑盒进程。
 - 元数据越完整，Server 扫描、WebUI DriverLab、表单生成、文档导出越稳定。
 - 命令别名如果要参与参数校验、CLI help、DriverLab 表单和默认值填充，必须进入 meta；只在 handler 里手工改名不够。
+- 无参命令导出时允许省略 `params` 字段；消费方必须按空数组处理，不能假设字段总是存在。
 
 ## Build Path
 

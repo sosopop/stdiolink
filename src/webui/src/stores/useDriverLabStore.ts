@@ -41,7 +41,7 @@ function normalizePayload(msg: WsMessage): unknown {
 function getCommandDefaults(command: CommandMeta | undefined): Record<string, unknown> {
   if (!command) return {};
 
-  return command.params.reduce<Record<string, unknown>>((acc, field) => {
+  return (command.params ?? []).reduce<Record<string, unknown>>((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(field, 'default')) {
       acc[field.name] = field.default;
     }
@@ -55,7 +55,7 @@ function buildCommandParams(
 ): Record<string, unknown> {
   if (!command) return {};
 
-  return command.params.reduce<Record<string, unknown>>((acc, field) => {
+  return (command.params ?? []).reduce<Record<string, unknown>>((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(executedFieldValues, field.name)) {
       acc[field.name] = executedFieldValues[field.name];
       return acc;

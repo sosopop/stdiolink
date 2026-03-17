@@ -287,6 +287,22 @@ describe('useDriverLabStore', () => {
     expect(state.commandParams).toEqual({ timeout_ms: 2000, verbose: false });
   });
 
+  it('selectCommand supports no-param commands when params field is omitted', () => {
+    useDriverLabStore.setState({
+      commands: [
+        {
+          name: 'status',
+          returns: { type: 'object' },
+        },
+      ],
+    });
+
+    expect(() => useDriverLabStore.getState().selectCommand('status')).not.toThrow();
+    const state = useDriverLabStore.getState();
+    expect(state.selectedCommand).toBe('status');
+    expect(state.commandParams).toEqual({});
+  });
+
   it('selectCommand ignores draft values that were never executed', () => {
     useDriverLabStore.setState({
       commands: testCommands,

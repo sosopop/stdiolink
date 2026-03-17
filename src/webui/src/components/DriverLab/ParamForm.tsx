@@ -7,7 +7,7 @@ import { Typography } from 'antd';
 import styles from './ParamForm.module.css';
 
 interface ParamFormProps {
-  params: FieldMeta[];
+  params?: FieldMeta[];
   values: Record<string, unknown>;
   onChange: (values: Record<string, unknown>) => void;
 }
