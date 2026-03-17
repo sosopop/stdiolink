@@ -15,6 +15,7 @@
 - 入口：`src/webui/src/api/driverlab-ws.ts`
 - 后端：`src/stdiolink_server/http/driverlab_ws_*`
 - 依赖：Driver 元数据、命令表单、执行结果流
+- 消费 Driver 元数据时，命令 `params` 可能在无参命令上被省略；DriverLab/详情页都要把缺失字段视为空数组。
 - 指令面板示例区默认只展示 `mode=stdio` 的示例；界面不显示 mode 标签
 - 示例 JSON 默认保持单行展示；超长内容只允许在容器内横向滚动，不应撑宽整个面板
 - 示例区提供单独的“自动换行”切换按钮，只影响当前示例卡片

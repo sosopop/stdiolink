@@ -4,10 +4,10 @@ import { Table, Empty } from 'antd';
 import type { FieldMeta } from '@/types/service';
 
 interface ParamsTableProps {
-  params: FieldMeta[];
+  params?: FieldMeta[];
 }
 
-function flattenParams(params: FieldMeta[], prefix = '', depth = 0): Array<FieldMeta & { fullPath: string; depth: number }> {
+function flattenParams(params: FieldMeta[] = [], prefix = '', depth = 0): Array<FieldMeta & { fullPath: string; depth: number }> {
   if (depth > 5) return [];
   const result: Array<FieldMeta & { fullPath: string; depth: number }> = [];
   for (const p of params) {

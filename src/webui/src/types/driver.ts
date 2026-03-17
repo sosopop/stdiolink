@@ -64,7 +64,7 @@ export interface CommandMeta {
   description?: string;
   title?: string;
   summary?: string;
-  params: FieldMeta[];
+  params?: FieldMeta[];
   returns: ReturnMeta;
   events?: EventMeta[];
   errors?: Record<string, unknown>[];

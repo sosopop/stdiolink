@@ -891,68 +891,68 @@ void PqwAnalogOutputHandler::buildMeta() {
     CommandBuilder readOutputs("read_outputs");
     addConnectionParams(readOutputs);
     readOutputs
-        .description("读取输出通道当前寄存器值")
+        .description("读取输出通道当前寄存器值。返回值同时包含原始寄存器整数和换算后的工程量值")
         .param(FieldBuilder("start_channel", FieldType::Int)
             .defaultValue(1)
             .range(1, 18)
-            .description("起始通道"))
+            .description("起始通道号，范围 1-18"))
         .param(FieldBuilder("count", FieldType::Int)
             .defaultValue(18)
             .range(1, 18)
-            .description("读取通道数量"))
+            .description("连续读取的通道数量。实际读取范围为 start_channel 到 start_channel + count - 1"))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("读取结果")
-            .addField(FieldBuilder("start_channel", FieldType::Int).description("起始通道"))
-            .addField(FieldBuilder("count", FieldType::Int).description("读取数量"))
+            .addField(FieldBuilder("start_channel", FieldType::Int).description("本次返回结果中的起始通道号"))
+            .addField(FieldBuilder("count", FieldType::Int).description("本次实际返回的通道数量"))
             .addField(FieldBuilder("outputs", FieldType::Array)
-                .description("每个通道的原始寄存器值和工程量值")
+                .description("每个通道的读数。raw_value 是寄存器整数，value 是 raw_value / 1000.0 后的工程量"))
                 .items(FieldBuilder("output", FieldType::Object)
-                    .addField(FieldBuilder("channel", FieldType::Int).description("通道号"))
-                    .addField(FieldBuilder("raw_value", FieldType::Int).description("寄存器原始值"))
+                    .addField(FieldBuilder("channel", FieldType::Int).description("通道号，范围 1-18"))
+                    .addField(FieldBuilder("raw_value", FieldType::Int).description("寄存器原始整数值，设备内部实际存储的数值"))
                     .addField(FieldBuilder("value", FieldType::Double)
-                        .description("工程量值，按 3 位小数解释，单位取决于模块型号"))
-                    .requiredKeys(QStringList{"channel", "raw_value", "value"}))));
+                        .description("工程量值，按 3 位小数解释，即 value = raw_value / 1000.0。单位由模块型号决定，常见为 V 或 mA"))
+                    .requiredKeys(QStringList{"channel", "raw_value", "value"})));
 
     CommandBuilder writeOutput("write_output");
     addConnectionParams(writeOutput);
     writeOutput
-        .description("写单个输出通道寄存器")
+        .description("写单个输出通道寄存器。驱动会把工程量值乘以 1000 并四舍五入后写入寄存器")
         .param(FieldBuilder("channel", FieldType::Int)
             .required()
             .range(1, 18)
-            .description("通道号"))
+            .description("通道号，范围 1-18"))
         .param(FieldBuilder("value", FieldType::Double)
             .required()
-            .description("工程量值，按 3 位小数编码为寄存器值"))
+            .description("工程量值。编码规则为 raw_value = round(value * 1000)。例如 2.500 会写成 2500。单位由模块型号决定，常见为 V 或 mA"))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("写入结果")
-            .addField(FieldBuilder("channel", FieldType::Int).description("通道号"))
-            .addField(FieldBuilder("value", FieldType::Double).description("写入的工程量值"))
-            .addField(FieldBuilder("raw_value", FieldType::Int).description("写入的寄存器原始值")));
+            .addField(FieldBuilder("channel", FieldType::Int).description("已写入的通道号"))
+            .addField(FieldBuilder("value", FieldType::Double).description("用户传入的工程量值"))
+            .addField(FieldBuilder("raw_value", FieldType::Int).description("根据 value 计算出的寄存器整数值，即 round(value * 1000)")));
 
     CommandBuilder writeOutputs("write_outputs");
     addConnectionParams(writeOutputs);
     writeOutputs
-        .description("连续批量写多个输出通道寄存器")
+        .description("连续批量写多个输出通道寄存器。每个值都按 raw_value = round(value * 1000) 编码")
         .param(FieldBuilder("start_channel", FieldType::Int)
             .defaultValue(1)
             .range(1, 18)
-            .description("起始通道"))
+            .description("起始通道号，范围 1-18"))
         .param(FieldBuilder("values", FieldType::Array)
             .required()
-            .description("连续通道的工程量值数组")
-            .items(FieldBuilder("value", FieldType::Double).description("单个通道工程量值"))
+            .description("连续通道的工程量值数组。values[0] 对应 start_channel，values[1] 对应 start_channel + 1，依次类推")
+            .items(FieldBuilder("value", FieldType::Double).description("单个通道工程量值，编码规则为 round(value * 1000)，单位由模块型号决定，常见为 V 或 mA"))
             .minItems(1)
             .maxItems(18))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("写入结果")
-            .addField(FieldBuilder("start_channel", FieldType::Int).description("起始通道"))
-            .addField(FieldBuilder("count", FieldType::Int).description("写入数量"))
+            .addField(FieldBuilder("start_channel", FieldType::Int).description("本次批量写入的起始通道号"))
+            .addField(FieldBuilder("count", FieldType::Int).description("本次批量写入的通道数量"))
             .addField(FieldBuilder("values", FieldType::Array)
-                .description("写入的工程量值数组")
+                .description("用户传入的工程量值数组")
                 .items(FieldBuilder("value", FieldType::Double)))
             .addField(FieldBuilder("raw_values", FieldType::Array)
-                .description("写入的寄存器原始值数组")
+                .description("与 values 一一对应的寄存器整数值数组，每项都按 round(value * 1000) 计算")
                 .items(FieldBuilder("raw_value", FieldType::Int))));
 
     CommandBuilder clearOutputs("clear_outputs");
