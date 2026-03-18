@@ -20,7 +20,7 @@ from typing import Iterable, Sequence
 PORTS_TO_CHECK = (6200, 3000)
 TEST_SUITES = ("gtest", "vitest", "playwright", "smoke")
 WINDOWS_RELEASE_SCRIPTS = ("start.bat", "start.ps1", "dev.bat", "dev.ps1")
-UNIX_RELEASE_SCRIPTS = ("start.sh", "dev.sh")
+UNIX_RELEASE_SCRIPTS = ("start.sh", "dev.sh", "install_service.sh", "uninstall_service.sh")
 DEFAULT_INSTALL_DIR = "install"
 DEFAULT_WINDOWS_TRIPLET = "x64-windows"
 
@@ -787,6 +787,10 @@ def package_release(args: argparse.Namespace) -> None:
     else:
         log("  ./start.sh              (bash)")
         log("  ./start.sh --port=6200  (custom port)")
+        log("")
+        log("To install as a Linux service (systemd):")
+        log("  sudo ./install_service.sh")
+        log("  sudo ./uninstall_service.sh")
         log("")
         log("For development (with driver aliases):")
         log("  ./dev.sh                (interactive bash with configured environment)")
