@@ -312,59 +312,59 @@ FieldBuilder limacoConnectionParam(const QString& name) {
         return FieldBuilder("transport", FieldType::Enum)
             .defaultValue("serial")
             .enumValues(QStringList{"serial", "tcp"})
-            .description("连接方式: serial 或 tcp");
+            .description("连接方式：serial=RS485 串口直连 / tcp=Modbus RTU Over TCP 网关");
     }
     if (name == "unit_id") {
         return FieldBuilder("unit_id", FieldType::Int)
             .defaultValue(1)
             .range(1, 247)
-            .description("Modbus 从站地址");
+            .description("雷达 Modbus 从站地址（1-247）");
     }
     if (name == "timeout") {
         return FieldBuilder("timeout", FieldType::Int)
             .defaultValue(2000)
             .range(1, 30000)
             .unit("ms")
-            .description("单次 Modbus 读写请求的响应超时时间");
+            .description("单次 Modbus 读写超时（毫秒），默认 2000");
     }
     if (name == "host") {
         return FieldBuilder("host", FieldType::String)
             .defaultValue("127.0.0.1")
-            .description("transport=tcp 时的主机地址");
+            .description("transport=tcp 时的网关/转换器 IP 地址");
     }
     if (name == "port") {
         return FieldBuilder("port", FieldType::Int)
             .defaultValue(502)
             .range(1, 65535)
-            .description("transport=tcp 时的端口");
+            .description("transport=tcp 时的端口号，默认 502");
     }
     if (name == "port_name") {
         return FieldBuilder("port_name", FieldType::String)
-            .description("transport=serial 时必填，例如 COM3");
+            .description("transport=serial 时必填，RS485 串口名称（如 COM3 或 /dev/ttyUSB0）");
     }
     if (name == "baud_rate") {
         return FieldBuilder("baud_rate", FieldType::Int)
             .defaultValue(9600)
             .enumValues(QStringList{"1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"})
-            .description("transport=serial 时的波特率");
+            .description("transport=serial 时的波特率，需与雷达设置一致，默认 9600");
     }
     if (name == "data_bits") {
         return FieldBuilder("data_bits", FieldType::Int)
             .defaultValue(8)
             .enumValues(QStringList{"5", "6", "7", "8"})
-            .description("transport=serial 时的数据位");
+            .description("transport=serial 时的数据位，默认 8");
     }
     if (name == "stop_bits") {
         return FieldBuilder("stop_bits", FieldType::Enum)
             .defaultValue("1")
             .enumValues(QStringList{"1", "1.5", "2"})
-            .description("transport=serial 时的停止位");
+            .description("transport=serial 时的停止位，默认 1");
     }
 
     return FieldBuilder("parity", FieldType::Enum)
         .defaultValue("even")
         .enumValues(QStringList{"none", "even", "odd"})
-        .description("transport=serial 时的校验位");
+        .description("transport=serial 时的校验位，雷达默认 even（偶校验）");
 }
 
 void addLimacoConnectionParams(CommandBuilder& command) {

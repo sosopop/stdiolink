@@ -100,36 +100,47 @@ void Limaco5RadarHandler::buildMeta() {
     CommandBuilder setDistanceMode("set_distance_mode");
     limaco_driver::addLimacoConnectionParams(setDistanceMode);
     setDistanceMode
-        .description("将五点雷达切换到距离模式")
+        .description("切换五点雷达到距离模式（指令 0x10 写寄存器 0x0F0F），"
+                     "写入后雷达开始输出距离数据")
         .returns(FieldType::Object, "写寄存器结果")
-        .returnField(FieldBuilder("register", FieldType::Int).description("固定为 0x0F0F"))
+        .returnField(FieldBuilder("register", FieldType::Int).description("写入的寄存器地址，固定为 0x0F0F"))
         .returnField(FieldBuilder("written", FieldType::Array)
-            .description("实际写入的寄存器值")
+            .description("实际写入的寄存器值数组")
             .items(FieldBuilder("value", FieldType::Int)));
+    setDistanceMode.example("串口切换到距离模式", QStringList{"stdio", "console"},
+        QJsonObject{{"transport", "serial"}, {"port_name", "COM3"}, {"unit_id", 1}});
 
     CommandBuilder readDistance("read_distance");
     limaco_driver::addLimacoConnectionParams(readDistance);
     readDistance
-        .description("读取利马克五点雷达距离寄存器")
+        .description("读取利马克五点雷达距离（指令 0x03 读寄存器 0x0A5A 起 15 个），"
+                     "返回 5 个测点的距离和信号强度")
         .returns(FieldType::Object, "一次读取返回 5 个测点结果")
         .returnField(FieldBuilder("format", FieldType::Enum)
-            .description("寄存器布局版本: legacy 或 v2")
+            .description("寄存器解析版本：legacy=早期固件 / v2=新版固件")
             .enumValues(QStringList{"legacy", "v2"}))
         .returnField(FieldBuilder("raw_registers", FieldType::Array)
-            .description("读取到的 15 个原始保持寄存器")
+            .description("读取到的 15 个原始保持寄存器值（uint16）")
             .items(FieldBuilder("register", FieldType::Int)))
         .returnField(buildPointsField());
+    readDistance.example("串口读取五点距离", QStringList{"stdio", "console"},
+        QJsonObject{{"transport", "serial"}, {"port_name", "COM3"}, {"unit_id", 1}});
+    readDistance.example("TCP 读取五点距离", QStringList{"stdio", "console"},
+        QJsonObject{{"transport", "tcp"}, {"host", "127.0.0.1"}, {"port", 502}, {"unit_id", 1}});
 
     m_meta = DriverMetaBuilder()
         .schemaVersion("1.0")
         .info("stdio.drv.limaco_5_radar", QString::fromUtf8("利马克五点雷达"), "1.0.0",
-              QString::fromUtf8("基于通用 Modbus RTU 传输的利马克五点雷达驱动"))
+              QString::fromUtf8("利马克五点雷达驱动（Modbus RTU 协议），"
+                               "支持 RS485 串口和 TCP 网关两种连接方式，"
+                               "可切换距离模式并读取 5 个测点数据"))
         .vendor("stdiolink")
         .command(CommandBuilder("status")
-            .description("获取驱动状态")
+            .description("获取驱动存活状态，固定返回 ready")
             .returns(FieldType::Object, "状态信息")
             .returnField(FieldBuilder("status", FieldType::String).description("固定返回 ready")))
         .command(setDistanceMode)
         .command(readDistance)
         .build();
 }
+

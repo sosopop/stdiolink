@@ -69,25 +69,31 @@ void Limaco1RadarHandler::buildMeta() {
     CommandBuilder readDistance("read_distance");
     limaco_driver::addLimacoConnectionParams(readDistance);
     readDistance
-        .description("读取利马克单点雷达距离寄存器")
+        .description("读取利马克单点雷达距离（指令 0x03 读寄存器 0x0000），返回解码后的距离值和状态")
         .returns(FieldType::Object, "单次距离读取结果")
         .returnField(buildReadDistanceReturnPointField())
         .returnField(FieldBuilder("distance_m", FieldType::Double)
             .description("按设备协议解码后的距离值，单位米"))
         .returnField(FieldBuilder("status_register", FieldType::Int)
-            .description("原始状态寄存器值"))
+            .description("原始状态寄存器值（<50 表示信号有效）"))
         .returnField(FieldBuilder("distance_valid", FieldType::Bool)
-            .description("状态寄存器小于 50 时为 true"));
+            .description("距离是否有效：status_register < 50 时为 true"));
+    readDistance.example("串口读取单点距离", QStringList{"stdio", "console"},
+        QJsonObject{{"transport", "serial"}, {"port_name", "COM3"}, {"unit_id", 1}});
+    readDistance.example("TCP 读取单点距离", QStringList{"stdio", "console"},
+        QJsonObject{{"transport", "tcp"}, {"host", "127.0.0.1"}, {"port", 502}, {"unit_id", 1}});
 
     m_meta = DriverMetaBuilder()
         .schemaVersion("1.0")
         .info("stdio.drv.limaco_1_radar", QString::fromUtf8("利马克单点雷达"), "1.0.0",
-              QString::fromUtf8("基于通用 Modbus RTU 传输的利马克单点雷达驱动"))
+              QString::fromUtf8("利马克单点雷达驱动（Modbus RTU 协议），"
+                               "支持 RS485 串口和 TCP 网关两种连接方式"))
         .vendor("stdiolink")
         .command(CommandBuilder("status")
-            .description("获取驱动状态")
+            .description("获取驱动存活状态，固定返回 ready")
             .returns(FieldType::Object, "状态信息")
             .returnField(FieldBuilder("status", FieldType::String).description("固定返回 ready")))
         .command(readDistance)
         .build();
 }
+
