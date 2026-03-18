@@ -544,7 +544,7 @@ def run_selected_tests(build_dir_arg: str, config: str, suites: Sequence[str]) -
 def should_skip_binary(name: str, with_tests: bool) -> bool:
     base = Path(name).stem
     lowered = name.lower()
-    if base == "bin_scan_orchestrator_service_tests":
+    if base in {"bin_scan_orchestrator_service_tests", "exec_runner_service_tests"}:
         return True
     if not with_tests and (base == "stdiolink_tests" or base.startswith("test_") or base == "gtest"):
         return True

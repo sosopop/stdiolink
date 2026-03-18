@@ -50,6 +50,11 @@ enable_testing()
 # 添加子目录
 add_subdirectory(src)
 
+if(WIN32)
+    include(cmake/windows_app_icon.cmake)
+    stdiolink_apply_windows_app_icon_to_registered_targets()
+endif()
+
 if(STDIOLINK_IS_MULTI_CONFIG)
     get_property(_all_exe_targets GLOBAL PROPERTY STDIOLINK_EXECUTABLE_TARGETS)
     foreach(_target IN LISTS _all_exe_targets)

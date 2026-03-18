@@ -1,0 +1,7 @@
+#ifndef STDIOLINK_APP_ICON_PATH
+#error STDIOLINK_APP_ICON_PATH must be defined for stdiolink_app_icon.rc
+#endif
+
+#define IDI_STDIOLINK_APP_ICON 101
+
+IDI_STDIOLINK_APP_ICON ICON STDIOLINK_APP_ICON_PATH

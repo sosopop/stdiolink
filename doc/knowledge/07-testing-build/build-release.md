@@ -19,8 +19,8 @@
 - runtime / 发布包里的 Driver 默认只来自 `src/drivers/`；`src/demo/` 下示例 Driver 会编译，但不会自动发布到 `data_root/drivers/`
 - runtime / 发布包里的 Service、Project 模板默认只来自 `src/data_root/`；`src/demo/server_manager_demo/data_root/` 仅补充 demo 配置、日志、工作区与脚本
 - 测试构建会额外把 `stdio.drv.calculator` 注入 `runtime_*` 作为测试资产；这一步仅服务 GTest/JS 集成测试，不属于默认发布内容
-- `tools/release.py publish` 发布前默认会运行完整测试链；不会自动把独立注册的 `bin_scan_orchestrator_service_tests` 打进发布包
-- `tools/release.py publish` 在复制 `runtime_release/bin` 时会始终排除 `bin_scan_orchestrator_service_tests`；即使传了 `--with-tests`，该二进制也不会进入发布包
+- `tools/release.py publish` 发布前默认会运行完整测试链；不会自动把独立注册的 `bin_scan_orchestrator_service_tests`、`exec_runner_service_tests` 打进发布包
+- `tools/release.py publish` 在复制 `runtime_release/bin` 时会始终排除 `bin_scan_orchestrator_service_tests`、`exec_runner_service_tests`；即使传了 `--with-tests`，这两个二进制也不会进入发布包
 - `tools/release.py publish` 会在包内联执行重复组件校验：`bin/` 不允许出现 `stdio.drv.*`，`data_root/drivers/` 下同名 `stdio.drv.*` 不允许分布在多个子目录
 - `tools/release.py build` 现在直接承载 CMake/vcpkg 的跨平台构建流程；根目录 `build.bat` / `build.sh` 只保留旧命令兼容包装
 - `tools/release.py test` 和 `tools/release.py publish` 运行前都会先检查 6200 / 3000 端口，以及残留的 `stdiolink_server`、`stdiolink_service`、`stdio.drv*` 进程；若发现占用会直接告警并退出，并尽量给出端口对应的 PID / 进程名
