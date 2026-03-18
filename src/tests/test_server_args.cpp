@@ -1,12 +1,30 @@
 #include <gtest/gtest.h>
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
+
 #include "stdiolink_server/config/server_args.h"
 
 using namespace stdiolink_server;
 
+namespace {
+
+QString expectedDefaultDataRoot() {
+    const QString bundledDataRoot =
+        QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("../data_root");
+    const QFileInfo bundledInfo(bundledDataRoot);
+    if (bundledInfo.exists() && bundledInfo.isDir()) {
+        return QDir::cleanPath(bundledInfo.absoluteFilePath());
+    }
+    return QStringLiteral(".");
+}
+
+} // namespace
+
 TEST(ServerArgsTest, DefaultValues) {
     const auto args = ServerArgs::parse({"stdiolink_server"});
-    EXPECT_EQ(args.dataRoot, ".");
+    EXPECT_EQ(args.dataRoot, expectedDefaultDataRoot());
     EXPECT_EQ(args.port, 6200);
     EXPECT_EQ(args.host, "127.0.0.1");
     EXPECT_EQ(args.logLevel, "info");
@@ -14,6 +32,15 @@ TEST(ServerArgsTest, DefaultValues) {
     EXPECT_FALSE(args.hasPort);
     EXPECT_FALSE(args.hasHost);
     EXPECT_FALSE(args.hasLogLevel);
+}
+
+TEST(ServerArgsTest, ExplicitDataRootOverridesBundledDefault) {
+    const auto args = ServerArgs::parse({
+        "stdiolink_server",
+        "--data-root=/tmp/data"
+    });
+    EXPECT_EQ(args.dataRoot, "/tmp/data");
+    EXPECT_TRUE(args.error.isEmpty());
 }
 
 TEST(ServerArgsTest, AllOptions) {

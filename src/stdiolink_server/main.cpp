@@ -1,5 +1,4 @@
 #include <QCoreApplication>
-#include <QMessageBox>
 #include <QScopedPointer>
 #include <QDir>
 #include <QIcon>
@@ -30,12 +29,18 @@ void printHelp() {
     QTextStream err(stderr);
     err << "Usage: stdiolink_server [options]\n"
         << "Options:\n"
-        << "  --data-root=<path>       Data root directory (default: .)\n"
+        << "  --data-root=<path>       Data root directory (default: ../data_root when bundled, otherwise .)\n"
         << "  --port=<port>            HTTP port (default: 6200)\n"
         << "  --host=<addr>            Listen address (default: 127.0.0.1)\n"
         << "  --log-level=<level>      debug|info|warn|error (default: info)\n"
         << "  -h, --help               Show this help\n"
         << "  -v, --version            Show version\n";
+    err.flush();
+}
+
+void printStderrLine(const QString& text) {
+    QTextStream err(stderr);
+    err << text << '\n';
     err.flush();
 }
 
@@ -89,7 +94,7 @@ int main(int argc, char* argv[]) {
     ServerSingleInstanceGuard singleInstanceGuard(dataRoot);
     QString singleInstanceError;
     if (!singleInstanceGuard.tryAcquire(&singleInstanceError)) {
-        QMessageBox::information(nullptr, QStringLiteral("stdiolink_server"), singleInstanceError);
+        printStderrLine(QStringLiteral("Error: %1").arg(singleInstanceError));
         return 1;
     }
 #endif
@@ -163,7 +168,20 @@ int main(int argc, char* argv[]) {
 #ifdef Q_OS_WIN
     QScopedPointer<WindowsTrayController> trayController(
         new WindowsTrayController(buildServerConsoleUrl(port)));
-    trayController->initialize();
+    if (!trayController->initialize()) {
+        QString consoleError;
+        if (!ensureServerConsole(&consoleError)) {
+            printStderrLine(
+                QStringLiteral("Error: system tray is unavailable and CLI fallback failed: %1")
+                    .arg(consoleError));
+            return 1;
+        }
+        printStderrLine(
+            QStringLiteral("Warning: system tray is unavailable; stdiolink_server switched to CLI mode."));
+        printStderrLine(
+            QStringLiteral("Info: open the Web console in your browser: %1")
+                .arg(buildServerConsoleUrl(port)));
+    }
 #endif
 
     std::signal(SIGINT, requestQuitSignalHandler);

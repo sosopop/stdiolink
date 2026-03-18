@@ -34,6 +34,14 @@
 - 改调度策略 -> `schedule_engine.*`
 - 改 Windows 下 server 启动形态（无控制台、托盘、单实例） -> `main.cpp` + `runtime/{server_runtime_support,windows_tray_controller}.*`
 
+## Windows Runtime Notes
+
+- `stdiolink_server` 在 Windows 下默认是 GUI 壳，优先提供托盘菜单打开 Web 控制台/退出。
+- 如果系统托盘不可用，启动流程会立即切换到 CLI 模式：附着父控制台，必要时分配新控制台，再继续运行。
+- 同一 `data_root` 只允许一个 Windows server 实例；冲突时直接向 `stderr` 报错并返回非 0，不再弹模态框。
+- 单实例 key 会对 `data_root` 做绝对路径、分隔符和 Windows 大小写归一化，避免同一路径不同写法绕过保护。
+- 未显式传 `--data-root` 时，server 会优先使用可执行文件同级的 `../data_root`；这样直接运行发布包或 `runtime_<config>/bin/stdiolink_server` 也能落到正确的数据目录。
+
 ## Project Mutation Rules
 
 - `update` / `enabled` 这类会改磁盘的接口，先保存 `config.json + param.json`，再停实例；后续停实例失败时必须回滚磁盘状态。

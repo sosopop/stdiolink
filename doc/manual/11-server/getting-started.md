@@ -30,7 +30,7 @@ stdiolink_server [options]
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| `--data-root=<path>` | 数据根目录路径 | `.`（当前目录） |
+| `--data-root=<path>` | 数据根目录路径 | 优先 `<exe>/../data_root`，否则 `.` |
 | `--port=<port>` | HTTP 监听端口 | `6200` |
 | `--host=<addr>` | 监听地址 | `127.0.0.1` |
 | `--webui-dir=<path>` | WebUI 静态目录（绝对路径，或相对 `data_root`） | `<data_root>/webui` |
@@ -114,6 +114,12 @@ Projects: 5 loaded, 1 invalid
 WebUI: serving from /opt/stdiolink/data/webui
 HTTP server listening on 127.0.0.1:6200
 ```
+
+## Windows 启动壳行为
+
+- 默认构建产物仍是 Windows GUI 程序，正常桌面环境下会提供托盘菜单。
+- 如果系统托盘不可用，程序会自动切换到 CLI 模式，并在控制台输出提示和 Web 控制台地址。
+- 如果同一个 `data_root` 已有 `stdiolink_server` 运行，第二次启动会直接打印错误并退出，不再弹出阻塞式对话框。
 
 ## 安全说明
 

@@ -24,7 +24,6 @@ WindowsTrayController::~WindowsTrayController() {
 
 bool WindowsTrayController::initialize() {
     if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        qWarning("System tray is not available; stdiolink_server will keep running without tray controls.");
         return false;
     }
 

@@ -9,7 +9,9 @@ QT_END_NAMESPACE
 namespace stdiolink_server {
 
 QString buildServerConsoleUrl(quint16 port);
+QString normalizeServerDataRootPath(const QString& dataRoot);
 QString buildServerSingleInstanceKey(const QString& dataRoot);
+bool ensureServerConsole(QString* errorMessage);
 
 class ServerSingleInstanceGuard {
 public:

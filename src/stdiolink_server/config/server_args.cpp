@@ -1,9 +1,30 @@
 #include "server_args.h"
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
+
 namespace stdiolink_server {
+
+namespace {
+
+QString defaultDataRoot() {
+    const QString appDir = QCoreApplication::applicationDirPath();
+    if (!appDir.isEmpty()) {
+        const QString bundledDataRoot = QDir(appDir).absoluteFilePath("../data_root");
+        const QFileInfo bundledInfo(bundledDataRoot);
+        if (bundledInfo.exists() && bundledInfo.isDir()) {
+            return QDir::cleanPath(bundledInfo.absoluteFilePath());
+        }
+    }
+    return QStringLiteral(".");
+}
+
+} // namespace
 
 ServerArgs ServerArgs::parse(const QStringList& args) {
     ServerArgs result;
+    result.dataRoot = defaultDataRoot();
 
     for (int i = 1; i < args.size(); ++i) {
         const QString& arg = args[i];
