@@ -581,7 +581,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         quint16 beginY = static_cast<quint16>(qRound(p["begin_y"].toDouble() * 100));
         quint16 endY   = static_cast<quint16>(qRound(p["end_y"].toDouble() * 100));
         quint16 stepY  = static_cast<quint16>(qRound(p["step_y"].toDouble() * 100));
-        quint16 speedY = static_cast<quint16>(qRound(p["speed_y"].toDouble() * 100));
+        quint16 speedY = static_cast<quint16>(p["speed_y"].toInt());
 
         QByteArray payload = makeScanLinePayload(angleX, beginY, endY, stepY, speedY);
 
@@ -640,7 +640,7 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
         quint16 beginY = static_cast<quint16>(qRound(p["begin_y"].toDouble() * 100));
         quint16 endY   = static_cast<quint16>(qRound(p["end_y"].toDouble() * 100));
         quint16 stepY  = static_cast<quint16>(qRound(p["step_y"].toDouble() * 100));
-        quint16 speedY = static_cast<quint16>(qRound(p["speed_y"].toDouble() * 100));
+        quint16 speedY = static_cast<quint16>(p["speed_y"].toInt());
 
         QByteArray payload = makeScanFramePayload(beginX, endX, stepX, beginY, endY, stepY, speedY);
 
@@ -967,12 +967,12 @@ void ThreeDScanRobotHandler::buildMeta() {
         .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度（°），编码 ×100")));
     scanLineCmd.param(FieldBuilder("step_y", FieldType::Double).required()
         .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长（°），编码 ×100")));
-    scanLineCmd.param(FieldBuilder("speed_y", FieldType::Double).required()
-        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度（°/s），编码 ×100")));
+    scanLineCmd.param(FieldBuilder("speed_y", FieldType::Int).required()
+        .defaultValue(10).range(1, 10).description(QString::fromUtf8("Y 轴旋转速度（单位数，1 单位 = 0.25°），默认 10 即 2.5°/s")));
     scanLineCmd.example("Y 轴 1°-100° 单线扫描", QStringList{"stdio", "console"},
         QJsonObject{{"port", "COM3"}, {"addr", 1},
                     {"angle_x", 90}, {"begin_y", 1}, {"end_y", 100},
-                    {"step_y", 1}, {"speed_y", 2.5}});
+                    {"step_y", 1}, {"speed_y", 10}});
 
     // scan_frame — 指令 11（帧扫描）
     auto scanFrameCmd = CommandBuilder("scan_frame")
@@ -991,12 +991,12 @@ void ThreeDScanRobotHandler::buildMeta() {
         .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("step_y", FieldType::Double).required()
         .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长（°），编码 ×100")));
-    scanFrameCmd.param(FieldBuilder("speed_y", FieldType::Double).required()
-        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度（°/s），编码 ×100")));
+    scanFrameCmd.param(FieldBuilder("speed_y", FieldType::Int).required()
+        .defaultValue(10).range(1, 10).description(QString::fromUtf8("Y 轴旋转速度（单位数，1 单位 = 0.25°），默认 10 即 2.5°/s")));
     scanFrameCmd.example("全幅帧扫描", QStringList{"stdio", "console"},
         QJsonObject{{"port", "COM3"}, {"addr", 1},
                     {"begin_x", 0}, {"end_x", 186}, {"step_x", 5},
-                    {"begin_y", 1}, {"end_y", 100}, {"step_y", 1}, {"speed_y", 2.5}});
+                    {"begin_y", 1}, {"end_y", 100}, {"step_y", 1}, {"speed_y", 10}});
 
     // get_data — 分段数据拉取
     auto getDataCmd = CommandBuilder("get_data")
