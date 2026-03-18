@@ -4,12 +4,12 @@ import { ConfigProvider } from 'antd';
 import { ParamForm } from '../ParamForm';
 import type { FieldMeta } from '@/types/service';
 
-function renderForm(params: FieldMeta[], values: Record<string, unknown> = {}) {
+function renderForm(params: FieldMeta[], values: Record<string, unknown> = {}, errors?: Record<string, string>) {
   const onChange = vi.fn();
   return {
     ...render(
       <ConfigProvider>
-        <ParamForm params={params} values={values} onChange={onChange} />
+        <ParamForm params={params} values={values} errors={errors} onChange={onChange} />
       </ConfigProvider>,
     ),
     onChange,
@@ -50,5 +50,10 @@ describe('ParamForm', () => {
   it('renders param form container', () => {
     renderForm([{ name: 'x', type: 'string' }]);
     expect(screen.getByTestId('param-form')).toBeDefined();
+  });
+
+  it('shows field error help when provided', () => {
+    renderForm([{ name: 'host', type: 'string', required: true }], {}, { host: 'Required' });
+    expect(screen.getByText('Required')).toBeInTheDocument();
   });
 });

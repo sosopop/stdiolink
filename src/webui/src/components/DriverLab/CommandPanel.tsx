@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Select, Button, Space, Typography } from 'antd';
 import { PlayCircleOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import type { CommandMeta } from '@/types/driver';
+import type { FieldMeta } from '@/types/service';
 import { ParamForm } from './ParamForm';
 import { CommandLineExample } from './CommandLineExample';
 import { selectDriverLabExamples } from './exampleMeta';
@@ -22,6 +23,75 @@ interface CommandPanelProps {
   onReset: () => void;
 }
 
+function isMissingRequiredValue(field: FieldMeta, value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return true;
+  }
+
+  if ((field.type === 'string' || field.type === 'enum' || field.type === 'any') && typeof value === 'string') {
+    return value.trim() === '';
+  }
+
+  if (field.type === 'array') {
+    return !Array.isArray(value) || value.length === 0;
+  }
+
+  return false;
+}
+
+function validateFields(
+  fields: FieldMeta[] | undefined,
+  values: Record<string, unknown>,
+  message: string,
+  basePath = '',
+): Record<string, string> {
+  if (!fields || fields.length === 0) {
+    return {};
+  }
+
+  const errors: Record<string, string> = {};
+
+  for (const field of fields) {
+    const path = basePath ? `${basePath}.${field.name}` : field.name;
+    const value = values[field.name];
+    const childRequired = new Set(field.requiredKeys ?? []);
+
+    if (field.required && isMissingRequiredValue(field, value)) {
+      errors[path] = message;
+      continue;
+    }
+
+    if (field.type === 'object' && value && typeof value === 'object' && !Array.isArray(value)) {
+      const objectValue = value as Record<string, unknown>;
+      const nestedFields = (field.fields ?? []).map((child) => (
+        childRequired.has(child.name) ? { ...child, required: true } : child
+      ));
+      Object.assign(errors, validateFields(nestedFields, objectValue, message, path));
+      continue;
+    }
+
+    if (field.type === 'array' && Array.isArray(value) && field.items) {
+      value.forEach((item, index) => {
+        const itemPath = `${path}[${index}]`;
+        if (field.items?.required && isMissingRequiredValue(field.items, item)) {
+          errors[itemPath] = message;
+          return;
+        }
+
+        if (field.items?.type === 'object' && item && typeof item === 'object' && !Array.isArray(item)) {
+          const objectItem = item as Record<string, unknown>;
+          const nestedFields = (field.items.fields ?? []).map((child) => (
+            field.items?.requiredKeys?.includes(child.name) ? { ...child, required: true } : child
+          ));
+          Object.assign(errors, validateFields(nestedFields, objectItem, message, itemPath));
+        }
+      });
+    }
+  }
+
+  return errors;
+}
+
 export const CommandPanel: React.FC<CommandPanelProps> = ({
   commands,
   selectedCommand,
@@ -36,6 +106,14 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
   onReset,
 }) => {
   const { t } = useTranslation();
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
+  const currentCmd = commands.find((c) => c.name === selectedCommand);
+  const examples = selectDriverLabExamples(currentCmd?.examples);
+  const requiredMessage = t('schema.required');
+
+  React.useEffect(() => {
+    setFieldErrors({});
+  }, [selectedCommand]);
 
   if (!commands || commands.length === 0) {
     return (
@@ -47,8 +125,31 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
     );
   }
 
-  const currentCmd = commands.find((c) => c.name === selectedCommand);
-  const examples = selectDriverLabExamples(currentCmd?.examples);
+  const handleParamsChange = (params: Record<string, unknown>) => {
+    onParamsChange(params);
+    if (currentCmd && Object.keys(fieldErrors).length > 0) {
+      setFieldErrors(validateFields(currentCmd.params, params, requiredMessage));
+    }
+  };
+
+  const handleExec = () => {
+    const nextErrors = validateFields(currentCmd?.params, commandParams, requiredMessage);
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+    onExec();
+  };
+
+  const handleSelectCommand = (name: string) => {
+    setFieldErrors({});
+    onSelectCommand(name);
+  };
+
+  const handleReset = () => {
+    setFieldErrors({});
+    onReset();
+  };
 
   return (
     <div
@@ -62,7 +163,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
         </Typography.Text>
         <Select
           value={selectedCommand}
-          onChange={onSelectCommand}
+          onChange={handleSelectCommand}
           placeholder={t('driverlab.command.select_placeholder')}
           style={{ width: '100%' }}
           data-testid="command-select"
@@ -85,12 +186,13 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
           )}
           <CommandExamples
             examples={examples}
-            onApply={(params) => onParamsChange(params)}
+            onApply={(params) => handleParamsChange(params)}
           />
           <ParamForm
             params={currentCmd.params}
             values={commandParams}
-            onChange={onParamsChange}
+            errors={fieldErrors}
+            onChange={handleParamsChange}
           />
         </div>
       )}
@@ -101,7 +203,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
           <Button
             type="primary"
             icon={<PlayCircleOutlined />}
-            onClick={onExec}
+            onClick={handleExec}
             disabled={!connected || !selectedCommand || executing}
             data-testid="exec-btn"
             style={{ borderRadius: 8, height: 36, padding: '0 20px' }}
@@ -110,7 +212,7 @@ export const CommandPanel: React.FC<CommandPanelProps> = ({
           </Button>
           <Button
             icon={<ReloadOutlined />}
-            onClick={onReset}
+            onClick={handleReset}
             disabled={!currentCmd}
             data-testid="reset-btn"
             style={{ borderRadius: 8, height: 36 }}

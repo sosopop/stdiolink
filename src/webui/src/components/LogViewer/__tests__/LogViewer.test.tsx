@@ -18,6 +18,39 @@ describe('LogViewer', () => {
     expect(screen.getByText(/\[ERROR\] Connection failed/)).toBeDefined();
   });
 
+  it('keeps timestamp column and strips runtime stderr wrapper for structured json logs', () => {
+    renderComponent([
+      '2026-03-18T07:29:33.606Z | [stderr] {"ts":"2026-03-18T07:29:33.606Z","level":"info","msg":"stdout","fields":{"data":"hello"}}',
+    ]);
+
+    expect(screen.getByText('2026-03-18T07:29:33.606Z')).toBeDefined();
+    expect(screen.getByText('INFO')).toBeDefined();
+    expect(
+      screen.getByText(
+        '{"ts":"2026-03-18T07:29:33.606Z","level":"info","msg":"stdout","fields":{"data":"hello"}}',
+      ),
+    ).toBeDefined();
+    expect(screen.queryByText(/\[stderr\]/)).toBeNull();
+    expect(screen.queryByText(/Z \|/)).toBeNull();
+  });
+
+  it('strips nested runtime and qt warning wrappers before structured json logs', () => {
+    renderComponent([
+      '2026-03-18T07:29:33.606Z | [stderr] Warning: {"ts":"2026-03-18T07:29:33.500Z","level":"warn","msg":"stderr","fields":{"data":"oops"}}',
+    ]);
+
+    expect(screen.getByText('2026-03-18T07:29:33.500Z')).toBeDefined();
+    expect(screen.getByText('WARN')).toBeDefined();
+    expect(
+      screen.getByText(
+        '{"ts":"2026-03-18T07:29:33.500Z","level":"warn","msg":"stderr","fields":{"data":"oops"}}',
+      ),
+    ).toBeDefined();
+    expect(screen.queryByText(/\[stderr\]/)).toBeNull();
+    expect(screen.queryByText(/Warning:/)).toBeNull();
+    expect(screen.queryByText(/Z \|/)).toBeNull();
+  });
+
   it('shows empty state when no logs', () => {
     renderComponent([]);
     expect(screen.getByText('No logs available')).toBeDefined();

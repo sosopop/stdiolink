@@ -9,10 +9,11 @@ import styles from './ParamForm.module.css';
 interface ParamFormProps {
   params?: FieldMeta[];
   values: Record<string, unknown>;
+  errors?: Record<string, string>;
   onChange: (values: Record<string, unknown>) => void;
 }
 
-export const ParamForm: React.FC<ParamFormProps> = ({ params, values, onChange }) => {
+export const ParamForm: React.FC<ParamFormProps> = ({ params, values, errors, onChange }) => {
   const { t } = useTranslation();
 
   if (!params || params.length === 0) {
@@ -35,6 +36,8 @@ export const ParamForm: React.FC<ParamFormProps> = ({ params, values, onChange }
           field={field}
           value={values[field.name]}
           onChange={(v) => handleFieldChange(field.name, v)}
+          error={errors?.[field.name]}
+          errors={errors}
         />
       ))}
     </Form>

@@ -82,6 +82,35 @@ function renderPanelHarness(initialParams: Record<string, unknown>) {
   return render(<Harness />);
 }
 
+function renderExecutablePanelHarness(initialParams: Record<string, unknown>, onExec = vi.fn()) {
+  const onSelectCommand = vi.fn();
+  const onCancel = vi.fn();
+  const onReset = vi.fn();
+
+  const Harness = () => {
+    const [params, setParams] = React.useState<Record<string, unknown>>(initialParams);
+    return (
+      <ConfigProvider>
+        <CommandPanel
+          commands={mockCommands}
+          selectedCommand="add"
+          commandParams={params}
+          executing={false}
+          connected={true}
+          driverId="calc"
+          onSelectCommand={onSelectCommand}
+          onParamsChange={setParams}
+          onExec={onExec}
+          onCancel={onCancel}
+          onReset={onReset}
+        />
+      </ConfigProvider>
+    );
+  };
+
+  return { ...render(<Harness />), onExec };
+}
+
 describe('CommandPanel', () => {
   it('renders command panel with commands', () => {
     renderPanel();
@@ -177,5 +206,32 @@ describe('CommandPanel', () => {
 
     fireEvent.click(screen.getByTestId('apply-example-0'));
     expect(screen.getByTestId('cmdline-text').textContent).toBe('--cmd=add --a=11 --b=22');
+  });
+
+  it('shows required errors and blocks execute when params are missing', () => {
+    const { onExec } = renderExecutablePanelHarness({});
+
+    fireEvent.click(screen.getByTestId('exec-btn'));
+
+    expect(onExec).not.toHaveBeenCalled();
+    expect(screen.getAllByText(i18n.t('schema.required'))).toHaveLength(2);
+  });
+
+  it('clears field errors after input and allows execute', () => {
+    const { onExec } = renderExecutablePanelHarness({});
+
+    fireEvent.click(screen.getByTestId('exec-btn'));
+    expect(screen.getAllByText(i18n.t('schema.required'))).toHaveLength(2);
+
+    const [inputA, inputB] = screen.getAllByRole('spinbutton');
+
+    fireEvent.change(inputA, { target: { value: '3' } });
+    expect(screen.getAllByText(i18n.t('schema.required'))).toHaveLength(1);
+
+    fireEvent.change(inputB, { target: { value: '4' } });
+    expect(screen.queryByText(i18n.t('schema.required'))).toBeNull();
+
+    fireEvent.click(screen.getByTestId('exec-btn'));
+    expect(onExec).toHaveBeenCalledTimes(1);
   });
 });

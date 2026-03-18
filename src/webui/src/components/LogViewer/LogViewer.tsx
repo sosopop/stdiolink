@@ -13,9 +13,100 @@ interface LogViewerProps {
 
 const LOG_LEVELS = ['ALL', 'ERROR', 'WARN', 'INFO', 'DEBUG'] as const;
 
+type ParsedLogLine = {
+  timestamp?: string;
+  level: string;
+  message: string;
+};
+
+type WrapperState = {
+  timestamp?: string;
+  message: string;
+  hintedLevel?: string;
+};
+
+function normalizeLevel(value?: string): string | undefined {
+  if (!value) return undefined;
+  const upper = value.toUpperCase();
+  if (upper === 'ERROR' || upper === 'ERR' || upper === 'CRITICAL') return 'ERROR';
+  if (upper === 'WARN' || upper === 'WARNING') return 'WARN';
+  if (upper === 'INFO') return 'INFO';
+  if (upper === 'DEBUG' || upper === 'TRACE') return 'DEBUG';
+  return undefined;
+}
+
+function detectLevel(message: string): string {
+  const upper = message.toUpperCase();
+  if (upper.includes('ERROR') || upper.includes('[E]')) return 'ERROR';
+  if (upper.includes('WARN') || upper.includes('[W]')) return 'WARN';
+  if (upper.includes('INFO') || upper.includes('[I]')) return 'INFO';
+  if (upper.includes('DEBUG') || upper.includes('[D]')) return 'DEBUG';
+  return 'INFO';
+}
+
+function tryParseStructuredJson(message: string): ParsedLogLine | null {
+  try {
+    const parsed = JSON.parse(message) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return {
+      timestamp: typeof parsed.ts === 'string' ? parsed.ts : undefined,
+      level: normalizeLevel(typeof parsed.level === 'string' ? parsed.level : undefined) ?? detectLevel(message),
+      message,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function unwrapRuntimeLogLine(line: string): WrapperState {
+  let timestamp: string | undefined;
+  let message = line.trim();
+  let hintedLevel: string | undefined;
+
+  const outerMatch = message.match(
+    /^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\s*\|\s*(.*)$/,
+  );
+  if (outerMatch) {
+    timestamp = outerMatch[1] ?? undefined;
+    message = outerMatch[2] ?? '';
+  }
+
+  while (true) {
+    const channelMatch = message.match(/^\[(stdout|stderr)\]\s*(.*)$/i);
+    if (!channelMatch) break;
+    message = channelMatch[2] ?? '';
+  }
+
+  while (true) {
+    const qtPrefixMatch = message.match(/^(Warning|Error|Fatal|Debug|Info):\s*(.*)$/i);
+    if (!qtPrefixMatch) break;
+    hintedLevel = normalizeLevel(qtPrefixMatch[1]) ?? hintedLevel;
+    message = qtPrefixMatch[2] ?? '';
+  }
+
+  return { timestamp, message, hintedLevel };
+}
+
 function parseLine(line: string): { timestamp?: string; level: string; message: string } {
-  // Try to extract timestamp: 2023-01-01 12:00:00 or [2023-01-01...]
-  const timeRegex = /^\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]?\s*/;
+  const unwrapped = unwrapRuntimeLogLine(line);
+  const structuredLine = tryParseStructuredJson(unwrapped.message);
+  if (structuredLine) {
+    return {
+      timestamp: structuredLine.timestamp ?? unwrapped.timestamp,
+      level: structuredLine.level,
+      message: structuredLine.message,
+    };
+  }
+
+  if (unwrapped.timestamp || unwrapped.message !== line.trim()) {
+    return {
+      timestamp: unwrapped.timestamp,
+      level: unwrapped.hintedLevel ?? detectLevel(unwrapped.message),
+      message: unwrapped.message,
+    };
+  }
+
+  const timeRegex = /^\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\]?\s*/;
   const match = line.match(timeRegex);
 
   let timestamp = undefined;
@@ -26,15 +117,7 @@ function parseLine(line: string): { timestamp?: string; level: string; message: 
     message = line.substring(match[0].length);
   }
 
-  // Detect level in the remaining message
-  let level = 'INFO';
-  const upper = message.toUpperCase();
-  if (upper.includes('ERROR') || upper.includes('[E]')) level = 'ERROR';
-  else if (upper.includes('WARN') || upper.includes('[W]')) level = 'WARN';
-  else if (upper.includes('INFO') || upper.includes('[I]')) level = 'INFO';
-  else if (upper.includes('DEBUG') || upper.includes('[D]')) level = 'DEBUG';
-
-  return { timestamp, level, message };
+  return { timestamp, level: detectLevel(message), message };
 }
 
 function getLevelColor(level: string): string {
@@ -56,9 +139,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ lines, loading }) => {
 
   const filtered = useMemo(() => {
     return lines.filter((line) => {
-      const { level } = parseLine(line);
-      if (filter !== 'ALL' && level !== filter) return false;
-      if (search && !line.toLowerCase().includes(search.toLowerCase())) return false;
+      const parsed = parseLine(line);
+      const haystack = `${parsed.timestamp ?? ''} ${parsed.message}`.toLowerCase();
+      if (filter !== 'ALL' && parsed.level !== filter) return false;
+      if (search && !haystack.includes(search.toLowerCase())) return false;
       return true;
     });
   }, [lines, filter, search]);
