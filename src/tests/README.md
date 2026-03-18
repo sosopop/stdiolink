@@ -18,8 +18,10 @@
 
 ```bash
 # 运行全部测试
-./build/runtime_debug/bin/stdiolink_tests.exe
+./build/runtime_release/bin/stdiolink_tests.exe
 
 # 运行指定测试
-./build/runtime_debug/bin/stdiolink_tests.exe --gtest_filter=TestName.*
+./build/runtime_release/bin/stdiolink_tests.exe --gtest_filter=TestName.*
 ```
+
+`stdiolink_tests` 启动前会检查自己是否位于发布式 runtime 布局的 `bin/` 目录，且同级存在 `data_root/drivers/` 和 `data_root/services/`。直接运行 `build/release/stdiolink_tests.exe` 这类 raw build 产物会报错退出。

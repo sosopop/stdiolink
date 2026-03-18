@@ -2,6 +2,7 @@
 
 set(TEST_SOURCES
     test_main.cpp
+    runtime_layout_guard.cpp
     test_jsonl_serializer.cpp
     test_jsonl_parser.cpp
     test_jsonl_stream_parser.cpp
@@ -82,6 +83,7 @@ set(TEST_SOURCES
     test_3dvision_websocket.cpp
     test_manual_docs.cpp
     test_3d_scan_robot.cpp
+    test_runtime_layout_guard.cpp
 )
 
 add_executable(stdiolink_tests ${TEST_SOURCES})
@@ -232,6 +234,7 @@ endif()
 
 add_executable(bin_scan_orchestrator_service_tests
     test_main.cpp
+    runtime_layout_guard.cpp
     test_bin_scan_orchestrator_service.cpp
 )
 
@@ -401,6 +404,7 @@ add_dependencies(stdiolink_tests test_console_meta_driver)
 # exec_runner_service_tests (M104 exec_runner Service 集成测试)
 add_executable(exec_runner_service_tests
     test_main.cpp
+    runtime_layout_guard.cpp
     test_exec_runner_service.cpp
 )
 

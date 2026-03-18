@@ -20,6 +20,7 @@
 ## Common Pitfalls
 
 - 把 `build/`、`runtime_*` 和 `release/<pkg>/` 混成同一类目录。
+- 把 `build/release/stdiolink_tests`、`build/debug/stdiolink_tests` 误当成可直接运行的单测入口；单测程序要求自己位于发布式 runtime 布局的 `bin/` 下。
 - 在 debug 目录复现通过后，直接假设 release 目录也一样。
 - 忽略运行目录里的 `data_root`、DLL、工作目录和资源组装。
 
