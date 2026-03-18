@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "driver_modbusrtu_serial/modbus_rtu_serial_client.h"
-#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 
 using namespace stdiolink;
@@ -125,38 +124,38 @@ FieldBuilder connectionParam(const QString& name) {
     if (name == "port_name") {
         return FieldBuilder("port_name", FieldType::String)
             .required()
-            .description("串口名称，例如 COM3")
+            .description("RS485 串口名称，如 COM3 或 /dev/ttyUSB0")
             .placeholder("COM3");
     }
     if (name == "baud_rate") {
         return FieldBuilder("baud_rate", FieldType::Int)
             .defaultValue(9600)
             .enumValues(QStringList{"4800", "9600", "14400", "19200", "38400", "56000", "57600", "115200"})
-            .description("串口波特率");
+            .description("Modbus RTU 波特率，需与模块当前设置一致，出厂默认 9600");
     }
     if (name == "parity") {
         return FieldBuilder("parity", FieldType::Enum)
             .defaultValue("none")
             .enumValues(QStringList{"none", "odd", "even"})
-            .description("串口校验位");
+            .description("校验位：none=无校验 / odd=奇校验 / even=偶校验，出厂默认 none");
     }
     if (name == "stop_bits") {
         return FieldBuilder("stop_bits", FieldType::Enum)
             .defaultValue("1")
             .enumValues(QStringList{"1", "2"})
-            .description("串口停止位");
+            .description("停止位：1 或 2，出厂默认 1");
     }
     if (name == "unit_id") {
         return FieldBuilder("unit_id", FieldType::Int)
             .defaultValue(1)
             .range(1, 255)
-            .description("设备站号");
+            .description("模块 RS485 站号（1-255），出厂默认 1");
     }
     return FieldBuilder("timeout", FieldType::Int)
         .defaultValue(2000)
         .range(1, 30000)
         .unit("ms")
-        .description("单次读写超时时间");
+        .description("单次 Modbus RTU 读写超时（毫秒），默认 2000");
 }
 
 void addConnectionParams(CommandBuilder& command) {
@@ -809,63 +808,68 @@ void PqwAnalogOutputHandler::buildMeta() {
     CommandBuilder getConfig("get_config");
     addConnectionParams(getConfig);
     getConfig
-        .description("读取通信配置寄存器")
+        .description("读取模块通信配置寄存器（站号/波特率/校验位/停止位/通信检测时间，"
+                     "寄存器 0x0000-0x0005，功能码 0x03）")
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("当前通信配置")
-            .addField(FieldBuilder("unit_id", FieldType::Int).description("当前设备站号"))
-            .addField(FieldBuilder("baud_rate", FieldType::Int).description("当前波特率"))
+            .addField(FieldBuilder("unit_id", FieldType::Int).description("当前设备站号（寄存器 0x0000）"))
+            .addField(FieldBuilder("baud_rate", FieldType::Int).description("当前波特率（寄存器 0x0001 解码后的实际值）"))
             .addField(FieldBuilder("parity", FieldType::Enum)
-                .description("当前校验位")
+                .description("当前校验位：none/odd/even（寄存器 0x0004）")
                 .enumValues(QStringList{"none", "odd", "even"}))
             .addField(FieldBuilder("stop_bits", FieldType::Enum)
-                .description("当前停止位")
+                .description("当前停止位：1 或 2（寄存器 0x0005）")
                 .enumValues(QStringList{"1", "2"}))
             .addField(FieldBuilder("comm_watchdog_enabled", FieldType::Bool)
-                .description("通信检测时间是否启用"))
+                .description("通信检测时间是否启用（寄存器 0x0003 > 0 即为启用）"))
             .addField(FieldBuilder("comm_watchdog_ms", FieldType::Int)
-                .description("通信检测时间，单位毫秒"))
+                .description("通信检测时间（毫秒），超时未收到有效帧则关闭输出"))
             .addField(FieldBuilder("comm_watchdog_raw", FieldType::Int)
-                .description("原始通信检测时间寄存器值"))
+                .description("寄存器 0x0003 原始值，实际时间 = (raw-1)*10ms"))
             .addField(FieldBuilder("raw_registers", FieldType::Array)
-                .description("寄存器 0x0000..0x0005 的原始值")
-                .items(FieldBuilder("register", FieldType::Int))));
+                .description("寄存器 0x0000-0x0005 的原始值")
+                .items(FieldBuilder("register", FieldType::Int))))
+        .example("读取模块通信配置", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"}});
 
     CommandBuilder setCommConfig("set_comm_config");
     setCommConfig
-        .description("写入通信参数寄存器，修改后需重新上电生效")
+        .description("修改模块通信参数（逐项写入保持寄存器 0x0000-0x0005，功能码 0x06），"
+                     "修改后需断电重启生效")
         .param(connectionParam("port_name"))
         .param(connectionParam("timeout"))
         .param(FieldBuilder("current_unit_id", FieldType::Int)
             .defaultValue(1)
             .range(1, 255)
-            .description("当前设备站号"))
+            .description("模块当前站号，用于建立通信连接"))
         .param(FieldBuilder("current_baud_rate", FieldType::Int)
             .defaultValue(9600)
             .enumValues(QStringList{"4800", "9600", "14400", "19200", "38400", "56000", "57600", "115200"})
-            .description("当前串口波特率"))
+            .description("模块当前波特率，用于建立通信连接"))
         .param(FieldBuilder("current_parity", FieldType::Enum)
             .defaultValue("none")
             .enumValues(QStringList{"none", "odd", "even"})
-            .description("当前串口校验位"))
+            .description("模块当前校验位，用于建立通信连接"))
         .param(FieldBuilder("current_stop_bits", FieldType::Enum)
             .defaultValue("1")
             .enumValues(QStringList{"1", "2"})
-            .description("当前串口停止位"))
+            .description("模块当前停止位，用于建立通信连接"))
         .param(FieldBuilder("unit_id", FieldType::Int)
             .range(1, 255)
-            .description("写入设备的新站号"))
+            .description("要写入的新站号（寄存器 0x0000），重启后生效"))
         .param(FieldBuilder("baud_rate", FieldType::Int)
             .enumValues(QStringList{"4800", "9600", "14400", "19200", "38400", "56000", "57600", "115200"})
-            .description("写入设备的新波特率"))
+            .description("要写入的新波特率（寄存器 0x0001），重启后生效"))
         .param(FieldBuilder("parity", FieldType::Enum)
             .enumValues(QStringList{"none", "odd", "even"})
-            .description("写入设备的新校验位"))
+            .description("要写入的新校验位（寄存器 0x0004），重启后生效"))
         .param(FieldBuilder("stop_bits", FieldType::Enum)
             .enumValues(QStringList{"1", "2"})
-            .description("写入设备的新停止位"))
+            .description("要写入的新停止位（寄存器 0x0005），重启后生效"))
         .param(FieldBuilder("comm_watchdog_ms", FieldType::Int)
             .range(0, 655340)
-            .description("通信检测时间，单位毫秒。0 表示关闭，其他值需为 10ms 的整数倍"))
+            .description("通信检测时间（毫秒，寄存器 0x0003）。"
+                         "0=关闭，其他值需为 10ms 的整数倍，超时无有效帧则关闭输出"))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("写入结果")
             .addField(FieldBuilder("writes", FieldType::Array)
@@ -877,101 +881,133 @@ void PqwAnalogOutputHandler::buildMeta() {
                     .addField(FieldBuilder("value", FieldType::Any).description("用户传入的业务值"))
                     .requiredKeys(QStringList{"field", "register", "raw_value", "value"})))
             .addField(FieldBuilder("reboot_required", FieldType::Bool)
-                .description("固定返回 true，表示重新上电后完全生效")));
+                .description("固定返回 true，表示重新上电后完全生效")))
+        .example("将波特率改为 115200", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"},
+                             {"current_unit_id", 1},
+                             {"baud_rate", 115200}});
 
     CommandBuilder restoreDefaults("restore_defaults");
     addConnectionParams(restoreDefaults);
     restoreDefaults
-        .description("恢复模块默认通信参数")
+        .description("恢复模块出厂默认参数（站号=1，波特率=9600，无校验，1停止位），"
+                     "向寄存器 0x000D 写入 1，需断电重启生效")
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("恢复结果")
             .addField(FieldBuilder("reboot_required", FieldType::Bool)
-                .description("固定返回 true，表示重新上电后完全生效")));
+                .description("固定返回 true，表示重新上电后完全生效")))
+        .example("恢复出厂默认参数", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"}});
 
     CommandBuilder readOutputs("read_outputs");
     addConnectionParams(readOutputs);
     readOutputs
-        .description("读取输出通道当前寄存器值。返回值同时包含原始寄存器整数和换算后的工程量值")
+        .description("读取输出通道当前寄存器值（寄存器 0x0064 起始，功能码 0x03），"
+                     "返回原始整数和工程量值")
         .param(FieldBuilder("start_channel", FieldType::Int)
             .defaultValue(1)
             .range(1, 18)
-            .description("起始通道号，范围 1-18"))
+            .description("起始通道号（1-18），对应寄存器 0x0064 + channel - 1"))
         .param(FieldBuilder("count", FieldType::Int)
             .defaultValue(18)
             .range(1, 18)
-            .description("连续读取的通道数量。实际读取范围为 start_channel 到 start_channel + count - 1"))
+            .description("连续读取的通道数量，"
+                         "实际范围为 start_channel 到 start_channel + count - 1"))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("读取结果")
-            .addField(FieldBuilder("start_channel", FieldType::Int).description("本次返回结果中的起始通道号"))
-            .addField(FieldBuilder("count", FieldType::Int).description("本次实际返回的通道数量"))
+            .addField(FieldBuilder("start_channel", FieldType::Int).description("起始通道号"))
+            .addField(FieldBuilder("count", FieldType::Int).description("实际返回的通道数量"))
             .addField(FieldBuilder("outputs", FieldType::Array)
-                .description("每个通道的读数。raw_value 是寄存器整数，value 是 raw_value / 1000.0 后的工程量"))
+                .description("每个通道的读数")
                 .items(FieldBuilder("output", FieldType::Object)
-                    .addField(FieldBuilder("channel", FieldType::Int).description("通道号，范围 1-18"))
-                    .addField(FieldBuilder("raw_value", FieldType::Int).description("寄存器原始整数值，设备内部实际存储的数值"))
+                    .addField(FieldBuilder("channel", FieldType::Int).description("通道号"))
+                    .addField(FieldBuilder("raw_value", FieldType::Int)
+                        .description("寄存器原始整数值"))
                     .addField(FieldBuilder("value", FieldType::Double)
-                        .description("工程量值，按 3 位小数解释，即 value = raw_value / 1000.0。单位由模块型号决定，常见为 V 或 mA"))
-                    .requiredKeys(QStringList{"channel", "raw_value", "value"})));
+                        .description("工程量值 = raw_value / 1000.0，"
+                                     "单位由模块型号决定（V 或 mA）"))
+                    .requiredKeys(QStringList{"channel", "raw_value", "value"}))))
+        .example("读取通道 1-3 的当前输出值", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"},
+                             {"start_channel", 1},
+                             {"count", 3}});
 
     CommandBuilder writeOutput("write_output");
     addConnectionParams(writeOutput);
     writeOutput
-        .description("写单个输出通道寄存器。驱动会把工程量值乘以 1000 并四舍五入后写入寄存器")
+        .description("写单通道输出值（功能码 0x06），"
+                     "工程量值 × 1000 → 寄存器，如 5.000V 写入 5000")
         .param(FieldBuilder("channel", FieldType::Int)
             .required()
             .range(1, 18)
-            .description("通道号，范围 1-18"))
+            .description("通道号（1-18），对应寄存器 0x0064 + channel - 1"))
         .param(FieldBuilder("value", FieldType::Double)
             .required()
-            .description("工程量值。编码规则为 raw_value = round(value * 1000)。例如 2.500 会写成 2500。单位由模块型号决定，常见为 V 或 mA"))
+            .description("工程量值，raw = round(value × 1000)。"
+                         "如输出 5.000V 则传 5.0，电流型如 12.345mA 则传 12.345"))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("写入结果")
             .addField(FieldBuilder("channel", FieldType::Int).description("已写入的通道号"))
-            .addField(FieldBuilder("value", FieldType::Double).description("用户传入的工程量值"))
-            .addField(FieldBuilder("raw_value", FieldType::Int).description("根据 value 计算出的寄存器整数值，即 round(value * 1000)")));
+            .addField(FieldBuilder("value", FieldType::Double).description("传入的工程量值"))
+            .addField(FieldBuilder("raw_value", FieldType::Int)
+                .description("实际写入的寄存器整数值 = round(value × 1000)")))
+        .example("通道 1 输出 5V", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"},
+                             {"channel", 1},
+                             {"value", 5.0}});
 
     CommandBuilder writeOutputs("write_outputs");
     addConnectionParams(writeOutputs);
     writeOutputs
-        .description("连续批量写多个输出通道寄存器。每个值都按 raw_value = round(value * 1000) 编码")
+        .description("批量写多通道输出值（功能码 0x10），"
+                     "写入 start_channel 起的连续寄存器")
         .param(FieldBuilder("start_channel", FieldType::Int)
             .defaultValue(1)
             .range(1, 18)
-            .description("起始通道号，范围 1-18"))
+            .description("起始通道号（1-18）"))
         .param(FieldBuilder("values", FieldType::Array)
             .required()
-            .description("连续通道的工程量值数组。values[0] 对应 start_channel，values[1] 对应 start_channel + 1，依次类推")
-            .items(FieldBuilder("value", FieldType::Double).description("单个通道工程量值，编码规则为 round(value * 1000)，单位由模块型号决定，常见为 V 或 mA"))
+            .description("连续通道的工程量值数组，"
+                         "values[0] 对应 start_channel，依次类推")
+            .items(FieldBuilder("value", FieldType::Double)
+                .description("单个通道工程量值，raw = round(value × 1000)"))
             .minItems(1)
             .maxItems(18))
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("写入结果")
-            .addField(FieldBuilder("start_channel", FieldType::Int).description("本次批量写入的起始通道号"))
-            .addField(FieldBuilder("count", FieldType::Int).description("本次批量写入的通道数量"))
+            .addField(FieldBuilder("start_channel", FieldType::Int).description("起始通道号"))
+            .addField(FieldBuilder("count", FieldType::Int).description("写入的通道数量"))
             .addField(FieldBuilder("values", FieldType::Array)
-                .description("用户传入的工程量值数组")
+                .description("传入的工程量值数组")
                 .items(FieldBuilder("value", FieldType::Double)))
             .addField(FieldBuilder("raw_values", FieldType::Array)
-                .description("与 values 一一对应的寄存器整数值数组，每项都按 round(value * 1000) 计算")
-                .items(FieldBuilder("raw_value", FieldType::Int))));
+                .description("对应的寄存器整数值数组")
+                .items(FieldBuilder("raw_value", FieldType::Int))))
+        .example("通道 1-3 分别输出 1V/2V/3V", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"},
+                             {"start_channel", 1},
+                             {"values", QJsonArray{1.0, 2.0, 3.0}}});
 
     CommandBuilder clearOutputs("clear_outputs");
     addConnectionParams(clearOutputs);
     clearOutputs
-        .description("清零所有输出通道")
+        .description("一键清零所有 18 通道输出（向清零寄存器 0x0076 写入 1）")
         .returnField(FieldBuilder("result", FieldType::Object)
             .description("清零结果")
-            .addField(FieldBuilder("cleared", FieldType::Bool).description("固定返回 true")));
+            .addField(FieldBuilder("cleared", FieldType::Bool).description("固定返回 true")))
+        .example("清零所有输出通道", QStringList{"stdio", "console"},
+                 QJsonObject{{"port_name", "COM3"}});
 
     m_meta = DriverMetaBuilder()
         .schemaVersion("1.0")
         .info("stdio.drv.pqw_analog_output",
               QString::fromUtf8("品全微模拟量模块"),
               "1.0.0",
-              QString::fromUtf8("基于 Modbus RTU 串口的品全微模拟量输出模块驱动"))
+              QString::fromUtf8("品全微（PQW）RS485 Modbus RTU 模拟量输出模块驱动，"
+                               "支持 1-18 通道电压/电流输出"))
         .vendor("stdiolink")
         .command(CommandBuilder("status")
-            .description("获取驱动状态")
+            .description("获取驱动存活状态，固定返回 ready")
             .returnField(FieldBuilder("result", FieldType::Object)
                 .description("状态信息")
                 .addField(FieldBuilder("status", FieldType::String).description("固定返回 ready"))))
@@ -983,5 +1019,4 @@ void PqwAnalogOutputHandler::buildMeta() {
         .command(writeOutputs)
         .command(clearOutputs)
         .build();
-    stdiolink::meta::ensureCommandExamples(m_meta);
 }

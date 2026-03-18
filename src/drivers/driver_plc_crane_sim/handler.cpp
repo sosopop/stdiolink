@@ -2,7 +2,6 @@
 
 #include <QJsonObject>
 
-#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 
 namespace {
@@ -104,54 +103,72 @@ void SimPlcCraneHandler::buildMeta() {
     m_meta = DriverMetaBuilder()
                  .schemaVersion("1.0")
                  .info("plc.crane.sim", "PLC汽动升降装置仿真", "1.0.0",
-                       "PLC 升降装置仿真驱动，仅提供 run 命令，启动后通过 ModbusTCP 通讯")
+                       "PLC 升降装置仿真驱动，启动后模拟 Modbus TCP 从站，"
+                       "自动维护气缸/阀门寄存器状态和到位延迟")
                  .vendor("stdiolink")
                  .profile("keepalive")
                  .command(CommandBuilder("run")
-                              .description("一键启动从站服务（支持 OneShot 模式）")
+                              .description("启动仿真 Modbus TCP 从站服务，"
+                                           "启动后持续运行并通过事件推送状态变化")
                               .param(FieldBuilder("listen_address", FieldType::String)
                                          .defaultValue("")
-                                         .description("监听地址（空=所有接口）"))
+                                         .description("监听地址，空字符串表示所有网络接口（0.0.0.0）"))
                               .param(FieldBuilder("listen_port", FieldType::Int)
                                          .defaultValue(502)
                                          .range(1, 65535)
-                                         .description("监听端口"))
+                                         .description("Modbus TCP 监听端口，默认 502"))
                               .param(FieldBuilder("unit_id", FieldType::Int)
                                          .defaultValue(1)
                                          .range(1, 247)
-                                         .description("Modbus 从站地址"))
+                                         .description("仿真从站地址（1-247），"
+                                                      "仅响应此站号的 Modbus 请求"))
                               .param(FieldBuilder("event_mode", FieldType::Enum)
                                          .defaultValue("write")
                                          .enumValues(QStringList{"write", "all", "read", "none"})
-                                         .description("事件推送模式"))
+                                         .description("事件推送模式：write=仅推送写操作 / "
+                                                      "all=读写都推送 / read=仅推送读操作 / "
+                                                      "none=关闭事件推送"))
                               .param(FieldBuilder("data_area_size", FieldType::Int)
                                          .defaultValue(256)
                                          .range(32, 65536)
-                                         .description("寄存器区大小"))
+                                         .description("保持寄存器区总大小，默认 256 个寄存器"))
                               .param(FieldBuilder("cylinder_up_delay", FieldType::Int)
                                          .defaultValue(2500)
                                          .range(0, 30000)
-                                         .description("气缸上升延迟(ms)"))
+                                         .unit("ms")
+                                         .description("气缸从下到上的模拟运动时间（毫秒），"
+                                                      "到达后寄存器 9 置 1"))
                               .param(FieldBuilder("cylinder_down_delay", FieldType::Int)
                                          .defaultValue(2000)
                                          .range(0, 30000)
-                                         .description("气缸下降延迟(ms)"))
+                                         .unit("ms")
+                                         .description("气缸从上到下的模拟运动时间（毫秒），"
+                                                      "到达后寄存器 10 置 1"))
                               .param(FieldBuilder("valve_open_delay", FieldType::Int)
                                          .defaultValue(1500)
                                          .range(0, 30000)
-                                         .description("阀门打开延迟(ms)"))
+                                         .unit("ms")
+                                         .description("球阀从关到开的模拟运动时间（毫秒），"
+                                                      "到达后寄存器 13 置 1"))
                               .param(FieldBuilder("valve_close_delay", FieldType::Int)
                                          .defaultValue(1200)
                                          .range(0, 30000)
-                                         .description("阀门关闭延迟(ms)"))
+                                         .unit("ms")
+                                         .description("球阀从开到关的模拟运动时间（毫秒），"
+                                                      "到达后寄存器 14 置 1"))
                               .param(FieldBuilder("heartbeat_ms", FieldType::Int)
                                          .defaultValue(0)
                                          .range(0, 10000)
-                                         .description("心跳事件周期(ms)，0=关闭"))
-                              .event("started", "启动完成事件")
-                              .event("sim_heartbeat", "运行心跳事件"))
+                                         .unit("ms")
+                                         .description("运行心跳事件周期（毫秒），"
+                                                      "0=关闭心跳推送"))
+                              .event("started", "仿真启动完成，返回实际监听地址和端口")
+                              .event("sim_heartbeat", "运行心跳事件，含 uptime_s")
+                              .example("启动仿真从站", QStringList{"stdio", "console"},
+                                       QJsonObject{{"listen_port", 502},
+                                                   {"unit_id", 1},
+                                                   {"event_mode", "write"}}))
                  .build();
-    ensureCommandExamples(m_meta);
 }
 
 void SimPlcCraneHandler::handleRun(const QJsonObject& data, stdiolink::IResponder& resp) {

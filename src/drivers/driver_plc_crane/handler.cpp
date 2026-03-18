@@ -2,7 +2,6 @@
 
 #include <QJsonObject>
 
-#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 
 using namespace modbus;
@@ -151,43 +150,49 @@ static FieldBuilder connectionParam(const QString& name) {
     if (name == "host") {
         return FieldBuilder("host", FieldType::String)
             .required()
-            .description("PLC IP 地址")
+            .description("PLC Modbus TCP 地址，如 192.168.1.100")
             .placeholder("192.168.1.1");
     }
     if (name == "port") {
         return FieldBuilder("port", FieldType::Int)
             .defaultValue(502)
             .range(1, 65535)
-            .description("Modbus TCP 端口");
+            .description("Modbus TCP 端口，默认 502");
     }
     if (name == "unit_id") {
         return FieldBuilder("unit_id", FieldType::Int)
             .defaultValue(1)
             .range(1, 247)
-            .description("从站地址");
+            .description("Modbus 从站地址（1-247），对应 PLC 站号");
     }
     return FieldBuilder("timeout", FieldType::Int)
         .defaultValue(3000)
         .range(100, 30000)
         .unit("ms")
-        .description("超时时间");
+        .description("通信超时时间（毫秒），默认 3000");
 }
 
 void PlcCraneHandler::buildMeta() {
     m_meta = DriverMetaBuilder()
                  .schemaVersion("1.0")
                  .info("plc.crane", "PLC汽动升降装置", "1.0.0",
-                       "PLC 升降装置 Modbus TCP 驱动，将寄存器地址映射为语义化命令")
+                       "高炉 PLC 升降装置 Modbus TCP 驱动，将 PLC 保持寄存器映射为语义化命令")
                  .vendor("stdiolink")
-                 .command(CommandBuilder("status").description("获取驱动状态"))
+                 .command(CommandBuilder("status")
+                              .description("获取驱动存活状态，固定返回 ready"))
                  .command(CommandBuilder("read_status")
-                              .description("读取气缸和阀门状态")
+                              .description("读取气缸和球阀到位状态（保持寄存器 9/10/13/14，功能码 0x03）")
                               .param(connectionParam("host"))
                               .param(connectionParam("port"))
                               .param(connectionParam("unit_id"))
-                              .param(connectionParam("timeout")))
+                              .param(connectionParam("timeout"))
+                              .returns(FieldType::Object, "包含 cylinder_up/cylinder_down/valve_open/valve_closed 布尔值")
+                              .example("读取气缸和球阀状态", QStringList{"stdio", "console"},
+                                       QJsonObject{{"host", "127.0.0.1"},
+                                                   {"port", 502},
+                                                   {"unit_id", 1}}))
                  .command(CommandBuilder("cylinder_control")
-                              .description("气缸升降控制")
+                              .description("手动模式下控制气缸升降（寄存器 0，功能码 0x06：1=上升, 2=下降, 0=停止）")
                               .param(connectionParam("host"))
                               .param(connectionParam("port"))
                               .param(connectionParam("unit_id"))
@@ -195,9 +200,15 @@ void PlcCraneHandler::buildMeta() {
                               .param(FieldBuilder("action", FieldType::Enum)
                                          .required()
                                          .enumValues(QStringList{"up", "down", "stop"})
-                                         .description("动作: up, down, stop")))
+                                         .description("up=气缸上升 / down=气缸下降 / stop=停止"))
+                              .returns(FieldType::Object, "写入结果，包含 written 和 action")
+                              .example("气缸上升", QStringList{"stdio", "console"},
+                                       QJsonObject{{"host", "127.0.0.1"},
+                                                   {"port", 502},
+                                                   {"unit_id", 1},
+                                                   {"action", "up"}}))
                  .command(CommandBuilder("valve_control")
-                              .description("阀门开关控制")
+                              .description("手动模式下控制球阀开关（寄存器 1，功能码 0x06：1=打开, 2=关闭, 0=停止）")
                               .param(connectionParam("host"))
                               .param(connectionParam("port"))
                               .param(connectionParam("unit_id"))
@@ -205,9 +216,15 @@ void PlcCraneHandler::buildMeta() {
                               .param(FieldBuilder("action", FieldType::Enum)
                                          .required()
                                          .enumValues(QStringList{"open", "close", "stop"})
-                                         .description("动作: open, close, stop")))
+                                         .description("open=打开球阀 / close=关闭球阀 / stop=停止"))
+                              .returns(FieldType::Object, "写入结果，包含 written 和 action")
+                              .example("打开球阀", QStringList{"stdio", "console"},
+                                       QJsonObject{{"host", "127.0.0.1"},
+                                                   {"port", 502},
+                                                   {"unit_id", 1},
+                                                   {"action", "open"}}))
                  .command(CommandBuilder("set_run")
-                              .description("启停控制")
+                              .description("启动或停止 PLC 运行（寄存器 2，功能码 0x06：1=启动, 0=停止）")
                               .param(connectionParam("host"))
                               .param(connectionParam("port"))
                               .param(connectionParam("unit_id"))
@@ -215,9 +232,15 @@ void PlcCraneHandler::buildMeta() {
                               .param(FieldBuilder("action", FieldType::Enum)
                                          .required()
                                          .enumValues(QStringList{"start", "stop"})
-                                         .description("动作: start, stop")))
+                                         .description("start=启动运行 / stop=停止运行"))
+                              .returns(FieldType::Object, "写入结果，包含 written 和 action")
+                              .example("启动运行", QStringList{"stdio", "console"},
+                                       QJsonObject{{"host", "127.0.0.1"},
+                                                   {"port", 502},
+                                                   {"unit_id", 1},
+                                                   {"action", "start"}}))
                  .command(CommandBuilder("set_mode")
-                              .description("模式切换")
+                              .description("切换手动/自动模式（寄存器 3，功能码 0x06：0=手动, 1=自动）")
                               .param(connectionParam("host"))
                               .param(connectionParam("port"))
                               .param(connectionParam("unit_id"))
@@ -225,7 +248,12 @@ void PlcCraneHandler::buildMeta() {
                               .param(FieldBuilder("mode", FieldType::Enum)
                                          .required()
                                          .enumValues(QStringList{"manual", "auto"})
-                                         .description("模式: manual, auto")))
+                                         .description("manual=手动模式（可逐项控制气缸/阀门） / auto=自动模式"))
+                              .returns(FieldType::Object, "写入结果，包含 written 和 mode")
+                              .example("切换到自动模式", QStringList{"stdio", "console"},
+                                       QJsonObject{{"host", "127.0.0.1"},
+                                                   {"port", 502},
+                                                   {"unit_id", 1},
+                                                   {"mode", "auto"}}))
                  .build();
-    stdiolink::meta::ensureCommandExamples(m_meta);
 }

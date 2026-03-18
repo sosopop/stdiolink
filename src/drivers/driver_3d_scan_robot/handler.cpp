@@ -9,7 +9,6 @@
 #include "driver_3d_scan_robot/protocol_codec.h"
 #include "driver_3d_scan_robot/radar_session.h"
 #include "driver_3d_scan_robot/radar_transport.h"
-#include "stdiolink/driver/example_auto_fill.h"
 #include "stdiolink/driver/meta_builder.h"
 
 using namespace stdiolink;
@@ -33,46 +32,46 @@ static FieldBuilder connectionParam(const QString& name) {
     if (name == "port") {
         return FieldBuilder("port", FieldType::String)
             .required()
-            .description(QString::fromUtf8("串口名称，如 COM3"))
+            .description(QString::fromUtf8("串口名称，如 COM3（JD3D 协议使用 RS232/RS485 通信）"))
             .placeholder("COM3");
     }
     if (name == "addr") {
         return FieldBuilder("addr", FieldType::Int)
             .required()
             .range(0, 255)
-            .description(QString::fromUtf8("设备地址"));
+            .description(QString::fromUtf8("设备从站地址（0-254），出厂默认 0，255=广播"));
     }
     if (name == "baud_rate") {
         return FieldBuilder("baud_rate", FieldType::Int)
             .defaultValue(115200)
-            .description(QString::fromUtf8("波特率"));
+            .description(QString::fromUtf8("串口波特率，设备出厂默认 115200"));
     }
     if (name == "timeout_ms") {
         return FieldBuilder("timeout_ms", FieldType::Int)
             .defaultValue(5000)
             .range(100, 300000)
             .unit("ms")
-            .description(QString::fromUtf8("单次读写超时"));
+            .description(QString::fromUtf8("单次收发超时（毫秒），默认 5000"));
     }
     if (name == "task_timeout_ms") {
         return FieldBuilder("task_timeout_ms", FieldType::Int)
             .defaultValue(-1)
             .unit("ms")
-            .description(QString::fromUtf8("长任务超时（-1 使用命令默认值）"));
+            .description(QString::fromUtf8("长任务（校准/扫描等）总超时，-1=使用命令内置默认值"));
     }
     if (name == "query_interval_ms") {
         return FieldBuilder("query_interval_ms", FieldType::Int)
             .defaultValue(1000)
             .range(100, 60000)
             .unit("ms")
-            .description(QString::fromUtf8("长任务轮询间隔"));
+            .description(QString::fromUtf8("长任务轮询间隔（毫秒），默认 1000"));
     }
     // inter_command_delay_ms
     return FieldBuilder("inter_command_delay_ms", FieldType::Int)
         .defaultValue(250)
         .range(0, 10000)
         .unit("ms")
-        .description(QString::fromUtf8("连续命令间延时"));
+        .description(QString::fromUtf8("连续命令最小间隔（毫秒），默认 250，协议要求至少 50ms"));
 }
 
 static void addConnectionParams(CommandBuilder& cb) {
@@ -801,198 +800,236 @@ void ThreeDScanRobotHandler::handle(const QString& cmd, const QJsonValue& data,
 void ThreeDScanRobotHandler::buildMeta() {
     // status
     auto statusCmd = CommandBuilder("status")
-        .description(QString::fromUtf8("返回驱动存活状态"));
+        .description(QString::fromUtf8("返回驱动存活状态，固定返回 ready"));
 
-    // test
+    // test — 指令 1（TestCom），发送值并校验回显取反
     auto testCmd = CommandBuilder("test")
-        .description(QString::fromUtf8("测试主协议通信"));
+        .description(QString::fromUtf8("测试主协议通信（指令 1），发送 value 并校验设备返回取反值"));
     addConnectionParams(testCmd);
     testCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
-        .description(QString::fromUtf8("测试值")));
+        .description(QString::fromUtf8("任意测试值，设备应返回 ~value")));
+    testCmd.example("通信测试", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 0}});
 
-    // get_addr
+    // get_addr — 指令 1（广播），解析回帧中的源地址
     auto getAddrCmd = CommandBuilder("get_addr")
-        .description(QString::fromUtf8("读取设备地址（广播探测）"));
+        .description(QString::fromUtf8("广播探测设备地址（指令 1 + 广播地址 255），返回设备实际从站地址"));
     addConnectionParams(getAddrCmd);
     getAddrCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
-        .description(QString::fromUtf8("测试值，用于校验返回地址")));
+        .description(QString::fromUtf8("测试值，用于校验回帧正确性")));
+    getAddrCmd.example("探测设备地址", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 255}});
 
-    // set_addr
+    // set_addr — 寄存器写（RegWrite, reg=104）
     auto setAddrCmd = CommandBuilder("set_addr")
-        .description(QString::fromUtf8("设置设备地址"));
+        .description(QString::fromUtf8("修改设备从站地址（寄存器 104 写入）"));
     addConnectionParams(setAddrCmd);
     setAddrCmd.param(FieldBuilder("new_addr", FieldType::Int).required().range(0, 254)
-        .description(QString::fromUtf8("新地址")));
+        .description(QString::fromUtf8("新从站地址（0-254）")));
+    setAddrCmd.example("将设备地址改为 1", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 0}, {"new_addr", 1}});
 
-    // get_mode / set_mode
+    // get_mode — 寄存器读（reg=0, 工作模式）
     auto getModeCmd = CommandBuilder("get_mode")
-        .description(QString::fromUtf8("读取工作模式"));
+        .description(QString::fromUtf8("读取当前工作模式（寄存器 0）：10=boot, 20=imaging, 30=standby, 40=sleep"));
     addConnectionParams(getModeCmd);
+    getModeCmd.example("查询工作模式", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}});
 
+    // set_mode — 寄存器写（reg=0）
     auto setModeCmd = CommandBuilder("set_mode")
-        .description(QString::fromUtf8("设置工作模式"));
+        .description(QString::fromUtf8("切换工作模式（寄存器 0 写入）："
+                     "boot(10)=引导, imaging(20)=成像, standby(30)=待机, sleep(40)=休眠"));
     addConnectionParams(setModeCmd);
     setModeCmd.param(FieldBuilder("mode", FieldType::Enum)
         .enumValues(QStringList{"boot", "imaging", "standby", "sleep"})
-        .description(QString::fromUtf8("工作模式")));
+        .description(QString::fromUtf8("工作模式名称，与 mode_code 二选一")));
     setModeCmd.param(FieldBuilder("mode_code", FieldType::Int)
         .range(10, 40)
-        .description(QString::fromUtf8("工作模式代码：10=boot,20=imaging,30=standby,40=sleep")));
+        .description(QString::fromUtf8("工作模式代码：10/20/30/40，与 mode 二选一")));
+    setModeCmd.example("切换到成像模式", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}, {"mode", "imaging"}});
 
-    // get_temp
+    // get_temp — 寄存器 100(MCU) + 101(板卡)
     auto getTempCmd = CommandBuilder("get_temp")
-        .description(QString::fromUtf8("返回 MCU / 板卡温度"));
+        .description(QString::fromUtf8("读取 MCU 温度（寄存器 100）和板卡温度（寄存器 101），"
+                     "原始值除以 100 得摄氏度"));
     addConnectionParams(getTempCmd);
+    getTempCmd.example("查询设备温度", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}});
 
-    // get_state
+    // get_state — 寄存器 102
     auto getStateCmd = CommandBuilder("get_state")
-        .description(QString::fromUtf8("返回原始状态字和已确认状态位"));
+        .description(QString::fromUtf8("读取设备状态字（寄存器 102），返回原始值和各标志位"));
     addConnectionParams(getStateCmd);
+    getStateCmd.example("查询设备状态", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}});
 
-    // get_version
+    // get_version — 寄存器 103
     auto getVersionCmd = CommandBuilder("get_version")
-        .description(QString::fromUtf8("返回固件版本"));
+        .description(QString::fromUtf8("读取固件版本号（寄存器 103）"));
     addConnectionParams(getVersionCmd);
 
-    // get_angles
+    // get_angles — 寄存器 10（方向角）
     auto getAnglesCmd = CommandBuilder("get_angles")
-        .description(QString::fromUtf8("返回 X/Y 当前角度"));
+        .description(QString::fromUtf8("读取 X/Y 当前角度（寄存器 10），"
+                     "高16位=X角度×100, 低16位=Y角度×100"));
     addConnectionParams(getAnglesCmd);
+    getAnglesCmd.example("查询当前角度", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}});
 
-    // get_switch_x / get_switch_y
+    // get_switch_x / get_switch_y — 寄存器 11/12
     auto getSwitchXCmd = CommandBuilder("get_switch_x")
-        .description(QString::fromUtf8("返回 X 轴接近开关语义状态"));
+        .description(QString::fromUtf8("读取 X 轴接近开关状态（寄存器 11）"));
     addConnectionParams(getSwitchXCmd);
 
     auto getSwitchYCmd = CommandBuilder("get_switch_y")
-        .description(QString::fromUtf8("返回 Y 轴接近开关语义状态"));
+        .description(QString::fromUtf8("读取 Y 轴接近开关状态（寄存器 12）"));
     addConnectionParams(getSwitchYCmd);
 
-    // get_calib_x / get_calib_y
+    // get_calib_x / get_calib_y — 寄存器 13/14
     auto getCalibXCmd = CommandBuilder("get_calib_x")
-        .description(QString::fromUtf8("返回 X 轴校准语义状态"));
+        .description(QString::fromUtf8("读取 X 轴校准状态（寄存器 13）"));
     addConnectionParams(getCalibXCmd);
 
     auto getCalibYCmd = CommandBuilder("get_calib_y")
-        .description(QString::fromUtf8("返回 Y 轴校准语义状态"));
+        .description(QString::fromUtf8("读取 Y 轴校准状态（寄存器 14）"));
     addConnectionParams(getCalibYCmd);
 
-    // calib / calib_x / calib_y
+    // calib / calib_x / calib_y — 指令 4
     auto calibCmd = CommandBuilder("calib")
-        .description(QString::fromUtf8("全量校准"));
+        .description(QString::fromUtf8("全量校准 XY 双轴（指令 4，电机代码 300），耗时较长"));
     addLongTaskParams(calibCmd);
+    calibCmd.example("全量校准", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}});
 
     auto calibXCmd = CommandBuilder("calib_x")
-        .description(QString::fromUtf8("X 轴校准"));
+        .description(QString::fromUtf8("仅校准 X 轴（指令 4，电机代码 100）"));
     addLongTaskParams(calibXCmd);
 
     auto calibYCmd = CommandBuilder("calib_y")
-        .description(QString::fromUtf8("Y 轴校准"));
+        .description(QString::fromUtf8("仅校准 Y 轴（指令 4，电机代码 200）"));
     addLongTaskParams(calibYCmd);
 
-    // move
+    // move — 指令 7
     auto moveCmd = CommandBuilder("move")
-        .description(QString::fromUtf8("绝对角度移动"));
+        .description(QString::fromUtf8("移动到指定绝对角度（指令 7），"
+                     "X 范围 0-186°, Y 范围 0-186°，角度相对校准零点"));
     addLongTaskParams(moveCmd);
     moveCmd.param(FieldBuilder("x_deg", FieldType::Double).required().range(0, 186)
-        .description(QString::fromUtf8("X 角度（°）")));
+        .description(QString::fromUtf8("目标 X 角度（°），内部编码 ×100")));
     moveCmd.param(FieldBuilder("y_deg", FieldType::Double).required().range(0, 186)
-        .description(QString::fromUtf8("Y 角度（°）")));
+        .description(QString::fromUtf8("目标 Y 角度（°），内部编码 ×100")));
+    moveCmd.example("移动到 X=90°/Y=50°", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}, {"x_deg", 90}, {"y_deg", 50}});
 
-    // get_distance_at
+    // get_distance_at — 指令 5（先移动再测距）
     auto getDistanceAtCmd = CommandBuilder("get_distance_at")
-        .description(QString::fromUtf8("获取指定角度的距离"));
+        .description(QString::fromUtf8("移动到指定角度并测距（指令 5），返回该点距离（毫米）"));
     addLongTaskParams(getDistanceAtCmd);
     getDistanceAtCmd.param(FieldBuilder("x_deg", FieldType::Double).required().range(0, 186)
-        .description(QString::fromUtf8("X 角度（°）")));
+        .description(QString::fromUtf8("目标 X 角度（°），内部编码 ×100")));
     getDistanceAtCmd.param(FieldBuilder("y_deg", FieldType::Double).required().range(0, 101)
-        .description(QString::fromUtf8("Y 角度（°）")));
+        .description(QString::fromUtf8("目标 Y 角度（°），内部编码 ×100")));
+    getDistanceAtCmd.example("测量 X=90°/Y=50° 处距离", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1}, {"x_deg", 90}, {"y_deg", 50}});
 
-    // get_distance
+    // get_distance — 指令 6（当前位置测距）
     auto getDistanceCmd = CommandBuilder("get_distance")
-        .description(QString::fromUtf8("单点测距"));
+        .description(QString::fromUtf8("在当前角度位置测距（指令 6），返回距离（毫米）"));
     addConnectionParams(getDistanceCmd);
 
-    // get_reg / set_reg
+    // get_reg / set_reg — 原始寄存器读写（指令 2/3）
     auto getRegCmd = CommandBuilder("get_reg")
-        .description(QString::fromUtf8("原始寄存器读"));
+        .description(QString::fromUtf8("原始寄存器读（指令 2），返回指定地址的 32 位值"));
     addConnectionParams(getRegCmd);
     getRegCmd.param(FieldBuilder("register", FieldType::Int).required().range(0, 500)
-        .description(QString::fromUtf8("寄存器地址")));
+        .description(QString::fromUtf8("寄存器地址（0-500）")));
 
     auto setRegCmd = CommandBuilder("set_reg")
-        .description(QString::fromUtf8("原始寄存器写"));
+        .description(QString::fromUtf8("原始寄存器写（指令 3），写入指定地址的 32 位值"));
     addConnectionParams(setRegCmd);
     setRegCmd.param(FieldBuilder("register", FieldType::Int).required().range(0, 500)
-        .description(QString::fromUtf8("寄存器地址")));
+        .description(QString::fromUtf8("寄存器地址（0-500）")));
     setRegCmd.param(FieldBuilder("value", FieldType::Int).required()
-        .description(QString::fromUtf8("写入值")));
+        .description(QString::fromUtf8("写入的 32 位值")));
 
-    // scan_line
+    // scan_line — 指令 10（单线扫描）
     auto scanLineCmd = CommandBuilder("scan_line")
-        .description(QString::fromUtf8("单线扫描（启动 + 轮询 + 分段聚合）"));
+        .description(QString::fromUtf8("单线扫描（指令 10）：固定 X 角度，沿 Y 轴扫描，"
+                     "完成后自动拉取点云数据"));
     addLongTaskParams(scanLineCmd);
     scanLineCmd.param(FieldBuilder("angle_x", FieldType::Double).required()
-        .defaultValue(0).range(0, 186).description(QString::fromUtf8("X 角度，单位 deg，编码时 ×100")));
+        .defaultValue(0).range(0, 186).description(QString::fromUtf8("固定 X 角度（°），编码 ×100")));
     scanLineCmd.param(FieldBuilder("begin_y", FieldType::Double).required()
-        .defaultValue(1).range(1, 100).description(QString::fromUtf8("Y 起始角度，单位 deg，编码时 ×100")));
+        .defaultValue(1).range(1, 100).description(QString::fromUtf8("Y 起始角度（°），编码 ×100")));
     scanLineCmd.param(FieldBuilder("end_y", FieldType::Double).required()
-        .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度，单位 deg，编码时 ×100")));
+        .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度（°），编码 ×100")));
     scanLineCmd.param(FieldBuilder("step_y", FieldType::Double).required()
-        .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长，单位 deg，编码时 ×100")));
+        .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长（°），编码 ×100")));
     scanLineCmd.param(FieldBuilder("speed_y", FieldType::Double).required()
-        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度，单位 deg/s，编码时 ×100")));
+        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度（°/s），编码 ×100")));
+    scanLineCmd.example("Y 轴 1°-100° 单线扫描", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1},
+                    {"angle_x", 90}, {"begin_y", 1}, {"end_y", 100},
+                    {"step_y", 1}, {"speed_y", 2.5}});
 
-    // scan_frame
+    // scan_frame — 指令 11（帧扫描）
     auto scanFrameCmd = CommandBuilder("scan_frame")
-        .description(QString::fromUtf8("帧扫描（启动 + 轮询 + 分段聚合）"));
+        .description(QString::fromUtf8("帧扫描（指令 11）：X/Y 二维区域扫描，"
+                     "完成后自动拉取点云数据"));
     addLongTaskParams(scanFrameCmd);
     scanFrameCmd.param(FieldBuilder("begin_x", FieldType::Double).required()
-        .defaultValue(0).range(0, 186).description(QString::fromUtf8("X 起始角度，单位 deg，编码时 ×100")));
+        .defaultValue(0).range(0, 186).description(QString::fromUtf8("X 起始角度（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("end_x", FieldType::Double).required()
-        .defaultValue(180).range(0, 186).description(QString::fromUtf8("X 终止角度，单位 deg，编码时 ×100")));
+        .defaultValue(180).range(0, 186).description(QString::fromUtf8("X 终止角度（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("step_x", FieldType::Double).required()
-        .defaultValue(5).range(0.25, 186).description(QString::fromUtf8("X 角度步长，单位 deg，编码时 ×100")));
+        .defaultValue(5).range(0.25, 186).description(QString::fromUtf8("X 角度步长（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("begin_y", FieldType::Double).required()
-        .defaultValue(1).range(1, 100).description(QString::fromUtf8("Y 起始角度，单位 deg，编码时 ×100")));
+        .defaultValue(1).range(1, 100).description(QString::fromUtf8("Y 起始角度（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("end_y", FieldType::Double).required()
-        .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度，单位 deg，编码时 ×100")));
+        .defaultValue(100).range(1, 100).description(QString::fromUtf8("Y 终止角度（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("step_y", FieldType::Double).required()
-        .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长，单位 deg，编码时 ×100")));
+        .defaultValue(1).range(0.25, 99).description(QString::fromUtf8("Y 角度步长（°），编码 ×100")));
     scanFrameCmd.param(FieldBuilder("speed_y", FieldType::Double).required()
-        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度，单位 deg/s，编码时 ×100")));
+        .defaultValue(10).range(0.1, 10).description(QString::fromUtf8("Y 轴旋转速度（°/s），编码 ×100")));
+    scanFrameCmd.example("全幅帧扫描", QStringList{"stdio", "console"},
+        QJsonObject{{"port", "COM3"}, {"addr", 1},
+                    {"begin_x", 0}, {"end_x", 186}, {"step_x", 5},
+                    {"begin_y", 1}, {"end_y", 100}, {"step_y", 1}, {"speed_y", 2.5}});
 
-    // get_data
+    // get_data — 分段数据拉取
     auto getDataCmd = CommandBuilder("get_data")
-        .description(QString::fromUtf8("按显式 total_bytes 拉取扫描分段数据（oneshot 无状态）"));
+        .description(QString::fromUtf8("手动拉取指定长度的扫描分段数据（无状态，需知道 total_bytes）"));
     addConnectionParams(getDataCmd);
     getDataCmd.param(connectionParam("inter_command_delay_ms"));
     getDataCmd.param(FieldBuilder("total_bytes", FieldType::Int).required()
-        .range(1, 999999).description(QString::fromUtf8("数据总字节数")));
+        .range(1, 999999).description(QString::fromUtf8("预期拉取的数据总字节数")));
 
-    // query
+    // query — 指令 8
     auto queryCmd = CommandBuilder("query")
-        .description(QString::fromUtf8("查询或重置最近一次长任务结果"));
+        .description(QString::fromUtf8("查询/重置最近一次长任务结果（指令 8）"));
     addConnectionParams(queryCmd);
     queryCmd.param(FieldBuilder("op", FieldType::Int).defaultValue(100)
         .range(100, 200)
-        .description(QString::fromUtf8("100=查询最近一次结果，200=重置最近一次结果")));
+        .description(QString::fromUtf8("100=查询最近一次结果 / 200=重置结果")));
 
-    // interrupt_test
+    // interrupt_test — 中断式指令测试
     auto interruptTestCmd = CommandBuilder("interrupt_test")
-        .description(QString::fromUtf8("测试中断式通信"));
+        .description(QString::fromUtf8("中断式通信测试（插入指令），可在长任务执行期间调用"));
     addConnectionParams(interruptTestCmd);
     interruptTestCmd.param(FieldBuilder("value", FieldType::Int).defaultValue(1000)
-        .description(QString::fromUtf8("测试值")));
+        .description(QString::fromUtf8("任意测试值")));
 
-    // scan_progress
+    // scan_progress — 中断式获取进度
     auto scanProgressCmd = CommandBuilder("scan_progress")
-        .description(QString::fromUtf8("获取帧扫描进度"));
+        .description(QString::fromUtf8("获取帧扫描进度（中断式插入指令），"
+                     "返回 current_line/total_lines"));
     addConnectionParams(scanProgressCmd);
 
-    // scan_cancel
+    // scan_cancel — 中断式取消
     auto scanCancelCmd = CommandBuilder("scan_cancel")
-        .description(QString::fromUtf8("停止当前帧扫描"));
+        .description(QString::fromUtf8("取消当前帧扫描（中断式插入指令）"));
     addConnectionParams(scanCancelCmd);
 
     m_meta = DriverMetaBuilder()
@@ -1000,7 +1037,8 @@ void ThreeDScanRobotHandler::buildMeta() {
         .info("stdio.drv.3d_scan_robot",
               QString::fromUtf8("3D 扫描机器人"),
               "1.0.0",
-              QString::fromUtf8("3D 扫描机器人协议基础驱动"))
+              QString::fromUtf8("JD3D 协议 3D 扫描机器人驱动，"
+                               "支持电机控制、校准、测距、单线/帧扫描"))
         .vendor("stdiolink")
         .command(statusCmd)
         .command(testCmd)
@@ -1032,10 +1070,7 @@ void ThreeDScanRobotHandler::buildMeta() {
         .command(scanProgressCmd)
         .command(scanCancelCmd)
         .build();
-    stdiolink::meta::ensureCommandExamples(m_meta);
 }
-
-// ── 默认 transport 工厂（链接 radar_transport.cpp 中的实现）
 
 extern IRadarTransport* newRadarSerialTransport();
 
