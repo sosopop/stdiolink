@@ -203,6 +203,16 @@ CommandBuilder& CommandBuilder::example(const QString& description,
     return *this;
 }
 
+CommandBuilder& CommandBuilder::example(const QString& description,
+                                        const QStringList& modes,
+                                        const QJsonObject& params,
+                                        const QJsonValue& expectedOutput) {
+    for (const auto& mode : modes) {
+        example(description, mode, params, expectedOutput);
+    }
+    return *this;
+}
+
 CommandBuilder& CommandBuilder::group(const QString& g) {
     m_cmd.ui.group = g;
     return *this;
