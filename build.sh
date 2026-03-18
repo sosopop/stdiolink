@@ -3,7 +3,7 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 RELEASE_SH="${SCRIPT_DIR}/tools/release.sh"
-BUILD_TYPE="debug"
+BUILD_TYPE="release"
 BUILD_DIR="build"
 BUILD_TYPE_SET=0
 

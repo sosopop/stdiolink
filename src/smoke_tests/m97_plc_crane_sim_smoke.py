@@ -28,12 +28,7 @@ def candidate_bin_dirs() -> list[Path]:
     env_bin = os.environ.get("STDIOLINK_BIN_DIR")
     if env_bin:
         dirs.append(Path(env_bin))
-    dirs.extend([
-        ROOT_DIR / "build" / "debug",
-        ROOT_DIR / "build" / "release",
-        ROOT_DIR / "build" / "runtime_debug" / "bin",
-        ROOT_DIR / "build" / "runtime_release" / "bin",
-    ])
+    dirs.append(ROOT_DIR / "build" / "runtime_release" / "bin")
     return dirs
 
 

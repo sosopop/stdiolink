@@ -124,16 +124,16 @@ HTTP server listening on 127.0.0.1:6200
 
 ## 构建
 
-`stdiolink_server` 随项目一起构建，产物位于 `build/runtime_debug/bin/`（Debug）或 `build/runtime_release/bin/`（Release）：
+`stdiolink_server` 随项目一起构建。默认运行入口位于 `build/runtime_release/bin/`；若显式构建 Debug，则对应产物位于 `build/runtime_debug/bin/`：
 
 ```bash
 # macOS / Linux
 ./build.sh
-./build/runtime_debug/bin/stdiolink_server --help
+./build/runtime_release/bin/stdiolink_server --help
 
 # Windows
 build.bat
-build\runtime_debug\bin\stdiolink_server.exe --help
+build\runtime_release\bin\stdiolink_server.exe --help
 ```
 
 ## 下一步

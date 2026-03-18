@@ -3,7 +3,7 @@ setlocal EnableExtensions
 
 set "SCRIPT_DIR=%~dp0"
 set "RELEASE_BAT=%SCRIPT_DIR%tools\release.bat"
-set "BUILD_TYPE=debug"
+set "BUILD_TYPE=release"
 set "BUILD_DIR=build"
 set "BUILD_TYPE_SET="
 

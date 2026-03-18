@@ -455,7 +455,7 @@ def build_runtime(*, build_dir_arg: str, config: str, clean_runtime: bool) -> Pa
 def ensure_runtime_exists(build_dir_arg: str, config: str) -> Path:
     runtime_dir = resolve_path(build_dir_arg, root_dir()) / f"runtime_{config}"
     if not runtime_dir.is_dir():
-        hint = "build.bat Release" if is_windows() else "./build.sh Release"
+        hint = "build.bat" if is_windows() else "./build.sh"
         raise ReleaseError(f"Runtime directory not found: {runtime_dir}\nPlease build project first, for example: {hint}")
     return runtime_dir
 
@@ -520,7 +520,9 @@ def run_smoke(build_dir_arg: str, config: str) -> None:
     if not python_exe:
         raise ReleaseError("python interpreter not found")
     env = os.environ.copy()
-    env["STDIOLINK_BIN_DIR"] = str(raw_bin_dir(build_dir_arg, config))
+    runtime_dir = ensure_runtime_exists(build_dir_arg, config)
+    env["STDIOLINK_BIN_DIR"] = str(runtime_dir / "bin")
+    env["STDIOLINK_DATA_ROOT"] = str(runtime_dir / "data_root")
     run_command([python_exe, str(smoke_script), "--plan", "all"], env=env, failure_message="Smoke tests failed")
     log("  Smoke passed.")
 

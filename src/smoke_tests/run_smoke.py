@@ -43,13 +43,10 @@ LEGACY_MILESTONE_ALIASES = {
 
 
 def _inject_dll_paths() -> dict[str, str]:
-    """将所有候选 bin 目录注入 PATH，确保子进程能找到 Qt/依赖 DLL。"""
+    """将 runtime_release/bin 注入 PATH，确保子进程默认使用 Release 运行时。"""
     env = os.environ.copy()
     candidate_dirs = [
-        PROJECT_ROOT / "build" / "runtime_debug" / "bin",
         PROJECT_ROOT / "build" / "runtime_release" / "bin",
-        PROJECT_ROOT / "build" / "debug",
-        PROJECT_ROOT / "build" / "release",
     ]
     extra = os.pathsep.join(str(d) for d in candidate_dirs if d.exists())
     if extra:

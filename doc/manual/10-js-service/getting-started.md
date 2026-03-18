@@ -43,7 +43,7 @@ calc.$close();
 运行：
 
 ```bash
-stdiolink_service ./hello --data-root=./build/runtime_debug/data_root
+stdiolink_service ./hello --data-root=./build/runtime_release/data_root
 ```
 
 ## 使用配置参数
@@ -81,7 +81,7 @@ calc.$close();
 
 ```bash
 stdiolink_service ./my_calc \
-    --data-root=./build/runtime_debug/data_root \
+    --data-root=./build/runtime_release/data_root \
     --config.driverPath=stdio.drv.calculator \
     --config.a=5 --config.b=3
 ```

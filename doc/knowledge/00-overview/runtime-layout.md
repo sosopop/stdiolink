@@ -14,10 +14,10 @@
 
 ## Layout
 
-- `build/runtime_debug/bin/`：核心二进制、Qt 依赖。
-- `build/runtime_debug/data_root/drivers/`：Driver 可执行文件目录。
-- `build/runtime_debug/data_root/services/`：Service 模板目录。
-- `build/runtime_debug/data_root/projects/`：Project 目录；每个 Project 子目录内含 `config.json`、`param.json`、`workspace/`。
+- `build/runtime_release/bin/`：默认运行时入口，包含核心二进制、Qt 依赖。
+- `build/runtime_release/data_root/drivers/`：默认 Driver 可执行文件目录。
+- `build/runtime_release/data_root/services/`：默认 Service 模板目录。
+- `build/runtime_release/data_root/projects/`：默认 Project 目录；每个 Project 子目录内含 `config.json`、`param.json`、`workspace/`。
 - `src/demo/server_manager_demo/data_root/`：仅补充 demo 的 `config.json`、`logs/`、`workspaces/`、`scripts/` 等辅助资产，不再发布其中的 `services/`、`projects/`。
 - `release/<pkg>/`：发布包根，结构与 runtime 基本同构。
 
@@ -31,7 +31,7 @@
 ## Risks
 
 - 只编译 raw 目录、不组装 runtime 时，Driver/Service/Server 运行会缺少相对路径资源。
-- Windows 直接运行 Driver 前需把 `build/runtime_debug/bin` 放入 `PATH`。
+- Windows 直接运行 Driver 前默认需把 `build/runtime_release/bin` 放入 `PATH`；只有显式调试 Debug 产物时才切到 `runtime_debug/bin`。
 
 ## Related
 

@@ -33,10 +33,7 @@ def _find_runtime_data_root() -> Path | None:
     candidates = []
     if env_dir:
         candidates.append(Path(env_dir))
-    candidates.extend([
-        PROJECT_ROOT / "build" / "runtime_release" / "data_root",
-        PROJECT_ROOT / "build" / "runtime_debug" / "data_root",
-    ])
+    candidates.append(PROJECT_ROOT / "build" / "runtime_release" / "data_root")
     for path in candidates:
         if (path / "services").exists():
             return path
@@ -57,12 +54,7 @@ def _find_executable(name: str) -> Path | None:
     candidates = []
     if env_dir:
         candidates.append(Path(env_dir) / f"{name}{suffix}")
-    candidates.extend([
-        PROJECT_ROOT / "build" / "runtime_release" / "bin" / f"{name}{suffix}",
-        PROJECT_ROOT / "build" / "runtime_debug" / "bin" / f"{name}{suffix}",
-        PROJECT_ROOT / "build" / "debug" / f"{name}{suffix}",
-        PROJECT_ROOT / "build" / "release" / f"{name}{suffix}",
-    ])
+    candidates.append(PROJECT_ROOT / "build" / "runtime_release" / "bin" / f"{name}{suffix}")
     for p in candidates:
         if p.exists():
             return p
@@ -72,10 +64,7 @@ def _find_executable(name: str) -> Path | None:
 def _inject_dll_paths() -> dict[str, str]:
     env = os.environ.copy()
     candidate_dirs = [
-        PROJECT_ROOT / "build" / "runtime_debug" / "bin",
         PROJECT_ROOT / "build" / "runtime_release" / "bin",
-        PROJECT_ROOT / "build" / "debug",
-        PROJECT_ROOT / "build" / "release",
     ]
     extra = os.pathsep.join(str(d) for d in candidate_dirs if d.exists())
     if extra:

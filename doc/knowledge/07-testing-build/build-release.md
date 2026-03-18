@@ -6,14 +6,14 @@
 
 ## Core Commands
 
-- Windows 构建：`build.bat` / `build.bat Release`；内部包装到 `tools/release.py build`
-- Unix 构建：`./build.sh` / `./build.sh Release`；内部包装到 `tools/release.py build`
+- Windows 构建：`build.bat`（默认 Release） / `build.bat debug`；内部包装到 `tools/release.py build`
+- Unix 构建：`./build.sh`（默认 Release） / `./build.sh debug`；内部包装到 `tools/release.py build`
 - CTest：`ctest --test-dir build --output-on-failure`
 - 跨平台构建/测试/发布：`tools/release.py`；便捷封装：`tools/release.ps1`、`tools/release.bat`、`tools/release.sh`
 
 ## Key Conclusions
 
-- 运行联调优先看 `build/runtime_debug/`
+- 运行联调默认看 `build/runtime_release/`
 - 发布验证优先看 `release/<pkg>/`
 - `build/runtime_*` 默认没有发布包根脚本；Windows 模板在 `tools/release_scripts/`，Unix 模板在 `tools/release_scripts_unix/`，由 `tools/release.py publish` 直接拷贝
 - runtime / 发布包里的 Driver 默认只来自 `src/drivers/`；`src/demo/` 下示例 Driver 会编译，但不会自动发布到 `data_root/drivers/`
@@ -36,14 +36,14 @@
 
 ## Debug Entry
 
-- Driver 单跑：先配 `PATH` 指到 `build/runtime_debug/bin`
+- Driver 单跑：默认先配 `PATH` 指到 `build/runtime_release/bin`
 - Server 单跑：`build/runtime_release/bin/stdiolink_server --data-root=... --webui-dir=...`
 
 ## Driver Standalone Minimal Steps
 
 - Windows:
-  `set PATH=%CD%\build\runtime_debug\bin;%PATH%`
-  `build\runtime_debug\data_root\drivers\stdio.drv.<name>\stdio.drv.<name>.exe --export-meta`
+  `set PATH=%CD%\build\runtime_release\bin;%PATH%`
+  `build\runtime_release\data_root\drivers\stdio.drv.<name>\stdio.drv.<name>.exe --export-meta`
 - 先确认目标 Driver 已被组装进 `data_root/drivers/`，不要从 raw 输出目录直接联调
 - 如果 Service 或 Server 找不到 Driver，优先回查 `runtime-layout.md` 和 `resolveDriver()` 路径链路
 

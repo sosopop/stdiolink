@@ -18,15 +18,9 @@ def _driver_paths() -> list[tuple[str, Path]]:
     exe = "stdio.drv.3dvision.exe" if os.name == "nt" else "stdio.drv.3dvision"
     return [
         (
-            "runtime_debug",
-            PROJECT_ROOT / "build" / "runtime_debug" / "data_root" / "drivers" / "stdio.drv.3dvision" / exe,
-        ),
-        (
             "runtime_release",
             PROJECT_ROOT / "build" / "runtime_release" / "data_root" / "drivers" / "stdio.drv.3dvision" / exe,
         ),
-        ("raw_debug", PROJECT_ROOT / "build" / "debug" / exe),
-        ("raw_release", PROJECT_ROOT / "build" / "release" / exe),
     ]
 
 

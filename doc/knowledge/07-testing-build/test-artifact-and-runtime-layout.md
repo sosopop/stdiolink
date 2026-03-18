@@ -7,7 +7,8 @@
 ## Key Paths
 
 - `build/`：CMake/Ninja 产物和 CTest 注册信息，不等于可直接联调的运行目录。
-- `build/runtime_debug/`、`build/runtime_release/`：开发时最常用的可运行目录，包含 `bin/` 和 `data_root/`。
+- `build/runtime_release/`：默认可运行目录，包含 `bin/` 和 `data_root/`。
+- `build/runtime_debug/`：显式调试 Debug 构建时使用的可运行目录。
 - `build_vs/runtime_debug/`、`build_vs/runtime_release/`：Visual Studio 多配置构建的可运行目录。
 - `release/<pkg>/`：发布包验证入口，不等于 `build/runtime_*`。
 

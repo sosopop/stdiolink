@@ -63,7 +63,7 @@ stdiolink 是基于 Qt 的跨平台 IPC 框架，使用 JSONL 协议通过 stdin
 ```
 build/
 ├── debug/                  # CMake 原始输出（仅编译产物）
-├── runtime_debug/          # 组装后的运行时目录
+├── runtime_debug/          # Debug 运行时目录（显式调试时使用）
 │   ├── bin/                # 核心二进制 + Qt 插件
 │   ├── data_root/
 │   │   ├── drivers/        # 驱动按子目录组织（stdio.drv.*）
@@ -72,7 +72,7 @@ build/
 │   │   └── logs/           # 日志文件
 │   ├── demos/
 │   └── scripts/
-└── runtime_release/        # Release 构建同构布局
+└── runtime_release/        # 默认运行时目录（Release）
 ```
 
 **关键特性**：
@@ -227,24 +227,24 @@ src/drivers/driver_echo/
 
 ### 3.4 Driver 单独运行
 
-Driver 可执行文件依赖 `build/runtime_debug/bin` 下的运行时 DLL（Windows）或共享库（Linux/macOS）。
+默认联调时，Driver 可执行文件依赖 `build/runtime_release/bin` 下的运行时 DLL（Windows）或共享库（Linux/macOS）。仅在显式调试 Debug 构建时改用 `build/runtime_debug/bin`。
 
 **Windows 示例**：
 ```powershell
 # 添加 bin 目录到 PATH
-$env:PATH = "$PWD\build\runtime_debug\bin;$env:PATH"
+$env:PATH = "$PWD\build\runtime_release\bin;$env:PATH"
 
 # Driver 实际路径
-.\build\runtime_debug\data_root\drivers\stdio.drv.echo\stdio.drv.echo.exe --export-meta
+.\build\runtime_release\data_root\drivers\stdio.drv.echo\stdio.drv.echo.exe --export-meta
 ```
 
 **Linux/macOS 示例**：
 ```bash
 # 设置 LD_LIBRARY_PATH (Linux) 或 DYLD_LIBRARY_PATH (macOS)
-export LD_LIBRARY_PATH=$PWD/build/runtime_debug/bin:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$PWD/build/runtime_release/bin:$LD_LIBRARY_PATH
 
 # 运行 Driver
-./build/runtime_debug/data_root/drivers/stdio.drv.echo/stdio.drv.echo --export-meta
+./build/runtime_release/data_root/drivers/stdio.drv.echo/stdio.drv.echo --export-meta
 ```
 
 如果你已经通过发布脚本生成了发布包，可使用包根目录下的 Windows `dev.bat` / `dev.ps1` 或 Unix `dev.sh` 自动配置环境；`build/runtime_*` 目录本身默认不包含这些脚本。
@@ -464,7 +464,7 @@ TEST(EchoDriver, BasicEcho) {
 
 运行测试：
 ```bash
-./build/runtime_debug/bin/stdiolink_tests
+./build/runtime_release/bin/stdiolink_tests
 ```
 
 ### 6.2 回归测试（JS Service）
@@ -553,10 +553,10 @@ echo '{"cmd":"echo","data":{"msg":"Hello"}}' | ./stdio.drv.echo --mode=stdio --p
 
 ```bash
 # Windows
-build.bat Release
+build.bat
 
 # Linux/macOS
-./build.sh Release
+./build.sh
 
 # 运行测试
 ctest --test-dir build --output-on-failure
@@ -831,7 +831,7 @@ docs: 更新开发指南
 **问题**：冒烟测试找不到可执行文件
 
 **解决**：
-- 确认已执行构建：`build.bat Release`
+- 确认已执行构建：`build.bat`（默认 Release）
 - 检查产物路径：`build/runtime_release/bin/`
 - 使用 `assemble_runtime` target 组装运行时目录
 
@@ -870,7 +870,7 @@ docs: 更新开发指南
 ---
 
 **快速链接**：
-- 构建：`build.bat Release` / `./build.sh Release`（兼容包装到 `tools/release.py build`）
+- 构建：`build.bat` / `./build.sh`（默认 Release，兼容包装到 `tools/release.py build`）
 - 启动：`cd build/runtime_release && ./bin/stdiolink_server --data-root=./data_root --webui-dir=./data_root/webui`
 - 测试：`ctest --test-dir build --output-on-failure`
 - WebUI（build/runtime_release 直跑）：`http://127.0.0.1:6200`

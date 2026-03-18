@@ -36,22 +36,17 @@ def candidate_bin_dirs() -> list[Path]:
     env_bin = os.environ.get("STDIOLINK_BIN_DIR")
     if env_bin:
         dirs.append(Path(env_bin))
-    dirs.extend(
-        [
-            ROOT_DIR / "build" / "runtime_release" / "bin",
-            ROOT_DIR / "build" / "release",
-            ROOT_DIR / "build" / "runtime_debug" / "bin",
-            ROOT_DIR / "build" / "debug",
-        ]
-    )
+    dirs.append(ROOT_DIR / "build" / "runtime_release" / "bin")
     return dirs
 
 
 def candidate_data_roots() -> list[Path]:
-    return [
-        ROOT_DIR / "build" / "runtime_release" / "data_root",
-        ROOT_DIR / "build" / "runtime_debug" / "data_root",
-    ]
+    env_data_root = os.environ.get("STDIOLINK_DATA_ROOT")
+    dirs: list[Path] = []
+    if env_data_root:
+        dirs.append(Path(env_data_root))
+    dirs.append(ROOT_DIR / "build" / "runtime_release" / "data_root")
+    return dirs
 
 
 def make_env() -> dict[str, str]:
