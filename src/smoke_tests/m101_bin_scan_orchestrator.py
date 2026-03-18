@@ -9,6 +9,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -31,6 +32,14 @@ class CaseResult:
     detail: str
 
 
+class QuietThreadingHTTPServer(ThreadingHTTPServer):
+    def handle_error(self, request, client_address) -> None:  # type: ignore[override]
+        exc_type, _, _ = sys.exc_info()
+        if exc_type in (BrokenPipeError, ConnectionResetError):
+            return
+        super().handle_error(request, client_address)
+
+
 def candidate_bin_dirs() -> list[Path]:
     dirs: list[Path] = []
     env_bin = os.environ.get("STDIOLINK_BIN_DIR")
@@ -47,6 +56,15 @@ def candidate_data_roots() -> list[Path]:
         dirs.append(Path(env_data_root))
     dirs.append(ROOT_DIR / "build" / "runtime_release" / "data_root")
     return dirs
+
+
+def candidate_runtime_roots() -> list[Path]:
+    roots: list[Path] = []
+    env_bin = os.environ.get("STDIOLINK_BIN_DIR")
+    if env_bin:
+        roots.append(Path(env_bin).resolve().parent)
+    roots.append((ROOT_DIR / "build" / "runtime_release").resolve())
+    return roots
 
 
 def make_env() -> dict[str, str]:
@@ -66,6 +84,15 @@ def find_executable(base_name: str) -> Path | None:
     return None
 
 
+def find_driver_executable(base_name: str) -> Path | None:
+    file_name = f"{base_name}{EXE_SUFFIX}"
+    for runtime_root in candidate_runtime_roots():
+        candidate = runtime_root / "data_root" / "drivers" / base_name / file_name
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def find_driver_dir(driver_name: str) -> Path | None:
     for data_root in candidate_data_roots():
         candidate = data_root / "drivers" / driver_name
@@ -77,6 +104,14 @@ def find_driver_dir(driver_name: str) -> Path | None:
 def format_missing(name: str) -> str:
     candidates = "\n".join(str(d / f"{name}{EXE_SUFFIX}") for d in candidate_bin_dirs())
     return f"missing executable: {name}{EXE_SUFFIX}\ncandidates:\n{candidates}"
+
+
+def format_missing_driver_executable(name: str) -> str:
+    file_name = f"{name}{EXE_SUFFIX}"
+    candidates = "\n".join(
+        str(root / "data_root" / "drivers" / name / file_name) for root in candidate_runtime_roots()
+    )
+    return f"missing driver executable: {file_name}\ncandidates:\n{candidates}"
 
 
 def format_missing_driver(name: str) -> str:
@@ -189,7 +224,7 @@ class FakeVisionServer:
         self.login_call_count = 0
         self._lock = threading.Lock()
         self._ws_clients: dict[socket.socket, set[str]] = {}
-        self._server = ThreadingHTTPServer(("127.0.0.1", 0), self._make_handler())
+        self._server = QuietThreadingHTTPServer(("127.0.0.1", 0), self._make_handler())
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
 
@@ -529,11 +564,11 @@ def make_config(vision_addr: str, plc_port: int, result_path: Path | None = None
 
 def run_cli_case(case_name: str, expect_success: bool, timeout_case: bool) -> CaseResult:
     service_exe = find_executable("stdiolink_service")
-    sim_exe = find_executable("stdio.drv.plc_crane_sim")
+    sim_exe = find_driver_executable("stdio.drv.plc_crane_sim")
     if service_exe is None:
         return CaseResult(case_name, "fail", format_missing("stdiolink_service"))
     if sim_exe is None:
-        return CaseResult(case_name, "fail", format_missing("stdio.drv.plc_crane_sim"))
+        return CaseResult(case_name, "fail", format_missing_driver_executable("stdio.drv.plc_crane_sim"))
 
     env = make_env()
     tmp_dir, data_root = create_temp_data_root(service_exe)
@@ -601,13 +636,13 @@ def run_cli_case(case_name: str, expect_success: bool, timeout_case: bool) -> Ca
 def run_server_case(case_name: str, fixed_rate: bool) -> CaseResult:
     server_exe = find_executable("stdiolink_server")
     service_exe = find_executable("stdiolink_service")
-    sim_exe = find_executable("stdio.drv.plc_crane_sim")
+    sim_exe = find_driver_executable("stdio.drv.plc_crane_sim")
     if server_exe is None:
         return CaseResult(case_name, "fail", format_missing("stdiolink_server"))
     if service_exe is None:
         return CaseResult(case_name, "fail", format_missing("stdiolink_service"))
     if sim_exe is None:
-        return CaseResult(case_name, "fail", format_missing("stdio.drv.plc_crane_sim"))
+        return CaseResult(case_name, "fail", format_missing_driver_executable("stdio.drv.plc_crane_sim"))
 
     env = make_env()
     tmp_dir, data_root = create_temp_data_root(service_exe)

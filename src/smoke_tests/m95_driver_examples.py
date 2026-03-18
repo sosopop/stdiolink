@@ -41,15 +41,32 @@ def candidate_bin_dirs() -> list[Path]:
     dirs: list[Path] = []
     env_bin = os.environ.get("STDIOLINK_BIN_DIR")
     if env_bin:
-        dirs.append(Path(env_bin))
-    dirs.append(ROOT_DIR / "build" / "runtime_release" / "bin")
+        dirs.append(Path(env_bin).resolve())
+    dirs.append((ROOT_DIR / "build" / "runtime_release" / "bin").resolve())
     return dirs
+
+
+def candidate_runtime_roots() -> list[Path]:
+    roots: list[Path] = []
+    env_bin = os.environ.get("STDIOLINK_BIN_DIR")
+    if env_bin:
+        roots.append(Path(env_bin).resolve().parent)
+    roots.append((ROOT_DIR / "build" / "runtime_release").resolve())
+    return roots
+
+
+def make_env() -> dict[str, str]:
+    env = os.environ.copy()
+    extra = os.pathsep.join(str(d) for d in candidate_bin_dirs() if d.exists())
+    if extra:
+        env["PATH"] = extra + os.pathsep + env.get("PATH", "")
+    return env
 
 
 def find_driver_exe(base_name: str) -> Path | None:
     file_name = f"{base_name}{EXE_SUFFIX}"
-    for directory in candidate_bin_dirs():
-        path = directory / file_name
+    for runtime_root in candidate_runtime_roots():
+        path = runtime_root / "data_root" / "drivers" / base_name / file_name
         if path.exists():
             return path
     return None
@@ -64,6 +81,7 @@ def run_process(args: list[str], timeout_s: float = 20.0) -> subprocess.Complete
         encoding="utf-8",
         errors="replace",
         timeout=timeout_s,
+        env=make_env(),
     )
 
 

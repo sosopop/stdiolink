@@ -763,6 +763,12 @@ TEST(ThreeDScanRobotMetaTest, ScanCommandsUseProtocolParameterNamesAndDefaults) 
     EXPECT_EQ(speedYLine->defaultValue.toDouble(), 10.0);
     EXPECT_EQ(beginX->defaultValue.toDouble(), 0.0);
     EXPECT_EQ(speedYFrame->defaultValue.toDouble(), 10.0);
+    EXPECT_EQ(speedYLine->type, stdiolink::meta::FieldType::Double);
+    EXPECT_EQ(speedYFrame->type, stdiolink::meta::FieldType::Double);
+    ASSERT_TRUE(speedYLine->constraints.min.has_value());
+    ASSERT_TRUE(speedYFrame->constraints.min.has_value());
+    EXPECT_DOUBLE_EQ(*speedYLine->constraints.min, 0.1);
+    EXPECT_DOUBLE_EQ(*speedYFrame->constraints.min, 0.1);
     EXPECT_TRUE(speedYLine->description.contains(QString::fromUtf8("Y 轴旋转速度")));
     EXPECT_FALSE(speedYLine->description.contains("sample_count"));
     EXPECT_FALSE(angleX->name.contains("_deg"));
