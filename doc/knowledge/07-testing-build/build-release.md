@@ -6,6 +6,7 @@
 
 ## Core Commands
 
+- Debian/Ubuntu 依赖安装：`tools/install_build_deps.sh`；会安装系统构建依赖、把 `vcpkg` 放到仓库父目录 `../vcpkg`，并执行 manifest 安装
 - Windows 构建：`build.bat`（默认 Release） / `build.bat debug`；内部包装到 `tools/release.py build`
 - Unix 构建：`./build.sh`（默认 Release） / `./build.sh debug`；内部包装到 `tools/release.py build`
 - CTest：`ctest --test-dir build --output-on-failure`
@@ -24,6 +25,7 @@
 - `tools/release.py publish` 在复制 `runtime_release/bin` 时会始终排除 `bin_scan_orchestrator_service_tests`、`exec_runner_service_tests`；即使传了 `--with-tests`，这两个二进制也不会进入发布包
 - `tools/release.py publish` 会在包内联执行重复组件校验：`bin/` 不允许出现 `stdio.drv.*`，`data_root/drivers/` 下同名 `stdio.drv.*` 不允许分布在多个子目录
 - `tools/release.py build` 现在直接承载 CMake/vcpkg 的跨平台构建流程；根目录 `build.bat` / `build.sh` 只保留旧命令兼容包装
+- Linux 下项目默认仍依赖 `vcpkg`；由于根 `CMakeLists.txt` 把 toolchain 固定到 `../vcpkg/scripts/buildsystems/vcpkg.cmake`，依赖安装脚本也按这个位置初始化 `vcpkg`
 - `tools/release.py test` 和 `tools/release.py publish` 运行前都会先检查 6200 / 3000 端口，以及残留的 `stdiolink_server`、`stdiolink_service`、`stdio.drv*` 进程；若发现占用会直接告警并退出，并尽量给出端口对应的 PID / 进程名
 - `tools/release.py test` 会在跑测试前先调用内置构建流程重新编译，默认按 `release` 配置构建并执行测试，避免误用旧产物；任一测试套件失败后会立即终止，不继续执行后续套件
 - Windows 发布包里的 `dev.bat` / `dev.ps1` 会在启动时扫描 `data_root/drivers/`；`dev.ps1` 还会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
