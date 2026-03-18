@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="stdiolink.ico">../../../cmake/windows/stdiolink.ico</file>
+    </qresource>
+</RCC>

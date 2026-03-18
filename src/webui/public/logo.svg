@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="70 120 340 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6366F1" />
+            <stop offset="100%" stop-color="#8B5CF6" />
+        </linearGradient>
+        <style>
+            @media (prefers-color-scheme: dark) {
+                #brandGrad stop:nth-child(1) { stop-color: #818CF8; }
+                #brandGrad stop:nth-child(2) { stop-color: #C084FC; }
+            }
+        </style>
+    </defs>
+    <polyline points="105,160 225,256 105,352" stroke="url(#brandGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="332" cy="256" r="48" fill="transparent" stroke="url(#brandGrad)" stroke-width="32" />
+</svg>

@@ -24,26 +24,20 @@ export const AppHeader: React.FC = () => {
     <header className={styles.header}>
       <div className={styles.headerLeft}>
         <Link to="/" className={styles.brand} style={{ textDecoration: 'none', userSelect: 'none' }}>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.brandLogo}>
-            <path d="M16 2L2 9L16 16L30 9L16 2Z" fill="url(#paint0_linear)" fillOpacity="0.8" />
-            <path d="M2 23L16 30L30 23V9L16 16L2 9V23Z" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinejoin="round" />
-            <path d="M16 16V30" stroke="url(#paint2_linear)" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="16" cy="16" r="4" fill="#6366F1" fillOpacity="0.5" style={{ filter: 'blur(4px)' }} />
+          <svg width="32" height="32" viewBox="70 120 340 270" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.brandLogo}>
             <defs>
-              <linearGradient id="paint0_linear" x1="16" y1="2" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#6366F1" />
-                <stop offset="1" stopColor="#8B5CF6" stopOpacity="0.5" />
+              <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={themeMode === 'dark' ? '#818CF8' : '#6366F1'} />
+                <stop offset="100%" stopColor={themeMode === 'dark' ? '#C084FC' : '#8B5CF6'} />
               </linearGradient>
-              <linearGradient id="paint1_linear" x1="2" y1="9" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#A5B4FC" />
-                <stop offset="1" stopColor="#6366F1" />
-              </linearGradient>
-              <linearGradient id="paint2_linear" x1="16" y1="16" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#A5B4FC" stopOpacity="0" />
-                <stop offset="0.5" stopColor="#A5B4FC" />
-                <stop offset="1" stopColor="#A5B4FC" stopOpacity="0" />
-              </linearGradient>
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="12" stdDeviation="20" floodColor={themeMode === 'dark' ? '#000000' : '#8B5CF6'} floodOpacity="0.3" />
+              </filter>
             </defs>
+            <g filter="url(#softShadow)">
+              <polyline points="105,160 225,256 105,352" stroke="url(#brandGrad)" strokeWidth="44" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="332" cy="256" r="48" fill="transparent" stroke="url(#brandGrad)" strokeWidth="32" />
+            </g>
           </svg>
           <span className={styles.brandCopy}>
             <span className={styles.logoText}>{t('layout.brand_title')}</span>

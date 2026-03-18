@@ -2,6 +2,8 @@ set(STDIOLINK_SERVER_SOURCES
     main.cpp
     config/server_args.cpp
     config/server_config.cpp
+    runtime/server_runtime_support.cpp
+    runtime/windows_tray_controller.cpp
     model/schedule.cpp
     model/project.cpp
     model/instance.cpp
@@ -24,11 +26,14 @@ set(STDIOLINK_SERVER_SOURCES
     server_manager.cpp
     utils/process_env_utils.cpp
     utils/server_logger.cpp
+    resources/server_app_icon.qrc
 )
 
 set(STDIOLINK_SERVER_HEADERS
     config/server_args.h
     config/server_config.h
+    runtime/server_runtime_support.h
+    runtime/windows_tray_controller.h
     model/instance.h
     model/schedule.h
     model/project.h
@@ -70,6 +75,7 @@ target_link_libraries(stdiolink_server PRIVATE
     stdiolink
     spdlog::spdlog
     Qt6::Core
+    Qt6::Widgets
     Qt6::Network
     Qt6::HttpServer
     Qt6::WebSockets
@@ -79,6 +85,11 @@ target_link_libraries(stdiolink_server PRIVATE
 set_target_properties(stdiolink_server PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${STDIOLINK_RAW_DIR}"
 )
+
+if(WIN32)
+    set_target_properties(stdiolink_server PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
+
 set_property(GLOBAL APPEND PROPERTY STDIOLINK_EXECUTABLE_TARGETS stdiolink_server)
 
 if(WIN32 AND TARGET Qt6::windeployqt)

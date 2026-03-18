@@ -17,6 +17,7 @@
 - 实例管理：`manager/instance_manager.*`
 - 调度：`manager/schedule_engine.*`
 - 统一编排：`server_manager.*`
+- Windows 桌面运行壳：`main.cpp` + `runtime/{server_runtime_support,windows_tray_controller}.*`
 
 ## Schedule Types
 
@@ -31,6 +32,7 @@
 - 改 Project 文件格式/校验 -> `project_manager.*`, `model/project.*`, `model/schedule.*`
 - 改实例生命周期 -> `instance_manager.*`, `process_monitor.*`
 - 改调度策略 -> `schedule_engine.*`
+- 改 Windows 下 server 启动形态（无控制台、托盘、单实例） -> `main.cpp` + `runtime/{server_runtime_support,windows_tray_controller}.*`
 
 ## Project Mutation Rules
 
@@ -49,6 +51,7 @@
 - `src/tests/test_driver_manager_scanner.cpp`
 - `src/tests/test_instance_manager.cpp`
 - `src/tests/test_api_router.cpp`
+- `src/tests/test_server_runtime_support.cpp`
 - 改 Project 变更时序时，至少补“删除运行中项目”“保存后停实例失败回滚”“并发变更返回 409”三类回归
 
 ## Related

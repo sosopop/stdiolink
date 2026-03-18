@@ -1,9 +1,13 @@
 #include <QCoreApplication>
+#include <QMessageBox>
+#include <QScopedPointer>
 #include <QDir>
+#include <QIcon>
 #include <QHostAddress>
 #include <QHttpServer>
 #include <QTcpServer>
 #include <QTextStream>
+#include <QApplication>
 
 #include <csignal>
 #include <cstdio>
@@ -12,6 +16,8 @@
 #include "config/server_config.h"
 #include "http/api_router.h"
 #include "http/cors_middleware.h"
+#include "runtime/server_runtime_support.h"
+#include "runtime/windows_tray_controller.h"
 #include "server_manager.h"
 #include "stdiolink/platform/platform_utils.h"
 #include "utils/server_logger.h"
@@ -55,7 +61,13 @@ void requestQuitSignalHandler(int) {
 
 int main(int argc, char* argv[]) {
     stdiolink::PlatformUtils::initConsoleEncoding();
+#ifdef Q_OS_WIN
+    QApplication app(argc, argv);
+    QApplication::setQuitOnLastWindowClosed(false);
+    app.setWindowIcon(QIcon(QStringLiteral(":/icons/stdiolink.ico")));
+#else
     QCoreApplication app(argc, argv);
+#endif
 
     const ServerArgs args = ServerArgs::parse(app.arguments());
     if (args.help) {
@@ -72,6 +84,15 @@ int main(int argc, char* argv[]) {
     }
 
     const QString dataRoot = QDir(args.dataRoot).absolutePath();
+
+#ifdef Q_OS_WIN
+    ServerSingleInstanceGuard singleInstanceGuard(dataRoot);
+    QString singleInstanceError;
+    if (!singleInstanceGuard.tryAcquire(&singleInstanceError)) {
+        QMessageBox::information(nullptr, QStringLiteral("stdiolink_server"), singleInstanceError);
+        return 1;
+    }
+#endif
 
     QString cfgErr;
     ServerConfig config = ServerConfig::loadFromFile(dataRoot + "/config.json", cfgErr);
@@ -138,6 +159,12 @@ int main(int argc, char* argv[]) {
     const quint16 port = tcpServer.serverPort();
 
     qInfo("HTTP server listening on %s:%d", qUtf8Printable(config.host), config.port);
+
+#ifdef Q_OS_WIN
+    QScopedPointer<WindowsTrayController> trayController(
+        new WindowsTrayController(buildServerConsoleUrl(port)));
+    trayController->initialize();
+#endif
 
     std::signal(SIGINT, requestQuitSignalHandler);
 #ifdef SIGTERM

@@ -82,7 +82,7 @@
 .logoSubtitle {
   display: block;
   max-width: min(36vw, 320px);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.15;
   letter-spacing: 0.08em;

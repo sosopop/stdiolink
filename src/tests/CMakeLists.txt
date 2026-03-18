@@ -50,6 +50,7 @@ set(TEST_SOURCES
     test_service_loader.cpp
     test_server_args.cpp
     test_server_config.cpp
+    test_server_runtime_support.cpp
     test_cors_middleware.cpp
     test_service_file_handler.cpp
     test_service_scanner.cpp
@@ -119,6 +120,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/stdiolink_service/proxy/wait_any_wrapper.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/config/server_args.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/config/server_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/stdiolink_server/runtime/server_runtime_support.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/schedule.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/project.cpp
     ${CMAKE_SOURCE_DIR}/src/stdiolink_server/model/instance.cpp
