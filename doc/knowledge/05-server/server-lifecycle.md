@@ -37,6 +37,7 @@
 ## Windows Runtime Notes
 
 - `stdiolink_server` 在 Windows 下默认是 GUI 壳，优先提供托盘菜单打开 Web 控制台/退出。
+- `--attach-console` 可强制把 GUI 壳附着回父控制台；发布包 `start.ps1` 在 `ConsoleHost` 下会自动追加这个参数，方便命令行启动时直接看日志。
 - 如果系统托盘不可用，启动流程会立即切换到 CLI 模式：附着父控制台，必要时分配新控制台，再继续运行。
 - 同一 `data_root` 只允许一个 Windows server 实例；冲突时直接向 `stderr` 报错并返回非 0，不再弹模态框。
 - 单实例 key 会对 `data_root` 做绝对路径、分隔符和 Windows 大小写归一化，避免同一路径不同写法绕过保护。

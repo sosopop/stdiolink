@@ -16,6 +16,7 @@ struct ServerArgs {
     bool hasHost = false;
     bool hasLogLevel = false;
     bool hasWebuiDir = false;
+    bool attachConsole = false;
 
     bool help = false;
     bool version = false;

@@ -36,6 +36,10 @@ ServerArgs ServerArgs::parse(const QStringList& args) {
             result.version = true;
             continue;
         }
+        if (arg == "--attach-console") {
+            result.attachConsole = true;
+            continue;
+        }
         if (arg.startsWith("--data-root=")) {
             result.dataRoot = arg.mid(12);
             if (result.dataRoot.isEmpty()) {

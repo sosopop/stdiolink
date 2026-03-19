@@ -49,7 +49,8 @@ TEST(ServerArgsTest, AllOptions) {
         "--data-root=/tmp/data",
         "--port=9090",
         "--host=0.0.0.0",
-        "--log-level=debug"
+        "--log-level=debug",
+        "--attach-console"
     });
 
     EXPECT_EQ(args.dataRoot, "/tmp/data");
@@ -59,6 +60,7 @@ TEST(ServerArgsTest, AllOptions) {
     EXPECT_TRUE(args.hasPort);
     EXPECT_TRUE(args.hasHost);
     EXPECT_TRUE(args.hasLogLevel);
+    EXPECT_TRUE(args.attachConsole);
     EXPECT_TRUE(args.error.isEmpty());
 }
 

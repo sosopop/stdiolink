@@ -29,6 +29,7 @@
 - `tools/release.py test` 和 `tools/release.py publish` 运行前都会先检查 6200 / 3000 端口，以及残留的 `stdiolink_server`、`stdiolink_service`、`stdio.drv*` 进程；若发现占用会直接告警并退出，并尽量给出端口对应的 PID / 进程名
 - `tools/release.py test` 会在跑测试前先调用内置构建流程重新编译，默认按 `release` 配置构建并执行测试，避免误用旧产物；任一测试套件失败后会立即终止，不继续执行后续套件
 - Windows 发布包里的 `dev.bat` / `dev.ps1` 会在启动时扫描 `data_root/drivers/`；`dev.ps1` 还会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
+- Windows 发布包里的 `start.ps1` 如果在 `ConsoleHost` 中运行，会自动给 `stdiolink_server` 追加 `--attach-console`，让 GUI 壳附着回当前控制台输出日志；双击或非控制台启动仍保持托盘模式为主
 - Unix 发布包里的 `dev.sh` 会打开带环境变量和 alias 的交互式 bash，并按 `data_root/drivers/`、`data_root/projects/*/config.json` 动态注册 Driver / Project 入口
 
 ## Modify Entry

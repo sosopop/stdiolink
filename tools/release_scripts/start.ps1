@@ -11,4 +11,9 @@ if (-not (Test-Path -LiteralPath $server)) {
 Write-Host "Starting stdiolink_server..."
 Write-Host "  data_root : $dataRoot"
 Write-Host "  args      : $args"
-& $server --data-root="$dataRoot" @args
+$serverArgs = @("--data-root=$dataRoot")
+if ($Host.Name -eq "ConsoleHost") {
+    $serverArgs += "--attach-console"
+}
+$serverArgs += $args
+& $server @serverArgs

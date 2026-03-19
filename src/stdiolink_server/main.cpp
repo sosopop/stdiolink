@@ -33,6 +33,7 @@ void printHelp() {
         << "  --port=<port>            HTTP port (default: 6200)\n"
         << "  --host=<addr>            Listen address (default: 127.0.0.1)\n"
         << "  --log-level=<level>      debug|info|warn|error (default: info)\n"
+        << "  --attach-console         Attach to parent Windows console when available\n"
         << "  -h, --help               Show this help\n"
         << "  -v, --version            Show version\n";
     err.flush();
@@ -75,6 +76,15 @@ int main(int argc, char* argv[]) {
 #endif
 
     const ServerArgs args = ServerArgs::parse(app.arguments());
+#ifdef Q_OS_WIN
+    if (args.attachConsole) {
+        QString consoleError;
+        if (!ensureServerConsole(&consoleError)) {
+            printStderrLine(QStringLiteral("Error: %1").arg(consoleError));
+            return 1;
+        }
+    }
+#endif
     if (args.help) {
         printHelp();
         return 0;
