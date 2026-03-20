@@ -1,4 +1,4 @@
-# StdioLink 产品视角功能清单
+# StdioLink 产品功能清单
 
 ## 1. 产品定位
 
