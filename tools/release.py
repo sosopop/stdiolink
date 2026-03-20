@@ -13,6 +13,7 @@ import socket
 import stat
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -27,6 +28,9 @@ DEFAULT_DOCKER_IMAGE = "stdiolink"
 DEFAULT_CONTAINER_RELEASE_DIR = "/srv/stdiolink-release"
 DOCKER_MANIFEST_SUFFIX = "_DOCKER_MANIFEST.json"
 DOCKER_IMAGE_EXPORT_SUFFIX = "_docker_image.tar"
+DOCKER_BUNDLE_SUFFIX = "_docker_bundle"
+DOCKER_BUNDLE_ZIP_SUFFIX = "_docker_bundle.zip"
+DOCKER_BUNDLE_ENV_NAME = "DOCKER_BUNDLE.env"
 
 
 class ReleaseError(RuntimeError):
@@ -333,6 +337,13 @@ def docker_tag_from_name(name: str) -> str:
     return lowered or "latest"
 
 
+def docker_container_name(image: str, tag: str) -> str:
+    def sanitize(value: str) -> str:
+        return re.sub(r"[^A-Za-z0-9_.-]+", "-", value).strip(".-") or "default"
+
+    return f"stdiolink-{sanitize(image)}-{sanitize(tag)}"
+
+
 def docker_dir() -> Path:
     return root_dir() / "docker"
 
@@ -361,6 +372,17 @@ def ensure_release_dir_layout(release_dir: Path) -> None:
         raise ReleaseError(
             "Release directory is missing required Docker runtime content:\n  " + "\n  ".join(missing)
         )
+
+
+def zip_directory(source_dir: Path, zip_path: Path) -> Path:
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    if zip_path.exists():
+        zip_path.unlink()
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for file_path in sorted(source_dir.rglob("*")):
+            if file_path.is_file():
+                archive.write(file_path, file_path.relative_to(source_dir))
+    return zip_path
 
 
 def vcpkg_executable_name() -> str:
@@ -678,6 +700,52 @@ def copy_runtime_binaries(package_dir: Path, runtime_dir: Path, with_tests: bool
             log(f"  + {directory.name}/")
 
 
+def is_elf_file(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        with path.open("rb") as handle:
+            return handle.read(4) == b"\x7fELF"
+    except OSError:
+        return False
+
+
+def detect_strip_tool() -> str | None:
+    return command_path("strip") or command_path("llvm-strip")
+
+
+def strip_release_binaries(package_dir: Path) -> None:
+    if is_windows():
+        return
+
+    strip_tool = detect_strip_tool()
+    if not strip_tool:
+        warn("strip tool not found; skipping binary size reduction for release package")
+        return
+
+    targets: list[Path] = []
+    for root in (
+        package_dir / "bin",
+        package_dir / "data_root" / "drivers",
+    ):
+        if not root.exists():
+            continue
+        for file_path in sorted(child for child in root.rglob("*") if child.is_file()):
+            if is_elf_file(file_path):
+                targets.append(file_path)
+
+    if not targets:
+        log("No ELF binaries found for strip.")
+        return
+
+    log(f"Stripping {len(targets)} ELF file(s) from release package...")
+    for target in targets:
+        run_command(
+            [strip_tool, "--strip-unneeded", str(target)],
+            failure_message=f"strip failed for {target}",
+        )
+
+
 def write_default_config(package_dir: Path) -> None:
     config_path = package_dir / "data_root" / "config.json"
     if config_path.is_file():
@@ -809,6 +877,7 @@ def create_release_package(
         copytree_contents(dist_dir, webui_dest)
         log(f"  WebUI copied to {webui_dest}")
 
+    strip_release_binaries(package_dir)
     write_default_config(package_dir)
     log("Copying release launcher scripts...")
     copy_release_script_files(package_dir)
@@ -835,6 +904,8 @@ def write_docker_manifest(
     container_release_dir: str,
     dockerfile: Path,
     export_path: Path | None,
+    bundle_dir: Path | None = None,
+    bundle_zip_path: Path | None = None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = output_dir / f"{package_name}{DOCKER_MANIFEST_SUFFIX}"
@@ -849,9 +920,115 @@ def write_docker_manifest(
         "releaseDir": str(release_dir),
         "containerReleaseDir": container_release_dir,
         "exportPath": str(export_path) if export_path else "",
+        "bundleDir": str(bundle_dir) if bundle_dir else "",
+        "bundleZipPath": str(bundle_zip_path) if bundle_zip_path else "",
     }
     manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest_path
+
+
+def write_docker_bundle_installer(
+    *,
+    bundle_dir: Path,
+) -> Path:
+    install_path = bundle_dir / "install.sh"
+    script = """#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+
+die() {
+    printf 'Error: %s\\n' "$*" >&2
+    exit 1
+}
+
+[[ -x "${SCRIPT_DIR}/stdiolink_docker.sh" ]] || chmod +x "${SCRIPT_DIR}/stdiolink_docker.sh"
+if [[ -f "${SCRIPT_DIR}/docker/docker_entrypoint.sh" ]]; then
+    chmod +x "${SCRIPT_DIR}/docker/docker_entrypoint.sh"
+fi
+
+"${SCRIPT_DIR}/stdiolink_docker.sh" import
+
+printf '\\nDocker bundle installed successfully.\\n'
+printf '\\nNext steps:\\n'
+printf '  ./stdiolink_docker.sh run\\n'
+printf '  ./stdiolink_docker.sh logs\\n'
+printf '  ./stdiolink_docker.sh stop\\n'
+"""
+    install_path.write_text(script, encoding="utf-8")
+    install_path.chmod(install_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    return install_path
+
+
+def write_docker_bundle_env(
+    *,
+    bundle_dir: Path,
+    image: str,
+    tag: str,
+    image_tar_name: str,
+    release_dir_name: str,
+    container_release_dir: str,
+    port: int,
+) -> Path:
+    env_path = bundle_dir / DOCKER_BUNDLE_ENV_NAME
+    lines = [
+        f'BUNDLE_IMAGE_NAME="{image}"',
+        f'BUNDLE_IMAGE_TAG="{tag}"',
+        f'BUNDLE_IMAGE_REF="{image}:{tag}"',
+        f'BUNDLE_IMAGE_TAR="{image_tar_name}"',
+        f'BUNDLE_RELEASE_DIR="release/{release_dir_name}"',
+        f'BUNDLE_CONTAINER_RELEASE_DIR="{container_release_dir}"',
+        f'BUNDLE_PORT="{port}"',
+        f'BUNDLE_CONTAINER_NAME="{docker_container_name(image, tag)}"',
+    ]
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return env_path
+
+
+def create_docker_bundle(
+    *,
+    output_dir: Path,
+    package_name: str,
+    release_dir: Path,
+    export_path: Path,
+    image: str,
+    tag: str,
+    container_release_dir: str,
+    port: int,
+) -> Path:
+    bundle_dir = output_dir / f"{package_name}{DOCKER_BUNDLE_SUFFIX}"
+    if bundle_dir.exists():
+        shutil.rmtree(bundle_dir)
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    docker_bundle_dir = bundle_dir / "docker"
+    shutil.copytree(docker_dir(), docker_bundle_dir, ignore=shutil.ignore_patterns("stdiolink_docker.sh"))
+
+    helper_source = docker_dir() / "stdiolink_docker.sh"
+    helper_target = bundle_dir / "stdiolink_docker.sh"
+    shutil.copy2(helper_source, helper_target)
+    helper_target.chmod(helper_target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    image_target = bundle_dir / export_path.name
+    shutil.copy2(export_path, image_target)
+
+    release_bundle_root = bundle_dir / "release"
+    release_bundle_root.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(release_dir, release_bundle_root / release_dir.name)
+
+    write_docker_bundle_env(
+        bundle_dir=bundle_dir,
+        image=image,
+        tag=tag,
+        image_tar_name=image_target.name,
+        release_dir_name=release_dir.name,
+        container_release_dir=container_release_dir,
+        port=port,
+    )
+    write_docker_bundle_installer(
+        bundle_dir=bundle_dir,
+    )
+    return bundle_dir
 
 
 def docker_release(args: argparse.Namespace) -> None:
@@ -917,15 +1094,25 @@ def docker_release(args: argparse.Namespace) -> None:
         failure_message="Docker image build failed",
     )
 
-    export_path: Path | None = None
-    if args.export_image:
-        export_path = resolve_path(args.export_path, root_dir()) if args.export_path else output_dir_abs / f"{package_name}{DOCKER_IMAGE_EXPORT_SUFFIX}"
-        export_path.parent.mkdir(parents=True, exist_ok=True)
-        run_command(
-            [docker, "save", "-o", str(export_path), image_ref],
-            cwd=root_dir(),
-            failure_message="Docker image export failed",
-        )
+    export_path = resolve_path(args.export_path, root_dir()) if args.export_path else output_dir_abs / f"{package_name}{DOCKER_IMAGE_EXPORT_SUFFIX}"
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    run_command(
+        [docker, "save", "-o", str(export_path), image_ref],
+        cwd=root_dir(),
+        failure_message="Docker image export failed",
+    )
+
+    bundle_dir = create_docker_bundle(
+        output_dir=output_dir_abs,
+        package_name=package_name,
+        release_dir=release_dir,
+        export_path=export_path,
+        image=image,
+        tag=tag,
+        container_release_dir=container_release_dir,
+        port=args.port,
+    )
+    bundle_zip_path = output_dir_abs / f"{package_name}{DOCKER_BUNDLE_ZIP_SUFFIX}"
 
     manifest_path = write_docker_manifest(
         output_dir=output_dir_abs,
@@ -937,23 +1124,29 @@ def docker_release(args: argparse.Namespace) -> None:
         container_release_dir=container_release_dir,
         dockerfile=dockerfile,
         export_path=export_path,
+        bundle_dir=bundle_dir,
+        bundle_zip_path=bundle_zip_path,
     )
+
+    shutil.copy2(manifest_path, bundle_dir / manifest_path.name)
+    zip_directory(bundle_dir, bundle_zip_path)
 
     log("")
     log("=== Docker runtime image created ===")
     log(f"  Image   : {image_ref}")
     log(f"  Release : {release_dir}")
     log(f"  Manifest: {manifest_path}")
-    if export_path is not None:
-        log(f"  Export  : {export_path}")
+    log(f"  Export  : {export_path}")
+    log(f"  Bundle  : {bundle_zip_path}")
     log("")
-    log("Suggested run command:")
-    log(
-        f"  docker run --rm -it -p {args.port}:6200 "
-        f"-v {release_dir}:{container_release_dir} {image_ref}"
-    )
+    log("Bundle install:")
+    log(f"  unzip {bundle_zip_path.name}")
+    log(f"  cd {bundle_dir.name}")
+    log("  ./install.sh")
+    log("  ./stdiolink_docker.sh run")
     log("")
-    log(f"Helper script: {docker_dir() / 'stdiolink_docker.sh'}")
+    log(f"Bundle helper : {bundle_dir / 'stdiolink_docker.sh'}")
+    log(f"Source helper : {docker_dir() / 'stdiolink_docker.sh'}")
 
 
 def package_release(args: argparse.Namespace) -> None:
@@ -1069,7 +1262,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Mounted release directory inside the container (default: {DEFAULT_CONTAINER_RELEASE_DIR})",
     )
     docker_cmd.add_argument("--port", type=int, default=6200, help="Suggested host port mapping for docker run (default: 6200)")
-    docker_cmd.add_argument("--export-image", action="store_true", help="Export the built image as a tar archive with docker save")
+    docker_cmd.add_argument("--export-image", action="store_true", help="Deprecated compatibility flag; Docker publish now always exports the image tar")
     docker_cmd.add_argument("--export-path", default="", help="Image export tar path (default: <output-dir>/<package>_docker_image.tar)")
     add_suite_flags(docker_cmd)
     docker_cmd.set_defaults(handler=docker_release)

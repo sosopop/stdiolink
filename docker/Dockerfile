@@ -27,9 +27,11 @@ RUN apt-get update \
         libudev1 \
         libx11-6 \
         libx11-xcb1 \
+        libxcb-cursor0 \
         libxcb-glx0 \
         libxcb-icccm4 \
         libxcb-image0 \
+        libxcb-xinput0 \
         libxcb-keysyms1 \
         libxcb-randr0 \
         libxcb-render-util0 \

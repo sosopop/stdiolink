@@ -12,7 +12,7 @@
 - CTest：`ctest --test-dir build --output-on-failure`
 - 跨平台构建/测试/发布：`tools/release.py`；便捷封装：`tools/release.ps1`、`tools/release.bat`、`tools/release.sh`
 - Docker 运行镜像：`tools/release.py docker`
-- Docker 常用辅助流程：`docker/stdiolink_docker.sh`
+- Docker 常用辅助流程：源码侧用 `docker/stdiolink_docker.sh`，bundle 侧用根目录 `stdiolink_docker.sh`
 
 ## Key Conclusions
 
@@ -26,6 +26,7 @@
 - `tools/release.py publish` 发布前默认会运行完整测试链；不会自动把独立注册的 `bin_scan_orchestrator_service_tests`、`exec_runner_service_tests` 打进发布包
 - `tools/release.py publish` 在复制 `runtime_release/bin` 时会始终排除 `bin_scan_orchestrator_service_tests`、`exec_runner_service_tests`；即使传了 `--with-tests`，这两个二进制也不会进入发布包
 - `tools/release.py publish` 会在包内联执行重复组件校验：`bin/` 不允许出现 `stdio.drv.*`，`data_root/drivers/` 下同名 `stdio.drv.*` 不允许分布在多个子目录
+- Linux/Unix 下 `tools/release.py publish` 和 `tools/release.py docker` 在生成发布目录后会对发布包内 ELF 可执行文件和共享库执行 `strip --strip-unneeded`，减小发布体积；Windows 不做这一步
 - `tools/release.py build` 现在直接承载 CMake/vcpkg 的跨平台构建流程；根目录 `build.bat` / `build.sh` 只保留旧命令兼容包装
 - Linux 下项目默认仍依赖 `vcpkg`；由于根 `CMakeLists.txt` 把 toolchain 固定到 `../vcpkg/scripts/buildsystems/vcpkg.cmake`，依赖安装脚本也按这个位置初始化 `vcpkg`
 - `tools/release.py test` 和 `tools/release.py publish` 运行前都会先检查 6200 / 3000 端口，以及残留的 `stdiolink_server`、`stdiolink_service`、`stdio.drv*` 进程；若发现占用会直接告警并退出，并尽量给出端口对应的 PID / 进程名
@@ -34,7 +35,10 @@
 - Docker 镜像不包含任何 stdiolink 发布内容，包括 `bin/`、`data_root/` 和服务端二进制；容器必须通过 volume 挂载完整发布目录
 - Docker 容器默认把宿主发布目录挂载到 `/srv/stdiolink-release`，入口脚本会用 `/srv/stdiolink-release/bin/stdiolink_server --data-root=/srv/stdiolink-release/data_root` 启动
 - Docker 镜像只提供 Ubuntu 24.04 运行时依赖，依赖来源参考 `tools/install_build_deps.sh` 的 Ubuntu 包集合，但裁剪为运行所需而非构建所需
+- `tools/release.py docker` 现在会默认导出镜像 tar，并额外产出 `<pkg>_docker_bundle.zip`；zip 内含根目录 `stdiolink_docker.sh`、镜像 tar、完整 release 目录、`install.sh` 和 `DOCKER_BUNDLE.env`
+- 目标设备解压 bundle zip 后执行 `./install.sh`，会自动导入镜像并准备脚本；随后直接执行 `./stdiolink_docker.sh run` 即可按 bundle 目录自动发现镜像和 release 目录，并以后台常驻方式启动容器
 - `docker/stdiolink_docker.sh` 覆盖 `build`、`run`、`export`、`import`、`export-container`、`logs`、`shell`、`stop`、`rm`、`ps` 等常见 Docker 操作
+- bundle 根目录下的 `stdiolink_docker.sh run` 在零参数模式下会自动 `docker load` 缺失镜像、自动挂载 bundle 内 release 目录，并使用 `-d --restart unless-stopped` 常驻运行；若同名容器已存在则优先复用或重启
 - Windows 发布包里的 `dev.bat` / `dev.ps1` 会在启动时扫描 `data_root/drivers/`；`dev.ps1` 还会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
 - Windows 发布包里的 `start.ps1` 如果在 `ConsoleHost` 中运行，会自动给 `stdiolink_server` 追加 `--attach-console`，让 GUI 壳附着回当前控制台输出日志；双击或非控制台启动仍保持托盘模式为主
 - Unix 发布包里的 `dev.sh` 会打开带环境变量和 alias 的交互式 bash，并按 `data_root/drivers/`、`data_root/projects/*/config.json` 动态注册 Driver / Project 入口
@@ -51,6 +55,7 @@
 - Driver 单跑：默认先配 `PATH` 指到 `build/runtime_release/bin`
 - Server 单跑：`build/runtime_release/bin/stdiolink_server --data-root=... --webui-dir=...`
 - Docker 运行：`docker run -v <release_pkg>:/srv/stdiolink-release -p 6200:6200 stdiolink:<tag>`
+- Docker 安装包：`unzip <pkg>_docker_bundle.zip && cd <pkg>_docker_bundle && ./install.sh && ./stdiolink_docker.sh run`
 
 ## Driver Standalone Minimal Steps
 
