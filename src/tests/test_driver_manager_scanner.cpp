@@ -24,7 +24,19 @@ QString exeSuffix() {
 }
 
 QString testBinaryPath(const QString& baseName) {
-    return QCoreApplication::applicationDirPath() + "/" + baseName + exeSuffix();
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const QString directPath = appDir + "/" + baseName + exeSuffix();
+    if (QFileInfo::exists(directPath)) {
+        return directPath;
+    }
+
+    const QDir binDir(appDir);
+    const QString runtimePath = binDir.absoluteFilePath(
+        "../data_root/drivers/" + baseName + "/" + baseName + exeSuffix());
+    if (QFileInfo::exists(runtimePath)) {
+        return QDir::cleanPath(runtimePath);
+    }
+    return directPath;
 }
 
 bool copyExecutable(const QString& fromPath, const QString& toPath) {
@@ -54,6 +66,7 @@ protected:
         ASSERT_TRUE(QFileInfo::exists(failDriverPath));
         scanRobotDriverPath = testBinaryPath("stdio.drv.3d_scan_robot");
         pqwAnalogOutputDriverPath = testBinaryPath("stdio.drv.pqw_analog_output");
+        tempScannerDriverPath = testBinaryPath("stdio.drv.3d_temp_scanner");
     }
 
     QString createDriverDirWithBinary(const QString& name, const QString& sourceBinary) {
@@ -70,6 +83,7 @@ protected:
     QString failDriverPath;
     QString scanRobotDriverPath;
     QString pqwAnalogOutputDriverPath;
+    QString tempScannerDriverPath;
 };
 
 TEST_F(DriverManagerScannerTest, NonExistentDirectory) {
@@ -260,4 +274,38 @@ TEST_F(DriverManagerScannerTest, ExportMetaForPqwAnalogOutputDriver) {
     EXPECT_TRUE(commandNames.contains("write_output"));
     EXPECT_TRUE(commandNames.contains("write_outputs"));
     EXPECT_TRUE(commandNames.contains("clear_outputs"));
+}
+
+TEST_F(DriverManagerScannerTest, ExportMetaFor3DTempScannerDriver) {
+    if (!QFileInfo::exists(tempScannerDriverPath)) {
+        GTEST_SKIP() << "stdio.drv.3d_temp_scanner binary is not available in the test output directory";
+    }
+
+    const QString dir = createDriverDirWithBinary("3d-temp-scanner", tempScannerDriverPath);
+
+    DriverManagerScanner scanner;
+    DriverManagerScanner::ScanStats stats;
+    const auto result = scanner.scan(driversDir, false, &stats);
+
+    ASSERT_TRUE(QFileInfo::exists(dir + "/driver.meta.json"));
+    EXPECT_EQ(stats.scanned, 1);
+    EXPECT_EQ(stats.updated, 1);
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_TRUE(result.contains("stdio.drv.3d_temp_scanner"));
+
+    QFile metaFile(dir + "/driver.meta.json");
+    ASSERT_TRUE(metaFile.open(QIODevice::ReadOnly));
+    const auto metaDoc = QJsonDocument::fromJson(metaFile.readAll());
+    ASSERT_TRUE(metaDoc.isObject());
+    const auto commands = metaDoc.object().value("commands").toArray();
+
+    QStringList commandNames;
+    for (const auto& value : commands) {
+        commandNames.append(value.toObject().value("name").toString());
+    }
+
+    EXPECT_TRUE(commandNames.contains("status"));
+    EXPECT_TRUE(commandNames.contains("capture"));
+    EXPECT_FALSE(commandNames.contains("test"));
+    EXPECT_FALSE(commandNames.contains("get_board_temp"));
 }

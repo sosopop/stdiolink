@@ -77,6 +77,7 @@ set(TEST_SOURCES
     test_modbustcp_client.cpp
     test_limaco_radar.cpp
     test_pqw_analog_output.cpp
+    test_3d_temp_scanner.cpp
     test_plc_crane.cpp
     test_plc_crane_sim.cpp
     test_driver_resolve.cpp
@@ -156,6 +157,10 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_pqw_analog_output/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/protocol_codec.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/thermal_transport.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/thermal_session.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_transport.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_decode.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_1_radar/handler.cpp
@@ -183,7 +188,7 @@ target_include_directories(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/tests
 )
 
-find_package(Qt6 COMPONENTS SerialPort Test REQUIRED)
+find_package(Qt6 COMPONENTS SerialPort Test Gui REQUIRED)
 
 target_link_libraries(stdiolink_tests PRIVATE
     stdiolink
@@ -195,6 +200,7 @@ target_link_libraries(stdiolink_tests PRIVATE
     Qt6::Concurrent
     Qt6::SerialPort
     Qt6::Test
+    Qt6::Gui
 )
 
 if(TARGET qjs)

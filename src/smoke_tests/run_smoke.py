@@ -24,6 +24,7 @@ PLAN_SCRIPTS = {
     "m103_3d_scan_robot": SCRIPT_DIR / "m103_3d_scan_robot.py",
     "m104_exec_runner": SCRIPT_DIR / "m104_exec_runner.py",
     "m105_pqw_analog_output": SCRIPT_DIR / "m105_pqw_analog_output.py",
+    "m106_3d_temp_scanner": SCRIPT_DIR / "m106_3d_temp_scanner.py",
 }
 LEGACY_MILESTONE_ALIASES = {
     "102": "m102_webui_i18n_alignment",
@@ -39,6 +40,7 @@ LEGACY_MILESTONE_ALIASES = {
     "103": "m103_3d_scan_robot",
     "104": "m104_exec_runner",
     "105": "m105_pqw_analog_output",
+    "106": "m106_3d_temp_scanner",
 }
 
 
