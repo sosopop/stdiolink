@@ -11,6 +11,8 @@
 - Unix 构建：`./build.sh`（默认 Release） / `./build.sh debug`；内部包装到 `tools/release.py build`
 - CTest：`ctest --test-dir build --output-on-failure`
 - 跨平台构建/测试/发布：`tools/release.py`；便捷封装：`tools/release.ps1`、`tools/release.bat`、`tools/release.sh`
+- Docker 运行镜像：`tools/release.py docker`
+- Docker 常用辅助流程：`docker/stdiolink_docker.sh`
 
 ## Key Conclusions
 
@@ -28,6 +30,11 @@
 - Linux 下项目默认仍依赖 `vcpkg`；由于根 `CMakeLists.txt` 把 toolchain 固定到 `../vcpkg/scripts/buildsystems/vcpkg.cmake`，依赖安装脚本也按这个位置初始化 `vcpkg`
 - `tools/release.py test` 和 `tools/release.py publish` 运行前都会先检查 6200 / 3000 端口，以及残留的 `stdiolink_server`、`stdiolink_service`、`stdio.drv*` 进程；若发现占用会直接告警并退出，并尽量给出端口对应的 PID / 进程名
 - `tools/release.py test` 会在跑测试前先调用内置构建流程重新编译，默认按 `release` 配置构建并执行测试，避免误用旧产物；任一测试套件失败后会立即终止，不继续执行后续套件
+- `tools/release.py docker` 默认可先复用 `publish` 生成发布目录，再构建 Ubuntu 24.04 运行镜像；也可通过 `--skip-publish --release-dir=<pkg>` 直接复用已有发布目录
+- Docker 镜像不包含任何 stdiolink 发布内容，包括 `bin/`、`data_root/` 和服务端二进制；容器必须通过 volume 挂载完整发布目录
+- Docker 容器默认把宿主发布目录挂载到 `/srv/stdiolink-release`，入口脚本会用 `/srv/stdiolink-release/bin/stdiolink_server --data-root=/srv/stdiolink-release/data_root` 启动
+- Docker 镜像只提供 Ubuntu 24.04 运行时依赖，依赖来源参考 `tools/install_build_deps.sh` 的 Ubuntu 包集合，但裁剪为运行所需而非构建所需
+- `docker/stdiolink_docker.sh` 覆盖 `build`、`run`、`export`、`import`、`export-container`、`logs`、`shell`、`stop`、`rm`、`ps` 等常见 Docker 操作
 - Windows 发布包里的 `dev.bat` / `dev.ps1` 会在启动时扫描 `data_root/drivers/`；`dev.ps1` 还会按 `data_root/projects/*/config.json` 动态生成 project alias，并提供 `projects` 列表命令
 - Windows 发布包里的 `start.ps1` 如果在 `ConsoleHost` 中运行，会自动给 `stdiolink_server` 追加 `--attach-console`，让 GUI 壳附着回当前控制台输出日志；双击或非控制台启动仍保持托盘模式为主
 - Unix 发布包里的 `dev.sh` 会打开带环境变量和 alias 的交互式 bash，并按 `data_root/drivers/`、`data_root/projects/*/config.json` 动态注册 Driver / Project 入口
@@ -36,12 +43,14 @@
 
 - CMake 输出/组装：顶层 CMake 和 `assemble_runtime`
 - 构建/测试/发布脚本：`tools/release.py`
+- Docker 运行镜像与辅助脚本：`docker/`
 - Server 启动参数：`src/stdiolink_server/config/server_args.*`
 
 ## Debug Entry
 
 - Driver 单跑：默认先配 `PATH` 指到 `build/runtime_release/bin`
 - Server 单跑：`build/runtime_release/bin/stdiolink_server --data-root=... --webui-dir=...`
+- Docker 运行：`docker run -v <release_pkg>:/srv/stdiolink-release -p 6200:6200 stdiolink:<tag>`
 
 ## Driver Standalone Minimal Steps
 

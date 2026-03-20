@@ -23,6 +23,10 @@ WINDOWS_RELEASE_SCRIPTS = ("start.bat", "start.ps1", "dev.bat", "dev.ps1")
 UNIX_RELEASE_SCRIPTS = ("start.sh", "dev.sh", "install_service.sh", "uninstall_service.sh", "install_build_deps.sh")
 DEFAULT_INSTALL_DIR = "install"
 DEFAULT_WINDOWS_TRIPLET = "x64-windows"
+DEFAULT_DOCKER_IMAGE = "stdiolink"
+DEFAULT_CONTAINER_RELEASE_DIR = "/srv/stdiolink-release"
+DOCKER_MANIFEST_SUFFIX = "_DOCKER_MANIFEST.json"
+DOCKER_IMAGE_EXPORT_SUFFIX = "_docker_image.tar"
 
 
 class ReleaseError(RuntimeError):
@@ -316,6 +320,47 @@ def git_rev(*rev_args: str) -> str:
     if result.returncode == 0 and value:
         return value
     return "unknown"
+
+
+def default_package_name() -> str:
+    return f"stdiolink_{dt.datetime.now().strftime('%Y%m%d_%H%M%S')}_{git_rev('--short', 'HEAD')}"
+
+
+def docker_tag_from_name(name: str) -> str:
+    lowered = name.strip().lower()
+    lowered = re.sub(r"[^a-z0-9._-]+", "-", lowered)
+    lowered = lowered.strip(".-")
+    return lowered or "latest"
+
+
+def docker_dir() -> Path:
+    return root_dir() / "docker"
+
+
+def ensure_tool(name: str) -> str:
+    tool = command_path(name)
+    if not tool:
+        raise ReleaseError(f"{name} not found in PATH")
+    return tool
+
+
+def validate_suite_selection(skip_tests: bool, any_suite_selected: bool) -> None:
+    if skip_tests and any_suite_selected:
+        raise ReleaseError("--skip-tests cannot be combined with suite selection flags")
+
+
+def ensure_release_dir_layout(release_dir: Path) -> None:
+    server_bin = release_dir / "bin" / "stdiolink_server"
+    data_root = release_dir / "data_root"
+    missing: list[str] = []
+    if not server_bin.is_file():
+        missing.append(str(server_bin))
+    if not data_root.is_dir():
+        missing.append(str(data_root))
+    if missing:
+        raise ReleaseError(
+            "Release directory is missing required Docker runtime content:\n  " + "\n  ".join(missing)
+        )
 
 
 def vcpkg_executable_name() -> str:
@@ -699,30 +744,36 @@ def run_duplicate_check(package_dir: Path) -> None:
     log("No duplicates found.")
 
 
-def package_release(args: argparse.Namespace) -> None:
+def create_release_package(
+    *,
+    build_dir_arg: str,
+    output_dir_arg: str,
+    name: str,
+    with_tests: bool,
+    skip_build: bool,
+    skip_webui: bool,
+    skip_tests: bool,
+    suites: Sequence[str],
+) -> tuple[Path, Path, str]:
     assert_required_ports_available()
     assert_no_blocking_processes()
 
     config = "release"
-    if args.skip_tests and any(getattr(args, suite) for suite in TEST_SUITES):
-        raise ReleaseError("--skip-tests cannot be combined with suite selection flags")
-
-    runtime_dir = build_runtime(build_dir_arg=args.build_dir, config=config, clean_runtime=True) if not args.skip_build else ensure_runtime_exists(args.build_dir, config)
+    runtime_dir = build_runtime(build_dir_arg=build_dir_arg, config=config, clean_runtime=True) if not skip_build else ensure_runtime_exists(build_dir_arg, config)
     if not runtime_dir.is_dir():
         raise ReleaseError(f"Runtime directory not found: {runtime_dir}")
 
     dist_dir: Path | None = None
-    if not args.skip_webui:
+    if not skip_webui:
         dist_dir = build_webui()
 
-    suites = selected_suites(args)
-    if not args.skip_tests:
+    if not skip_tests:
         log("=== Running test suites ===")
-        run_selected_tests(args.build_dir, config, suites)
+        run_selected_tests(build_dir_arg, config, suites)
 
-    package_name = args.name or f"stdiolink_{dt.datetime.now().strftime('%Y%m%d_%H%M%S')}_{git_rev('--short', 'HEAD')}"
-    build_dir_abs = resolve_path(args.build_dir, root_dir())
-    output_dir_abs = resolve_path(args.output_dir, root_dir())
+    package_name = name or default_package_name()
+    build_dir_abs = resolve_path(build_dir_arg, root_dir())
+    output_dir_abs = resolve_path(output_dir_arg, root_dir())
     package_dir = output_dir_abs / package_name
 
     log("Preparing release package:")
@@ -730,9 +781,9 @@ def package_release(args: argparse.Namespace) -> None:
     log(f"  runtime     : {runtime_dir}")
     log(f"  output root : {output_dir_abs}")
     log(f"  package dir : {package_dir}")
-    log(f"  with tests  : {int(args.with_tests)}")
-    log(f"  skip webui  : {int(args.skip_webui)}")
-    log(f"  skip tests  : {int(args.skip_tests)}")
+    log(f"  with tests  : {int(with_tests)}")
+    log(f"  skip webui  : {int(skip_webui)}")
+    log(f"  skip tests  : {int(skip_tests)}")
 
     if package_dir.exists():
         shutil.rmtree(package_dir)
@@ -746,7 +797,7 @@ def package_release(args: argparse.Namespace) -> None:
     ):
         (package_dir / rel_dir).mkdir(parents=True, exist_ok=True)
 
-    copy_runtime_binaries(package_dir, runtime_dir, args.with_tests)
+    copy_runtime_binaries(package_dir, runtime_dir, with_tests)
 
     runtime_data_root = runtime_dir / "data_root"
     if runtime_data_root.is_dir():
@@ -765,11 +816,159 @@ def package_release(args: argparse.Namespace) -> None:
         package_dir,
         package_name,
         build_dir_abs,
-        args.with_tests,
-        args.skip_webui,
-        args.skip_tests,
+        with_tests,
+        skip_webui,
+        skip_tests,
     )
     run_duplicate_check(package_dir)
+    return package_dir, manifest_path, package_name
+
+
+def write_docker_manifest(
+    *,
+    output_dir: Path,
+    package_name: str,
+    image: str,
+    tag: str,
+    image_ref: str,
+    release_dir: Path,
+    container_release_dir: str,
+    dockerfile: Path,
+    export_path: Path | None,
+) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_dir / f"{package_name}{DOCKER_MANIFEST_SUFFIX}"
+    payload = {
+        "packageName": package_name,
+        "createdAt": dt.datetime.now().astimezone().isoformat(),
+        "gitCommit": git_rev("HEAD"),
+        "image": image,
+        "tag": tag,
+        "imageRef": image_ref,
+        "dockerfile": str(dockerfile),
+        "releaseDir": str(release_dir),
+        "containerReleaseDir": container_release_dir,
+        "exportPath": str(export_path) if export_path else "",
+    }
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return manifest_path
+
+
+def docker_release(args: argparse.Namespace) -> None:
+    any_suite_selected = any(getattr(args, suite) for suite in TEST_SUITES)
+    if args.skip_publish:
+        if not args.release_dir:
+            raise ReleaseError("--skip-publish requires --release-dir")
+        if any_suite_selected:
+            raise ReleaseError("Suite selection flags are only supported when Docker auto-publishes a release directory")
+        release_dir = resolve_path(args.release_dir, root_dir())
+        package_name = args.name or release_dir.name
+    else:
+        if args.release_dir:
+            raise ReleaseError("--release-dir cannot be combined with auto-publish; use --skip-publish to reuse an existing release directory")
+        suites = selected_suites(args)
+        validate_suite_selection(args.skip_tests, any_suite_selected)
+        release_dir, _, package_name = create_release_package(
+            build_dir_arg=args.build_dir,
+            output_dir_arg=args.output_dir,
+            name=args.name,
+            with_tests=args.with_tests,
+            skip_build=args.skip_build,
+            skip_webui=args.skip_webui,
+            skip_tests=args.skip_tests,
+            suites=suites,
+        )
+
+    ensure_release_dir_layout(release_dir)
+
+    docker = ensure_tool("docker")
+    dockerfile = resolve_path(args.dockerfile, root_dir())
+    if not dockerfile.is_file():
+        raise ReleaseError(f"Dockerfile not found: {dockerfile}")
+    context_dir = dockerfile.parent
+
+    image = args.image.strip() or DEFAULT_DOCKER_IMAGE
+    tag = args.tag.strip() or docker_tag_from_name(package_name)
+    image_ref = f"{image}:{tag}"
+    container_release_dir = args.container_release_dir.strip() or DEFAULT_CONTAINER_RELEASE_DIR
+    output_dir_abs = resolve_path(args.output_dir, root_dir())
+    output_dir_abs.mkdir(parents=True, exist_ok=True)
+
+    log("=== Building Docker runtime image ===")
+    log(f"  release dir           : {release_dir}")
+    log(f"  dockerfile            : {dockerfile}")
+    log(f"  build context         : {context_dir}")
+    log(f"  image                 : {image_ref}")
+    log(f"  container release dir : {container_release_dir}")
+
+    run_command(
+        [
+            docker,
+            "build",
+            "-f",
+            str(dockerfile),
+            "-t",
+            image_ref,
+            "--build-arg",
+            f"STDIOLINK_RELEASE_DIR={container_release_dir}",
+            str(context_dir),
+        ],
+        cwd=root_dir(),
+        failure_message="Docker image build failed",
+    )
+
+    export_path: Path | None = None
+    if args.export_image:
+        export_path = resolve_path(args.export_path, root_dir()) if args.export_path else output_dir_abs / f"{package_name}{DOCKER_IMAGE_EXPORT_SUFFIX}"
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        run_command(
+            [docker, "save", "-o", str(export_path), image_ref],
+            cwd=root_dir(),
+            failure_message="Docker image export failed",
+        )
+
+    manifest_path = write_docker_manifest(
+        output_dir=output_dir_abs,
+        package_name=package_name,
+        image=image,
+        tag=tag,
+        image_ref=image_ref,
+        release_dir=release_dir,
+        container_release_dir=container_release_dir,
+        dockerfile=dockerfile,
+        export_path=export_path,
+    )
+
+    log("")
+    log("=== Docker runtime image created ===")
+    log(f"  Image   : {image_ref}")
+    log(f"  Release : {release_dir}")
+    log(f"  Manifest: {manifest_path}")
+    if export_path is not None:
+        log(f"  Export  : {export_path}")
+    log("")
+    log("Suggested run command:")
+    log(
+        f"  docker run --rm -it -p {args.port}:6200 "
+        f"-v {release_dir}:{container_release_dir} {image_ref}"
+    )
+    log("")
+    log(f"Helper script: {docker_dir() / 'stdiolink_docker.sh'}")
+
+
+def package_release(args: argparse.Namespace) -> None:
+    suites = selected_suites(args)
+    validate_suite_selection(args.skip_tests, any(getattr(args, suite) for suite in TEST_SUITES))
+    package_dir, manifest_path, _package_name = create_release_package(
+        build_dir_arg=args.build_dir,
+        output_dir_arg=args.output_dir,
+        name=args.name,
+        with_tests=args.with_tests,
+        skip_build=args.skip_build,
+        skip_webui=args.skip_webui,
+        skip_tests=args.skip_tests,
+        suites=suites,
+    )
 
     log("")
     log("=== Release package created ===")
@@ -847,6 +1046,33 @@ def build_parser() -> argparse.ArgumentParser:
     publish_cmd.add_argument("--skip-tests", action="store_true", help="Skip test execution before packaging")
     add_suite_flags(publish_cmd)
     publish_cmd.set_defaults(handler=package_release)
+
+    docker_cmd = subparsers.add_parser(
+        "docker",
+        help="Build/export a Docker runtime image that uses a mounted release directory",
+    )
+    docker_cmd.add_argument("--build-dir", default="build", help="Build directory used when auto-publishing (default: build)")
+    docker_cmd.add_argument("--output-dir", default="release", help="Output root for release packages and Docker manifests (default: release)")
+    docker_cmd.add_argument("--release-dir", default="", help="Existing release directory to mount into the container")
+    docker_cmd.add_argument("--name", default="", help="Base package name (default: stdiolink_<timestamp>_<git> or release dir name)")
+    docker_cmd.add_argument("--with-tests", action="store_true", help="Include test binaries when auto-publishing a release directory")
+    docker_cmd.add_argument("--skip-build", action="store_true", help="Skip C++ build when auto-publishing")
+    docker_cmd.add_argument("--skip-webui", action="store_true", help="Skip WebUI build when auto-publishing")
+    docker_cmd.add_argument("--skip-tests", action="store_true", help="Skip tests when auto-publishing")
+    docker_cmd.add_argument("--skip-publish", action="store_true", help="Reuse --release-dir instead of creating a fresh release package")
+    docker_cmd.add_argument("--dockerfile", default="docker/Dockerfile", help="Dockerfile path (default: docker/Dockerfile)")
+    docker_cmd.add_argument("--image", default=DEFAULT_DOCKER_IMAGE, help=f"Docker image name (default: {DEFAULT_DOCKER_IMAGE})")
+    docker_cmd.add_argument("--tag", default="", help="Docker image tag (default: derived from package name)")
+    docker_cmd.add_argument(
+        "--container-release-dir",
+        default=DEFAULT_CONTAINER_RELEASE_DIR,
+        help=f"Mounted release directory inside the container (default: {DEFAULT_CONTAINER_RELEASE_DIR})",
+    )
+    docker_cmd.add_argument("--port", type=int, default=6200, help="Suggested host port mapping for docker run (default: 6200)")
+    docker_cmd.add_argument("--export-image", action="store_true", help="Export the built image as a tar archive with docker save")
+    docker_cmd.add_argument("--export-path", default="", help="Image export tar path (default: <output-dir>/<package>_docker_image.tar)")
+    add_suite_flags(docker_cmd)
+    docker_cmd.set_defaults(handler=docker_release)
 
     return parser
 
