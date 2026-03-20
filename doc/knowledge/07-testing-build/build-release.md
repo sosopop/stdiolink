@@ -17,7 +17,7 @@
 - 运行联调默认看 `build/runtime_release/`
 - 发布验证优先看 `release/<pkg>/`
 - `build/runtime_*` 默认没有发布包根脚本；Windows 模板在 `tools/release_scripts/`，Unix 模板在 `tools/release_scripts_unix/`，由 `tools/release.py publish` 直接拷贝
-- Unix 发布包根目录除 `start.sh`、`dev.sh` 外，还会附带 `install_service.sh`、`uninstall_service.sh`，用于把当前发布目录里的 `stdiolink_server` 注册/移除为 systemd 服务
+- Unix 发布包根目录除 `start.sh`、`dev.sh` 外，还会附带 `install_service.sh`、`uninstall_service.sh`、`install_build_deps.sh`；前两者用于把当前发布目录里的 `stdiolink_server` 注册/移除为 systemd 服务，后者用于在 Debian/Ubuntu 上补齐构建依赖
 - runtime / 发布包里的 Driver 默认只来自 `src/drivers/`；`src/demo/` 下示例 Driver 会编译，但不会自动发布到 `data_root/drivers/`
 - runtime / 发布包里的 Service、Project 模板默认只来自 `src/data_root/`；`src/demo/server_manager_demo/data_root/` 仅补充 demo 配置、日志、工作区与脚本
 - 测试构建会额外把 `stdio.drv.calculator` 注入 `runtime_*` 作为测试资产；这一步仅服务 GTest/JS 集成测试，不属于默认发布内容

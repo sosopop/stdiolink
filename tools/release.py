@@ -20,7 +20,7 @@ from typing import Iterable, Sequence
 PORTS_TO_CHECK = (6200, 3000)
 TEST_SUITES = ("gtest", "vitest", "playwright", "smoke")
 WINDOWS_RELEASE_SCRIPTS = ("start.bat", "start.ps1", "dev.bat", "dev.ps1")
-UNIX_RELEASE_SCRIPTS = ("start.sh", "dev.sh", "install_service.sh", "uninstall_service.sh")
+UNIX_RELEASE_SCRIPTS = ("start.sh", "dev.sh", "install_service.sh", "uninstall_service.sh", "install_build_deps.sh")
 DEFAULT_INSTALL_DIR = "install"
 DEFAULT_WINDOWS_TRIPLET = "x64-windows"
 
@@ -560,6 +560,8 @@ def copy_release_script_files(destination_dir: Path) -> None:
     names = WINDOWS_RELEASE_SCRIPTS if is_windows() else UNIX_RELEASE_SCRIPTS
     for name in names:
         source = template_dir / name
+        if not source.is_file() and not is_windows() and name == "install_build_deps.sh":
+            source = tools_dir() / name
         if not source.is_file():
             raise ReleaseError(f"Release launcher template not found: {source}")
         target = destination_dir / name
