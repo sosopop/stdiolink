@@ -13,10 +13,10 @@ constexpr quint16 kHrValve = 1;
 constexpr quint16 kHrRun = 2;
 constexpr quint16 kHrMode = 3;
 constexpr quint16 kHrMaxAddress = kHrMode;
-constexpr quint16 kHrCylinderUp = 9;
-constexpr quint16 kHrCylinderDown = 10;
-constexpr quint16 kHrValveOpen = 13;
-constexpr quint16 kHrValveClosed = 14;
+constexpr quint16 kDiCylinderUp = 9;
+constexpr quint16 kDiCylinderDown = 10;
+constexpr quint16 kDiValveOpen = 13;
+constexpr quint16 kDiValveClosed = 14;
 
 SimPlcCraneDevice::Config toDeviceConfig(const SimRunConfig& cfg) {
     SimPlcCraneDevice::Config dc;
@@ -136,26 +136,26 @@ void SimPlcCraneHandler::buildMeta() {
                                          .defaultValue(2500)
                                          .range(0, 30000)
                                          .unit("ms")
-                                         .description("气缸从下到上的模拟运动时间（毫秒），"
-                                                      "到达后寄存器 9 置 1"))
+                                          .description("气缸从下到上的模拟运动时间（毫秒），"
+                                                       "到达后离散量 9 置 0（低电平有效）"))
                               .param(FieldBuilder("cylinder_down_delay", FieldType::Int)
                                          .defaultValue(2000)
                                          .range(0, 30000)
                                          .unit("ms")
-                                         .description("气缸从上到下的模拟运动时间（毫秒），"
-                                                      "到达后寄存器 10 置 1"))
+                                          .description("气缸从上到下的模拟运动时间（毫秒），"
+                                                       "到达后离散量 10 置 1"))
                               .param(FieldBuilder("valve_open_delay", FieldType::Int)
                                          .defaultValue(1500)
                                          .range(0, 30000)
                                          .unit("ms")
-                                         .description("球阀从关到开的模拟运动时间（毫秒），"
-                                                      "到达后寄存器 13 置 1"))
+                                          .description("球阀从关到开的模拟运动时间（毫秒），"
+                                                       "到达后离散量 13 置 1"))
                               .param(FieldBuilder("valve_close_delay", FieldType::Int)
                                          .defaultValue(1200)
                                          .range(0, 30000)
                                          .unit("ms")
-                                         .description("球阀从开到关的模拟运动时间（毫秒），"
-                                                      "到达后寄存器 14 置 1"))
+                                          .description("球阀从开到关的模拟运动时间（毫秒），"
+                                                       "到达后离散量 14 置 1"))
                               .param(FieldBuilder("heartbeat_ms", FieldType::Int)
                                          .defaultValue(0)
                                          .range(0, 10000)
@@ -241,10 +241,11 @@ void SimPlcCraneHandler::syncDataAreaFromDevice() {
     m_server.setHoldingRegister(unitId, kHrValve, static_cast<quint16>(snap["hr_valve"].toInt()));
     m_server.setHoldingRegister(unitId, kHrRun, static_cast<quint16>(snap["hr_run"].toInt()));
     m_server.setHoldingRegister(unitId, kHrMode, static_cast<quint16>(snap["hr_mode"].toInt()));
-    m_server.setHoldingRegister(unitId, kHrCylinderUp, snap["di_cylinder_up"].toBool() ? 1 : 0);
-    m_server.setHoldingRegister(unitId, kHrCylinderDown, snap["di_cylinder_down"].toBool() ? 1 : 0);
-    m_server.setHoldingRegister(unitId, kHrValveOpen, snap["di_valve_open"].toBool() ? 1 : 0);
-    m_server.setHoldingRegister(unitId, kHrValveClosed, snap["di_valve_closed"].toBool() ? 1 : 0);
+    // cylinder_up 低电平有效：到位时离散量为 0
+    m_server.setDiscreteInput(unitId, kDiCylinderUp, !snap["di_cylinder_up"].toBool());
+    m_server.setDiscreteInput(unitId, kDiCylinderDown, snap["di_cylinder_down"].toBool());
+    m_server.setDiscreteInput(unitId, kDiValveOpen, snap["di_valve_open"].toBool());
+    m_server.setDiscreteInput(unitId, kDiValveClosed, snap["di_valve_closed"].toBool());
 }
 
 void SimPlcCraneHandler::onDataWritten(quint8 unitId, quint8 functionCode, quint16 address,
@@ -320,5 +321,9 @@ bool SimPlcCraneHandler::writeHoldingRegisterForTest(quint16 address, quint16 va
 
 bool SimPlcCraneHandler::readHoldingRegisterForTest(quint16 address, quint16& value) {
     return m_server.getHoldingRegister(m_cfg.unitId, address, value);
+}
+
+bool SimPlcCraneHandler::readDiscreteInputForTest(quint16 address, bool& value) {
+    return m_server.getDiscreteInput(m_cfg.unitId, address, value);
 }
 #endif

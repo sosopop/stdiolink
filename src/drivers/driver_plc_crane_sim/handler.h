@@ -41,6 +41,7 @@ public:
     const SimPlcCraneDevice& device() const { return m_device; }
     bool writeHoldingRegisterForTest(quint16 address, quint16 value, QString& err);
     bool readHoldingRegisterForTest(quint16 address, quint16& value);
+    bool readDiscreteInputForTest(quint16 address, bool& value);
 #endif
 
 private:

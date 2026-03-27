@@ -84,15 +84,15 @@ void PlcCraneHandler::handle(const QString& cmd, const QJsonValue& data, IRespon
     client->setUnitId(unitId);
 
     if (cmd == "read_status") {
-        auto result = client->readHoldingRegisters(9, 6);
+        auto result = client->readDiscreteInputs(9, 6);
         if (!result.success) {
             resp.error(2, QJsonObject{{"message", endpointError(result.errorMessage)}});
             return;
         }
-        resp.done(0, QJsonObject{{"cylinder_up", result.registers[0] != 0},
-                                 {"cylinder_down", result.registers[1] != 0},
-                                 {"valve_open", result.registers[4] != 0},
-                                 {"valve_closed", result.registers[5] != 0}});
+        resp.done(0, QJsonObject{{"cylinder_up", !result.coils[0]},
+                                 {"cylinder_down", result.coils[1]},
+                                 {"valve_open", result.coils[4]},
+                                 {"valve_closed", result.coils[5]}});
     } else if (cmd == "cylinder_control") {
         QString action = p["action"].toString();
         quint16 value = 0;
@@ -182,7 +182,7 @@ void PlcCraneHandler::buildMeta() {
                               .description("获取驱动存活状态，固定返回 ready")
             .example("查询驱动状态", QStringList{"stdio", "console"}, QJsonObject{}))
                  .command(CommandBuilder("read_status")
-                              .description("读取气缸和球阀到位状态（保持寄存器 9/10/13/14，功能码 0x03）")
+                               .description("读取气缸和球阀到位状态（离散量输入 9/10/13/14，功能码 0x02）")
                               .param(connectionParam("host"))
                               .param(connectionParam("port"))
                               .param(connectionParam("unit_id"))

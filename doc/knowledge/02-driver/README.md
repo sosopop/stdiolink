@@ -4,6 +4,7 @@
 
 ## Files
 
+- `driver-plc-crane.md`：PLC 升降装置驱动/仿真的 DI 状态语义、仿真约束和测试入口。
 - `driver-3d-temp-scanner.md`：3D 系统温度扫描仪驱动的命令面、协议映射和输出格式约束。
 - `driver-pqw-analog-output.md`：品全微模拟量输出模块驱动的命令面、寄存器映射和测试入口。
 - `driver-lifecycle.md`：`DriverCore`、运行模式、处理链和新增 Driver 时的落点。

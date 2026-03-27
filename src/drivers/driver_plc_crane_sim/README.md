@@ -9,31 +9,31 @@
 - `HR[2]` 启停：`0=停止`，`1=启动`（当前仅保存位值）
 - `HR[3]` 模式：`0=手动`，`1=自动`
 
-### 状态反馈（保持寄存器）
+### 状态反馈（离散量输入）
 
-- `HR[9]=气缸上到位`
-- `HR[10]=气缸下到位`
-- `HR[13]=阀门开到位`
-- `HR[14]=阀门关到位`
+- `DI[9]=气缸上到位`，低电平有效：`0=到位`
+- `DI[10]=气缸下到位`，高电平有效：`1=到位`
+- `DI[13]=阀门开到位`，高电平有效：`1=到位`
+- `DI[14]=阀门关到位`，高电平有效：`1=到位`
 
 ## 2. 默认初始状态
 
 - 阀门默认关闭：`valve_state=closed`
 - 气缸默认上到位（收缩态）：`cylinder_state=at_top`
-- 对应状态位：`HR9=1`、`HR10=0`、`HR13=0`、`HR14=1`
+- 对应状态位：`DI9=0`、`DI10=0`、`DI13=0`、`DI14=1`
 
 ## 3. 状态机与延时
 
 ### 气缸状态机
 
-- `HR[0]=1`：进入 `moving_up`，经过 `cylinder_up_delay` 到 `at_top`
-- `HR[0]=2`：进入 `moving_down`，经过 `cylinder_down_delay` 到 `at_bottom`
+- `HR[0]=1`：进入 `moving_up`，经过 `cylinder_up_delay` 到 `at_top`，完成后 `DI9=0`
+- `HR[0]=2`：进入 `moving_down`，经过 `cylinder_down_delay` 到 `at_bottom`，完成后 `DI9=1`、`DI10=1`
 - `HR[0]=0`：若在移动中转 `idle`，并停止当前移动定时器
 
 ### 阀门状态机
 
-- `HR[1]=1`：进入 `moving_open`，经过 `valve_open_delay` 到 `open`
-- `HR[1]=2`：进入 `moving_close`，经过 `valve_close_delay` 到 `closed`
+- `HR[1]=1`：进入 `moving_open`，经过 `valve_open_delay` 到 `open`，完成后 `DI13=1`、`DI14=0`
+- `HR[1]=2`：进入 `moving_close`，经过 `valve_close_delay` 到 `closed`，完成后 `DI13=0`、`DI14=1`
 - `HR[1]=0`：若在移动中转 `idle`，并停止当前移动定时器
 
 ## 4. 自动/手动控制逻辑
