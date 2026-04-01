@@ -38,11 +38,27 @@ endif()
 # 设置vcpkg工具链
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../vcpkg/scripts/buildsystems/vcpkg.cmake")
 
+if(WIN32)
+    set(_stdiolink_cached_pwsh "${Z_VCPKG_PWSH_PATH}")
+    if(_stdiolink_cached_pwsh STREQUAL "" OR NOT EXISTS "${_stdiolink_cached_pwsh}")
+        find_program(_stdiolink_pwsh_exe NAMES pwsh powershell)
+        if(_stdiolink_pwsh_exe)
+            file(TO_CMAKE_PATH "${_stdiolink_pwsh_exe}" _stdiolink_pwsh_exe_cmake)
+            set(Z_VCPKG_PWSH_PATH "${_stdiolink_pwsh_exe_cmake}" CACHE FILEPATH
+                "The path to the PowerShell implementation to use." FORCE)
+            set(Z_VCPKG_POWERSHELL_PATH "${_stdiolink_pwsh_exe_cmake}" CACHE INTERNAL
+                "The path to the PowerShell implementation to use." FORCE)
+            message(STATUS "Using PowerShell for vcpkg applocal: ${_stdiolink_pwsh_exe_cmake}")
+        endif()
+    endif()
+endif()
+
 # 查找依赖包
 find_package(qjs CONFIG REQUIRED)
 find_package(Qt6 6.6 REQUIRED COMPONENTS Core Widgets Network WebSockets HttpServer Concurrent)
 find_package(GTest CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(open62541 CONFIG REQUIRED)
 
 # 启用测试
 enable_testing()

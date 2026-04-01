@@ -77,6 +77,7 @@ set(TEST_SOURCES
     test_modbustcp_client.cpp
     test_limaco_radar.cpp
     test_pqw_analog_output.cpp
+    test_opcua_driver.cpp
     test_3d_temp_scanner.cpp
     test_plc_crane.cpp
     test_plc_crane_sim.cpp
@@ -157,6 +158,7 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_modbusrtu_serial/modbus_rtu_serial_client.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_pqw_analog_output/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_opcua/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/protocol_codec.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/thermal_transport.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/thermal_session.cpp
@@ -190,10 +192,16 @@ target_include_directories(stdiolink_tests PRIVATE
 
 find_package(Qt6 COMPONENTS SerialPort Test Gui REQUIRED)
 
+set(STDIOLINK_OPCUA_TARGET open62541)
+if(TARGET open62541::open62541)
+    set(STDIOLINK_OPCUA_TARGET open62541::open62541)
+endif()
+
 target_link_libraries(stdiolink_tests PRIVATE
     stdiolink
     GTest::gtest
     spdlog::spdlog
+    ${STDIOLINK_OPCUA_TARGET}
     Qt6::Network
     Qt6::HttpServer
     Qt6::WebSockets

@@ -8,6 +8,7 @@
     "qtserialport",
     "gtest",
     "quickjs-ng",
-    "spdlog"
+    "spdlog",
+    "open62541"
   ]
 }
