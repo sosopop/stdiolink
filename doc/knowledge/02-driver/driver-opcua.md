@@ -25,6 +25,15 @@
 - `snapshot_nodes` 以 `ObjectsFolder` 为根，但默认不把 `Server/Types/ReferenceTypes` 这类标准系统树带进结果
 - 递归遍历必须对规范化 `NodeId` 做 visited 去重，避免环引用
 
+## Implementation Pitfalls
+
+- 不能直接用 `UA_Client_new()` 做静默驱动；它会先带上默认 stdout logger 和 event loop。需要先给 `UA_ClientConfig.logging` 注入静默 logger，再 `UA_ClientConfig_setDefault`，最后走 `UA_Client_newWithConfig()`。
+- `snapshot_nodes` 从 `ObjectsFolder` 起扫时，默认会带出 `0:Server` 等标准系统树；如果命令语义是“业务树快照”，根层需要显式过滤 namespace 0 的系统节点。
+- `recurse=false` 不等于“不返回 children”；实现上要区分“展开直属子节点”和“继续递归下钻”两个开关，否则很容易把一层浏览和递归浏览写混。
+- 如果要验证驱动 stdout 只有 JSONL，优先起独立驱动进程做断言；在同进程里跑 open62541 测试服务器时，服务端自己的日志也可能污染捕获结果。
+- `stdiolink_tests.exe` 不能直接在 `build\\release\\` 下运行，必须放在 `build\\runtime_*\\bin\\` 且旁边有 `data_root\\` 运行时布局，否则测试框架会先因为运行环境不完整而失败。
+- Windows 下如果构建卡在 vcpkg 的 `applocal.ps1`，优先检查缓存里的 `Z_VCPKG_PWSH_PATH` 是否还指向已升级或已失效的 PowerShell 路径。
+
 ## Test Entry
 
 - `src/tests/test_opcua_driver.cpp`
