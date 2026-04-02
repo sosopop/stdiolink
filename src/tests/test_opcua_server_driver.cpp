@@ -522,4 +522,13 @@ TEST_F(OpcUaServerHandlerTest, MetadataContainsExpectedServerCommands) {
     EXPECT_NE(meta.findCommand("write_values"), nullptr);
     EXPECT_NE(meta.findCommand("inspect_node"), nullptr);
     EXPECT_NE(meta.findCommand("snapshot_nodes"), nullptr);
+
+    const auto* runCommand = meta.findCommand("run");
+    ASSERT_NE(runCommand, nullptr);
+    ASSERT_FALSE(runCommand->examples.isEmpty());
+    const QJsonArray runNodes = runCommand->examples.first().value("params").toObject().value("nodes").toArray();
+    ASSERT_EQ(runNodes.size(), 3);
+    EXPECT_EQ(runNodes.at(0).toObject().value("node_class").toString(), "folder");
+    EXPECT_EQ(runNodes.at(1).toObject().value("node_id").toString(), "ns=1;s=Plant.Temp");
+    EXPECT_EQ(runNodes.at(2).toObject().value("node_id").toString(), "ns=1;s=Plant.SetPoint");
 }

@@ -37,6 +37,13 @@
 - `OneShot` 下如果每条命令都显式带连接参数，优先在文档和 meta 中写清默认值来源、是否复用最近一次执行结果、哪些命令是纯无状态。
 - Console 模式对外只保证“`0` 表示成功、非 `0` 表示失败”；详细业务错误码应从 stdout JSON 的 `code` 字段读取，不应依赖进程退出码在各平台上精确保留 `400/404/1000+`。
 
+## Mode Semantics
+
+- `Console` 模式通常由 `--cmd=...` 触发；命令参数走 argv 解析，Driver 只会在收到 `done` / `error` 后退出事件循环。
+- `Stdio` 模式通过 stdin/stdout 传 JSONL；在 `OneShot` profile 下，`DriverCore` 处理完第一条 stdin 请求后就会结束进程，不要求该命令一定输出 `done`。
+- 这意味着“同一个 `run` 命令”在不同入口可能表现不同：命令行 `--cmd=run` 走 `Console`，适合 server 型长生命周期命令；WebSocket/Host/DriverLab oneshot 走 `Stdio`，处理完一条请求后会退出。
+- 如果某个命令的设计目标是“启动服务后常驻，仅靠 `event` 报启动成功”，要在文档里明确它更适合 `KeepAlive` 或命令行 `Console` 场景，不要默认认为 DriverLab oneshot 能保持该进程常驻。
+
 ## Related
 
 - `driver-meta.md`

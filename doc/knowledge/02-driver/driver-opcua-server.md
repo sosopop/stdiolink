@@ -30,6 +30,7 @@
 - 业务节点统一使用 `NodeId` 主定位，不引入 `path`
 - 自定义业务节点固定使用单一自定义 namespace，约定为 `ns=1`
 - 顶层业务根默认挂在 `ObjectsFolder(i=85)` 下
+- `run` 的元数据示例使用一个 `Plant` 目录节点，并在目录下放两个变量节点：`Temp` 与 `SetPoint`
 - `int64` / `uint64` 在 JSON 输入输出里统一走十进制字符串
 - `bytestring` 用 base64，`datetime` 用 ISO8601
 
@@ -51,6 +52,7 @@
 - v1 只支持匿名访问与 `SecurityPolicy#None`
 - 服务端驱动必须是 `keepalive`，不要和客户端无状态驱动合并
 - `run` 的生命周期语义需要和 `modbustcp_server` 保持一致：成功后常驻，不要回 `done` 导致 oneshot 自动退出
+- DriverLab 调试 `run` 时优先选择 `keepalive`。DriverLab `oneshot` 走的是 WebSocket/stdin 单条命令链路，处理完一条请求后进程就会退出；这和命令行 `--cmd=run` 的 `Console` 模式不是同一语义
 - `upsert_nodes` 允许父子节点无序输入，但实现必须做多轮解析；剩余孤儿节点要整体报错
 - `delete_nodes` 对目录节点默认拒绝删除，除非显式 `recursive=true`
 - `snapshot_nodes` 默认根为 `i=85`，但不把 `0:Server`、`0:Types` 等系统树混进业务快照
@@ -59,6 +61,7 @@
 ## Implementation Pitfalls
 
 - 不要把服务端能力继续塞进 `stdio.drv.opcua`。客户端是 `oneshot` / 无状态模型，服务端是 `keepalive` / 长生命周期模型，混在一个 handler 里后续很难维护。
+- `run` 成功后只发 `started` 事件、不回 `done`，这个语义只保证在 `Console` 或 `keepalive` 场景下可作为常驻 server 使用。若从 DriverLab `oneshot` 发送 `run`，进程仍会在处理完这条 stdin 请求后退出，这是框架生命周期决定的，不是 OPC UA server 启动失败。
 - open62541 的写回调和命令写入会走同一条值更新链路；如果不区分来源，`write_values` 很容易重复发两次 `node_value_changed`。实现里要显式抑制命令写入时的 onWrite 回调事件。
 - `browse_name` 是 `QualifiedName` 的 name 部分，不要把 `ns=1:` 这样的前缀再次塞进 `browse_name`，否则节点树看起来会正常但浏览行为会变怪。
 - `UA_Server_addNamespace()` 返回的 index 不是“想当然永远等于 1”；v1 可以约束业务 namespace 固定映射到 `ns=1`，但实现里必须在启动时做显式校验，避免后续节点定义和真实 namespace 漂移。

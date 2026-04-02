@@ -15,6 +15,11 @@
 - 入口：`src/webui/src/api/driverlab-ws.ts`
 - 后端：`src/stdiolink_server/http/driverlab_ws_*`
 - 依赖：Driver 元数据、命令表单、执行结果流
+- DriverLab 显示的 CLI 预览只是表单/示例的展示结果；实际执行始终走 WebSocket -> 后端 -> Driver stdin 的 JSONL 协议链路，不会直接拿这串 CLI 文本去启动进程
+- 建连时后端会先拉起 Driver 并发送 `meta.describe`；`oneshot` 下这个取 meta 的进程正常退出后，下一次 `exec` 会自动重启 Driver
+- DriverLab 的 `oneshot` 本质上是 `Stdio + OneShot`：每次 `exec` 只向 Driver stdin 发送一条命令，Driver 处理完第一条请求后退出；因此即使命令只输出 `event`、不输出 `done`，oneshot 进程也会结束
+- DriverLab 的 `keepalive` 才适合调试 server 型长生命周期命令；如果命令需要“启动后常驻”，oneshot 模式下会看到 `driver.exited`，这是当前框架语义，不一定代表命令执行失败
+- 命令行 `--cmd=run` 和 DriverLab `oneshot` 不是同一路径：前者走 `Console` 模式，后者走 `Stdio` 模式，server 型 `run` 在两边表现可能不同
 - 消费 Driver 元数据时，命令 `params` 可能在无参命令上被省略；DriverLab/详情页都要把缺失字段视为空数组。
 - 指令面板示例区默认只展示 `mode=stdio` 的示例；界面不显示 mode 标签
 - 示例 JSON 默认保持单行展示；超长内容只允许在容器内横向滚动，不应撑宽整个面板

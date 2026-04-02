@@ -24,6 +24,7 @@ DriverLab 是 WebUI 内置的 Driver 实时调试工具，通过 WebSocket 与 D
 - 示例文本遵循与 Console 模式一致的 JSON -> CLI 规范
 - DriverLab 实际执行仍走 WebSocket/JSON 请求，不以该字符串作为内部协议
 - 命令行预览始终反映当前表单参数；点击 `Apply example` 后，示例参数才会写回表单并更新预览
+- 因此，DriverLab 中看到的 CLI 预览与“实际如何启动 Driver”不是一回事；它不能直接用来推断 Driver 的进程生命周期
 
 ## 连接流程
 
@@ -32,6 +33,23 @@ DriverLab 是 WebUI 内置的 Driver 实时调试工具，通过 WebSocket 与 D
 3. 点击连接，WebUI 通过 WebSocket 连接到后端
 4. 后端启动 Driver 进程，返回元数据和命令列表
 5. 命令面板自动填充可用命令、示例和参数表单
+
+## 运行模式语义
+
+- `oneshot`
+  - DriverLab 通过 WebSocket 把单条命令写入 Driver stdin
+  - Driver 处理完这一条请求后正常退出；WebSocket 会话保持，下一次执行时自动重启 Driver
+  - 适合普通“请求 -> 响应”型命令
+- `keepalive`
+  - Driver 进程在同一会话中持续存活，可连续执行多条命令
+  - 适合设备连接、订阅、服务端模拟器等长生命周期命令
+
+需要特别注意：
+
+- DriverLab 的 `oneshot` 走的是 **Stdio 协议链路**，不是命令行 `--cmd=...`
+- 命令行 `--cmd=run` 走的是 **Console 模式**
+- 所以某些 server 型 `run` 命令在命令行里可以常驻，在 DriverLab `oneshot` 里却会在发出 `started` 事件后退出；这是运行模式差异，不一定代表启动失败
+- 调试这类命令时，优先选择 DriverLab 的 `keepalive`
 
 ## WebSocket 协议
 

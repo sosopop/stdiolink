@@ -493,7 +493,7 @@ void OpcUaServerHandler::buildMeta() {
             .items(nodeItem))
         .event("started", QString::fromUtf8("服务端启动事件"))
         .event("node_value_changed", QString::fromUtf8("节点值变更事件"))
-        .example(QString::fromUtf8("启动服务端并装载最小节点"), QStringList{"stdio", "console"},
+        .example(QString::fromUtf8("启动服务端并装载目录与两个变量节点"), QStringList{"stdio", "console"},
                  QJsonObject{
                      {"bind_host", "127.0.0.1"},
                      {"listen_port", 4840},
@@ -503,7 +503,30 @@ void OpcUaServerHandler::buildMeta() {
                              {"parent_node_id", "i=85"},
                              {"node_class", "folder"},
                              {"browse_name", "Plant"},
-                             {"display_name", "Plant"}
+                             {"display_name", "Plant"},
+                             {"description", "Plant root"}
+                         },
+                         QJsonObject{
+                             {"node_id", "ns=1;s=Plant.Temp"},
+                             {"parent_node_id", "ns=1;s=Plant"},
+                             {"node_class", "variable"},
+                             {"browse_name", "Temp"},
+                             {"display_name", "Temp"},
+                             {"description", "Process temperature"},
+                             {"data_type", "double"},
+                             {"access", "read_only"},
+                             {"initial_value", 36.5}
+                         },
+                         QJsonObject{
+                             {"node_id", "ns=1;s=Plant.SetPoint"},
+                             {"parent_node_id", "ns=1;s=Plant"},
+                             {"node_class", "variable"},
+                             {"browse_name", "SetPoint"},
+                             {"display_name", "SetPoint"},
+                             {"description", "Temperature setpoint"},
+                             {"data_type", "double"},
+                             {"access", "read_write"},
+                             {"initial_value", 40.0}
                          }
                      }}
                  });
