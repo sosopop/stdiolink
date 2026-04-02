@@ -1,0 +1,12 @@
+{
+  "id": "opcua_server",
+  "name": "OPC UA 服务器",
+  "serviceId": "opcua_server_service",
+  "enabled": false,
+  "schedule": {
+    "type": "daemon",
+    "restartDelayMs": 5000,
+    "maxConsecutiveFailures": 3,
+    "runTimeoutMs": 0
+  }
+}

@@ -4,6 +4,8 @@
 
 说明 `stdio.drv.opcua` 的命令面、节点快照规则、实现入口与测试入口。
 
+服务端能力已拆分到独立的 `stdio.drv.opcua_server`，不要继续在客户端驱动里叠加长生命周期的 Server 逻辑。
+
 ## Commands
 
 - `status`：固定返回 `ready`
@@ -14,6 +16,7 @@
 
 - `src/drivers/driver_opcua/handler.*`
 - `src/drivers/driver_opcua/main.cpp`
+- `src/drivers/opcua_common.*`
 - 根构建需先解析 `open62541`，测试同样复用该包
 
 ## Constraints
@@ -42,5 +45,6 @@
 ## Related
 
 - `driver-lifecycle.md`
+- `driver-opcua-server.md`
 - `driver-meta.md`
 - `../08-workflows/add-driver.md`

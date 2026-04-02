@@ -1,0 +1,92 @@
+{
+  "bind_host": {
+    "type": "string",
+    "default": "0.0.0.0",
+    "description": "监听地址，默认监听所有网卡"
+  },
+  "listen_port": {
+    "type": "int",
+    "default": 4840,
+    "description": "OPC UA 监听端口",
+    "constraints": { "min": 1, "max": 65535 }
+  },
+  "endpoint_path": {
+    "type": "string",
+    "default": "",
+    "description": "Endpoint URL 的路径部分，默认空字符串"
+  },
+  "server_name": {
+    "type": "string",
+    "default": "stdiolink OPC UA Server",
+    "description": "服务端显示名称"
+  },
+  "application_uri": {
+    "type": "string",
+    "default": "urn:stdiolink:opcua:server",
+    "description": "OPC UA ApplicationUri"
+  },
+  "namespace_uri": {
+    "type": "string",
+    "default": "urn:stdiolink:opcua:nodes",
+    "description": "业务命名空间 URI，固定映射到 ns=1"
+  },
+  "event_mode": {
+    "type": "string",
+    "default": "write",
+    "description": "事件推送模式：none=无 / write=仅写入 / session=仅会话 / all=全部",
+    "enum": ["none", "write", "session", "all"]
+  },
+  "nodes": {
+    "type": "array",
+    "default": [],
+    "description": "启动时要装载的业务节点定义",
+    "items": {
+      "type": "object",
+      "fields": {
+        "node_id": {
+          "type": "string",
+          "required": true,
+          "description": "节点 NodeId，如 ns=1;s=Plant.Line1.Temp"
+        },
+        "parent_node_id": {
+          "type": "string",
+          "required": true,
+          "description": "父节点 NodeId；顶层节点可使用 i=85"
+        },
+        "node_class": {
+          "type": "string",
+          "required": true,
+          "description": "节点类型，仅支持 folder / variable",
+          "enum": ["folder", "variable"]
+        },
+        "browse_name": {
+          "type": "string",
+          "required": true,
+          "description": "BrowseName，不含 namespace 前缀"
+        },
+        "display_name": {
+          "type": "string",
+          "description": "显示名称；缺省时回落为 browse_name"
+        },
+        "description": {
+          "type": "string",
+          "description": "节点描述"
+        },
+        "data_type": {
+          "type": "string",
+          "description": "变量节点数据类型",
+          "enum": ["bool", "int16", "uint16", "int32", "uint32", "int64", "uint64", "float", "double", "string", "bytestring", "datetime"]
+        },
+        "access": {
+          "type": "string",
+          "description": "变量节点访问模式",
+          "enum": ["read_only", "read_write"]
+        },
+        "initial_value": {
+          "type": "any",
+          "description": "变量节点初始值；int64/uint64 用十进制字符串，bytestring 用 base64，datetime 用 ISO8601"
+        }
+      }
+    }
+  }
+}

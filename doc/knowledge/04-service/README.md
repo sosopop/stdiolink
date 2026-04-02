@@ -13,6 +13,7 @@
 - `modbustcp_server_service`：Modbus TCP 从站服务
 - `modbusrtu_server_service`：Modbus RTU 从站服务
 - `modbusrtu_serial_server_service`：Modbus RTU 串口从站服务
+- `opcua_server_service`：OPC UA Server 服务，启动 keepalive 驱动并装载业务节点
 - `plc_crane_sim`：PLC 行车模拟
 - `exec_runner`：通用进程执行服务，通过配置启动任意外部进程并实时输出日志（M104）
 

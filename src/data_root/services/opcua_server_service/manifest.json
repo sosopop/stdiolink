@@ -1,0 +1,7 @@
+{
+  "manifestVersion": "1",
+  "id": "opcua_server_service",
+  "name": "OPC UA 服务器",
+  "version": "1.0.0",
+  "description": "启动 OPC UA Server 驱动并按配置装载业务节点"
+}

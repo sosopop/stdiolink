@@ -209,3 +209,18 @@ set_tests_properties(
         LABELS "smoke;m106"
         TIMEOUT 120
 )
+
+add_test(
+    NAME smoke_m107_opcua_server
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m107_opcua_server
+)
+
+set_tests_properties(
+    smoke_m107_opcua_server
+    PROPERTIES
+        LABELS "smoke;m107"
+        TIMEOUT 180
+)

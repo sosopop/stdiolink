@@ -1,0 +1,60 @@
+{
+  "bind_host": "0.0.0.0",
+  "listen_port": 4840,
+  "endpoint_path": "",
+  "server_name": "stdiolink OPC UA Server",
+  "application_uri": "urn:stdiolink:opcua:server",
+  "namespace_uri": "urn:stdiolink:opcua:nodes",
+  "event_mode": "write",
+  "nodes": [
+    {
+      "node_id": "ns=1;s=Plant",
+      "parent_node_id": "i=85",
+      "node_class": "folder",
+      "browse_name": "Plant",
+      "display_name": "Plant",
+      "description": "Plant root"
+    },
+    {
+      "node_id": "ns=1;s=Plant.Line1",
+      "parent_node_id": "ns=1;s=Plant",
+      "node_class": "folder",
+      "browse_name": "Line1",
+      "display_name": "Line1",
+      "description": "Line 1"
+    },
+    {
+      "node_id": "ns=1;s=Plant.Line1.Temp",
+      "parent_node_id": "ns=1;s=Plant.Line1",
+      "node_class": "variable",
+      "browse_name": "Temp",
+      "display_name": "Temp",
+      "description": "Process temperature",
+      "data_type": "double",
+      "access": "read_only",
+      "initial_value": 36.5
+    },
+    {
+      "node_id": "ns=1;s=Plant.Line1.SetPoint",
+      "parent_node_id": "ns=1;s=Plant.Line1",
+      "node_class": "variable",
+      "browse_name": "SetPoint",
+      "display_name": "SetPoint",
+      "description": "Temperature setpoint",
+      "data_type": "double",
+      "access": "read_write",
+      "initial_value": 40.0
+    },
+    {
+      "node_id": "ns=1;s=Plant.Line1.Mode",
+      "parent_node_id": "ns=1;s=Plant.Line1",
+      "node_class": "variable",
+      "browse_name": "Mode",
+      "display_name": "Mode",
+      "description": "Operating mode",
+      "data_type": "string",
+      "access": "read_write",
+      "initial_value": "Auto"
+    }
+  ]
+}
