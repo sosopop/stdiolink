@@ -36,8 +36,9 @@ public:
 
     bool sendAndReceive(quint8 command, const QByteArray& payload, LaserFrame* response,
                         QString* errorMessage, SessionErrorKind* errorKind = nullptr);
-    bool sendOnly(quint8 command, const QByteArray& payload, quint16* counter,
-                  QString* errorMessage);
+    bool sendExpectNoImmediateResponse(quint8 command, const QByteArray& payload, quint16* counter,
+                                       QString* errorMessage,
+                                       SessionErrorKind* errorKind = nullptr);
 
     bool readRegister(quint16 regId, quint32* value, QString* errorMessage,
                       SessionErrorKind* errorKind = nullptr);

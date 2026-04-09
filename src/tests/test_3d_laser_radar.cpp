@@ -3,7 +3,9 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
 #include <QJsonObject>
+#include <QSet>
 #include <QTemporaryDir>
 
 #include <deque>
@@ -71,6 +73,8 @@ public:
             }
             return false;
         }
+        ++writeCount;
+        readCountSinceLastWrite = 0;
         writes.push_back(frame);
         if (onWrite) {
             onWrite(frame);
@@ -80,6 +84,15 @@ public:
 
     bool readSome(QByteArray& chunk, int timeoutMs, QString* errorMessage) override {
         Q_UNUSED(timeoutMs);
+        const bool shouldFail = readCountSinceLastWrite == 0
+            && failFirstReadAfterWrites.contains(writeCount);
+        ++readCountSinceLastWrite;
+        if (shouldFail) {
+            if (errorMessage) {
+                *errorMessage = readError;
+            }
+            return false;
+        }
         if (queuedReads.empty()) {
             if (errorMessage) {
                 *errorMessage = readError;
@@ -104,7 +117,10 @@ public:
     QString readError = "read timeout";
     bool isOpen = false;
     int closeCount = 0;
+    int writeCount = 0;
+    int readCountSinceLastWrite = 0;
     std::deque<QByteArray> queuedReads;
+    QSet<int> failFirstReadAfterWrites;
     std::vector<QByteArray> writes;
     std::function<void(const QByteArray&)> onWrite;
 };
@@ -337,6 +353,8 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerQueryAndCancelExposeSemanticFields) {
 
 TEST_F(ThreeDLaserRadarTestBase, HandlerCalibXSucceedsAfterSkippingStaleQueryResult) {
     FakeLaserTransport fake;
+    fake.readError = "TCP read timeout";
+    fake.failFirstReadAfterWrites.insert(2);
     fake.enqueueRead(encodeFrame(
         0, kDeviceAddr, CmdId::Query, makeQueryPayload(0, 0, 0, 0)));
     fake.enqueueRead(encodeFrame(
@@ -349,13 +367,16 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerCalibXSucceedsAfterSkippingStaleQueryRes
 
     JsonResponder responder;
     handler.handle("calib_x", baseParams(), responder);
-    ASSERT_EQ(responder.lastStatus, "done");
+    ASSERT_EQ(responder.lastStatus, "done")
+        << QJsonDocument(responder.lastData).toJson(QJsonDocument::Compact).constData();
     EXPECT_EQ(responder.lastData.value("task_command").toString(), "calib_x");
     EXPECT_EQ(responder.lastData.value("result_b").toInt(), 1234);
 }
 
 TEST_F(ThreeDLaserRadarTestBase, HandlerMoveXFailureCarriesErrorCodeAndEncodesAngle) {
     FakeLaserTransport fake;
+    fake.readError = "TCP read timeout";
+    fake.failFirstReadAfterWrites.insert(2);
     fake.enqueueRead(encodeFrame(
         0, kDeviceAddr, CmdId::Query, makeQueryPayload(0, 0, 0, 0)));
     fake.enqueueRead(encodeFrame(
@@ -369,7 +390,8 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerMoveXFailureCarriesErrorCodeAndEncodesAn
     params["angle_deg"] = 45.5;
     handler.handle("move_x", params, responder);
 
-    ASSERT_EQ(responder.lastStatus, "error");
+    ASSERT_EQ(responder.lastStatus, "error")
+        << QJsonDocument(responder.lastData).toJson(QJsonDocument::Compact).constData();
     EXPECT_EQ(responder.lastData.value("error_code").toInt(), 2);
 
     ASSERT_GE(fake.writes.size(), 2u);
@@ -385,6 +407,8 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerMoveXFailureCarriesErrorCodeAndEncodesAn
 
 TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldSavesRawOutput) {
     FakeLaserTransport fake;
+    fake.readError = "TCP read timeout";
+    fake.failFirstReadAfterWrites.insert(2);
     const QByteArray scanBytes("ABCDEFGH");
     fake.enqueueRead(encodeFrame(
         0, kDeviceAddr, CmdId::Query, makeQueryPayload(0, 0, 0, 0)));
@@ -410,7 +434,8 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldSavesRawOutput) {
     params["output"] = outputPath;
     handler.handle("scan_field", params, responder);
 
-    ASSERT_EQ(responder.lastStatus, "done");
+    ASSERT_EQ(responder.lastStatus, "done")
+        << QJsonDocument(responder.lastData).toJson(QJsonDocument::Compact).constData();
     EXPECT_EQ(responder.lastData.value("byte_count").toInt(), scanBytes.size());
     EXPECT_FALSE(responder.lastData.value("has_blank_scanlines").toBool());
 
@@ -421,6 +446,8 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldSavesRawOutput) {
 
 TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldReportsBlankScanlines) {
     FakeLaserTransport fake;
+    fake.readError = "TCP read timeout";
+    fake.failFirstReadAfterWrites.insert(2);
     const QByteArray scanBytes("WXYZ");
     fake.enqueueRead(encodeFrame(
         0, kDeviceAddr, CmdId::Query, makeQueryPayload(0, 0, 0, 0)));
@@ -445,7 +472,8 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldReportsBlankScanlines) {
     params["output"] = outputPath;
     handler.handle("scan_field", params, responder);
 
-    ASSERT_EQ(responder.lastStatus, "done");
+    ASSERT_EQ(responder.lastStatus, "done")
+        << QJsonDocument(responder.lastData).toJson(QJsonDocument::Compact).constData();
     EXPECT_TRUE(responder.lastData.value("has_blank_scanlines").toBool());
 }
 
@@ -488,6 +516,33 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldAllowsWideEndAnglesBeforeTransp
     ASSERT_EQ(responder.lastStatus, "error");
     EXPECT_EQ(responder.lastCode, 1);
     EXPECT_TRUE(responder.lastData.value("message").toString().contains("expected open failure"));
+}
+
+TEST_F(ThreeDLaserRadarTestBase, HandlerScanFieldUsesLegacyDefaultQueryIntervalWhenOmitted) {
+    FakeLaserTransport fake;
+    fake.openShouldFail = true;
+    fake.openError = "expected open failure";
+
+    ThreeDLaserRadarHandler handler;
+    handler.setTransportFactory([&fake]() { return new NonOwningTransportWrapper(&fake); });
+
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+
+    JsonResponder responder;
+    QJsonObject params;
+    params["host"] = "127.0.0.1";
+    params["port"] = 23;
+    params["timeout_ms"] = 100;
+    params["task_timeout_ms"] = 20;
+    params["begin_x_deg"] = 0.0;
+    params["end_x_deg"] = 10.0;
+    params["output"] = dir.path() + "/scan.bin";
+    handler.handle("scan_field", params, responder);
+
+    ASSERT_EQ(responder.lastStatus, "error");
+    EXPECT_EQ(responder.lastCode, 1);
+    EXPECT_EQ(fake.lastParams.queryIntervalMs, 5000);
 }
 
 TEST_F(ThreeDLaserRadarTestBase, HandlerGetDataSavesRequestedSegment) {
@@ -545,6 +600,14 @@ TEST_F(ThreeDLaserRadarTestBase, MetaContainsExpectedCommands) {
     const auto* scanFieldCommand = meta.findCommand("scan_field");
     ASSERT_NE(scanFieldCommand, nullptr);
     EXPECT_FALSE(findExampleByMode(scanFieldCommand->examples, "console").isEmpty());
+    bool foundScanFieldQueryInterval = false;
+    for (const auto& field : scanFieldCommand->params) {
+        if (field.name == "query_interval_ms") {
+            foundScanFieldQueryInterval = true;
+            EXPECT_EQ(field.defaultValue.toInt(), 5000);
+        }
+    }
+    EXPECT_TRUE(foundScanFieldQueryInterval);
     EXPECT_EQ(meta.findCommand("scan_to_angle"), nullptr);
     EXPECT_EQ(meta.findCommand("get_scan_line"), nullptr);
     EXPECT_EQ(meta.findCommand("get_system_status"), nullptr);

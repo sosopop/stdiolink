@@ -19,6 +19,7 @@
   - `port = 23`
   - `timeout_ms = 5000`
   - `query_interval_ms = 1000`
+  - `scan_field` 未显式传 `query_interval_ms` 时，默认使用 `5000`
   - `task_timeout_ms = -1`
 - 默认长任务超时：
   - `calib_x = 300000ms`
@@ -78,6 +79,7 @@
     - `30 = already_stopped`
 - 长任务：
   - `calib_x` / `calib_lidar` / `move_x` / `scan_field` 发送后不等待即时业务响应
+  - 行为对齐旧项目 `checkNoRespCall`：发送后先等待一次“无返回超时”，再进入轮询
   - 执行前先调用 `query(200)` 清空旧状态
   - 再轮询 `query(100)`，并严格匹配“返回计数器 + 指令码”
 - `scan_field`

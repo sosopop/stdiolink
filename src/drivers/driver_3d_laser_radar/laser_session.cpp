@@ -103,17 +103,47 @@ bool LaserSession::sendAndReceive(quint8 command, const QByteArray& payload, Las
     return false;
 }
 
-bool LaserSession::sendOnly(quint8 command, const QByteArray& payload, quint16* counter,
-                            QString* errorMessage) {
+bool LaserSession::sendExpectNoImmediateResponse(quint8 command, const QByteArray& payload,
+                                                 quint16* counter, QString* errorMessage,
+                                                 SessionErrorKind* errorKind) {
+    if (errorKind) {
+        *errorKind = SessionErrorKind::None;
+    }
     const quint16 reserved = reserveCounter();
     const QByteArray frame = encodeFrame(reserved, kDeviceAddr, command, payload);
     if (!m_transport->writeFrame(frame, m_params.timeoutMs, errorMessage)) {
+        if (errorKind) {
+            *errorKind = SessionErrorKind::Transport;
+        }
         return false;
     }
     if (counter) {
         *counter = reserved;
     }
-    return true;
+
+    QByteArray chunk;
+    QString readError;
+    if (!m_transport->readSome(chunk, m_params.timeoutMs, &readError)) {
+        if (readError.toLower().contains("timeout")) {
+            return true;
+        }
+        if (errorKind) {
+            *errorKind = SessionErrorKind::Transport;
+        }
+        if (errorMessage && errorMessage->isEmpty()) {
+            *errorMessage = readError;
+        }
+        return false;
+    }
+
+    if (errorKind) {
+        *errorKind = SessionErrorKind::Protocol;
+    }
+    if (errorMessage) {
+        *errorMessage = QStringLiteral(
+            "Long-running command returned immediate data unexpectedly");
+    }
+    return false;
 }
 
 bool LaserSession::readRegister(quint16 regId, quint32* value, QString* errorMessage,

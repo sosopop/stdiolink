@@ -69,9 +69,9 @@ FieldBuilder taskTimeoutParam() {
         .description(QString::fromUtf8("长任务总超时，-1 表示使用命令默认值"));
 }
 
-FieldBuilder queryIntervalParam() {
+FieldBuilder queryIntervalParam(int defaultValueMs = 1000) {
     return FieldBuilder("query_interval_ms", FieldType::Int)
-        .defaultValue(1000)
+        .defaultValue(defaultValueMs)
         .range(1, 60000)
         .unit("ms")
         .description(QString::fromUtf8("长任务轮询间隔（毫秒）"));
@@ -89,10 +89,10 @@ void addConnectionParams(CommandBuilder& command) {
         .param(timeoutParam());
 }
 
-void addLongTaskParams(CommandBuilder& command) {
+void addLongTaskParams(CommandBuilder& command, int defaultQueryIntervalMs = 1000) {
     addConnectionParams(command);
     command.param(taskTimeoutParam())
-        .param(queryIntervalParam());
+        .param(queryIntervalParam(defaultQueryIntervalMs));
 }
 
 QJsonObject connectionExample(std::initializer_list<QPair<QString, QJsonValue>> extra = {}) {
@@ -261,8 +261,8 @@ QJsonObject stateFlagsFromRaw(quint32 rawState) {
     };
 }
 
-bool resolveConnectionParams(const QJsonObject& params, LaserTransportParams& result,
-                             QString* errorMessage) {
+bool resolveConnectionParams(const QJsonObject& params, const QString& commandName,
+                             LaserTransportParams& result, QString* errorMessage) {
     result.host = params.value("host").toString("127.0.0.1").trimmed();
     if (result.host.isEmpty()) {
         result.host = QStringLiteral("127.0.0.1");
@@ -301,9 +301,10 @@ bool resolveConnectionParams(const QJsonObject& params, LaserTransportParams& re
         result.taskTimeoutMs = static_cast<int>(numeric);
     }
 
-    quint32 queryIntervalMs = 1000;
+    const quint32 defaultQueryIntervalMs = commandName == "scan_field" ? 5000u : 1000u;
+    quint32 queryIntervalMs = defaultQueryIntervalMs;
     if (!parseUnsignedParam(params, "query_interval_ms", 1, 60000, &queryIntervalMs, errorMessage,
-                            false, 1000)) {
+                            false, defaultQueryIntervalMs)) {
         return false;
     }
     result.queryIntervalMs = static_cast<int>(queryIntervalMs);
@@ -379,7 +380,7 @@ void ThreeDLaserRadarHandler::handle(const QString& cmd, const QJsonValue& data,
     const QJsonObject params = data.toObject();
     LaserTransportParams connection;
     QString errorMessage;
-    if (!resolveConnectionParams(params, connection, &errorMessage)) {
+    if (!resolveConnectionParams(params, cmd, connection, &errorMessage)) {
         respondInvalidParam(responder, errorMessage);
         return;
     }
@@ -666,6 +667,7 @@ void ThreeDLaserRadarHandler::handle(const QString& cmd, const QJsonValue& data,
         }
 
         quint16 taskCounter = 0;
+        SessionErrorKind errorKind = SessionErrorKind::None;
         const QByteArray payload = makeScanFieldPayload(
             encodeMilliDegrees(beginXDeg),
             encodeMilliDegrees(endXDeg),
@@ -673,13 +675,14 @@ void ThreeDLaserRadarHandler::handle(const QString& cmd, const QJsonValue& data,
             encodeMilliDegrees(beginYDeg),
             encodeMilliDegrees(endYDeg),
             encodeMicroDegrees(stepYDeg));
-        if (!session->sendOnly(CmdId::ScanField, payload, &taskCounter, &errorMessage)) {
-            respondTransportError(responder, errorMessage);
+        if (!session->sendExpectNoImmediateResponse(CmdId::ScanField, payload, &taskCounter,
+                                                    &errorMessage, &errorKind)) {
+            respondSessionError(errorKind, errorMessage);
             return;
         }
 
         QueryTaskResult taskResult;
-        SessionErrorKind errorKind = SessionErrorKind::None;
+        errorKind = SessionErrorKind::None;
         if (!session->waitTaskCompleted(taskCounter, CmdId::ScanField,
                                         resolveTaskTimeout(connection, cmd), &taskResult,
                                         &errorMessage, &errorKind)) {
@@ -757,13 +760,15 @@ void ThreeDLaserRadarHandler::handle(const QString& cmd, const QJsonValue& data,
             return;
         }
 
-        if (!session->sendOnly(taskCommand, payload, &taskCounter, &errorMessage)) {
-            respondTransportError(responder, errorMessage);
+        SessionErrorKind errorKind = SessionErrorKind::None;
+        if (!session->sendExpectNoImmediateResponse(taskCommand, payload, &taskCounter,
+                                                    &errorMessage, &errorKind)) {
+            respondSessionError(errorKind, errorMessage);
             return;
         }
 
         QueryTaskResult taskResult;
-        SessionErrorKind errorKind = SessionErrorKind::None;
+        errorKind = SessionErrorKind::None;
         if (!session->waitTaskCompleted(taskCounter, taskCommand,
                                         resolveTaskTimeout(connection, cmd), &taskResult,
                                         &errorMessage, &errorKind)) {
@@ -959,7 +964,7 @@ void ThreeDLaserRadarHandler::buildMeta() {
         .param(outputParam());
 
     CommandBuilder scanFieldCmd("scan_field");
-    addLongTaskParams(scanFieldCmd);
+    addLongTaskParams(scanFieldCmd, 5000);
     scanFieldCmd
         .description(QString::fromUtf8("按 11 号指令获取一个扫描场，成功后自动拉取全部分段并保存原始字节流"))
         .param(FieldBuilder("begin_x_deg", FieldType::Double).required().range(0, 190))
