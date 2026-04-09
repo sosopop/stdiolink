@@ -67,6 +67,7 @@ protected:
         scanRobotDriverPath = testBinaryPath("stdio.drv.3d_scan_robot");
         pqwAnalogOutputDriverPath = testBinaryPath("stdio.drv.pqw_analog_output");
         tempScannerDriverPath = testBinaryPath("stdio.drv.3d_temp_scanner");
+        laserRadarDriverPath = testBinaryPath("stdio.drv.3d_laser_radar");
     }
 
     QString createDriverDirWithBinary(const QString& name, const QString& sourceBinary) {
@@ -84,6 +85,7 @@ protected:
     QString scanRobotDriverPath;
     QString pqwAnalogOutputDriverPath;
     QString tempScannerDriverPath;
+    QString laserRadarDriverPath;
 };
 
 TEST_F(DriverManagerScannerTest, NonExistentDirectory) {
@@ -308,4 +310,42 @@ TEST_F(DriverManagerScannerTest, ExportMetaFor3DTempScannerDriver) {
     EXPECT_TRUE(commandNames.contains("capture"));
     EXPECT_FALSE(commandNames.contains("test"));
     EXPECT_FALSE(commandNames.contains("get_board_temp"));
+}
+
+TEST_F(DriverManagerScannerTest, ExportMetaFor3DLaserRadarDriver) {
+    if (!QFileInfo::exists(laserRadarDriverPath)) {
+        GTEST_SKIP() << "stdio.drv.3d_laser_radar binary is not available in the test output directory";
+    }
+
+    const QString dir = createDriverDirWithBinary("3d-laser-radar", laserRadarDriverPath);
+
+    DriverManagerScanner scanner;
+    DriverManagerScanner::ScanStats stats;
+    const auto result = scanner.scan(driversDir, false, &stats);
+
+    ASSERT_TRUE(QFileInfo::exists(dir + "/driver.meta.json"));
+    EXPECT_EQ(stats.scanned, 1);
+    EXPECT_EQ(stats.updated, 1);
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_TRUE(result.contains("stdio.drv.3d_laser_radar"));
+
+    QFile metaFile(dir + "/driver.meta.json");
+    ASSERT_TRUE(metaFile.open(QIODevice::ReadOnly));
+    const auto metaDoc = QJsonDocument::fromJson(metaFile.readAll());
+    ASSERT_TRUE(metaDoc.isObject());
+    const auto commands = metaDoc.object().value("commands").toArray();
+
+    QStringList commandNames;
+    for (const auto& value : commands) {
+        commandNames.append(value.toObject().value("name").toString());
+    }
+
+    EXPECT_TRUE(commandNames.contains("status"));
+    EXPECT_TRUE(commandNames.contains("scan_field"));
+    EXPECT_TRUE(commandNames.contains("get_data"));
+    EXPECT_TRUE(commandNames.contains("move_x"));
+    EXPECT_TRUE(commandNames.contains("calib_lidar"));
+    EXPECT_FALSE(commandNames.contains("set_scan_mode"));
+    EXPECT_FALSE(commandNames.contains("scan_to_angle"));
+    EXPECT_FALSE(commandNames.contains("get_scan_line"));
 }

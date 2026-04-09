@@ -81,6 +81,7 @@ set(TEST_SOURCES
     test_opcua_server_driver.cpp
     test_opcua_server_service.cpp
     test_3d_temp_scanner.cpp
+    test_3d_laser_radar.cpp
     test_plc_crane.cpp
     test_plc_crane_sim.cpp
     test_driver_resolve.cpp
@@ -168,6 +169,10 @@ target_sources(stdiolink_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/thermal_transport.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/thermal_session.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_temp_scanner/handler.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_laser_radar/protocol_codec.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_laser_radar/laser_transport.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_laser_radar/laser_session.cpp
+    ${CMAKE_SOURCE_DIR}/src/drivers/driver_3d_laser_radar/handler.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_transport.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_common/limaco_decode.cpp
     ${CMAKE_SOURCE_DIR}/src/drivers/driver_limaco_1_radar/handler.cpp

@@ -2,6 +2,7 @@
 
 add_subdirectory(driver_3dvision)
 add_subdirectory(driver_3d_temp_scanner)
+add_subdirectory(driver_3d_laser_radar)
 add_subdirectory(driver_limaco_1_radar)
 add_subdirectory(driver_limaco_5_radar)
 add_subdirectory(driver_modbustcp)

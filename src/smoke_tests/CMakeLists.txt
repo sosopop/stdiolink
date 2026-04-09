@@ -224,3 +224,18 @@ set_tests_properties(
         LABELS "smoke;m107"
         TIMEOUT 180
 )
+
+add_test(
+    NAME smoke_m108_3d_laser_radar
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_smoke.py
+        --plan m108_3d_laser_radar
+)
+
+set_tests_properties(
+    smoke_m108_3d_laser_radar
+    PROPERTIES
+        LABELS "smoke;m108"
+        TIMEOUT 120
+)
