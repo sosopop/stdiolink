@@ -64,6 +64,7 @@
   - 大端字段
   - `counter` 为 `uint16`
   - CRC 使用 STM32 同款 `CRC32`
+  - 协议正文写“最大 1400 字节”，但现场设备可能按寄存器 `18` 的大块配置返回更大的 `get_data` 帧；驱动解码按 16-bit `length` 字段接收，而不是再把帧长硬截断到 `1400`
 - `read_reg` / `write_reg`
   - payload = `reg:uint16 + value:uint32`
   - 响应 `reg = 65535` 视为设备错误
@@ -80,6 +81,7 @@
 - 长任务：
   - `calib_x` / `calib_lidar` / `move_x` / `scan_field` 发送后不等待即时业务响应
   - 行为对齐旧项目 `checkNoRespCall`：发送后先等待一次“无返回超时”，再进入轮询
+  - 每次发送新请求前，会先丢弃 socket 中积压的旧字节，避免无返回长任务残留数据干扰后续 `query/get_data`
   - 执行前先调用 `query(200)` 清空旧状态
   - 再轮询 `query(100)`，并严格匹配“返回计数器 + 指令码”
 - `scan_field`
@@ -90,6 +92,7 @@
   - 完成后自动连续调用 `get_data(segment_index)` 聚合全部分段
 - `get_data`
   - 只拉取单个分段，并把原始分段字节直接写入 `output`
+  - 分段响应仍按 `segment_len:uint16` 解析；现场若返回 `32768` 级块大小，帧总长会显著超过协议正文里的 `1400`
 
 ## Output Rules
 
@@ -134,3 +137,4 @@
 - 长任务轮询必须跳过“计数器或指令码不匹配”的旧结果
 - `scan_field` 成功后必须聚合全量分段并保存原始字节流
 - `4001` 必须作为成功态返回，并在摘要里标记 `has_blank_scanlines = true`
+- `get_data` / `scan_field` 必须接受超 `1400` 字节的大分段响应，只要 `length` 与 `segment_len` 自洽

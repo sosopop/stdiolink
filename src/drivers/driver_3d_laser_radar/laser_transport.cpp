@@ -33,6 +33,7 @@ public:
             }
             return false;
         }
+        drainPendingInput();
         const qint64 written = m_socket.write(frame);
         if (written != frame.size()) {
             if (errorMessage) {
@@ -83,6 +84,15 @@ public:
     }
 
 private:
+    void drainPendingInput() {
+        if (m_socket.bytesAvailable() > 0) {
+            m_socket.readAll();
+        }
+        while (m_socket.waitForReadyRead(1)) {
+            m_socket.readAll();
+        }
+    }
+
     QTcpSocket m_socket;
 };
 

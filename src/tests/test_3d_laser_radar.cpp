@@ -5,8 +5,11 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QSet>
 #include <QTemporaryDir>
+#include <QThread>
 
 #include <deque>
 #include <functional>
@@ -252,6 +255,30 @@ TEST(ThreeDLaserRadarProtocolTest, DetectsBadMagicAndCrc) {
               DecodeStatus::CrcError);
 }
 
+TEST(ThreeDLaserRadarProtocolTest, AcceptsLargeGetDataFramesReturnedByDevice) {
+    const QByteArray segmentBytes(32768, static_cast<char>(0xA5));
+    const QByteArray frame = encodeFrame(
+        1, kDeviceAddr, CmdId::GetData, makeSegmentPayload(0, 143, segmentBytes));
+
+    ASSERT_GT(frame.size(), 1400);
+
+    LaserFrame decoded;
+    QString errorMessage;
+    EXPECT_EQ(tryDecodeFrame(frame, kDeviceAddr, CmdId::GetData, &decoded, &errorMessage),
+              DecodeStatus::Ok)
+        << errorMessage.toStdString();
+
+    quint32 segId = 0;
+    quint32 segCount = 0;
+    quint16 segLen = 0;
+    QByteArray decodedData;
+    ASSERT_TRUE(parseSegmentResponse(decoded.payload, &segId, &segCount, &segLen, &decodedData));
+    EXPECT_EQ(segId, 0u);
+    EXPECT_EQ(segCount, 143u);
+    EXPECT_EQ(segLen, static_cast<quint16>(segmentBytes.size()));
+    EXPECT_EQ(decodedData, segmentBytes);
+}
+
 TEST_F(ThreeDLaserRadarTestBase, SessionHandlesFragmentedFrame) {
     FakeLaserTransport transport;
     const quint32 requestValue = 0x12345678u;
@@ -275,6 +302,52 @@ TEST_F(ThreeDLaserRadarTestBase, SessionHandlesFragmentedFrame) {
     quint32 echo = 0;
     ASSERT_TRUE(parseU32Payload(response.payload, &echo));
     EXPECT_EQ(echo, ~requestValue);
+}
+
+TEST_F(ThreeDLaserRadarTestBase, RealTransportClearsPendingInputBeforeNextWrite) {
+    QTcpServer server;
+    ASSERT_TRUE(server.listen(QHostAddress::LocalHost));
+
+    std::unique_ptr<ILaserTransport> transport(newLaserTransport());
+    LaserTransportParams params;
+    params.host = "127.0.0.1";
+    params.port = server.serverPort();
+    params.timeoutMs = 200;
+
+    QString errorMessage;
+    ASSERT_TRUE(transport->open(params, &errorMessage)) << errorMessage.toStdString();
+    ASSERT_TRUE(server.waitForNewConnection(200));
+    QTcpSocket* peer = server.nextPendingConnection();
+    ASSERT_NE(peer, nullptr);
+
+    QByteArray staleBytes;
+    staleBytes.append(kMagic, kMagicLen);
+    appendU16(staleBytes, 1);
+    staleBytes.append(QByteArray(kMinFrameLen - 6, '\0'));
+    ASSERT_GT(peer->write(staleBytes), 0);
+    ASSERT_TRUE(peer->waitForBytesWritten(200));
+    QThread::msleep(20);
+
+    const QByteArray request = encodeFrame(7, kDeviceAddr, CmdId::Query, makeU32Payload(QueryOp::Read));
+    ASSERT_TRUE(transport->writeFrame(request, 200, &errorMessage)) << errorMessage.toStdString();
+
+    ASSERT_TRUE(peer->waitForReadyRead(200));
+    const QByteArray receivedRequest = peer->readAll();
+    EXPECT_EQ(receivedRequest, request);
+
+    const QByteArray response = encodeFrame(
+        7, kDeviceAddr, CmdId::Query,
+        makeQueryPayload(7, CmdId::ScanField, TaskResult::Running, 0));
+    ASSERT_GT(peer->write(response), 0);
+    ASSERT_TRUE(peer->waitForBytesWritten(200));
+
+    QByteArray chunk;
+    ASSERT_TRUE(transport->readSome(chunk, 200, &errorMessage)) << errorMessage.toStdString();
+
+    LaserFrame decoded;
+    ASSERT_EQ(tryDecodeFrame(chunk, kDeviceAddr, CmdId::Query, &decoded, &errorMessage),
+              DecodeStatus::Ok)
+        << errorMessage.toStdString();
 }
 
 TEST_F(ThreeDLaserRadarTestBase, HandlerStatusAndUnknownCommand) {
@@ -566,6 +639,35 @@ TEST_F(ThreeDLaserRadarTestBase, HandlerGetDataSavesRequestedSegment) {
 
     ASSERT_EQ(responder.lastStatus, "done");
     EXPECT_EQ(responder.lastData.value("segment_count").toInt(), 4);
+
+    QFile file(outputPath);
+    ASSERT_TRUE(file.open(QIODevice::ReadOnly));
+    EXPECT_EQ(file.readAll(), segmentBytes);
+}
+
+TEST_F(ThreeDLaserRadarTestBase, HandlerGetDataSavesLargeSegmentReturnedByDevice) {
+    FakeLaserTransport fake;
+    const QByteArray segmentBytes(32768, static_cast<char>(0x3C));
+    fake.enqueueRead(encodeFrame(
+        0, kDeviceAddr, CmdId::GetData, makeSegmentPayload(0, 143, segmentBytes)));
+
+    ThreeDLaserRadarHandler handler;
+    handler.setTransportFactory([&fake]() { return new NonOwningTransportWrapper(&fake); });
+
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString outputPath = dir.path() + "/large_seg.bin";
+
+    JsonResponder responder;
+    QJsonObject params = baseParams();
+    params["segment_index"] = 0;
+    params["output"] = outputPath;
+    handler.handle("get_data", params, responder);
+
+    ASSERT_EQ(responder.lastStatus, "done")
+        << QJsonDocument(responder.lastData).toJson(QJsonDocument::Compact).constData();
+    EXPECT_EQ(responder.lastData.value("segment_count").toInt(), 143);
+    EXPECT_EQ(responder.lastData.value("segment_length").toInt(), segmentBytes.size());
 
     QFile file(outputPath);
     ASSERT_TRUE(file.open(QIODevice::ReadOnly));

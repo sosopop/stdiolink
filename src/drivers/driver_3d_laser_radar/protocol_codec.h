@@ -68,7 +68,12 @@ constexpr int kHeaderLen = 10;
 constexpr int kCrcLen = 4;
 constexpr int kMinPayloadLen = 4;
 constexpr int kMinFrameLen = 18;
-constexpr int kMaxFrameLen = 1400;
+// The published V10.2 document caps packets at 1400 bytes, but deployed
+// devices can return larger get_data frames whose length still fits in the
+// 16-bit length field (for example with 32 KiB data blocks). Accept any frame
+// representable by the protocol length field and let payload-specific parsers
+// validate the rest.
+constexpr int kMaxFrameLen = kMagicLen + kLengthFieldLen + 0xFFFF;
 
 struct LaserFrame {
     quint16 counter = 0;
